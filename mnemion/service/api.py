@@ -329,7 +329,13 @@ def create_app(
     @app.middleware("http")
     async def request_context(request: Request, call_next):
         from .request_replay import HEADER, request_replay
+        from .studio_policy import PRODUCT_TELEMETRY_POLICY_PATH
 
+        if request.method == "GET" and request.url.path == PRODUCT_TELEMETRY_POLICY_PATH:
+            # The fixed public policy read has no operational identity or
+            # request correlation. Deployment access/trace logs need their own
+            # exclusion; do not weaken authenticated workspace audit records.
+            return await call_next(request)
         request.state.request_id = str(uuid4())
         with request_replay() as replay:
             response = await call_next(request)
@@ -842,10 +848,21 @@ def create_app(
 
     studio, _ = resolve_studio() if studio_enabled else (None, "disabled")
     if studio is not None:
-        from .studio_policy import content_security_policy, product_telemetry_page
+        from .studio_policy import (
+            PRODUCT_TELEMETRY_POLICY_PATH,
+            content_security_policy,
+            product_telemetry_page,
+            product_telemetry_policy,
+        )
 
         studio_policy = content_security_policy()
         app.mount("/assets", StaticFiles(directory=studio / "assets"), name="studio-assets")
+        app.add_api_route(
+            PRODUCT_TELEMETRY_POLICY_PATH,
+            product_telemetry_policy,
+            methods=["GET"],
+            include_in_schema=False,
+        )
 
         @app.get("/", include_in_schema=False)
         @app.get("/help", include_in_schema=False)

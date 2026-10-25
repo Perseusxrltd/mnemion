@@ -1,6 +1,6 @@
 # Anonymous product telemetry — V08
 
-**V08 is Building/source implementation; checkpoint 24 October 2026.** The full scope
+**V08 is Building/source implementation; checkpoint 25 October 2026.** The full scope
 recorded on 23 October remains the acceptance contract in the
 [66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls,
 the fixed catalog, bounded aggregate queues, selected owned workflow hooks,
@@ -64,9 +64,20 @@ passed in the [current report](../validation/2026-10-24-telemetry-app-owners.md)
 That journey used synthetic CPU admission, real heap readings and normal browser
 networking; it does not qualify actual pressure sensors. Unknown native metering requires
 an explicit unmetered declaration, and unsupported browser pressure/heap sensors
-refuse delivery. Fresh browser organization-policy refresh, full workflow/owner
-coverage, whole-wire/resource measurements and native/web release acceptance
-remain open.
+refuse delivery. Full workflow/owner coverage, whole-wire/resource measurements
+and native/web release acceptance remain open.
+
+The subsequent [browser company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
+adds one bounded, credential-free read of the Studio page's own
+`/studio/telemetry-policy` before an already-reserved report can be sent. It
+rechecks local choice and pressure before that read and the final report handoff;
+observed restrictions can only narrow permission until the page reloads. Reading
+privacy status does not fetch policy or enable collection. The **90 browser and
+25 Python source checks** passed; on **25 October**, the actual Chromium journey
+passed **20 assertions** with seven policy reads, one four-byte TLS report and
+one real preflight. CPU admission was synthetic. The final frontend build and
+fixture cleanup passed. Neither endpoint's production ingress/log privacy nor
+full resource/platform acceptance is qualified.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a

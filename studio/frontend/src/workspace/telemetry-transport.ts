@@ -1,9 +1,10 @@
 /** Existing foreground work may own one send; this module schedules no work. */
 import type { BrowserTelemetry } from './telemetry-policy'
 import { PreparedBrowserTelemetryReport } from './telemetry-delivery'
+import { readBrowserCompanyPolicy } from './telemetry-company'
 
 type Outcome = 'delivered' | 'suppressed' | 'failed' | 'deadline'
-type Client = Pick<BrowserTelemetry, 'status' | 'delivery'>
+type Client = Pick<BrowserTelemetry, 'status' | 'delivery' | 'restrictCompany'>
 
 function destinationValid(value: unknown): value is string {
   if (typeof value !== 'string' || value.length > 512) return false
@@ -37,9 +38,18 @@ export async function sendBrowserTelemetry(client: Client, report: PreparedBrows
     timer = setTimeout(() => { clock.expired = true; request.abort() }, remaining)
     const handoff = new Promise<void>(resolve => { releaseHandoff = resolve })
     watcher = client.delivery.watch(report, abort, watching.signal, handoff)
+    const checkedAt = performance.now()
+    const company = await readBrowserCompanyPolicy(request.signal,
+      start => client.delivery.guardedPolicyRead(report, start), releaseHandoff)
+    // A local stop or expired attempt is not a newly observed company policy.
+    if (request.signal.aborted) return { outcome: clock.expired ? 'deadline' : 'suppressed' }
+    client.restrictCompany(company)
+    if (request.signal.aborted || !company.enabled || !company.metric_groups.includes(report.group) ||
+        performance.now() - checkedAt >= 1000 ||
+        !await client.delivery.current(report)) return { outcome: clock.expired ? 'deadline' : 'suppressed' }
     let pending: Promise<Response | null> | undefined
     const written = await client.delivery.guardedWrite(report, body => {
-      if (request.signal.aborted) return false
+      if (request.signal.aborted || performance.now() - checkedAt >= 1000) return false
       // Fetch copies the BufferSource during request construction, before the
       // privacy fence erases its temporary body. No caller object is retained.
       pending = fetch(destination, { method: 'POST', body: new Uint8Array(body),
@@ -50,11 +60,8 @@ export async function sendBrowserTelemetry(client: Client, report: PreparedBrows
     })
     releaseHandoff()
     if (!written || !pending) return { outcome: 'suppressed' }
-    // Web Locks release asynchronously in real browsers. Starting the polling
-    // watcher before this handoff resolves would make two owners of this same
-    // attempt compete for an ifAvailable lock and suppress their own request.
-    // Cancellation listeners/deadline are armed before Fetch; only lock polling
-    // waits for the guarded handoff to finish, including a page-exit race.
+    // The watcher covers both requests; the same owner's short Web Lock work
+    // is serialized, so final handoff cannot race its own in-flight checks.
     const response = await pending
     if (request.signal.aborted) return { outcome: clock.expired ? 'deadline' : 'suppressed' }
     if (performance.now() >= report.monotonicDeadline) return { outcome: 'deadline' }

@@ -1,6 +1,6 @@
 # Shared telemetry delivery budget — V08
 
-**Unreleased source checkpoint, 24 October 2026; V08 remains Building.** The
+**Unreleased source checkpoint, 25 October 2026; V08 remains Building.** The
 [full contract](anonymous-product-telemetry.md) retains its scope. The
 [Python delivery component](../../mnemion/product_telemetry/delivery.py) and
 [native TypeScript component](../../studio/electron/telemetry-delivery.ts) now
@@ -197,8 +197,9 @@ after one use. A successful browser handoff keeps its private lease cancellable
 until completion or abort; the owner must finish it with `cancel()`. The later
 native/Python handoff now follows this same rule. The new application-handoff
 claim prevents competing calls from sending twice or cancelling the winner;
-the later transport report records its separate component evidence. No browser
-product sender is wired. Bytes already handed to a transport cannot be recalled.
+the later transport report records its separate component evidence. The later
+browser owner is wired in source but remains inactive. Bytes already handed to
+a transport cannot be recalled.
 
 Only an owned active attempt installs the transport watcher's storage-change and page-hide listeners,
 same-tab invalidation and nominal 25 ms checks. Cancellation removes these
@@ -233,6 +234,26 @@ Fetch does not expose TLS/TCP/IP byte counters or a response-header cap; browser
 headers, cross-origin preflight and connection behavior remain separate wire and
 privacy qualification work. The 65,536-byte reservation is unchanged and is not
 a proven bound on that traffic.
+
+The subsequent [company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
+adds a separately fenced same-origin policy GET before the report handoff, after
+spending the reservation. It consumes the same five-second lease; refusal or
+timeout does not refund spending, restore the queue or choose another report
+view. The final report also requires a policy check started less than one second
+earlier. The fixed reservation is not a measured bound for the policy request
+plus report, preflight and connection traffic.
+
+The browser serializes at most four pending short lock operations from the same
+owner, while other tabs still face nonwaiting Web Lock admission. Network work
+does not hold that lock. Company invalidation clears the owned body immediately
+and shares one awaited matching-lease cleanup with its finalizer; it does not
+discard the cleanup token early. A local abort does not fabricate unreadable
+company policy. Focused checks and the **25 October, 20-assertion Chromium
+journey** passed, including retained spending and lease cleanup after policy
+refusal, cross-tab opt-out and synthetic CPU pressure. Its seven real policy
+reads, one report and one preflight are component evidence, not whole-wire or
+platform acceptance. Fixture cleanup was verified. The older native/Python
+evidence below is unchanged.
 
 ## Source validation
 

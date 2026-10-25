@@ -6,9 +6,10 @@ import type { WorkflowStore } from '../../../electron/telemetry-workflow'
 import { budgetKey, budgetState, budgetView, freshBudget, serializeBudget, choiceKey, queueKey, type BrowserBudget } from './telemetry-budget'
 import { BrowserTelemetryDelivery, type BrowserDeliveryEnvironment } from './telemetry-delivery'
 import { BrowserTelemetryActivity } from './telemetry-activity'
+import { browserCompanyPolicy, parseCompanyPolicy, restrictCompanyPolicy } from './telemetry-company'
 
 export { choiceKey, queueKey } from './telemetry-budget'
-const groups = contract.metric_groups
+export { browserCompanyPolicy } from './telemetry-company'
 const connectionModes: TelemetryConnectionMode[] = ['auto', 'unmetered', 'metered']
 const own = (value: object, keys: string[]) => Object.keys(value).every(key => keys.includes(key))
 const validGeneration = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value)
@@ -18,26 +19,10 @@ function newGeneration(): string {
   return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('')
 }
 
-export function browserCompanyPolicy(): TelemetryCompanyPolicy {
-  const value = document.querySelector('meta[name="mnemion-product-telemetry-policy"]')?.getAttribute('content')
-  if (value === undefined || value === null) return { state: 'unmanaged', enabled: true, metric_groups: [...groups] }
-  try {
-    if (value.length > 8192) throw new Error()
-    const policy = JSON.parse(value)
-    if (!policy || typeof policy !== 'object' || Array.isArray(policy) ||
-        !own(policy, ['state', 'enabled', 'metric_groups']) || Object.keys(policy).length !== 3 ||
-        !['unmanaged', 'restricted', 'unreadable'].includes(policy.state) || typeof policy.enabled !== 'boolean' ||
-        !Array.isArray(policy.metric_groups) || policy.metric_groups.length > groups.length ||
-        policy.metric_groups.some((group: unknown) => typeof group !== 'string' || !groups.includes(group)) ||
-        new Set(policy.metric_groups).size !== policy.metric_groups.length ||
-        (policy.state === 'unreadable' && policy.enabled)) throw new Error()
-    return policy
-  } catch { return { state: 'unreadable', enabled: false, metric_groups: [] } }
-}
-
 /** The browser owns its origin-local choice; no account or device ID is made. */
 export class BrowserTelemetry {
   protected storageFailed = false
+  private observedCompany?: TelemetryCompanyPolicy
   readonly delivery: BrowserTelemetryDelivery
   constructor(
     protected readonly storage: () => Storage = () => window.localStorage,
@@ -99,7 +84,8 @@ export class BrowserTelemetry {
     } catch { storage = 'unreadable' }
     if (this.storageFailed) storage = 'unreadable'
     if (storage === 'unreadable') delivery = { ...delivery, state: 'unavailable', attempts_in_rolling_week: null, reserved_wire_bytes_in_rolling_day: null }
-    const company = this.company()
+    const initial = parseCompanyPolicy(this.company())
+    const company = this.observedCompany ? restrictCompanyPolicy(initial, this.observedCompany) : initial
     const reason: TelemetryStatus['reason'] = storage === 'unreadable' ? 'storage_unavailable'
       : !preference.enabled ? 'user_disabled' : !this.coordinated() || clearing ? 'coordination_unavailable'
       : this.privacy() ? 'browser_privacy'
@@ -116,6 +102,12 @@ export class BrowserTelemetry {
       disclosure: { ...contract, choice_scope: 'this browser and site' },
       delivery_budget: delivery,
     }
+  }
+
+  /** Only fixed restrictive state is retained, in this page's memory. */
+  restrictCompany(policy: TelemetryCompanyPolicy): void {
+    this.observedCompany = restrictCompanyPolicy(this.status().company_policy, policy)
+    if (!this.observedCompany.enabled || !this.observedCompany.metric_groups.length) this.delivery.invalidate()
   }
 
   configure(input: TelemetryChoice): TelemetryStatus {

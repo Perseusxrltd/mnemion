@@ -24,11 +24,42 @@ const contract = createRequire(entry)('../../../../mnemion/product_telemetry/dis
 const allowed = { network: 'unmetered', constrained: false }
 const measured = () => ({ kind: 'outcome', workflow: 'memory.recall', surface: 'browser', outcome: 'success' })
 
-async function transportFixture(run, mode = 'success') {
-  const saved = globalThis.fetch, calls = []
-  let entered, release, aborts = 0
+async function transportFixture(run, mode = 'success', policyMode = 'success') {
+  const saved = globalThis.fetch, savedWindow = globalThis.window, calls = [], policyCalls = []
+  globalThis.window = { location: new URL('https://workspace.example/privacy') }
+  let entered, release, policyEntered, policyRelease, aborts = 0, policyAborts = 0
   const started = new Promise(resolve => { entered = resolve })
+  const policyStarted = new Promise(resolve => { policyEntered = resolve })
   globalThis.fetch = (url, options) => {
+    if (options.method === 'GET') {
+      policyCalls.push({ url, options })
+      policyEntered()
+      return new Promise((resolve, reject) => {
+        const abort = () => { policyAborts++; reject(new DOMException('Cancelled', 'AbortError')) }
+        const respond = () => {
+          options.signal.removeEventListener('abort', abort)
+          let policy = { state: 'unmanaged', enabled: true, metric_groups: ['usage', 'reliability', 'performance', 'resources'] }
+          if (policyMode === 'disabled') policy = { state: 'restricted', enabled: false, metric_groups: [] }
+          if (policyMode === 'groups') policy = { state: 'restricted', enabled: true, metric_groups: ['reliability'] }
+          if (policyMode === 'extra') policy.identifier = 'PRIVATE_POLICY_SENTINEL'
+          if (policyMode === 'invalid') policy = { state: 'unmanaged', enabled: 'yes', metric_groups: ['usage'] }
+          const body = policyMode === 'huge' ? 'x'.repeat(1025) : policyMode === 'malformed' ? '{broken' : JSON.stringify(policy)
+          const response = new Response(body, { status: policyMode === 'bad_status' ? 503 : 200, headers: {
+            'Content-Type': policyMode === 'html' ? 'text/html' : 'application/json',
+            'Content-Length': policyMode === 'wrong_length' ? String(body.length + 1) : String(Buffer.byteLength(body)),
+            'Cache-Control': policyMode === 'cached' ? 'max-age=300' : 'no-store',
+            ...(policyMode === 'aged' ? { Age: '1' } : {}),
+          } })
+          Object.defineProperty(response, 'url', { value: policyMode === 'wrong_url' ? 'https://private.invalid/policy' : url })
+          Object.defineProperty(response, 'redirected', { value: policyMode === 'redirected' })
+          resolve(response)
+        }
+        options.signal.addEventListener('abort', abort, { once: true })
+        if (options.signal.aborted) abort()
+        else if (policyMode === 'hold') policyRelease = respond
+        else respond()
+      })
+    }
     calls.push({ url, options, body: [...options.body] })
     entered()
     return new Promise((resolve, reject) => {
@@ -46,8 +77,9 @@ async function transportFixture(run, mode = 'success') {
       else respond()
     })
   }
-  try { await run({ calls, started, release: () => release(), aborts: () => aborts }) }
-  finally { globalThis.fetch = saved }
+  try { await run({ calls, policyCalls, started, policyStarted, release: () => release(), policyRelease: () => policyRelease(),
+    aborts: () => aborts, policyAborts: () => policyAborts }) }
+  finally { globalThis.fetch = saved; if (savedWindow === undefined) delete globalThis.window; else globalThis.window = savedWindow }
 }
 
 async function available(run) {
@@ -370,6 +402,13 @@ test('browser transport uses the disclosed destination and isolated request opti
   const report = await client.delivery.reserve(instance.enqueue(), allowed), original = [...report.body()]
   assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'delivered' })
   assert.equal(transport.calls.length, 1)
+  assert.equal(transport.policyCalls.length, 1)
+  const policy = transport.policyCalls[0]
+  assert.equal(policy.url, 'https://workspace.example/studio/telemetry-policy')
+  assert.deepEqual(Object.keys(policy.options).sort(), ['cache', 'credentials', 'keepalive', 'method', 'mode', 'redirect', 'referrerPolicy', 'signal'].sort())
+  assert.deepEqual([policy.options.method, policy.options.cache, policy.options.credentials, policy.options.mode,
+    policy.options.redirect, policy.options.referrerPolicy, policy.options.keepalive],
+    ['GET', 'no-store', 'omit', 'same-origin', 'error', 'no-referrer', false])
   const { url, options, body } = transport.calls[0]
   assert.equal(url, contract.destination); assert.deepEqual(body, original)
   assert.deepEqual(Object.keys(options).sort(), ['body', 'cache', 'credentials', 'headers', 'keepalive', 'method', 'mode', 'redirect', 'referrerPolicy', 'signal'].sort())
@@ -473,3 +512,87 @@ test('the browser sender stops a silent request at its actual five-second deadli
   assert.equal(transport.calls.length, 1); assert.equal(transport.aborts(), 1)
   assert.equal(instance.budget().attempts.length, 1); assert.equal(instance.budget().lease, null)
 }, 'hold')))
+
+for (const mode of ['disabled', 'groups', 'extra', 'invalid', 'huge', 'malformed', 'bad_status', 'html',
+  'wrong_length', 'cached', 'aged', 'wrong_url', 'redirected'])
+  test(`fresh company ${mode} policy suppresses the report without refund or fallback`, async () => available(() => transportFixture(async transport => {
+    const instance = fixture(), client = instance.first
+    instance.choice(client, true)
+    const report = await client.delivery.reserve(instance.enqueue(), allowed)
+    assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'suppressed' })
+    assert.equal(transport.policyCalls.length, 1)
+    assert.equal(transport.calls.length, 0)
+    assert.equal(instance.budget().attempts.length, 1)
+    assert.equal(instance.budget().lease, null)
+    assert.equal(report.closed, true)
+    assert.equal(instance.listeners.size, 0)
+    assert.ok(!JSON.stringify(client.status()).includes('PRIVATE_POLICY_SENTINEL'))
+  }, 'success', mode)))
+
+for (const control of ['same_tab_off', 'other_tab_off', 'privacy', 'company', 'pagehide', 'owner'])
+  test(`${control} interrupts the pending policy read before collector contact`, async () => available(() => transportFixture(async transport => {
+    const instance = fixture(true, true), client = instance.first, owner = new AbortController()
+    instance.choice(client, true)
+    const report = await client.delivery.reserve(instance.enqueue(), allowed)
+    const pending = sendBrowserTelemetry(client, report, owner.signal)
+    await transport.policyStarted
+    assert.equal(instance.budget().attempts.length, 1, 'reserve before any policy traffic')
+    if (control === 'same_tab_off') instance.choice(client, false)
+    else if (control === 'other_tab_off') instance.choice(instance.client(), false)
+    else if (control === 'privacy') instance.privacy(true)
+    else if (control === 'company') instance.restrict(true)
+    else if (control === 'owner') owner.abort()
+    else instance.events.dispatchEvent(new Event('pagehide'))
+    assert.deepEqual(await pending, { outcome: 'suppressed' })
+    assert.equal(transport.policyAborts(), 1)
+    assert.equal(transport.policyCalls.length, 1)
+    assert.equal(transport.calls.length, 0)
+    assert.equal(instance.budget().attempts.length, 1)
+    assert.equal(instance.budget().lease, null)
+    assert.equal(instance.listeners.size, 0)
+    assert.notEqual(client.status().company_policy.state, 'unreadable', 'local cancellation does not fabricate a company restriction')
+  }, 'success', 'hold')))
+
+test('a delayed policy response cannot masquerade as a fresh permission', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed)
+  const pending = sendBrowserTelemetry(client, report)
+  await transport.policyStarted
+  await new Promise(resolve => setTimeout(resolve, 1050))
+  transport.policyRelease()
+  assert.deepEqual(await pending, { outcome: 'suppressed' })
+  assert.equal(transport.policyCalls.length, 1); assert.equal(transport.calls.length, 0)
+  assert.equal(instance.budget().attempts.length, 1); assert.equal(instance.budget().lease, null)
+}, 'success', 'hold')))
+
+test('observed company restrictions never widen through refresh, choice changes or caller mutation', async () => available(async () => {
+  const instance = fixture(), client = instance.first
+  instance.choice(client, true)
+  const policy = { state: 'restricted', enabled: true, metric_groups: ['reliability'] }
+  client.restrictCompany(policy)
+  policy.metric_groups.push('usage'); policy.enabled = false
+  assert.deepEqual(client.status().company_policy, { state: 'restricted', enabled: true, metric_groups: [] })
+  client.restrictCompany({ state: 'unmanaged', enabled: true, metric_groups: ['usage'] })
+  instance.choice(client, false); instance.choice(client, true)
+  assert.equal(client.status().effective_enabled, false)
+  assert.equal(client.status().reason, 'company_policy')
+  const freshPage = instance.client()
+  assert.equal(freshPage.status().effective_enabled, true, 'reloading can read a genuinely relaxed policy')
+}))
+
+test('the one policy handoff shares current choices and cannot be replayed or use async callbacks', async () => available(async () => {
+  for (const mode of ['replay', 'off', 'async']) {
+    const instance = fixture(), client = instance.first
+    instance.choice(client, true)
+    const report = await client.delivery.reserve(instance.enqueue(), allowed)
+    let calls = 0
+    if (mode === 'off') instance.choice(instance.client(), false)
+    const start = mode === 'async' ? async () => { calls++; return true } : () => { calls++; return true }
+    assert.equal(await client.delivery.guardedPolicyRead(report, start), mode === 'replay')
+    assert.equal(await client.delivery.guardedPolicyRead(report, start), false)
+    assert.equal(calls, mode === 'replay' ? 1 : 0)
+    await client.delivery.cancel(report)
+    assert.equal(instance.budget().attempts.length, 1)
+  }
+}))

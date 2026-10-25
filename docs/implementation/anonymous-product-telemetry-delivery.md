@@ -1,6 +1,6 @@
 # Product telemetry delivery components — V08
 
-**Unreleased source checkpoint, 24 October 2026; V08 remains Building.** The
+**Unreleased source checkpoint, 25 October 2026; V08 remains Building.** The
 [full contract](anonymous-product-telemetry.md) and
 [local catalog/ownership](anonymous-product-telemetry-catalog.md) retain their
 scope. Python/TypeScript packet encoders, a volatile weekly accumulator, an
@@ -172,15 +172,56 @@ The Python owner transports the disclosed local queue; it does not make remote
 API/MCP traffic measurable. Unknown native metering still needs a user declaration.
 The browser requires supported, fresh pressure and heap observations; unavailable
 capabilities refuse delivery. These local gauges are admission controls, not
-exported measurements or proof of the full CPU/RAM/wire limits. Fresh browser
-organization-policy refresh and the complete owner/lifecycle journeys remain
-open across supported platforms. The [source validation](../validation/2026-10-24-telemetry-app-owners.md)
+exported measurements or proof of the full CPU/RAM/wire limits. The complete
+owner/lifecycle journeys remain open across supported platforms; the subsequent
+browser company-policy refresh is described below. The [source validation](../validation/2026-10-24-telemetry-app-owners.md)
 records **105 Python, 40 Electron and 68 browser passes**, with two Windows-only
 Electron skips, and a passing frontend build. Its **19-assertion Chromium
 journey** exercised the actual Privacy component and normal recording owner,
 with two new reports and two real CORS preflights. CPU admission was synthetic;
 real heap readings and capability presence do not establish pressure-sensor or
 full resource acceptance.
+
+## Browser company-policy refresh
+
+The [browser policy reader](../../studio/frontend/src/workspace/telemetry-company.ts)
+now checks the Studio page's own `/studio/telemetry-policy` origin once after
+reservation and before the report POST. It does not contact the selected memory
+API, look up a workspace/account, or run when someone reads privacy status.
+The [server response](../../mnemion/service/studio_policy.py) exposes only fixed
+company restrictions. Collection remains unavailable in the source disclosure.
+
+| Source boundary | Behavior |
+| --- | --- |
+| Request | Same-origin GET, credentials omitted, no referrer, no cache, redirects refused and keepalive disabled. HTTPS is required outside trusted loopback fixtures. |
+| Response | Exact URL, HTTP 200, JSON, `Cache-Control: no-store`, absent or zero `Age`, and a declared length of 1–1,024 bytes. The fixed buffer allows at most eight read steps, including completion, and requires the exact declared length. |
+| Shape | Only fixed `state`, `enabled` and allowed `metric_groups` values. Malformed, unavailable or disallowed policy prevents the report. |
+| Permission | Intersect with previously observed restrictions in page memory. A relaxed response cannot re-enable a group until reload, override opt-out or acknowledge disclosure. |
+| Lifetime | Both requests share the already-spent reservation and original five-second lifetime. The report handoff must occur less than one second after the policy check **started**; that freshness gate is not a separate one-second GET timeout. |
+
+The policy GET and report POST have separate local privacy/environment fences.
+Only this owner's short local lock operations are serialized; no network wait
+holds the Web Lock. The same active watcher covers both requests. Cancellation
+clears the report immediately, retains its token for matching-lease cleanup and
+lets the finalizer await that same cleanup. A local cancellation does not mark
+company policy unreadable. Rejected reports are discarded without a refund or
+re-encoding into another group.
+
+The final fence checks local choice and the last observed company restriction;
+it cannot atomically order a remote administrator change after the GET with a
+later collector request. The extra policy request, CORS preflight, browser
+headers and TLS/TCP/IP overhead still need whole-wire qualification. Both policy
+and collector ingress paths need production metadata/log review; response
+headers do not suppress proxy or access logs. The
+[source checkpoint](../validation/2026-10-24-telemetry-company-refresh.md) preserves
+the initial cleanup failure, then **90 browser and 25 Python passes**. Its actual
+Chromium journey passed **20 assertions on 25 October**, with seven policy GETs,
+one four-byte TLS report, one real preflight and two policy disconnects under
+cross-tab opt-out and synthetic CPU pressure. It used the real policy response
+function, real heap readings and temporary certificate trust, without request
+interception; the full API route was tested separately. The frontend build and
+fixture cleanup passed. Public ingress, real pressure sensing, full wire/resource
+cost and all-platform acceptance remain open.
 
 ## Fixed closed-week output
 

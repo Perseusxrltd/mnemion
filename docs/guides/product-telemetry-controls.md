@@ -1,10 +1,11 @@
 # Product telemetry privacy controls
 
-**Source checkpoint, 24 October 2026; V08 is Building.** Local choice, disclosure,
+**Source checkpoint, 25 October 2026; V08 is Building.** Local choice, disclosure,
 catalog, aggregate queues and selected owned CLI, desktop/native-operator,
 Studio/browser, local stdio and selected maintenance hooks are implemented in
-source. There is no product sender or deployed collector: `collection_available` is
-`false`, the destination is `null`, and
+source. Bounded senders and opportunistic owners also exist in source, but there
+is no active product sender or deployed collector: `collection_available` is
+`false`, the destination and release route address are `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
 by **eight browser policy/fault checks**. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
@@ -30,6 +31,16 @@ has source reservation and cancellation controls, with focused checks passed
 and two Windows-only ACL cases skipped. Deployed ingress, resources/platforms
 and installed delivery acceptance remain open.
 
+The later [application-owner checkpoint](../validation/2026-10-24-telemetry-app-owners.md)
+adds connection controls and already-awake delivery owners; its actual Chromium
+fixture passed 19 assertions with synthetic CPU admission. The subsequent
+[company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
+adds a fresh restriction check before each reserved browser attempt. Its focused
+checks and **20-assertion Chromium journey on 25 October** passed, with seven
+policy reads and one report. CPU admission was synthetic; fixture cleanup and
+the frontend build passed. Neither checkpoint activates collection or qualifies
+public ingress, sensors or a telemetry release.
+
 ## In the app
 
 Open **Privacy & product telemetry** from the connection screen or visit
@@ -49,6 +60,13 @@ workflow and resource/platform qualification are still unfinished.
 A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
+
+**Telemetry connection settings** offers `auto`, `unmetered` and `metered`.
+Automatic mode pauses delivery when metering is unknown; an unmetered declaration
+resolves only that uncertainty, while metered mode pauses delivery. Detected data
+limits, resource pressure and privacy restrictions still take priority. The
+choice persists without a network name or address. Editing it keeps an existing
+opt-out and does not acknowledge an unseen disclosure.
 
 The exclusions cover unowned remote clients, client-derived server jobs,
 mixed-user host totals, private operational records, polling/replay, privacy
@@ -82,7 +100,7 @@ returns `owned_control_coverage`, the full owned-CLI operation map, and
 It exposes the source delivery format as `transport_catalog`, with
 `transport_available: false`; no destination is configured by reading it.
 `status` distinguishes `user_enabled`,
-`effective_enabled`, `reason`, `storage`, company restriction, `revision` and
+`effective_enabled`, `reason`, `storage`, `connection_mode`, company restriction, `revision` and
 `store_generation`. The generation is a private local control token, never an
 analytics identity or outbound field. Missing or supported legacy stores report
 `null`; reading status does not silently initialize them.
@@ -114,6 +132,11 @@ destination is available. Enabling with an outdated revision or generation is
 refused as `telemetry_choice_changed`; disabling remains allowed with stale values.
 Every successful opt-out advances the revision, even if already disabled, so an
 older enable request cannot override it.
+Optional `connection_mode` accepts `auto`, `unmetered` or `metered`; omitting it
+preserves the current choice. A stale opt-out also preserves a newer connection
+choice. Explicit native configuration may wait up to 250 ms per busy SQLite
+lock; producers and delivery keep zero lock waiting. A failed save still needs
+inspection and is not a confirmed preference change.
 A recreated store gets a different generation, so old queued work is refused
 even if its revision number repeats. Valid legacy preferences preserve explicit
 opt-out. A legacy enabled preference without a generation requires fresh
@@ -121,7 +144,7 @@ disclosure; an explicit supported choice creates its new local token.
 A successful change clears pending aggregates and local contribution accounting,
 so re-enabling cannot revive old data. The separate delivery allowance retains
 spent attempts and cooldown across opt-out; changing a choice does not refund
-it. The source budget adds no sender or network activity. The desktop agent
+it. Reading or changing these controls starts no network activity. The desktop agent
 exposes the same typed `telemetry.schema`,
 `telemetry.status`, `telemetry.preview` and `telemetry.configure` actions without
 requiring a workspace.
@@ -150,9 +173,11 @@ store's `0`/`null` pair:
 }
 ```
 
-The legacy stdio tool takes those choice fields alongside `action` instead.
-Follow the connected tool's input schema and omit `disclosure_version` while
-collection is unavailable. Enabling still needs current private revision and
+The maintained choice also accepts `connection_mode` and disclosure version `0`;
+zero does not acknowledge an unseen disclosure. The legacy stdio tool takes its
+advertised choice fields alongside `action` instead. Follow the connected tool's
+input schema and omit `disclosure_version` while collection is unavailable.
+Enabling still needs current private revision and
 generation; opt-out, company restriction and damaged-store behavior are the same
 as the native controls above.
 
@@ -197,8 +222,8 @@ metadata lets the Studio wrapper exclude replayed or uncertain keyed writes;
 generic SDK/API requests, polling, privacy controls and unowned continuation
 transports remain unmeasured. Async acknowledgement is not completion. See the
 [explicit ownership maps](../implementation/anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
-for the selected actions and exclusions. These hooks remain inactive: no sender,
-deployed collector or production collection is available. The new UI map adds five
+for the selected actions and exclusions. These hooks remain inactive: no sender
+is active, and no deployed collector or production collection is available. The new UI map adds five
 browser connection actions and 11 selected legacy Studio methods, with 18 legacy
 exclusions. Browser hooks skip desktop connections already owned by IPC, respect
 company sign-in cancellation and inspect only reviewed boolean result flags.
@@ -242,9 +267,16 @@ The native policy reads an optional administrator file:
 
 For example, `{"schema_version":1,"enabled":false,"metric_groups":[]}` disables
 collection. Policy may narrow the disclosed groups; it cannot override a user
-opt-out. The service-served browser app receives the restriction with its page;
-reload to obtain a changed policy. An unreadable or invalid policy restricts
-collection rather than falling back to permission.
+opt-out. The service-served browser app receives an initial restriction with its
+page. The new source also checks `/studio/telemetry-policy` on that page's own
+origin before each already-reserved report, without credentials or a referrer.
+It only tightens permission until reload; a relaxed response cannot enable a
+group that this page already lost. Reading privacy status does not fetch or
+relax company policy. An unreadable or invalid response prevents the report,
+and local choice/pressure are checked again before sending. A remote policy
+change after that read is not atomically ordered with the later report. See the
+[refresh checkpoint](../validation/2026-10-24-telemetry-company-refresh.md) for
+current evidence and remaining production privacy qualification.
 
 Unreadable, damaged or inaccessible local settings fail closed with
 `storage_unavailable`; status is not confirmation of a saved preference in that
@@ -267,7 +299,8 @@ security records. These controls do not change memory access or disable those
 records. The [full V08 contract](../implementation/anonymous-product-telemetry.md)
 and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
 retain app, agent, headless and remote-workflow coverage. Remaining workflow
-qualification, other autonomous-work ownership, the sender, deployed collector and anonymity
+qualification, other autonomous-work ownership, installed sender integration,
+deployed collector and anonymity
 proof remain unfinished. Expiry
 prunes on activity. Local generation checks cannot detect a whole-machine
 snapshot rollback that restores both the old token and choice; final sender

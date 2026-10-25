@@ -65,6 +65,59 @@ def test_company_studio_connection_policy_applies_to_all_entry_routes(env, tmp_p
         create_app(env.db, env.embedder)
 
 
+def test_browser_telemetry_policy_reads_current_restrictions_without_identity(
+    env, tmp_path, monkeypatch
+):
+    from mnemion.product_telemetry import policy
+
+    package = installed(monkeypatch, tmp_path)
+    make_bundle(package / "_studio")
+    selected = tmp_path / "company-policy.json"
+    monkeypatch.setattr(policy, "company_policy_file", lambda: selected)
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        page = client.get("/privacy")
+        assert "unmanaged" in page.text
+        endpoint = "/studio/telemetry-policy"
+        response = client.get(endpoint)
+        assert response.status_code == 200
+        assert response.json() == {
+            "state": "unmanaged",
+            "enabled": True,
+            "metric_groups": list(policy.METRIC_GROUPS),
+        }
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin"
+        assert response.headers["Referrer-Policy"] == "no-referrer"
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
+        assert len(response.content) == int(response.headers["Content-Length"]) < 1024
+        assert not {"x-request-id", "set-cookie", "etag", "last-modified"} & response.headers.keys()
+        selected.write_text(
+            json.dumps({"schema_version": 1, "enabled": True, "metric_groups": ["reliability"]})
+        )
+        narrowed = client.get(endpoint)
+        assert narrowed.json() == {
+            "state": "restricted",
+            "enabled": True,
+            "metric_groups": ["reliability"],
+        }
+        selected.write_text(
+            json.dumps({"schema_version": 1, "enabled": False, "metric_groups": []})
+        )
+        assert client.get(endpoint).json() == {
+            "state": "restricted",
+            "enabled": False,
+            "metric_groups": [],
+        }
+        selected.write_text('{"private":"PRIVATE_POLICY_SENTINEL"}')
+        unreadable = client.get(endpoint)
+        assert unreadable.json() == {"state": "unreadable", "enabled": False, "metric_groups": []}
+        assert "PRIVATE_POLICY_SENTINEL" not in unreadable.text
+        assert client.post(endpoint).status_code == 405
+        assert client.get("/v1/me").status_code == 401
+    with TestClient(create_app(env.db, env.embedder, studio_enabled=False)) as client:
+        assert client.get(endpoint).status_code == 404
+
+
 def test_unbuilt_source_cli_explains_how_to_enable_studio_without_database(
     monkeypatch, tmp_path, capsys
 ):

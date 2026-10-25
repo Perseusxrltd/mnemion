@@ -7,6 +7,7 @@ import re
 from urllib.parse import urlsplit
 
 VARIABLE = "MNEMION_STUDIO_CONNECT_ORIGINS"
+PRODUCT_TELEMETRY_POLICY_PATH = "/studio/telemetry-policy"
 DEFAULT_ORIGINS = ["https:", "http://127.0.0.1:*", "http://localhost:*"]
 INVALID = (
     "MNEMION_STUDIO_CONNECT_ORIGINS must be a JSON list of up to 16 HTTPS or loopback HTTP origins"
@@ -101,3 +102,25 @@ def product_telemetry_page(index: str) -> str:
     if "</head>" in index:
         return index.replace("</head>", markup + "</head>", 1)
     return markup + index
+
+
+def product_telemetry_policy():
+    """Fresh public restrictions, without identity, session or workspace reads.
+
+    The browser reads this only within a reserved delivery attempt. No account
+    authorization, cookie, token, analytics body or cache validator is used.
+    Operators must also exclude this path from proxy/access/trace logging before
+    enabling production telemetry; these application headers cannot do that.
+    """
+    from starlette.responses import JSONResponse
+    from ..product_telemetry.policy import company_policy
+
+    return JSONResponse(
+        company_policy(),
+        headers={
+            "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+            "Cross-Origin-Resource-Policy": "same-origin",
+        },
+    )

@@ -1,6 +1,6 @@
 # Anonymous product telemetry catalog — V08
 
-**Building/source implementation, 24 October 2026.** This supplements the
+**Building/source implementation, 25 October 2026.** This supplements the
 [V08 contract](anonymous-product-telemetry.md). Version 1 now defines **94
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
@@ -45,6 +45,15 @@ Connection mode and resource gauges gate an attempt; they add no catalog metric,
 network identity or server recounting. SQLite storage version 5/browser choice
 version 4 retain the spent allowance, and a stale opt-out preserves a newer
 connection choice. Production collection and the release route remain disabled.
+
+The later [browser company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
+checks fresh restrictions before an already-reserved report, then intersects
+them with that page's earlier restrictions. This is delivery admission, not a
+catalog workflow or a second measurement of the original action. It adds no
+account lookup, analytics identifier or server recounting. Focused checks passed;
+the **25 October Chromium journey passed 20 assertions**, with seven policy reads
+and one report, synthetic CPU admission and verified fixture cleanup. These
+component results do not establish production privacy or platform acceptance.
 
 The earlier [privacy controls](../guides/product-telemetry-controls.md) retain
 their dated evidence: the 19-check core browser journey and eight further

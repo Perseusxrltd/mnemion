@@ -1,6 +1,6 @@
 # Mnemion privacy policy
 
-Updated: **2026-10-24**. This describes the shared-memory platform, the legacy
+Updated: **2026-10-25**. This describes the shared-memory platform, the legacy
 library correction and the inactive source telemetry components below.
 
 ## Your organization's data
@@ -84,9 +84,21 @@ source checks and an isolated actual-browser journey. CPU admission in that
 journey was synthetic; real sensor and resource qualification remains open.
 They do not activate collection, add an idle scheduler or flush on
 shutdown; the release route address is also null. Unknown native metering and
-unsupported browser pressure/heap capabilities can prevent an attempt. Fresh
-browser organization-policy refresh, public-ingress metadata/log privacy,
-whole-wire/resource limits and all-platform release acceptance remain open.
+unsupported browser pressure/heap capabilities can prevent an attempt.
+Public-ingress metadata/log privacy, whole-wire/resource limits and all-platform
+release acceptance remain open.
+
+The subsequent [browser policy-refresh source change](../validation/2026-10-24-telemetry-company-refresh.md)
+requires an already-reserved attempt to read current company restrictions from
+the Studio page's own origin before sending a report. That fixed request has no
+credentials, cookies, referrer or measurement body; it does not use the selected
+workspace address. It only narrows the current page's permission until reload.
+Privacy status and choice controls do not trigger this request, and the current
+unavailable build sends neither it nor a report. Focused checks and a
+**20-assertion isolated browser journey on 25 October** passed, with synthetic
+CPU admission and temporary certificate trust. Both this policy endpoint and the
+collector still require production ingress/log privacy qualification; these
+checks do not activate product collection.
 
 Explicit native privacy changes may wait up to 250 ms per busy SQLite lock to
 accommodate a brief reader. A persistent busy lock can still produce a visible

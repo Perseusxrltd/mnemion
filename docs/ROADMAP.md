@@ -34,7 +34,11 @@ availability and release gates; each deployment requires its own acceptance.
   passed at **01:12:30 UTC**. Later source adds bounded transport components and
   [application-owner/connection controls](validation/2026-10-24-telemetry-app-owners.md);
   its source checks and **19-assertion Chromium owner fixture** passed, with
-  synthetic CPU admission. Collection is unavailable,
+  synthetic CPU admission. A subsequent [browser company-policy refresh](validation/2026-10-24-telemetry-company-refresh.md)
+  checks restrictions before reserved reports; focused source checks and its
+  **20-assertion Chromium journey on 25 October** passed, with synthetic CPU
+  admission, a passing frontend build and verified fixture cleanup.
+  Collection is unavailable,
   with no active collector, qualified public ingress or all-six-native acceptance.
   This work is excluded from the isolated 4.46.6
   dependency-security release. Only V08 moves from Planned to Building; all 66

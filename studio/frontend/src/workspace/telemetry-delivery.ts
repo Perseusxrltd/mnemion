@@ -22,6 +22,7 @@ export class PreparedBrowserTelemetryReport {
   #closed = false
   #claimed = false
   #transportClaimed = false
+  #policyClaimed = false
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>,
     readonly deadline: number, readonly monotonicDeadline: number, readonly group: string) {
     this.#body = new Uint8Array(body)
@@ -42,6 +43,11 @@ export class PreparedBrowserTelemetryReport {
     this.#claimed = true
     return true
   }
+  claimPolicyRead(): boolean {
+    if (this.#policyClaimed || this.#claimed || this.#used || this.#closed) return false
+    this.#policyClaimed = true
+    return true
+  }
   burn(): void { this.#used = true }
   eraseBody(): void { this.#body.fill(0) }
   clear(): void { this.eraseBody(); this.#ticket = ''; this.#used = true; this.#closed = true }
@@ -50,8 +56,11 @@ export class PreparedBrowserTelemetryReport {
 export class BrowserTelemetryDelivery {
   private encoder?: TelemetryWire
   private readonly owned = new Set<PreparedBrowserTelemetryReport>()
+  private readonly cancellations = new WeakMap<PreparedBrowserTelemetryReport, Promise<void>>()
   private readonly invalidators = new Set<() => void>()
   private readonly environment: BrowserDeliveryEnvironment
+  private localOperation: Promise<void> = Promise.resolve()
+  private pendingOperations = 0
   constructor(private readonly port: Port, environment: Partial<BrowserDeliveryEnvironment> = {}) {
     this.environment = {
       locks: () => typeof navigator === 'undefined' ? null : navigator.locks ?? null,
@@ -63,16 +72,28 @@ export class BrowserTelemetryDelivery {
   private wire(): TelemetryWire { return this.encoder ??= new TelemetryWire(specification, telemetryCatalog) }
 
   private async locked<T>(run: () => T, fallback: T): Promise<T> {
+    // Serialize only this owner's short lock operations. A privacy watcher
+    // must not compete with its own policy/report handoff after Web Locks
+    // releases asynchronously. Other tabs still use nonwaiting ifAvailable.
+    if (this.pendingOperations >= 4) return fallback
+    this.pendingOperations++
+    const preceding = this.localOperation
+    let release = () => {}
+    this.localOperation = new Promise<void>(resolve => { release = resolve })
     try {
+      await preceding
       const locks = this.environment.locks()
       return locks ? await locks.request(choiceKey, { ifAvailable: true }, lock => lock ? run() : fallback) : fallback
     } catch { return fallback }
+    finally { this.pendingOperations--; release() }
   }
 
   /** Called synchronously by the same tab's explicit privacy-choice mutation. */
   invalidate(): void {
-    for (const report of this.owned) report.clear()
-    this.owned.clear()
+    // cancel erases the handle synchronously and retains its ticket only in
+    // the bounded cleanup closure. A later owner/finally must await that same
+    // cleanup, including company restrictions without a configure() write.
+    for (const report of [...this.owned]) void this.cancel(report)
     for (const stop of [...this.invalidators]) stop()
   }
 
@@ -150,15 +171,29 @@ export class BrowserTelemetryDelivery {
   }
 
   async cancel(report: PreparedBrowserTelemetryReport): Promise<void> {
+    const pending = this.cancellations.get(report)
+    if (pending) return pending
     if (!this.owned.has(report)) return
     const ticket = report.ticket
     report.clear(); this.owned.delete(report)
-    await this.locked(() => {
+    const cleanup = this.locked(() => {
       const raw = this.port.storage().getItem(budgetKey)
       if (raw === null) return
       const budget = budgetState(raw)
       if (budget.lease?.token === ticket) this.port.storage().setItem(budgetKey, serializeBudget({ ...budget, lease: null }))
     }, undefined)
+    this.cancellations.set(report, cleanup)
+    await cleanup
+  }
+
+  /** The single same-origin policy request has no measurement body and must
+   * pass the same current choice, pressure, lease and budget checks. */
+  async guardedPolicyRead(report: PreparedBrowserTelemetryReport, start: () => boolean): Promise<boolean> {
+    if (!this.owned.has(report) || typeof start !== 'function' || !report.claimPolicyRead()) return false
+    if (start.constructor?.name === 'AsyncFunction') { await this.cancel(report); return false }
+    const started = await this.locked(() => this.permitted(report) && start() === true, false)
+    if (!started) await this.cancel(report)
+    return started
   }
 
   /** Only a synchronous nonblocking transport handoff may run inside this lock.
