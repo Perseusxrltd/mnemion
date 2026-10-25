@@ -12,7 +12,9 @@ import argparse
 import asyncio
 from ipaddress import ip_address
 import json
+import os
 from pathlib import Path
+import socket
 import ssl
 import sys
 
@@ -127,10 +129,10 @@ def _tls_context(config, default_factory):
 
 class _Server(uvicorn.Server):
     async def startup(self, sockets=None):
-        # The dedicated entrypoint has one listener and no inherited/reload
+        # The dedicated entrypoint has one validated listener and no reload
         # workers. Explicit TLS deadlines bound even a client that never sends
         # enough handshake data to instantiate BoundedProtocol.
-        if sockets is not None:
+        if sockets is not None and len(sockets) != 1:
             raise ConfigurationError
         await self.lifespan.startup()
         if self.lifespan.should_exit:
@@ -147,8 +149,11 @@ class _Server(uvicorn.Server):
 
         listener = await loop.create_server(
             protocol,
-            host=self.config.host,
-            port=self.config.port,
+            **(
+                {"sock": sockets[0]}
+                if sockets is not None
+                else {"host": self.config.host, "port": self.config.port}
+            ),
             ssl=self.config.ssl,
             backlog=64,
             ssl_handshake_timeout=CONNECTION_SECONDS,
@@ -158,7 +163,34 @@ class _Server(uvicorn.Server):
         self.started = True
 
 
-async def _serve(args, store):
+def _systemd_listener(bind: str, port: int) -> socket.socket:
+    """Take exactly the named TCP listener handed to this process by systemd."""
+    if (
+        sys.platform != "linux"
+        or os.environ.get("LISTEN_PID") != str(os.getpid())
+        or os.environ.get("LISTEN_FDS") != "1"
+        or os.environ.get("LISTEN_FDNAMES") != "telemetry"
+    ):
+        raise ConfigurationError
+    for name in ("LISTEN_PID", "LISTEN_FDS", "LISTEN_FDNAMES"):
+        os.environ.pop(name, None)
+    listener = socket.socket(fileno=3)
+    try:
+        listener.set_inheritable(False)
+        if (
+            listener.family != socket.AF_INET
+            or listener.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE) != socket.SOCK_STREAM
+            or listener.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN) != 1
+            or listener.getsockname() != (bind, port)
+        ):
+            raise ConfigurationError
+        return listener
+    except BaseException:
+        listener.close()
+        raise
+
+
+async def _serve(args, store, listener=None):
     # Default asyncio diagnostics can include protocol/transport reprs. This
     # applies only in the isolated collector process, never the workspace app.
     asyncio.get_running_loop().set_exception_handler(lambda _loop, _context: None)
@@ -189,7 +221,7 @@ async def _serve(args, store):
         ssl_context_factory=_tls_context,
     )
     server = _Server(config)
-    await server.serve()
+    await server.serve(sockets=[listener] if listener is not None else None)
     return 0 if server.started else 1
 
 
@@ -202,8 +234,12 @@ def main(argv=None):
     serve.add_argument("--port", type=int, default=8443)
     serve.add_argument("--certificate", type=Path, required=True)
     serve.add_argument("--private-key", type=Path, required=True)
+    serve.add_argument(
+        "--systemd-socket", action="store_true", help="Use the validated service-manager listener"
+    )
     reports = commands.add_parser("reports", help="Read only retained closed-week summaries")
     reports.add_argument("--state", type=Path, required=True)
+    listener = None
     try:
         args = parser.parse_args(argv)
         if not args.state.is_absolute():
@@ -221,14 +257,19 @@ def main(argv=None):
             or not args.private_key.is_absolute()
         ):
             raise ConfigurationError
+        if args.systemd_socket:
+            listener = _systemd_listener(args.bind, args.port)
         store = ReportStore(args.state)
-        return asyncio.run(_serve(args, store))
+        return asyncio.run(_serve(args, store, listener))
     except (ConfigurationError, ValueError, OSError):
         print('{"error":"telemetry_collector_configuration_invalid"}', file=sys.stderr)
         return 2
     except Exception:
         print('{"error":"telemetry_collector_failed"}', file=sys.stderr)
         return 1
+    finally:
+        if listener is not None:
+            listener.close()
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 [Unit]
 Description=Perseus XR Mnemion anonymous aggregate collector
-After=network-online.target
+After=network-online.target mnemion-telemetry.socket
 Wants=network-online.target
+Requires=mnemion-telemetry.socket
 StartLimitIntervalSec=300
 StartLimitBurst=3
 
@@ -14,7 +15,7 @@ StateDirectoryMode=0700
 WorkingDirectory=/opt/mnemion-telemetry/source
 Environment=PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
 UnsetEnvironment=SSLKEYLOGFILE PYTHONPATH PYTHONHOME PYTHONSTARTUP PYTHONINSPECT
-ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.server serve --state /var/lib/mnemion-telemetry --bind 0.0.0.0 --port 8443 --certificate %d/fullchain.pem --private-key %d/private-key.pem
+ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.server serve --state /var/lib/mnemion-telemetry --bind 0.0.0.0 --port 8443 --certificate %d/fullchain.pem --private-key %d/private-key.pem --systemd-socket
 # Install local certificate material at these protected operator-owned paths.
 # No workspace credential or authentication header belongs in this service.
 LoadCredential=fullchain.pem:/etc/mnemion-telemetry/fullchain.pem
@@ -41,10 +42,9 @@ ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 RestrictRealtime=yes
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
-SocketBindDeny=any
-SocketBindAllow=ipv4:tcp:8443
-# The collector accepts inbound TLS and has no outbound connection or resolver.
-SystemCallFilter=~connect
+# PID 1 supplies the sole listener. These restrictions work without cgroup BPF.
+SystemCallFilter=~connect bind
+SystemCallErrorNumber=EPERM
 StandardOutput=null
 StandardError=null
 

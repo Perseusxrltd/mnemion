@@ -64,9 +64,10 @@ to make it readable. It exposes no raw contribution or filtering interface.
 
 ## Deployment template
 
-The [systemd unit](../../deploy/collector/mnemion-telemetry.service) is a
-reviewable template for a separate Linux service. It is not an installer and
-does not change an existing memory service or firewall. Its fixed layout is:
+The [service unit](../../deploy/collector/mnemion-telemetry.service) and
+[socket unit](../../deploy/collector/mnemion-telemetry.socket) are reviewable
+templates for a separate Linux service. They are not an installer and do not
+change an existing memory service or firewall. Their fixed layout is:
 
 - Reviewed source under `/opt/mnemion-telemetry/source`.
 - The minimal locked interpreter under `/opt/mnemion-telemetry/venv`.
@@ -84,18 +85,40 @@ UV_PROJECT_ENVIRONMENT=/opt/mnemion-telemetry/venv \
 
 Provision the dedicated non-login account with the included
 [sysusers declaration](../../deploy/collector/mnemion-telemetry.sysusers)
-before installing the unit:
+and prepare the protected certificate files before starting the service.
+Review the listener first: the socket template opens `0.0.0.0:8443`; keep its
+`ListenStream` and the service's `--bind`/`--port` values matched. Then install
+both units and enable/start the service:
 
 ```sh
 sudo systemd-sysusers deploy/collector/mnemion-telemetry.sysusers
+sudo install -m 0644 deploy/collector/mnemion-telemetry.service \
+  deploy/collector/mnemion-telemetry.socket /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now mnemion-telemetry.service
 ```
 
-The unit listens on IPv4 port 8443 and uses that separate service account. It sets
-128 MiB memory, no swap, 25% of one CPU, 128 file descriptors and 16 tasks. It
-drops capabilities, forbids outbound `connect` calls, restricts binding to its
-port, discards stdout/stderr and disables core dumps. Its state directory is
-the writable persistent area. These are configured bounds; enforcement and
-capacity still require actual deployment evidence.
+Enabling and starting the service also starts its required socket; the socket
+does not need separate enablement.
+
+PID 1 creates the listener and hands it to `serve --systemd-socket`. The server
+requires exactly one named IPv4 TCP listening descriptor for its own PID,
+matching the configured address/port. The process itself cannot `connect` or
+`bind`: both system calls return `EPERM`, with no port-binding allowlist needed.
+The standalone command below continues to create its own loopback listener.
+
+The service uses the separate account and sets 128 MiB memory, no swap, 25% of
+one CPU, 128 file descriptors and 16 tasks. It drops capabilities, discards
+stdout/stderr and disables core dumps; the private state directory is its
+writable persistent area. A finite [loopback-only VPS stage](../validation/2026-10-25-telemetry-collector-service.md#finite-vps-staging)
+verified the configured restrictions. Public ingress, provider privacy and
+capacity remain unqualified.
+
+To shut the collector down, stop both units so the listener cannot reactivate it:
+
+```sh
+sudo systemctl stop mnemion-telemetry.service mnemion-telemetry.socket
+```
 
 For an isolated local TLS check, the command below defaults to loopback. Paths
 must be absolute, and the caller must protect the certificate's private key:

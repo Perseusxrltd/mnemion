@@ -14,8 +14,11 @@ documentation update are excluded from the isolated 4.46.6 dependency-security r
 
 The [dedicated collector source](anonymous-product-telemetry-collector.md) now
 provides a bounded TLS entrypoint, metadata removal, private report access and
-a minimal locked runtime. Its [actual TLS and clean-runtime checks](../validation/2026-10-25-telemetry-collector-service.md)
-passed. No production collector is deployed; provider/ingress privacy, client
+a minimal locked runtime. Its [actual TLS, clean-runtime and isolated VPS checks](../validation/2026-10-25-telemetry-collector-service.md)
+passed. The service manager supplies its sole listener, and the collector cannot
+make outbound connections or bind another port. The finite VPS check confirmed
+these restrictions, resource limits, request-data exclusion and clean shutdown.
+No production collector is deployed; provider/ingress privacy, client
 resources, useful reporting and full installed acceptance still gate release.
 
 The [app and native usage guide](../guides/product-telemetry-controls.md)

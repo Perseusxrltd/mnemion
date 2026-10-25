@@ -1,0 +1,10 @@
+[Unit]
+Description=Perseus XR Mnemion anonymous aggregate listener
+PartOf=mnemion-telemetry.service
+
+[Socket]
+ListenStream=0.0.0.0:8443
+Accept=no
+Service=mnemion-telemetry.service
+FileDescriptorName=telemetry
+Backlog=64

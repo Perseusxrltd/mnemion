@@ -25,6 +25,16 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **Collector host isolation — 25 October 2026; isolated VPS acceptance.**
+  The [collector service check](validation/2026-10-25-telemetry-collector-service.md)
+  exposed a port restriction that the host did not enforce. A service-manager
+  listener now permits blocking every collector bind and outbound connection.
+  Both denials, configured resource limits, synthetic TLS requests and absence
+  of request details in checked storage/logs passed on the VPS; the temporary
+  service and listener stopped cleanly. Eleven local collector checks passed.
+  Production ingress/privacy, client resources, reporting usefulness and
+  installed release acceptance remain open; V08 is Building and collection off.
+
 - **Dedicated telemetry collector — 25 October 2026; source implementation.**
   The [separate TLS service](implementation/anonymous-product-telemetry-collector.md)
   strips request metadata before aggregation and uses a locked three-package

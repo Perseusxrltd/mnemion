@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 import pytest
 
-from mnemion.product_telemetry.server import MetadataBoundary
+from mnemion.product_telemetry.server import ConfigurationError, MetadataBoundary, _systemd_listener
 
 ROOT = Path(__file__).resolve().parents[1]
 CANARY = b"PRIVATE_REQUEST_CANARY"
@@ -75,12 +75,15 @@ def response(channel):
     return bytes(received)
 
 
-@pytest.fixture
-def server(tmp_path, certificates):
+def _running_server(tmp_path, certificates, *, activated=False):
     certificate, private_key = certificates
+    inherited_fd = None
     with socket.socket() as reserved:
         reserved.bind(("127.0.0.1", 0))
         port = reserved.getsockname()[1]
+        if activated:
+            reserved.listen(64)
+            inherited_fd = os.dup(reserved.fileno())
     state = tmp_path / "collector"
     stdout, stderr = tmp_path / "stdout", tmp_path / "stderr"
     keylog = tmp_path / "forbidden-keylog"
@@ -102,15 +105,38 @@ def server(tmp_path, certificates):
         "--private-key",
         str(private_key),
     ]
-    with stdout.open("wb") as out, stderr.open("wb") as err:
-        child = subprocess.Popen(
-            command,
-            cwd=ROOT,
-            env={**os.environ, "SSLKEYLOGFILE": str(keylog), "PYTHONNOUSERSITE": "1"},
-            stdin=subprocess.DEVNULL,
-            stdout=out,
-            stderr=err,
+    options = {}
+    if inherited_fd is not None:
+        wrapper = (
+            "import os,runpy,sys;fd=int(sys.argv.pop(1));"
+            "os.dup2(fd,3) if fd!=3 else None;"
+            "os.close(fd) if fd!=3 else None;"
+            "os.environ.update(LISTEN_PID=str(os.getpid()),LISTEN_FDS='1',LISTEN_FDNAMES='telemetry');"
+            "runpy.run_module('mnemion.product_telemetry.server',run_name='__main__')"
         )
+        command = [
+            COLLECTOR_PYTHON,
+            "-c",
+            wrapper,
+            str(inherited_fd),
+            *command[3:],
+            "--systemd-socket",
+        ]
+        options["pass_fds"] = (inherited_fd,)
+    with stdout.open("wb") as out, stderr.open("wb") as err:
+        try:
+            child = subprocess.Popen(
+                command,
+                cwd=ROOT,
+                env={**os.environ, "SSLKEYLOGFILE": str(keylog), "PYTHONNOUSERSITE": "1"},
+                stdin=subprocess.DEVNULL,
+                stdout=out,
+                stderr=err,
+                **options,
+            )
+        finally:
+            if inherited_fd is not None:
+                os.close(inherited_fd)
         try:
             deadline = time.monotonic() + 8
             while True:
@@ -155,6 +181,26 @@ def server(tmp_path, certificates):
     assert exported.stderr == b""
 
 
+@pytest.fixture
+def server(tmp_path, certificates, request):
+    activated = getattr(request, "param", "standalone") == "systemd"
+    if activated and sys.platform != "linux":
+        pytest.skip("systemd listener handoff is Linux-specific")
+    yield from _running_server(tmp_path, certificates, activated=activated)
+
+
+@pytest.mark.parametrize(
+    "field,value", [("LISTEN_PID", "0"), ("LISTEN_FDS", "2"), ("LISTEN_FDNAMES", "unrelated")]
+)
+def test_unrelated_or_extra_service_manager_descriptors_are_refused(monkeypatch, field, value):
+    monkeypatch.setenv("LISTEN_PID", str(os.getpid()))
+    monkeypatch.setenv("LISTEN_FDS", "1")
+    monkeypatch.setenv("LISTEN_FDNAMES", "telemetry")
+    monkeypatch.setenv(field, value)
+    with pytest.raises(ConfigurationError):
+        _systemd_listener("127.0.0.1", 8443)
+
+
 def test_only_fixed_route_flags_reach_aggregate_processing():
     scope = {
         "type": "http",
@@ -181,6 +227,7 @@ def test_only_fixed_route_flags_reach_aggregate_processing():
     assert CANARY.decode() not in repr(scope)
 
 
+@pytest.mark.parametrize("server", ["standalone", "systemd"], indirect=True)
 def test_real_tls_accepts_only_bounded_packets_without_logs_or_resume_tickets(server):
     requests = [
         (
