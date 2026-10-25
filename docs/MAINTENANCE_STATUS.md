@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-25T21:13:49+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-25T21:17:10+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | public-updates\.yml | v4\.46\.6 | success | [Run 40052003118](https://github.com/Perseusxrltd/mnemion/actions/runs/40052003118) |
 | release\.yml | release/4\.46\.7 | in\_progress | [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718) |
-| verify-artifacts\.yml | main | success | [Run 40051560833](https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833) |
 | website-release\.yml | main | success | [Run 40234428277](https://github.com/Perseusxrltd/mnemion/actions/runs/40234428277) |
 | website-release\.yml | v4\.46\.6 | success | [Run 40052000728](https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728) |
 
@@ -29,17 +28,24 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 40233953133](https://github.com/Perseusxrltd/mnemion/actions/runs/40233953133): 8/12 jobs completed; 8 succeeded.
 
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718): 20/26 jobs completed; 19 succeeded.
+[Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718): 25/32 jobs completed; 21 succeeded.
 
 - checks / service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- checks / supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- checks / supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- checks / supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / Service engine / Windows x64: in\_progress — Run uv run --no-sync python -m deploy\.build\_native\_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine.
+- native / macos-15-intel / x64: in\_progress — Locked native service build dependencies.
+- native / windows-11-arm / arm64: in\_progress — Select the service interpreter independently of the desktop client.
+- native / macos-15 / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
 
+
+## Unsuccessful jobs
+
+- [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718): native / windows-2022 / x64 (failure). Steps: Run uv run --no-sync npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
+- [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718): native / ubuntu-22\.04-arm / arm64 (failure). Steps: Run uv run --no-sync npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
+- [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718): native / ubuntu-22\.04 / x64 (failure). Steps: Run uv run --no-sync npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.

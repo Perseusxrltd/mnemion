@@ -46,7 +46,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -110,13 +110,13 @@
       "source_commit": "1aa374232323c4f487943c9c5146e567f53d6a07",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-25T21:12:49Z",
+      "updated_at": "2026-10-25T21:15:33Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 26,
-        "completed": 20,
-        "succeeded": 19,
+        "total": 32,
+        "completed": 25,
+        "succeeded": 21,
         "active": [
           {
             "id": 121292149939,
@@ -137,21 +137,12 @@
             ]
           },
           {
-            "id": 121292149957,
-            "name": "checks / supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
             "id": 121292149984,
             "name": "checks / supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -164,28 +155,69 @@
             ]
           },
           {
-            "id": 121292801975,
-            "name": "native / Service engine / Windows x64",
+            "id": 121293436930,
+            "name": "native / macos-15-intel / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m deploy.build_native_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine"
+              "Locked native service build dependencies"
+            ]
+          },
+          {
+            "id": 121293436949,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Select the service interpreter independently of the desktop client"
+            ]
+          },
+          {
+            "id": 121293436954,
+            "name": "native / macos-15 / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           }
         ]
       },
-      "failed_jobs": []
-    },
-    {
-      "id": 40051560833,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "58da08edf77daa93045ab98c74138c132b3011d7",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-24T01:56:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833"
+      "failed_jobs": [
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 121293436893,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run uv run --no-sync npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / ubuntu-22.04-arm / arm64",
+          "id": 121293436913,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run uv run --no-sync npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 121293436947,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run uv run --no-sync npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        }
+      ]
     },
     {
       "id": 40234428277,
@@ -210,5 +242,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728"
     }
   ],
-  "observed_at": "2026-10-25T21:13:49+00:00"
+  "observed_at": "2026-10-25T21:17:10+00:00"
 }
