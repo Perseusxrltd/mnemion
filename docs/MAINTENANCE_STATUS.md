@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-25T20:16:15+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-25T21:03:07+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,9 +17,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40228097781](https://github.com/Perseusxrltd/mnemion/actions/runs/40228097781) |
+| ci\.yml | main | success | [Run 40231477287](https://github.com/Perseusxrltd/mnemion/actions/runs/40231477287) |
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | public-updates\.yml | v4\.46\.6 | success | [Run 40052003118](https://github.com/Perseusxrltd/mnemion/actions/runs/40052003118) |
 | verify-artifacts\.yml | main | success | [Run 40051560833](https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833) |
-| website-release\.yml | main | success | [Run 40228097777](https://github.com/Perseusxrltd/mnemion/actions/runs/40228097777) |
+| website-release\.yml | main | success | [Run 40231477339](https://github.com/Perseusxrltd/mnemion/actions/runs/40231477339) |
 | website-release\.yml | v4\.46\.6 | success | [Run 40052000728](https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728) |
