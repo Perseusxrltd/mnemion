@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-25T23:27:34+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-25T23:34:46+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,18 +17,25 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40243111877](https://github.com/Perseusxrltd/mnemion/actions/runs/40243111877) |
+| ci\.yml | main | in\_progress | [Run 40245332116](https://github.com/Perseusxrltd/mnemion/actions/runs/40245332116) |
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | release\.yml | release/4\.46\.7 | cancelled | [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718) |
 | release\.yml | release/4\.46\.8 | cancelled | [Run 40236329055](https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055) |
 | release\.yml | release/4\.46\.9 | cancelled | [Run 40243385008](https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008) |
 | verify-artifacts\.yml | main | skipped | [Run 40244810341](https://github.com/Perseusxrltd/mnemion/actions/runs/40244810341) |
-| website-release\.yml | main | success | [Run 40243111840](https://github.com/Perseusxrltd/mnemion/actions/runs/40243111840) |
+| website-release\.yml | main | success | [Run 40245332064](https://github.com/Perseusxrltd/mnemion/actions/runs/40245332064) |
 
 ## Active jobs
 
-[Run 40243111877](https://github.com/Perseusxrltd/mnemion/actions/runs/40243111877): 10/12 jobs completed; 10 succeeded.
+[Run 40245332116](https://github.com/Perseusxrltd/mnemion/actions/runs/40245332116): 3/12 jobs completed; 3 succeeded.
 
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.12\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-15-intel\): in\_progress — Preserve native network admission component evidence.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
 
