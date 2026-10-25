@@ -92,8 +92,12 @@ def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow 
     if type(workflow) is not str or workflow not in WORKFLOW_IDS or surface not in SURFACES:
         return None
     try:
+        if aggregate.workflow_exhausted(root, workflow, surface):
+            return None
         current = policy.status(root)
         if not current["effective_enabled"]:
+            if current["reason"] == "user_disabled":
+                aggregate.remember_disabled(root)
             return None
         return Workflow(workflow, surface, root, current)
     except Exception:

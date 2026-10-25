@@ -40,9 +40,14 @@ availability and release gates; each deployment requires its own acceptance.
   admission, a passing frontend build and verified fixture cleanup.
   Later [native network-admission source work](validation/2026-10-25-telemetry-native-conditions.md)
   adds OS cost flags and eligibility checks before gauges; focused network and
-  packaging checks passed. macOS compilation remains pending. Final Windows
+  packaging checks passed. Later [macOS Python/Node component probes](validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
+  passed; Electron and installed-client qualification remain open. Final Windows
   Node/Linux Electron components measured **2.11/2.23 MiB added RSS**, above the
   unchanged 2 MiB full-feature target; this is not full resource acceptance.
+  [Producer denial hints](validation/2026-10-25-telemetry-producer-overhead.md)
+  passed focused source checks and reduced repeated denied work in a synthetic
+  desktop/TLS diagnostic. Opted-out/enabled RSS remained **3.27/6.40 MiB**, above
+  that same target; representative-workload and all-platform acceptance remain open.
   Collection is unavailable,
   with no active collector, qualified public ingress or all-six-native acceptance.
   This work is excluded from the isolated 4.46.6

@@ -5,7 +5,7 @@ import type { TelemetryCatalog } from './telemetry-catalog.js'
 export type WorkflowStore = {
   readonly available: boolean
   readonly catalog: TelemetryCatalog
-  snapshot(): Promise<TelemetryStamp | null>
+  snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null>
   recordMany(values: unknown[], stamp: TelemetryStamp): Promise<boolean>
 }
 
@@ -23,7 +23,7 @@ export class TelemetryWorkflow {
   static async begin(store: WorkflowStore, workflow: string, surface: string, clock = () => performance.now()): Promise<TelemetryWorkflow | null> {
     try {
       if (!store.available || !store.catalog.workflows.includes(workflow) || !store.catalog.specification.surfaces.includes(surface)) return null
-      const stamp = await store.snapshot()
+      const stamp = await store.snapshot(workflow, surface)
       return stamp && Number.isInteger(stamp.revision) && typeof stamp.store_generation === 'string' && /^[0-9a-f]{32}$/.test(stamp.store_generation)
         ? new TelemetryWorkflow(store, { ...stamp }, workflow, surface, clock) : null
     } catch { return null }

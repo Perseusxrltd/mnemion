@@ -154,3 +154,39 @@ its original component scope; it does not qualify this new native path. The
 [full V08 contract](../implementation/anonymous-product-telemetry.md) and its
 earlier resource failures remain unchanged. No production activation, completed
 V08 or release notification follows from these component checks.
+
+## macOS component follow-up
+
+**25 October 2026, observed at 18:39:48 UTC.** The original local checkpoint
+above correctly left macOS pending. Later
+[CI run 40221952456](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456),
+on source [`f35f1074a16c44bd029dd885bb80c342016c0376`](https://github.com/Perseusxrltd/mnemion/commit/f35f1074a16c44bd029dd885bb80c342016c0376),
+compiled the helper and completed its Python/Node probes on both architectures.
+The component steps and artifact uploads passed; the overall CI run and its
+enclosing jobs were still in progress in that saved observation.
+
+Both receipts report flags `9` (observed unmetered), Python **3.12.10** and
+Node **22.23.2**, with no Electron runtime:
+
+| Target | Component step completed (UTC) | Python elapsed | Node elapsed | Node added RSS |
+| --- | --- | --- | --- | --- |
+| [macOS ARM64](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456/job/121255287739) | 18:35:45 | 3.831 ms | 4.763 ms | **1,703,936 bytes** |
+| [macOS x64](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456/job/121255287769) | 18:35:47 | 3.897 ms | 6.118 ms | **1,003,520 bytes** |
+
+These are individual compiled-probe observations. They do not qualify Electron,
+an installed client, the complete telemetry owner or all six native targets.
+Python RSS was not measured. The smaller macOS probe results do not replace
+the retained above-target Windows/Linux measurements; full-feature resource
+acceptance remains unmet. Later producer-optimization work is outside these
+receipts. Collection stays false, the destination and route stay null, and no
+production collector, telemetry release or completion notification is established.
+
+The original receipt hashes above are unchanged. Additional SHA-256 provenance:
+
+| Evidence | SHA-256 |
+| --- | --- |
+| macOS ARM64 component receipt | `93afc1780f9bb974252f0676a41dc41da293010c85300e4d177b666587a8d186` |
+| macOS ARM64 artifact, bound by its receipt | `fdcb1b77aba7d8ee70c775aa54c5c3922e2869dede54bd29397791ea5cccf4f2` |
+| macOS x64 component receipt | `2eed1ecf6f24e7160f5aa151a673944832374ab76b3be8773f63f624456e9207` |
+| macOS x64 artifact, bound by its receipt | `6a6d043fc323076325a0681df9d6d2cabdf3440f432872a36615e9597a926b8a` |
+| Saved CI step/source observation | `b6c451faabc2d199d45bab8e839cf5db1c55f9c9442e3a71de372ab65928729d` |

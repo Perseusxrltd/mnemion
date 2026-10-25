@@ -13,11 +13,71 @@ import sqlite3
 import time
 
 from . import policy
-from .catalog import CATALOG, MeasurementError, describe, observation
+from .catalog import CATALOG, SURFACES, WORKFLOW_IDS, MeasurementError, describe, observation
+
+# One bounded negative hint for the most recently disabled/exhausted store. It can
+# only suppress optional work, never grant consent or skip a successful write's
+# current-policy transaction. No connection, observations or result data survive.
+_exhaustion: tuple[Path, int, int, float, tuple[int, ...]] | None = None
 
 
 def _day() -> int:
     return int(time.time() // 86400)
+
+
+def _file_version(root: Path) -> tuple[int, ...]:
+    info = (root / policy.DATABASE_NAME).lstat()
+    return info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns, info.st_size
+
+
+def _exhausted(root: Path | None, scopes: tuple[int, ...], day: int) -> bool:
+    global _exhaustion
+    saved = _exhaustion
+    if saved is None:
+        return False
+    root = root if root is not None else policy.default_directory()
+    if root != saved[0]:
+        return False
+    now = time.monotonic()
+    try:
+        if (
+            day != saved[1]
+            or not saved[3] - 60 <= now < saved[3]
+            or _file_version(root) != saved[4]
+        ):
+            _exhaustion = None
+            return False
+        return bool(scopes) and all(saved[2] & (1 << scope) for scope in scopes)
+    except OSError:
+        _exhaustion = None
+        return False
+
+
+def workflow_exhausted(root: Path | None, workflow: str, surface: str) -> bool:
+    """Fast negative hint; an admitted workflow still reads current policy."""
+    if _exhaustion is None:
+        return False
+    scope = WORKFLOW_IDS[workflow] * len(SURFACES) + SURFACES.index(surface)
+    return _exhausted(root, (scope,), _day())
+
+
+def remember_disabled(root: Path | None) -> None:
+    """Only an observed explicit opt-out is cached; current reads still admit."""
+    root = root if root is not None else policy.default_directory()
+    _remember_exhaustion(root, [], _day(), disabled=True)
+
+
+def _remember_exhaustion(root: Path, scopes: list[int], day: int, *, disabled=False) -> None:
+    global _exhaustion
+    if not scopes and not disabled:
+        return
+    try:
+        bits = -1 if disabled else 0
+        for scope in scopes:
+            bits |= 1 << scope
+        _exhaustion = root, day, bits, time.monotonic() + 60, _file_version(root)
+    except OSError:
+        _exhaustion = None
 
 
 def _permitted(preference: dict, company: dict, revision: int, generation: str | None) -> bool:
@@ -94,6 +154,8 @@ def record_many(
         if not 0 <= day <= 1000000:
             return False
         root = root if root is not None else policy.default_directory()
+        if _exhausted(root, tuple(scope for scope, _ in observations), day):
+            return False
         policy._root_safe(root)
         if not policy._file_safe(root / policy.DATABASE_NAME):
             return False
@@ -112,10 +174,13 @@ def record_many(
                 connection.execute("DELETE FROM pending")
                 connection.execute("DELETE FROM producer_budget")
                 connection.commit()
+                if not preference["enabled"]:
+                    _remember_exhaustion(root, [], day, disabled=True)
                 return False
             _prune(connection, day, company["metric_groups"])
             existing = {row[0] for row in connection.execute("SELECT cell FROM pending")}
             recorded = False
+            exhausted = []
             for scope, cells in observations:
                 cells = tuple(
                     cell for cell in cells if describe(cell)["group"] in company["metric_groups"]
@@ -128,6 +193,8 @@ def record_many(
                 previous = connection.execute(
                     "SELECT count FROM producer_budget WHERE scope=?", (scope,)
                 ).fetchone()
+                if previous is not None and previous[0] >= limit:
+                    exhausted.append(scope)
                 if (
                     not cells
                     or (previous is not None and previous[0] >= limit)
@@ -138,6 +205,8 @@ def record_many(
                     "INSERT INTO producer_budget VALUES (?, 1, ?) ON CONFLICT(scope) DO UPDATE SET count=count+1",
                     (scope, day),
                 )
+                if (previous[0] if previous is not None else 0) + 1 >= limit:
+                    exhausted.append(scope)
                 connection.executemany(
                     "INSERT INTO pending VALUES (?, 1, ?) ON CONFLICT(cell) DO UPDATE SET "
                     "count=CASE WHEN window_day=excluded.window_day THEN min(count+1, ?) ELSE 1 END, "
@@ -147,6 +216,7 @@ def record_many(
                 existing.update(cells)
                 recorded = True
             connection.commit()
+            _remember_exhaustion(root, exhausted, day)
             return recorded
     except (OSError, sqlite3.Error, policy.PolicyError, MeasurementError, OverflowError):
         # No raw exception, path, label or diagnostic is logged or requeued.

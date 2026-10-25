@@ -88,8 +88,20 @@ unknown. Preparation and refresh occur only inside an already-awake opportunity;
 late cancelled results are rejected, with freshness measured from query start.
 Focused network and packaging checks passed. Final component observations were
 **2.11 MiB added RSS on Windows Node and 2.23 MiB on Linux Electron**, both above
-the unchanged 2 MiB full-feature target. macOS compilation, all-six-native and
-full resource/wire/collector acceptance remain open.
+the unchanged 2 MiB full-feature target. Later
+[macOS ARM64/x64 component probes](../validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
+compiled and passed under Python 3.12.10 and Node 22.23.2; they are not Electron
+or installed-client acceptance. All-six-native and full resource/wire/collector
+acceptance remain open.
+
+The [producer-overhead source follow-up](../validation/2026-10-25-telemetry-producer-overhead.md)
+adds denial-only hints for explicit opt-out and exhausted contribution scopes.
+They expire lazily within 60 seconds and cannot authorize collection; accepted
+work retains the current-policy and storage fences. Focused checks passed. A real
+headless desktop/TLS diagnostic measured **3.27 MiB added RSS when opted out and
+6.40 MiB when enabled**, both above the unchanged 2 MiB full-feature target.
+Its synthetic burst and after-bootstrap baseline do not qualify representative
+app performance or installed platforms.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a

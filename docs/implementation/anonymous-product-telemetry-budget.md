@@ -61,8 +61,19 @@ allowance. Only existing active checks can request a refresh after 250 ms, and
 an outstanding OS call is never overlapped. Cancellation prevents a queued probe
 from starting, rejects late replies and closes gauges. The separate five-second
 report lease and spending rules are unchanged. Focused network and packaging
-checks passed; macOS, installed-platform and full resource acceptance remain
-pending.
+checks passed. Later
+[macOS ARM64/x64 compiled-probe results](../validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
+passed in Python and Node 22.23.2; they do not qualify Electron, the complete
+delivery path, installed platforms or full resource acceptance.
+
+The [producer-overhead follow-up](../validation/2026-10-25-telemetry-producer-overhead.md)
+lets native/Python producers decline repeated work after observing explicit
+opt-out or an exhausted scope. A denial hint must match the private file version,
+day and a monotonic interval of at most 60 seconds; expiry is lazy, with no idle
+timer or positive consent cache. Every accepted observation, reservation and
+final handoff still uses the full current-policy/storage fences. Contribution
+limits and spent allowance are unchanged. The scoped diagnostic still exceeded
+the 2 MiB full-feature RSS target in both opted-out and enabled variants.
 
 | Persistent connection choice | Delivery admission |
 | --- | --- |

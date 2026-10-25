@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
+import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
@@ -158,6 +159,67 @@ test('both runtimes share daily contribution limits and prune expired or future 
   assert.deepEqual(invoke('preview', { day: 20003 }).map(row => row.count), [1])
   assert.equal(await store.record(observation({ latency_ms: 100 }), stamp, 20001), true)
   assert.equal(invoke('preview', { day: 20001 }).length, 2)
+})
+
+test('exhausted workflows drop before SQLite and fresh choices still use the privacy fence', async t => {
+  const { invoke, store } = await fixture(t), stamp = await store.snapshot()
+  const day = Math.floor(Date.now() / 86400000)
+  assert.equal(invoke('record', { value: observation(), stamp, repeat: 64, day }).filter(Boolean).length, 64)
+  assert.equal(await store.record(observation(), stamp, day), false)
+  let opens = 0
+  const open = store.open.bind(store)
+  store.open = (...args) => { opens++; return open(...args) }
+  for (let index = 0; index < 512; index++) {
+    assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+    assert.equal(await store.record(observation(), stamp, day), false)
+  }
+  assert.equal(opens, 0, 'exhausted observations create no SQLite connections or Windows ACL helpers')
+  assert.ok(await TelemetryWorkflow.begin(store, 'memory.read', 'desktop'), 'other scopes remain eligible')
+  assert.ok(opens > 0)
+  const off = invoke('configure', { choice: { enabled: false, expected_revision: stamp.revision } })
+  assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+  const on = invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
+    expected_generation: off.store_generation, disclosure_version: 1 } })
+  const fresh = await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop')
+  assert.ok(fresh, 'changing the private choice invalidates only the negative cache')
+  await fresh.finish('success')
+  assert.deepEqual(invoke('preview', { day }).map(row => row.count), [1, 1, 1])
+  assert.equal(await store.record(observation(), stamp, day), false, 'old revisions remain forbidden')
+  assert.equal((await store.snapshot()).revision, on.revision)
+})
+
+test('cached exhaustion never survives a recreated or missing store', async t => {
+  const { root, invoke, store } = await fixture(t), stamp = await store.snapshot()
+  const day = Math.floor(Date.now() / 86400000)
+  invoke('record', { value: observation(), stamp, repeat: 64, day })
+  assert.equal(await store.record(observation(), stamp, day), false)
+  const recreated = invoke('recreate', { value: observation(), day })
+  const current = await store.snapshot('memory.recall', 'desktop')
+  assert.deepEqual(current, stampOf(recreated))
+  assert.equal(await store.record(observation(), stamp, day), false)
+  await rm(join(root, 'product-telemetry.sqlite3'))
+  assert.equal(await store.snapshot('memory.recall', 'desktop'), null)
+  await assert.rejects(access(join(root, 'product-telemetry.sqlite3')))
+})
+
+test('an observed opt-out stays quiet and re-enabling still requires a fresh read', async t => {
+  const { invoke, store } = await fixture(t), stamp = await store.snapshot()
+  const off = invoke('configure', { choice: { enabled: false, expected_revision: stamp.revision } })
+  assert.equal(await store.snapshot(), null)
+  let opens = 0
+  const open = store.open.bind(store)
+  store.open = (...args) => { opens++; return open(...args) }
+  for (let index = 0; index < 512; index++) {
+    assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+    assert.equal(await store.snapshot(), null)
+    assert.equal(await store.record(observation(), stamp), false)
+  }
+  assert.equal(opens, 0, 'a verified opt-out does not repeatedly reopen SQLite')
+  invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
+    expected_generation: off.store_generation, disclosure_version: 1 } })
+  assert.ok(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'))
+  assert.ok(opens > 0, 'a negative hint never supplies permission')
+  assert.equal(await store.record(observation(), stamp), false)
 })
 
 test('another SQLite writer causes an immediate drop rather than a queued retry', async t => {

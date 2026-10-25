@@ -33,6 +33,10 @@ export class NativeTelemetryStore {
   readonly catalog: TelemetryCatalog
   private sqlite?: Promise<typeof import('node:sqlite')>
   private permissionCheck?: Promise<boolean>
+  private saturated?: {
+    bits: Uint8Array; day: number; until: number; userDisabled: boolean
+    file: { dev: bigint; ino: bigint; mtimeNs: bigint; ctimeNs: bigint; size: bigint }
+  }
   constructor(
     private readonly root: string,
     readonly disclosure: NativeTelemetryDisclosure,
@@ -41,6 +45,41 @@ export class NativeTelemetryStore {
   ) { this.catalog = new TelemetryCatalog(catalog) }
 
   get available(): boolean { return this.disclosure.collection_available && Boolean(this.disclosure.destination) }
+
+  private saturationFile() {
+    const { dev, ino, mtimeNs, ctimeNs, size } = lstatSync(join(this.root, 'product-telemetry.sqlite3'), { bigint: true })
+    return { dev, ino, mtimeNs, ctimeNs, size }
+  }
+
+  /** A short negative cache can only drop disabled/exhausted measurements.
+   * It never grants consent, skips a write fence or holds a database connection.
+   * Replacing/changing the file, a day change or at most a minute clears it. */
+  private exhausted(scopes: number[], day: number): boolean {
+    const saved = this.saturated
+    if (!saved) return false
+    const now = performance.now()
+    if (day !== saved.day || !Number.isFinite(now) || now >= saved.until || now < saved.until - 60000) {
+      this.saturated = undefined; return false
+    }
+    try {
+      const current = this.saturationFile(), prior = saved.file
+      if (current.dev !== prior.dev || current.ino !== prior.ino || current.mtimeNs !== prior.mtimeNs ||
+          current.ctimeNs !== prior.ctimeNs || current.size !== prior.size) {
+        this.saturated = undefined; return false
+      }
+      return saved.userDisabled || (scopes.length > 0 && scopes.every(scope => Boolean(saved.bits[scope >> 3] & (1 << (scope & 7)))))
+    } catch { this.saturated = undefined; return false }
+  }
+
+  private rememberExhausted(scopes: number[], day: number, userDisabled = false): void {
+    if (!scopes.length && !userDisabled) return
+    try {
+      // Do not combine old exhaustion with a new file version. Another process
+      // may have configured/recreated the store since our previous observation.
+      this.saturated = { bits: new Uint8Array(65), day, until: performance.now() + 60000, file: this.saturationFile(), userDisabled }
+      for (const scope of scopes) this.saturated.bits[scope >> 3] |= 1 << (scope & 7)
+    } catch { this.saturated = undefined }
+  }
 
   private safe(): string {
     if (!isAbsolute(this.root)) throw failure()
@@ -102,15 +141,26 @@ export class NativeTelemetryStore {
     return { ...row, connection_mode: mode } as Preference
   }
 
-  async snapshot(): Promise<TelemetryStamp | null> {
+  async snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> {
     if (!this.available) return null
+    const scopes: number[] = [], day = Math.floor(Date.now() / 86400000)
+    if (workflow !== undefined || surface !== undefined) {
+      const index = this.catalog.workflows.indexOf(workflow!), origin = this.catalog.specification.surfaces.indexOf(surface!)
+      if (index < 0 || origin < 0) return null
+      scopes.push(index * 4 + origin)
+    }
+    if (this.exhausted(scopes, day)) return null
     let database: DatabaseSync | undefined
     try {
       database = await this.open()
       database.exec('BEGIN')
       const preference = this.preferences(database), company = this.company()
-      return preference.enabled === 1 && preference.disclosure_version === this.disclosure.version && company.enabled && company.groups.length
-        ? { revision: preference.revision, store_generation: preference.store_generation } : null
+      if (preference.enabled !== 1 || preference.disclosure_version !== this.disclosure.version || !company.enabled || !company.groups.length) {
+        this.saturated = undefined
+        if (preference.enabled !== 1) this.rememberExhausted([], day, true)
+        return null
+      }
+      return { revision: preference.revision, store_generation: preference.store_generation }
     } catch { return null }
     finally { try { database?.close() } catch { /* Optional observation never breaks the caller. */ } }
   }
@@ -128,13 +178,16 @@ export class NativeTelemetryStore {
       // object, private arguments, exact numeric values or exception text.
       if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) return false
       const observations = inputs.map(input => this.catalog.observation(input))
+      if (this.exhausted(observations.map(value => value.scope), day)) return false
       database = await this.open(true)
       database.exec('BEGIN IMMEDIATE')
       const preference = this.preferences(database)
       if (preference.revision !== expected.revision || preference.store_generation !== expected.store_generation) return false
       const company = this.company()
       if (preference.enabled !== 1 || preference.disclosure_version !== this.disclosure.version || !company.enabled || !company.groups.length) {
+        this.saturated = undefined
         database.exec('DELETE FROM pending; DELETE FROM producer_budget; COMMIT;')
+        if (preference.enabled !== 1) this.rememberExhausted([], day, true)
         return false
       }
       database.prepare('DELETE FROM pending WHERE window_day < ? OR window_day > ?').run(day - 1, day)
@@ -154,17 +207,21 @@ export class NativeTelemetryStore {
       const contribute = database.prepare('INSERT INTO producer_budget VALUES (?, 1, ?) ON CONFLICT(scope) DO UPDATE SET count=count+1, window_day=excluded.window_day')
       const update = database.prepare('INSERT INTO pending VALUES (?, 1, ?) ON CONFLICT(cell) DO UPDATE SET count=CASE WHEN pending.window_day=excluded.window_day THEN min(pending.count+1, 255) ELSE 1 END, window_day=excluded.window_day')
       let recorded = false
+      const exhausted: number[] = []
       for (const { scope, cells } of observations) {
         const permitted = cells.filter(cell => company.groups.includes(this.catalog.describe(cell).group))
         const prior = budget.get(scope)
         const limit = scope >= 512 ? this.catalog.specification.limits.resource_observations_per_day : this.catalog.specification.limits.observations_per_workflow_day
         if (prior && !integer(prior.count, 64, 1)) throw failure()
+        if (prior && Number(prior.count) >= limit) exhausted.push(scope)
         if (!permitted.length || (prior && Number(prior.count) >= limit) || occupied.size + permitted.filter(cell => !occupied.has(cell)).length > 512) continue
         contribute.run(scope, day)
+        if (Number(prior?.count ?? 0) + 1 >= limit) exhausted.push(scope)
         for (const cell of permitted) { update.run(cell, day); occupied.add(cell) }
         recorded = true
       }
       database.exec('COMMIT')
+      this.rememberExhausted(exhausted, day)
       return recorded
     } catch { return false }
     finally { try { database?.close() } catch { /* Optional observation never breaks the caller. */ } }
