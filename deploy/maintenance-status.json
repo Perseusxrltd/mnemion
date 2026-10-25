@@ -25,15 +25,15 @@
   ],
   "runs": [
     {
-      "id": 40225022422,
+      "id": 40228097781,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "66227255266b3a1a44d344c04354734d86ab4f60",
+      "source_commit": "935020fbf5581b6bdaad336782534f56e7a0cda4",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-25T19:35:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40225022422"
+      "updated_at": "2026-10-25T20:15:34Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40228097781"
     },
     {
       "id": 40179454634,
@@ -58,17 +58,6 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40052003118"
     },
     {
-      "id": 40047223740,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.6",
-      "source_commit": "a5c3bf29e8feb22d73b4047a13ac93df694dcb0c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-24T01:49:58Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740"
-    },
-    {
       "id": 40051560833,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -80,15 +69,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833"
     },
     {
-      "id": 40225022451,
+      "id": 40228097777,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "66227255266b3a1a44d344c04354734d86ab4f60",
+      "source_commit": "935020fbf5581b6bdaad336782534f56e7a0cda4",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-25T19:14:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40225022451"
+      "updated_at": "2026-10-25T19:52:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40228097777"
     },
     {
       "id": 40052000728,
@@ -102,5 +91,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728"
     }
   ],
-  "observed_at": "2026-10-25T19:35:54+00:00"
+  "observed_at": "2026-10-25T20:16:15+00:00"
 }
