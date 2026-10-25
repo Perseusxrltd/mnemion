@@ -1,45 +1,18 @@
 # Product telemetry privacy controls
 
-**Source checkpoint, 25 October 2026; V08 is Building.** Local choice, disclosure,
-catalog, aggregate queues and selected owned CLI, desktop/native-operator,
-Studio/browser, local stdio and selected maintenance hooks are implemented in
-source. Bounded senders and opportunistic owners also exist in source, but there
-is no active product sender or deployed collector: `collection_available` is
-`false`, the destination and release route address are `null`, and
-`effective_enabled` stays `false`. Saving an enabled preference does not activate
-analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
-by **eight browser policy/fault checks**. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
-passed at **01:12:30 UTC**. The later [catalog/aggregate checks](../validation/2026-10-24-telemetry-aggregates.md)
-include a nine-check browser catalog journey; fresh package and native release
-acceptance for that batch remain pending.
-The later actual Chromium generation journey passed **11 checks**, including
-stale UI conflicts, preserved legacy opt-out and a 390-pixel layout. This remains
-source-browser evidence, with no active collection or native release acceptance.
-The later copied built-browser journey passed **19 owned-search/opt-out checks**;
-only its isolated fixture enabled local counters. Source/build collection remains
-unavailable. Native Windows source-store checks now passed **11 with zero skips**,
-without qualifying a packaged telemetry release.
-These controls and this documentation update are excluded from the isolated
-4.46.6 dependency-security release. The [contract](../implementation/anonymous-product-telemetry.md)
-records the dated source evidence and full remaining scope.
-The separate [delivery components](../implementation/anonymous-product-telemetry-delivery.md)
-are also source-only: their packet encoder and private weekly publisher do not
-enable sending. An isolated **12-check plain-loopback HTTP journey passed**;
-this did not enable product collection or qualify TLS/provider logging. The later
-[shared native/Python budget](../implementation/anonymous-product-telemetry-budget.md)
-has source reservation and cancellation controls, with focused checks passed
-and two Windows-only ACL cases skipped. Deployed ingress, resources/platforms
-and installed delivery acceptance remain open.
+**V08 remains in development; source reference, 25 October 2026.** Product
+telemetry is unavailable. The controls below are implemented in source, but
+saving an enabled preference does not start collection: `collection_available`
+and `effective_enabled` remain `false`, with no destination or release route.
+Use [release status](../RELEASE_STATUS.md) to check availability in your version.
 
-The later [application-owner checkpoint](../validation/2026-10-24-telemetry-app-owners.md)
-adds connection controls and already-awake delivery owners; its actual Chromium
-fixture passed 19 assertions with synthetic CPU admission. The subsequent
-[company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
-adds a fresh restriction check before each reserved browser attempt. Its focused
-checks and **20-assertion Chromium journey on 25 October** passed, with seven
-policy reads and one report. CPU admission was synthetic; fixture cleanup and
-the frontend build passed. Neither checkpoint activates collection or qualifies
-public ingress, sensors or a telemetry release.
+The source includes local choice, disclosure, a fixed measurement catalog,
+bounded queues and senders, and selected app, agent and maintenance hooks.
+A [dedicated collector](../implementation/anonymous-product-telemetry-collector.md)
+also has passing isolated TLS checks; it has not been deployed or qualified as
+a production destination. Resource, transport/privacy and installed-platform
+acceptance remain unfinished. The [implementation contract](../implementation/anonymous-product-telemetry.md)
+preserves the detailed source evidence and remaining scope.
 
 ## In the app
 
@@ -53,7 +26,7 @@ defaults to enabled. **Disable product telemetry** saves an opt-out and clears
 pending local aggregates. **Refresh privacy status** reads the current choice.
 **Show payload preview** currently reports no queued request, a null outbound
 body and zero outgoing payload bytes. Expand **Workflow coverage and exclusions**
-to inspect the fixed **15 families, 94 operations and seven privacy exclusions**.
+to inspect supported workflows and their explicit privacy exclusions.
 The schema and numeric encoding exist; collection remains inactive. Selected
 desktop/browser and native-operator actions now have source hooks. Remaining
 workflow and resource/platform qualification are still unfinished.

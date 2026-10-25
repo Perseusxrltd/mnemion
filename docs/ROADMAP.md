@@ -25,6 +25,15 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **Dedicated telemetry collector — 25 October 2026; source implementation.**
+  The [separate TLS service](implementation/anonymous-product-telemetry-collector.md)
+  strips request metadata before aggregation and uses a locked three-package
+  HTTP runtime. [Verification](validation/2026-10-25-telemetry-collector-service.md)
+  records 45 scoped passes, seven clean-runtime passes and an additional real
+  HTTP-header leak check. CI now verifies that minimal runtime automatically.
+  The deployment template, production ingress/privacy, resources and installed
+  telemetry release remain unqualified; V08 stays Building and disabled.
+
 - **Native build portability — 25 October 2026; 4.46.8 source candidate.**
   [Windows launcher and Linux C11 failures](validation/2026-10-25-native-build-portability.md)
   prevented 4.46.7 native qualification. The unpublished candidate is superseded

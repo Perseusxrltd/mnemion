@@ -1,0 +1,2 @@
+# Separate, non-login identity for the collector and owner-only report access.
+u mnemion-telemetry - "Perseus XR anonymous aggregate collector" /var/lib/mnemion-telemetry /usr/sbin/nologin

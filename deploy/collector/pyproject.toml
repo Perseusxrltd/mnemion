@@ -1,0 +1,14 @@
+[project]
+name = "mnemion-collector-runtime"
+version = "1.0.0"
+description = "Minimal runtime for the separate Perseus XR anonymous aggregate collector"
+authors = [{ name = "Perseus XR" }]
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "uvicorn==0.54.0",
+    "h11==0.16.0",
+    "click==8.5.0",
+]
+
+[tool.uv]
+package = false

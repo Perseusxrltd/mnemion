@@ -12,6 +12,12 @@ passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
 texts and the other 65 states remain unchanged. These controls and this
 documentation update are excluded from the isolated 4.46.6 dependency-security release.
 
+The [dedicated collector source](anonymous-product-telemetry-collector.md) now
+provides a bounded TLS entrypoint, metadata removal, private report access and
+a minimal locked runtime. Its [actual TLS and clean-runtime checks](../validation/2026-10-25-telemetry-collector-service.md)
+passed. No production collector is deployed; provider/ingress privacy, client
+resources, useful reporting and full installed acceptance still gate release.
+
 The [app and native usage guide](../guides/product-telemetry-controls.md)
 describes the pre-login/offline `/privacy` page and private-stdin
 `mnemion-service telemetry` actions: `schema`, `status`, `preview` and
