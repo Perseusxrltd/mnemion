@@ -25,23 +25,23 @@
   ],
   "runs": [
     {
-      "id": 40241374676,
+      "id": 40243111877,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "ebb3d04a65d02ff96ee3e1445af59065ac46f1d1",
+      "source_commit": "290e6037e775beea5ff6f47d8ffcf6246eefc1db",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-25T22:42:21Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40241374676",
+      "updated_at": "2026-10-25T23:05:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40243111877",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "completed": 10,
+        "succeeded": 10,
         "active": [
           {
-            "id": 121313884246,
+            "id": 121319078926,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -50,30 +50,12 @@
             ]
           },
           {
-            "id": 121313884297,
+            "id": 121319078952,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121313884319,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121313884320,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Audit the installed Mac dependencies"
             ]
           }
         ]
@@ -114,27 +96,38 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055"
     },
     {
-      "id": 40242457100,
+      "id": 40243385008,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.9",
+      "source_commit": "290e6037e775beea5ff6f47d8ffcf6246eefc1db",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-25T23:26:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008"
+    },
+    {
+      "id": 40244810341,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "a991235a2daa2f5b93b4c2cb0d4c0f1f95db1b2e",
+      "source_commit": "bb99eddd52bc0b3dad8a599da733f8d9f51b0baa",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-25T22:56:08Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40242457100"
+      "updated_at": "2026-10-25T23:26:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40244810341"
     },
     {
-      "id": 40241374783,
+      "id": 40243111840,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "ebb3d04a65d02ff96ee3e1445af59065ac46f1d1",
+      "source_commit": "290e6037e775beea5ff6f47d8ffcf6246eefc1db",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-25T22:41:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40241374783"
+      "updated_at": "2026-10-25T23:05:05Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40243111840"
     }
   ],
-  "observed_at": "2026-10-25T22:57:26+00:00"
+  "observed_at": "2026-10-25T23:27:34+00:00"
 }

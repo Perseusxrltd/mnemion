@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-25T22:57:26+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-25T23:27:34+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,19 +17,18 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40241374676](https://github.com/Perseusxrltd/mnemion/actions/runs/40241374676) |
+| ci\.yml | main | in\_progress | [Run 40243111877](https://github.com/Perseusxrltd/mnemion/actions/runs/40243111877) |
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | release\.yml | release/4\.46\.7 | cancelled | [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718) |
 | release\.yml | release/4\.46\.8 | cancelled | [Run 40236329055](https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055) |
-| verify-artifacts\.yml | main | skipped | [Run 40242457100](https://github.com/Perseusxrltd/mnemion/actions/runs/40242457100) |
-| website-release\.yml | main | success | [Run 40241374783](https://github.com/Perseusxrltd/mnemion/actions/runs/40241374783) |
+| release\.yml | release/4\.46\.9 | cancelled | [Run 40243385008](https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008) |
+| verify-artifacts\.yml | main | skipped | [Run 40244810341](https://github.com/Perseusxrltd/mnemion/actions/runs/40244810341) |
+| website-release\.yml | main | success | [Run 40243111840](https://github.com/Perseusxrltd/mnemion/actions/runs/40243111840) |
 
 ## Active jobs
 
-[Run 40241374676](https://github.com/Perseusxrltd/mnemion/actions/runs/40241374676): 8/12 jobs completed; 8 succeeded.
+[Run 40243111877](https://github.com/Perseusxrltd/mnemion/actions/runs/40243111877): 10/12 jobs completed; 10 succeeded.
 
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Audit the installed Mac dependencies.
 
