@@ -73,7 +73,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify both pinned local models on the actual Mac runtime"
+              "Audit the installed Mac dependencies"
             ]
           }
         ]
@@ -136,5 +136,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40241374783"
     }
   ],
-  "observed_at": "2026-10-25T22:56:45+00:00"
+  "observed_at": "2026-10-25T22:57:26+00:00"
 }
