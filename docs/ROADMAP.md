@@ -25,6 +25,16 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **Windows test-helper recovery — 25 October 2026; 4.46.9 candidate.**
+  [Windows readiness records](validation/2026-10-25-windows-telemetry-test-lifecycle.md)
+  exposed an LF-only assertion and waiting helpers that stalled the unpublished
+  4.46.8 release. Bounded, complete-line handling now accepts LF/CRLF and stops
+  helpers before removing their SQLite fixtures; desktop tests have a ten-minute
+  step limit. Focused Windows checks passed **31/31**; Linux passed **29 with
+  two Windows-only skips**. [4.46.9](releases/4.46.9.md) retains the managed-backup
+  correction and collector isolation. Native release and installed acceptance
+  remain separate gates; production telemetry stays disabled.
+
 - **Collector host isolation — 25 October 2026; isolated VPS acceptance.**
   The [collector service check](validation/2026-10-25-telemetry-collector-service.md)
   exposed a port restriction that the host did not enforce. A service-manager

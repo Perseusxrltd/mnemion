@@ -298,6 +298,7 @@ jobs:
       - run: npm --prefix studio/electron ci
       # TLS fixtures use the same locked cryptography and Python as the service.
       - run: npm --prefix studio/electron test
+        timeout-minutes: 10
         env:
           MNEMION_TEST_PYTHON: ${{ github.workspace }}/.venv/bin/python
       - name: Independent host control through the real desktop profile and native engine

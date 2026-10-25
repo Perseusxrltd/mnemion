@@ -1,12 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtemp, rm, readFile, access } from 'node:fs/promises'
-import { spawnSync, spawn } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
+import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
@@ -57,7 +58,11 @@ print(json.dumps(result),flush=True)
 
 async function fixture(t) {
   const temporary = await mkdtemp(join(tmpdir(), 'mnemion-delivery-budget-'))
-  t.after(() => rm(temporary, { recursive: true, force: true }))
+  const children = new TelemetryFixtureChildren(python, environment)
+  t.after(async () => {
+    await children.close()
+    await rm(temporary, { recursive: true, force: true })
+  })
   const root = join(temporary, 'private'), company = join(temporary, 'policy.json')
   let now = 1700000000000
   const request = (action, extra = {}) => JSON.stringify({ action, root, company, now, ...extra }) + '\n'
@@ -72,10 +77,23 @@ async function fixture(t) {
   const active = { ...definitions.disclosure, collection_available: true, destination: 'https://example.invalid/v1/report' }
   const store = new NativeTelemetryDelivery(root, active, definitions.catalog, company, () => now)
   const initial = invoke('init'), stamp = { revision: initial.revision, store_generation: initial.store_generation }
-  return { root, company, store, stamp, invoke, request, definitions, active,
+  return { root, company, store, stamp, invoke, request, definitions, active, children,
     setNow: value => { now = value }, now: () => now,
     fill: async () => assert.equal(await store.record(observation, await store.snapshot(), Math.floor(now / 86400000)), true) }
 }
+
+test('helper readiness accepts split CRLF and rejected helpers are fully reaped', { timeout: 15000 }, async t => {
+  const children = new TelemetryFixtureChildren(python, environment)
+  t.after(() => children.close())
+  const split = children.start(['-c',
+    'import sys,time; sys.stdout.buffer.write(b"rea"); sys.stdout.buffer.flush(); time.sleep(.03); sys.stdout.buffer.write(b"dy\\r"); sys.stdout.buffer.flush(); time.sleep(.03); sys.stdout.buffer.write(b"\\n"); sys.stdout.buffer.flush(); sys.stdin.read()'])
+  await waitForTelemetryFixture(split)
+  const rejected = children.start(['-c', 'import sys; print("unexpected",flush=True); sys.stdin.read()'])
+  await assert.rejects(waitForTelemetryFixture(rejected), /Unexpected Python fixture readiness/)
+  await children.close()
+  assert.ok(split.exitCode !== null || split.signalCode !== null)
+  assert.ok(rejected.exitCode !== null || rejected.signalCode !== null)
+})
 
 test('inactive delivery never creates a store or treats unknown networking as permitted', async t => {
   const f = await fixture(t)
@@ -141,22 +159,19 @@ test('a crashed Python reserver prevents a second native attempt until its persi
   await f.store.cancel(report)
 })
 
-test('simultaneous real Python and native reservations can consume the queue only once', async t => {
+test('simultaneous real Python and native reservations can consume the queue only once', { timeout: 30000 }, async t => {
   const f = await fixture(t)
   await f.fill()
-  const child = spawn(python, ['-c', program], { env: environment, stdio: ['pipe', 'pipe', 'pipe'] })
-  t.after(() => child.kill())
+  const child = f.children.start(['-c', program])
   let stdout = '', stderr = ''
   child.stdout.on('data', data => { stdout += data })
   child.stderr.on('data', data => { stderr += data })
-  const completed = new Promise((resolve, reject) => { child.once('error', reject); child.once('exit', resolve) })
   child.stdin.write(f.request('reserve', { wait: true }))
-  await new Promise((resolve, reject) => { child.stdout.once('data', resolve); child.once('error', reject) })
-  assert.match(stdout, /^ready\n/)
+  await waitForTelemetryFixture(child)
   const pending = f.store.reserve(f.stamp, network)
   child.stdin.end('go\n')
   const report = await pending
-  assert.equal(await completed, 0, stderr)
+  assert.equal(await f.children.exited(child), 0, stderr)
   assert.equal(stderr, '')
   const pythonWon = JSON.parse(stdout.trim().split('\n').at(-1))
   const winners = Number(Boolean(report)) + Number(pythonWon)
@@ -179,23 +194,16 @@ test('simultaneous real Python and native reservations can consume the queue onl
 test('a contended commit leaves both runtimes an unspent and recoverable queue', { timeout: 30000 }, async t => {
   const f = await fixture(t)
   await f.fill()
-  const reader = spawn(python, ['-c',
+  const reader = f.children.start(['-c',
     'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("BEGIN"); c.execute("SELECT count(*) FROM pending").fetchall(); print("ready",flush=True); sys.stdin.read(); c.rollback(); c.close()',
-    join(f.root, 'product-telemetry.sqlite3')], { env: environment, stdio: ['pipe', 'pipe', 'pipe'] })
-  t.after(() => reader.kill())
+    join(f.root, 'product-telemetry.sqlite3')])
   let errors = ''
   reader.stderr.on('data', data => { errors += data })
-  const exited = new Promise((resolve, reject) => { reader.once('error', reject); reader.once('exit', resolve) })
-  const ready = await new Promise((resolve, reject) => {
-    reader.stdout.once('data', resolve)
-    reader.once('error', reject)
-    reader.once('exit', () => reject(new Error('Reader exited before its lock was observed')))
-  })
-  assert.match(String(ready), /^ready\n/)
+  await waitForTelemetryFixture(reader)
   assert.equal(await f.store.reserve(f.stamp, network), null)
   assert.equal(f.invoke('reserve'), false)
   reader.stdin.end()
-  assert.equal(await exited, 0, errors)
+  assert.equal(await f.children.exited(reader), 0, errors)
   assert.equal(errors, '')
   const retained = f.invoke('inspect')
   assert.deepEqual([retained.attempts, retained.bytes, retained.pending, retained.has_lease], [0, 0, 1, false])

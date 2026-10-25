@@ -1,12 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtemp, rm, access, readFile, stat, link } from 'node:fs/promises'
-import { spawnSync, spawn } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
+import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
@@ -51,7 +52,11 @@ const stampOf = status => ({ revision: status.revision, store_generation: status
 
 async function fixture(t) {
   const temporary = await mkdtemp(join(tmpdir(), 'mnemion-native-telemetry-'))
-  t.after(() => rm(temporary, { recursive: true, force: true }))
+  const children = new TelemetryFixtureChildren(python, environment)
+  t.after(async () => {
+    await children.close()
+    await rm(temporary, { recursive: true, force: true })
+  })
   const root = join(temporary, 'private choice'), company = join(temporary, 'company.json')
   const invoke = (action, extra = {}) => {
     const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', timeout: 20000,
@@ -65,7 +70,7 @@ async function fixture(t) {
   const active = { ...definitions.disclosure, collection_available: true, destination: 'https://example.invalid/telemetry' }
   const store = new NativeTelemetryStore(root, active, definitions.catalog, company)
   const initial = invoke('configure', { choice: { enabled: true, expected_revision: 0, disclosure_version: 1 } })
-  return { root, company, invoke, store, initial, definitions }
+  return { root, company, invoke, store, initial, definitions, children }
 }
 
 test('inactive native collection reads no choice and creates no store', async t => {
@@ -285,16 +290,14 @@ test('denied bursts reuse filesystem observations only for a bounded quiet inter
 })
 
 test('another SQLite writer causes an immediate drop rather than a queued retry', async t => {
-  const { root, store } = await fixture(t), stamp = await store.snapshot()
-  const child = spawn(python, ['-c', 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("BEGIN IMMEDIATE"); print("ready",flush=True); sys.stdin.read(); c.rollback()', join(root, 'product-telemetry.sqlite3')],
-    { env: environment, stdio: ['pipe', 'pipe', 'pipe'] })
-  t.after(() => { child.stdin.end(); child.kill() })
-  await new Promise((resolve, reject) => { child.stdout.once('data', resolve); child.once('error', reject); child.once('exit', code => reject(new Error(`lock fixture exited ${code}`))) })
+  const { root, store, children } = await fixture(t), stamp = await store.snapshot()
+  const child = children.start(['-c', 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("BEGIN IMMEDIATE"); print("ready",flush=True); sys.stdin.read(); c.rollback()', join(root, 'product-telemetry.sqlite3')])
+  await waitForTelemetryFixture(child)
   const started = performance.now()
   assert.equal(await store.record(observation(), stamp, 20000), false)
   assert.ok(performance.now() - started < 1500)
   child.stdin.end()
-  await new Promise(resolve => child.once('exit', resolve))
+  assert.equal(await children.exited(child), 0)
 })
 
 test('missing or hard-linked databases never become a replacement choice', async t => {
