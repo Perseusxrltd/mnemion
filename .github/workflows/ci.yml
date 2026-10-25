@@ -291,7 +291,9 @@ jobs:
       - run: uv sync --locked --extra supervision
       - run: npm --prefix studio/electron ci
       # TLS fixtures use the same locked cryptography and Python as the service.
-      - run: uv run --no-sync npm --prefix studio/electron test
+      - run: npm --prefix studio/electron test
+        env:
+          MNEMION_TEST_PYTHON: ${{ github.workspace }}/.venv/bin/python
       - name: Independent host control through the real desktop profile and native engine
         env:
           MNEMION_REQUIRE_HOST_CLIENT_TESTS: '1'

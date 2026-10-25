@@ -2,6 +2,11 @@
  * The stable Node-API C interface, resolved from the current Node/Electron
  * process. No Node/V8 headers, downloads, imported node.exe or ABI rebuilds.
  * This same binary exposes network-state.h to the packaged Python runtime. */
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+/* Older glibc headers hide RTLD_DEFAULT under strict C11 without this feature
+ * selection. Set it before network-state.h pulls in any system header. */
+#define _GNU_SOURCE
+#endif
 #include "network-state.h"
 #include <stdlib.h>
 #include <string.h>

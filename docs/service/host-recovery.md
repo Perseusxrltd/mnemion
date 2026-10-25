@@ -99,7 +99,7 @@ On a manually updated Supervisor host, also provide
 `admin_database_url` and must identify the same database as the service's API
 and worker logins. Managed installations use their existing private owner file.
 
-Starting with [4.46.7](../releases/4.46.7.md), managed snapshot/ledger capture
+Starting with [4.46.8](../releases/4.46.8.md), managed snapshot/ledger capture
 uses the existing operator lock to wait up to five minutes for active scans
 to finish; this bounds lock acquisition, not the entire capture. A controller's
 existing lease is retained. After waiting, capture rereads settings/credentials,
