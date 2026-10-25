@@ -37,8 +37,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 5,
+        "succeeded": 5,
         "active": [
           {
             "id": 121319040127,
@@ -46,7 +46,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Run npm --prefix studio/electron test"
             ]
           },
           {
@@ -59,30 +59,12 @@
             ]
           },
           {
-            "id": 121319078894,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 121319078907,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
             "id": 121319078926,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -100,7 +82,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -118,7 +100,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Matching PostgreSQL recovery tools"
             ]
           }
         ]
@@ -181,5 +163,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40243111840"
     }
   ],
-  "observed_at": "2026-10-25T23:05:47+00:00"
+  "observed_at": "2026-10-25T23:06:27+00:00"
 }
