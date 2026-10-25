@@ -37,8 +37,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
           {
             "id": 121298162799,
@@ -56,15 +56,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121298162876,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Audit the installed Mac dependencies"
             ]
           },
           {
@@ -117,15 +108,15 @@
       "workflow": "release.yml",
       "branch": "release/4.46.8",
       "source_commit": "020de57de2cebed146fe9f4a842696105f4f7ee8",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-25T21:39:41Z",
+      "updated_at": "2026-10-25T21:39:53Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055",
       "job_details_schema": 2,
       "job_progress": {
         "total": 19,
-        "completed": 4,
-        "succeeded": 3,
+        "completed": 8,
+        "succeeded": 7,
         "active": [
           {
             "id": 121299160571,
@@ -133,108 +124,98 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 121299160591,
-            "name": "checks / lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Scan exact source with pinned rules and an archived-key rejection control"
+              "Run npm --prefix studio/frontend run test:telemetry"
             ]
           },
           {
             "id": 121299186782,
             "name": "native / Encrypted files / Windows / arm64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121299186872,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+            ]
           },
           {
             "id": 121299187181,
             "name": "native / native_database / Private state / Windows / arm64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121299187226,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121299189071,
-            "name": "checks / dependency-audit",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
           },
           {
             "id": 121299189079,
             "name": "checks / supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
           },
           {
             "id": 121299189082,
             "name": "checks / service (3.13)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --locked --python 3.13 --group dev"
+            ]
           },
           {
             "id": 121299189086,
             "name": "checks / legacy",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
           },
           {
             "id": 121299189088,
             "name": "checks / service (3.12)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
           },
           {
             "id": 121299189089,
             "name": "checks / supervision (macos-15-intel)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
           },
           {
             "id": 121299189100,
             "name": "checks / container (ubuntu-22.04)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
           },
           {
             "id": 121299189157,
             "name": "checks / container (ubuntu-22.04-arm)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
           },
           {
             "id": 121299189226,
             "name": "checks / service (3.14)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
           }
         ]
       },
@@ -263,5 +244,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40236097268"
     }
   ],
-  "observed_at": "2026-10-25T21:39:44+00:00"
+  "observed_at": "2026-10-25T21:40:23+00:00"
 }
