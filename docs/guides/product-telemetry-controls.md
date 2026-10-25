@@ -68,6 +68,19 @@ limits, resource pressure and privacy restrictions still take priority. The
 choice persists without a network name or address. Editing it keeps an existing
 opt-out and does not acknowledge an unseen disclosure.
 
+The new [native network-admission source](../validation/2026-10-25-telemetry-native-conditions.md)
+can read OS cost flags on supported Windows and Linux systems. Its macOS path is
+written but not yet compiled or qualified. A source/pip installation without the
+compiled helper remains unknown, so automatic mode keeps delivery paused.
+Declaring an unmetered connection cannot override an OS-reported metered or
+constrained path. These checks run only for an eligible, already-awake opportunity;
+they add no idle sampler, Internet connectivity probe or network-setting change.
+They remain unreleased and do not activate collection. Focused source checks and
+actual Windows/Linux flag/deadline probes completed; these do not qualify an
+installed telemetry release. The measured Windows Node and Linux Electron
+components still exceed the 2 MiB full-feature RSS target. macOS and full
+platform/resource qualification remain pending.
+
 The exclusions cover unowned remote clients, client-derived server jobs,
 mixed-user host totals, private operational records, polling/replay, privacy
 controls and unavailable sensors. They restrict product collection; the related

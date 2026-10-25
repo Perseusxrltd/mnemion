@@ -3,9 +3,10 @@ import type { TelemetryStamp } from '../shared/product-telemetry'
 
 type Port<Report> = {
   available: () => boolean
-  reserve: (stamp: TelemetryStamp) => Promise<Report | null>
+  reserve: (stamp: TelemetryStamp, stop: AbortSignal) => Promise<Report | null>
   send: (report: Report, stop: AbortSignal) => Promise<unknown>
   cancel: (report: Report) => Promise<void>
+  cleanup?: () => void
 }
 
 export class TelemetryActivity<Report> {
@@ -30,13 +31,14 @@ export class TelemetryActivity<Report> {
       let report: Report | null = null
       try {
         if (state.stop.signal.aborted || !this.available()) return
-        report = await this.port.reserve(expected)
+        report = await this.port.reserve(expected, state.stop.signal)
         if (report !== null && !state.stop.signal.aborted && this.available()) {
           await this.port.send(report, state.stop.signal)
         }
       } catch { /* Optional delivery never changes memory work or forwards errors. */ }
       finally {
         if (report !== null) { try { await this.port.cancel(report) } catch { /* Spent budget remains. */ } }
+        try { this.port.cleanup?.() } catch { /* Optional gauges cannot prevent shutdown. */ }
         if (this.active === state) this.active = undefined
       }
     })

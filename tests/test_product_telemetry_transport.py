@@ -168,6 +168,89 @@ def test_unavailable_application_owner_does_not_change_lifespan_errors(tmp_path)
     assert not (tmp_path / "absent").exists()
 
 
+@pytest.mark.parametrize("ending", ["success", "opt_out", "shutdown"])
+def test_service_preparation_rechecks_policy_and_closes_without_idle_os_queries(
+    installation, ending
+):
+    from mnemion.product_telemetry.activity import Activity
+
+    f = installation
+
+    async def scenario():
+        async with peer(f.context) as server:
+            state = f.prepare(server.endpoint, reserve=False)
+            preparations, closes = [], []
+            entered, release = asyncio.Event(), asyncio.Event()
+
+            async def prepare():
+                preparations.append(None)
+                entered.set()
+                await release.wait()
+                return True
+
+            owner = Activity(
+                f.root,
+                server.endpoint,
+                lambda: {"network": "unmetered", "constrained": False},
+                prepare=prepare,
+                cleanup=lambda: closes.append(None),
+            )
+            stamp = {
+                "expected_revision": state["revision"],
+                "expected_generation": state["store_generation"],
+            }
+            assert owner.budget.eligible(**stamp) is False
+            assert aggregate.record(
+                f.root,
+                {"kind": "submission", "workflow": "memory.recall", "surface": "native_agent"},
+                **stamp,
+            )
+            assert owner.budget.eligible(**stamp) is True
+            owner.offer(state["revision"], state["store_generation"])
+            try:
+                await asyncio.wait_for(entered.wait(), 1)
+                if ending == "opt_out":
+                    policy.configure(f.root, {"enabled": False, "expected_revision": 0})
+                if ending == "shutdown":
+                    await owner.close()
+                else:
+                    release.set()
+                    await asyncio.wait_for(owner._task, 2)
+                assert len(preparations) == len(closes) == 1
+                attempts = 1 if ending == "success" else 0
+                assert len(server.requests) == attempts
+                with closing(sqlite3.connect(f.root / policy.DATABASE_NAME)) as db:
+                    assert db.execute("SELECT count(*) FROM delivery_attempts").fetchone() == (
+                        attempts,
+                    )
+                    assert db.execute("SELECT lease_token FROM delivery_state").fetchone() == (
+                        None,
+                    )
+                if ending == "success":
+                    assert aggregate.record(
+                        f.root,
+                        {
+                            "kind": "submission",
+                            "workflow": "memory.save",
+                            "surface": "native_agent",
+                        },
+                        **stamp,
+                    )
+                    owner._next_check = 0
+                    owner.offer(state["revision"], state["store_generation"])
+                    await asyncio.sleep(0)
+                    await asyncio.wait_for(owner._task, 1)
+                    assert len(preparations) == 1
+                    assert len(server.requests) == 1
+                else:
+                    assert owner.budget.eligible(**stamp) is False or ending == "shutdown"
+            finally:
+                release.set()
+                await owner.close()
+
+    asyncio.run(scenario())
+
+
 @asynccontextmanager
 async def peer(context, mode="success"):
     entered, release = asyncio.Event(), asyncio.Event()

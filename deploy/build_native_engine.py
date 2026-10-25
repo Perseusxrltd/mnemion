@@ -68,6 +68,11 @@ def build(work: Path, output: Path) -> Path:
         build_studio(ROOT)
     work.mkdir(parents=True)
     output.mkdir(parents=True)
+    from deploy.build_telemetry_network import build as build_network_probe
+
+    network_probe = build_network_probe(
+        work / "telemetry/network-state.node", architecture=architecture
+    )
     command = [
         sys.executable,
         "-m",
@@ -101,6 +106,8 @@ def build(work: Path, output: Path) -> Path:
         str(ROOT / "mnemion/_studio") + os.pathsep + "mnemion/_studio",
         "--add-data",
         str(ROOT / "mnemion/assets") + os.pathsep + "mnemion/assets",
+        "--add-binary",
+        str(network_probe) + os.pathsep + "mnemion/product_telemetry",
     ]
     for distribution in ("fastembed", "onnxruntime", "tokenizers", "huggingface_hub", "ngrok"):
         command += ["--copy-metadata", distribution]

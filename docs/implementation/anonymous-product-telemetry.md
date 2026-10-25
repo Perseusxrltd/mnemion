@@ -79,6 +79,18 @@ one real preflight. CPU admission was synthetic. The final frontend build and
 fixture cleanup passed. Neither endpoint's production ingress/log privacy nor
 full resource/platform acceptance is qualified.
 
+The subsequent [native network-admission source batch](../validation/2026-10-25-telemetry-native-conditions.md)
+adds a shared OS-cost helper and read-only eligibility checks before desktop or
+Python owners start gauges. It reads fixed cost/constraint flags without an
+Internet probe or network identifiers. A user declaration can resolve unknown
+metering, never observed metering or constraints. Missing compiled support stays
+unknown. Preparation and refresh occur only inside an already-awake opportunity;
+late cancelled results are rejected, with freshness measured from query start.
+Focused network and packaging checks passed. Final component observations were
+**2.11 MiB added RSS on Windows Node and 2.23 MiB on Linux Electron**, both above
+the unchanged 2 MiB full-feature target. macOS compilation, all-six-native and
+full resource/wire/collector acceptance remain open.
+
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
 bounded private publisher in source. Their conditional per-report privacy bound

@@ -28,11 +28,13 @@ def offer_recorded(root: Path | None, revision: int, generation: str) -> None:
 
 
 class Activity:
-    def __init__(self, root: Path, endpoint, conditions):
+    def __init__(self, root: Path, endpoint, conditions, *, prepare=None, cleanup=None):
         from .delivery import DeliveryBudget
 
         self.root = _root(root)
         self.endpoint = endpoint
+        self.prepare = prepare
+        self.cleanup = cleanup
         self.budget = DeliveryBudget(self.root, environment=conditions)
         self.loop = asyncio.get_running_loop()
         self._lock = Lock()
@@ -69,6 +71,11 @@ class Activity:
         try:
             if not policy.COLLECTION_AVAILABLE or not self.endpoint.validate():
                 return
+            if self.prepare is not None and (
+                not self.budget.eligible(expected_revision=revision, expected_generation=generation)
+                or not await self.prepare()
+            ):
+                return
             report = self.budget.reserve(expected_revision=revision, expected_generation=generation)
             if report is not None:
                 await send(self.budget, report, self.endpoint)
@@ -78,6 +85,11 @@ class Activity:
         finally:
             if report is not None:
                 self.budget.cancel(report)
+            if self.cleanup is not None:
+                try:
+                    self.cleanup()
+                except Exception:
+                    pass
             with self._lock:
                 self._scheduled = False
                 self._task = None
@@ -126,7 +138,9 @@ async def application_delivery(*, root: Path | None = None, can_start=None):
     from .conditions import ServiceConditions
 
     conditions = ServiceConditions(can_start=can_start)
-    owner = Activity(_root(root), endpoint, conditions.read)
+    owner = Activity(
+        _root(root), endpoint, conditions.read, prepare=conditions.prepare, cleanup=conditions.close
+    )
     with _registry_lock:
         # Multiple applications may share an installation; only its first live
         # owner is registered, and another lifespan cannot replace it silently.

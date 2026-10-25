@@ -10,9 +10,10 @@ const __dirname = dirname(__filename)
 const root = resolve(__dirname, '..', '..', '..')
 
 const required = [
-  ...['disclosure', 'catalog', 'desktop-origins'].map(name => ({
+  ...['disclosure', 'catalog', 'desktop-origins', 'wire-v1', 'transport-route'].map(name => ({
     label: `product telemetry ${name}`, path: join(root, 'studio/electron/dist', `telemetry-${name}.json`),
   })),
+  { label: 'native OS telemetry admission probe', path: join(root, 'studio/electron/dist/telemetry-network.node') },
   ...(process.platform === 'win32' ? [{
     label: 'native Windows telemetry privacy guard', path: join(root, 'studio/electron/dist/telemetry-private-store.exe'),
   }] : []),

@@ -84,6 +84,26 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     return this.encoder
   }
 
+  /** Read-only preflight before any OS gauge; final reservation rechecks it. */
+  async eligible(stamp: TelemetryStamp): Promise<boolean> {
+    if (!this.available || !stamp || !integer(stamp.revision, 2147483646) || !token(stamp.store_generation)) return false
+    let database: DatabaseSync | undefined
+    try {
+      database = await this.open()
+      database.exec('BEGIN')
+      const preference = this.preferences(database), company = this.company(), now = this.now()
+      const { current, spent } = state(database)
+      return integer(now, MAX_CLOCK - DAY - JITTER) && preference.enabled === 1 &&
+        preference.disclosure_version === this.disclosure.version && preference.connection_mode !== 'metered' &&
+        preference.revision === stamp.revision && preference.store_generation === stamp.store_generation &&
+        company.enabled && company.groups.length > 0 && now >= current.clock_ms && now >= current.next_ms &&
+        !(current.lease_token && now < current.lease_deadline_ms) && spent.filter(item => item.at_ms > now - WEEK).length < 7 &&
+        Boolean(database.prepare('SELECT 1 FROM pending WHERE window_day >= ? AND window_day <= ? LIMIT 1')
+          .get(Math.floor(now / DAY) - 1, Math.floor(now / DAY)))
+    } catch { return false }
+    finally { try { database?.close() } catch { /* No implicit repair or observation. */ } }
+  }
+
   async reserve(stamp: TelemetryStamp, network: Network = { network: 'unknown', constrained: true }, cohorts: unknown = {}): Promise<PreparedTelemetryReport | null> {
     if (!this.available || !stamp || !integer(stamp.revision, 2147483646) || !token(stamp.store_generation)) return null
     const expected = { ...stamp }

@@ -1,0 +1,135 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { setTimeout as delay } from 'node:timers/promises'
+import { createRequire } from 'node:module'
+import { NativeNetworkConditions, networkFlags } from '../dist/telemetry-network.js'
+import { DesktopTelemetryConditions } from '../dist/telemetry-conditions.js'
+
+const tick = () => new Promise(resolve => setImmediate(resolve))
+const plain = value => { const { observed, ...conditions } = networkFlags(value); return conditions }
+
+test('only the documented fixed OS flags can allow an unmetered path', () => {
+  for (const value of [true, false, null, undefined, '9', NaN, 1, 2, 3, 7, 11, 15, 256, -1]) {
+    assert.deepEqual(networkFlags(value), { network: 'unknown', constrained: true, observed: false })
+  }
+  assert.deepEqual(networkFlags(0), { network: 'unknown', constrained: false, observed: false })
+  assert.deepEqual(networkFlags(9), { network: 'unmetered', constrained: false, observed: true })
+  assert.deepEqual(networkFlags(14), { network: 'metered', constrained: true, observed: true })
+})
+
+test('OS probes run only inside an awake attempt, with no idle or closed refresh', async () => {
+  let calls = 0, now = 0, code = 9
+  const conditions = new NativeNetworkConditions(async () => { calls++; return code }, () => now)
+  assert.deepEqual(conditions.read(), { network: 'unknown', constrained: true })
+  await tick(); assert.equal(calls, 0)
+  assert.equal(await conditions.start(new AbortController().signal), true)
+  assert.deepEqual(conditions.read(), plain(9)); assert.equal(calls, 1)
+  now = 300; code = 10
+  conditions.read(); conditions.read(); await tick()
+  assert.equal(calls, 2); assert.deepEqual(conditions.read(), plain(10))
+  conditions.close(); now = 10000; conditions.read(); await tick()
+  assert.equal(calls, 2)
+  assert.deepEqual(conditions.read(), { network: 'unknown', constrained: true })
+})
+
+test('missing capabilities and errors cannot erase a previously observed restriction', async () => {
+  let code = 10
+  const conditions = new NativeNetworkConditions(async () => {
+    if (code === -1) throw new Error('OS unavailable')
+    return code
+  })
+  const start = () => conditions.start(new AbortController().signal)
+  assert.equal(await start(), true); assert.deepEqual(conditions.read(), plain(10)); conditions.close()
+  code = 0; assert.equal(await start(), true); assert.deepEqual(conditions.read(), plain(10)); conditions.close()
+  code = -1; assert.equal(await start(), true); assert.deepEqual(conditions.read(), plain(14)); conditions.close()
+  code = 9; assert.equal(await start(), true); assert.deepEqual(conditions.read(), plain(9)); conditions.close()
+})
+
+test('cancelled native work is ignored and cannot overlap the next attempt', async () => {
+  let finish, calls = 0
+  const old = new Promise(resolve => { finish = resolve })
+  const conditions = new NativeNetworkConditions(() => ++calls === 1 ? old : Promise.resolve(10))
+  const stop = new AbortController(), first = conditions.start(stop.signal)
+  await tick(); assert.equal(calls, 1)
+  stop.abort(); assert.equal(await first, false)
+  const second = conditions.start(new AbortController().signal)
+  await tick(); assert.equal(calls, 1)
+  finish(9); assert.equal(await second, true)
+  assert.equal(calls, 2); assert.deepEqual(conditions.read(), plain(10)); conditions.close()
+})
+
+test('closing before a queued microtask starts avoids the OS call entirely', async () => {
+  let calls = 0
+  const conditions = new NativeNetworkConditions(async () => { calls++; return 9 })
+  const started = conditions.start(new AbortController().signal)
+  conditions.close()
+  assert.equal(await started, false)
+  assert.equal(calls, 0)
+})
+
+test('slow OS replies do not extend freshness beyond one second from query start', async () => {
+  let finish, now = 0
+  const conditions = new NativeNetworkConditions(() => new Promise(resolve => { finish = resolve }), () => now)
+  const started = conditions.start(new AbortController().signal)
+  await tick(); now = 600; finish(9); assert.equal(await started, true)
+  now = 1001
+  assert.equal(conditions.read().constrained, true)
+  conditions.close()
+  await tick()
+})
+
+test('expired samples and a rolled back clock suppress handoff while a probe is pending', async () => {
+  let now = 0, calls = 0, finish
+  const conditions = new NativeNetworkConditions(() => ++calls === 1 ? Promise.resolve(9)
+    : new Promise(resolve => { finish = resolve }), () => now)
+  assert.equal(await conditions.start(new AbortController().signal), true)
+  now = 1001
+  assert.deepEqual(conditions.read(), { network: 'unknown', constrained: true })
+  await tick(); conditions.read(); assert.equal(calls, 2)
+  finish(9); await tick(); assert.deepEqual(conditions.read(), plain(9))
+  now = 900; assert.equal(conditions.read().constrained, true)
+  conditions.close()
+})
+
+test('a missing native reply stops preparation after its one-second deadline', async () => {
+  const conditions = new NativeNetworkConditions(() => new Promise(() => {}))
+  // The application is awake; this test owns the only referenced timer.
+  const awake = delay(1150)
+  assert.equal(await conditions.start(new AbortController().signal), false)
+  assert.equal(conditions.read().constrained, true)
+  await awake
+})
+
+test('the compiled Node ABI exposes only fixed policy flags', async () => {
+  const binding = createRequire(import.meta.url)('../dist/telemetry-network.node')
+  assert.deepEqual(Object.keys(binding), ['readState'])
+  const value = await binding.readState()
+  assert.ok([0, 8, 9, 10, 12, 13, 14].includes(value))
+})
+
+test('an additional detector cannot erase the actual OS metered veto', async () => {
+  const network = new NativeNetworkConditions(async () => 10)
+  const conditions = new DesktopTelemetryConditions({
+    online: () => true, thermal: () => 'unknown', metering: () => 'unmetered',
+  }, network)
+  try {
+    assert.equal(await network.start(new AbortController().signal), true)
+    assert.equal(conditions.read().network, 'metered')
+  } finally { conditions.close() }
+})
+
+test('real CPU deltas keep the existing thermal/offline vetoes and close the network gauge', async t => {
+  // The desktop already owns an app lifetime; the gauge must not keep Node up.
+  const appLifetime = setTimeout(() => {}, 2000)
+  t.after(() => clearTimeout(appLifetime))
+  let online = true, thermal = 'unknown'
+  const network = new NativeNetworkConditions(async () => 9)
+  const conditions = new DesktopTelemetryConditions({ online: () => online, thermal: () => thermal }, network)
+  try {
+    assert.equal(await conditions.prepare(new AbortController().signal), true)
+    assert.equal(conditions.read().network, 'unmetered')
+    thermal = 'critical'; assert.equal(conditions.read().constrained, true)
+    thermal = 'nominal'; online = false; assert.equal(conditions.read().constrained, true)
+  } finally { conditions.close() }
+  assert.equal(network.read().constrained, true)
+})

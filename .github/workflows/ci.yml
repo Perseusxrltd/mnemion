@@ -113,6 +113,21 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - name: Compile and exercise the native network admission probe in Python and Node
+        run: |
+          python -m deploy.build_telemetry_network --output "$RUNNER_TEMP/telemetry-network.node"
+          python -m deploy.probe_telemetry_network --artifact "$RUNNER_TEMP/telemetry-network.node" --node node --output "$RUNNER_TEMP/telemetry-network.json"
+      - name: Preserve native network admission component evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-network-${{ matrix.runner }}
+          path: ${{ runner.temp }}/telemetry-network.json
+          if-no-files-found: warn
+          retention-days: 14
       - run: python -m pip install uv==0.12.24
       - name: Build the current Intel cryptography runtime with static OpenSSL
         if: matrix.runner == 'macos-15-intel'

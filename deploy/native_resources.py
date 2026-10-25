@@ -18,12 +18,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def source_digest(root: Path) -> str:
     digest = hashlib.sha256()
-    paths = [root / "studio/engine/main.py", root / "pyproject.toml", root / "uv.lock"]
+    paths = [
+        root / "studio/engine/main.py",
+        root / "pyproject.toml",
+        root / "uv.lock",
+        root / "deploy/build_telemetry_network.py",
+        root / "deploy/build_telemetry_network.ps1",
+    ]
     paths += [
         p
         for p in (root / "mnemion").rglob("*")
         if p.is_file()
-        and p.suffix in {".py", ".sql", ".json", ".yaml", ".yml"}
+        and p.suffix in {".py", ".sql", ".json", ".yaml", ".yml", ".c", ".h"}
         and not p.is_relative_to(root / "mnemion/_studio")
     ]
     for path in sorted(paths):
@@ -142,6 +148,7 @@ def verify_component(directory: Path, component: str, platform: str, arch: str) 
     if component == "service":
         required = [
             "mnemion-engine" + suffix,
+            "_internal/mnemion/product_telemetry/network-state.node",
             "licenses/LICENSE",
             "licenses/NOTICE",
             "licenses/inventory.json",
@@ -164,8 +171,16 @@ def verify_component(directory: Path, component: str, platform: str, arch: str) 
             raise ValueError("The database does not use the reviewed source manifest")
     if not all(name in files and files[name]["size"] > 0 for name in required):
         raise ValueError("Native runtime is missing a required executable or license")
+    if any(
+        binary_target(directory / name) is None
+        for name in required
+        if not name.startswith("licenses/")
+    ):
+        raise ValueError("A required native runtime entry is not a supported binary")
     if os.name != "nt" and any(
-        not files[name]["executable"] for name in required if not name.startswith("licenses/")
+        not files[name]["executable"]
+        for name in required
+        if not name.startswith(("licenses/", "_internal/"))
     ):
         raise ValueError("Native runtime entry points must retain executable permissions")
     return metadata

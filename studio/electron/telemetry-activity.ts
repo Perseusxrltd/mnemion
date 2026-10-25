@@ -20,11 +20,15 @@ function releaseAddress(): string | null {
 export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
   private readonly activity: TelemetryActivity<PreparedTelemetryReport>
   constructor(root: string, disclosure: NativeTelemetryDisclosure, catalog: MeasurementCatalog,
-    conditions: () => TelemetryConditions, companyFile?: string, address: string | null = releaseAddress()) {
+    conditions: () => TelemetryConditions, companyFile?: string, address: string | null = releaseAddress(),
+    gauges?: { prepare: (stop: AbortSignal) => Promise<boolean>; close: () => void }) {
     super(root, disclosure, catalog, companyFile, undefined, undefined, conditions)
     this.activity = new TelemetryActivity({
       available: () => this.available && address !== null,
-      reserve: stamp => this.reserve(stamp),
+      reserve: async (stamp, stop) => {
+        if (gauges && (!await this.eligible(stamp) || !await gauges.prepare(stop) || stop.aborted)) return null
+        return this.reserve(stamp)
+      },
       send: async (report, stop) => {
         const { TelemetryEndpoint, sendNativeTelemetry } = await import('./telemetry-transport.js')
         if (stop.aborted || !this.disclosure.destination || !address) return
@@ -33,6 +37,7 @@ export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
         await sendNativeTelemetry(this, report, endpoint, stop)
       },
       cancel: report => this.cancel(report),
+      cleanup: () => gauges?.close(),
     })
   }
 

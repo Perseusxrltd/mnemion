@@ -50,6 +50,20 @@ and admissible connection/resource conditions. The later owner components supply
 current local gauges at admission and during the active attempt. Their source
 wiring does not establish all-platform sensing or resource acceptance.
 
+The later [native OS-admission source change](../validation/2026-10-25-telemetry-native-conditions.md)
+adds a read-only eligibility check before desktop/Python owners start gauges.
+Unavailable collection, stale choice, an empty queue, exhausted allowance or
+cooldown can refuse that work without an OS probe. This precheck does not spend
+or promise a reservation; the normal transaction still rechecks every rule.
+The initial network-read wait and reading freshness are each bounded to one
+second; freshness starts at query initiation, so reply latency consumes that
+allowance. Only existing active checks can request a refresh after 250 ms, and
+an outstanding OS call is never overlapped. Cancellation prevents a queued probe
+from starting, rejects late replies and closes gauges. The separate five-second
+report lease and spending rules are unchanged. Focused network and packaging
+checks passed; macOS, installed-platform and full resource acceptance remain
+pending.
+
 | Persistent connection choice | Delivery admission |
 | --- | --- |
 | `auto` (default) | Unknown metering refuses the attempt; Wi-Fi/Ethernet alone does not prove an unlimited plan. |

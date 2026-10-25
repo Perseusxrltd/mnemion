@@ -2,16 +2,33 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 
 
 class ServiceConditions:
-    def __init__(self, *, can_start=None, metering=None):
+    def __init__(self, *, can_start=None, metering=None, network=None):
+        from .network import NativeNetworkConditions
+
         self.can_start = can_start
         self.metering = metering
+        self.network = network if network is not None else NativeNetworkConditions()
         self._previous = None
         self._sampled_at = float("-inf")
         self._constrained = True
+
+    async def prepare(self) -> bool:
+        if not await self.network.start():
+            return False
+        self.read()
+        if self._constrained:
+            # First/stale CPU samples need a real delta, inside this attempt.
+            await asyncio.sleep(0.25)
+            self.read()
+        return True
+
+    def close(self) -> None:
+        self.network.close()
 
     def read(self) -> dict:
         try:
@@ -45,10 +62,17 @@ class ServiceConditions:
                 )
                 self._previous = (now, total, idle)
                 self._sampled_at = now
-            # Absence of an OS metering capability stays explicitly unknown.
+            network = self.network.read()
+            metering = (
+                "metered"
+                if network["network"] == "metered"
+                else self.metering()
+                if self.metering
+                else network["network"]
+            )
             return {
-                "network": self.metering() if self.metering else "unknown",
-                "constrained": bool(self._constrained),
+                "network": metering,
+                "constrained": bool(self._constrained or network["constrained"]),
             }
         except Exception:
             return {"network": "unknown", "constrained": True}

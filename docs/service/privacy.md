@@ -79,6 +79,15 @@ privacy restrictions still take priority. The setting persists until changed
 without storing a network name or address. A stale opt-out preserves a newer
 connection choice, and migration/choice changes retain spent delivery accounting.
 
+The later [native OS-cost source change](../validation/2026-10-25-telemetry-native-conditions.md)
+reads only fixed local cost/constraint flags before an eligible desktop or Python
+attempt. It does not enumerate network names or addresses, probe the Internet,
+change network settings or add those flags to analytics. No idle sampler is
+introduced. Missing compiled support remains unknown; a user declaration cannot
+override observed metering or constraints. This source work remains inactive.
+Focused source and component checks completed; macOS compilation and full
+platform/resource qualification remain pending.
+
 Opportunistic desktop/browser and Python service/local stdio owners now have
 source checks and an isolated actual-browser journey. CPU admission in that
 journey was synthetic; real sensor and resource qualification remains open.

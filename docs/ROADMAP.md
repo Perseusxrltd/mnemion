@@ -38,6 +38,11 @@ availability and release gates; each deployment requires its own acceptance.
   checks restrictions before reserved reports; focused source checks and its
   **20-assertion Chromium journey on 25 October** passed, with synthetic CPU
   admission, a passing frontend build and verified fixture cleanup.
+  Later [native network-admission source work](validation/2026-10-25-telemetry-native-conditions.md)
+  adds OS cost flags and eligibility checks before gauges; focused network and
+  packaging checks passed. macOS compilation remains pending. Final Windows
+  Node/Linux Electron components measured **2.11/2.23 MiB added RSS**, above the
+  unchanged 2 MiB full-feature target; this is not full resource acceptance.
   Collection is unavailable,
   with no active collector, qualified public ingress or all-six-native acceptance.
   This work is excluded from the isolated 4.46.6

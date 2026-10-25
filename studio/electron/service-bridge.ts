@@ -323,7 +323,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (!measurements) {
       const { disclosure, catalog } = nativeTelemetryDefinitions()
       measurements = new DesktopTelemetryActivity(join(localBase(false), 'mnemion-product-telemetry'), disclosure, catalog,
-        () => telemetryConditions.read())
+        () => telemetryConditions.read(), undefined, undefined,
+        { prepare: stop => telemetryConditions.prepare(stop), close: () => telemetryConditions.close() })
       for (const reason of telemetryPauses) measurements.pauseDelivery(reason)
     }
     return measurements

@@ -112,7 +112,7 @@ print(json.dumps(result))
   assert.equal(disclosure.collection_available, false)
   const active = { ...disclosure, collection_available: true, destination }
   const store = options.activity
-    ? new DesktopTelemetryActivity(root, active, catalog, options.conditions ?? (() => ({ network: 'unmetered', constrained: false })), company, endpoint.address)
+    ? new DesktopTelemetryActivity(root, active, catalog, options.conditions ?? (() => ({ network: 'unmetered', constrained: false })), company, endpoint.address, options.gauges)
     : new NativeTelemetryDelivery(root, active, catalog, company)
   const stamp = invoke('init')
   if (options.activity) { t.after(() => store.closeDelivery()); return { store, stamp, invoke } }
@@ -151,6 +151,33 @@ test('ordinary desktop recording owns a real TLS send without a manual reserve o
   assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.save', surface: 'desktop' }, f.stamp), true)
   await f.store.deliverySettled()
   assert.equal(server.requests.length, 1)
+})
+
+test('desktop OS gauges never start during cooldown and close after the actual TLS attempt', async t => {
+  let preparations = 0, closes = 0
+  const server = await peer(t), f = await installation(t, server.endpoint, { activity: true,
+    gauges: { prepare: async () => { preparations++; return true }, close: () => { closes++ } } })
+  assert.equal(await f.store.eligible(f.stamp), false)
+  await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp)
+  await f.store.deliverySettled()
+  assert.equal(preparations, 1); assert.equal(closes, 1); assert.equal(server.requests.length, 1)
+  f.store.resumeDelivery()
+  await f.store.record({ kind: 'submission', workflow: 'memory.save', surface: 'desktop' }, f.stamp)
+  await f.store.deliverySettled()
+  assert.equal(preparations, 1); assert.equal(server.connections(), 1)
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 1 })
+})
+
+test('an opt-out during OS preparation is rechecked before any budget or socket is used', async t => {
+  let enter, finish, closes = 0
+  const entered = new Promise(resolve => { enter = resolve }), pending = new Promise(resolve => { finish = resolve })
+  const server = await peer(t), f = await installation(t, server.endpoint, { activity: true,
+    gauges: { prepare: async () => { enter(); await pending; return true }, close: () => { closes++ } } })
+  await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp)
+  await entered; f.invoke('off'); finish()
+  await f.store.deliverySettled()
+  assert.equal(closes, 1); assert.equal(server.connections(), 0)
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 0 })
 })
 
 test('the desktop owner pauses before dispatch and cancels when actual admission changes', async t => {

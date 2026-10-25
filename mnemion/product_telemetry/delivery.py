@@ -218,6 +218,42 @@ class DeliveryBudget:
             raise WireError
         return policy._connect(path, readonly=readonly)
 
+    def eligible(self, *, expected_revision: int, expected_generation: str) -> bool:
+        """Read-only preflight before gauges; reserve still rechecks every rule."""
+        if (
+            not policy.COLLECTION_AVAILABLE
+            or policy.COLLECTOR_URL is None
+            or not _integer(expected_revision, 2147483646)
+            or not policy.valid_generation(expected_generation)
+        ):
+            return False
+        now = _now_ms()
+        if not _integer(now, MAX_CLOCK_MS - DAY_MS - JITTER_MS):
+            return False
+        try:
+            with closing(self._open(readonly=True)) as connection:
+                connection.execute("BEGIN")
+                preference = policy._preferences(connection)
+                company = policy.company_policy(self.policy_path)
+                if preference["connection_mode"] == "metered" or not aggregate._permitted(
+                    preference, company, expected_revision, expected_generation
+                ):
+                    return False
+                state, recent = _state(connection)
+                if now < state[0] or now < state[1] or (state[2] and now < state[3]):
+                    return False
+                if len([row for row in recent if row[1] > now - WEEK_MS]) >= MAX_ATTEMPTS:
+                    return False
+                day = now // DAY_MS
+                return (
+                    connection.execute(
+                        "SELECT 1 FROM pending WHERE window_day IN (?, ?) LIMIT 1", (day, day - 1)
+                    ).fetchone()
+                    is not None
+                )
+        except _FAILURES:
+            return False
+
     def reserve(
         self,
         *,

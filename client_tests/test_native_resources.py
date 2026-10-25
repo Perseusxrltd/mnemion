@@ -35,7 +35,10 @@ def fixture(root: Path, platform="linux", arch="x64"):
         directory = root / folder
         suffix = ".exe" if platform == "windows" else ""
         if component == "service":
-            executables = ["mnemion-engine" + suffix]
+            executables = [
+                "mnemion-engine" + suffix,
+                "_internal/mnemion/product_telemetry/network-state.node",
+            ]
             licenses = ["LICENSE", "NOTICE", "inventory.json", "sbom.cdx.json"]
         else:
             executables = [
@@ -105,7 +108,16 @@ def test_all_six_targets_preserve_the_explicit_database_architecture(tmp_path, p
 
 @pytest.mark.parametrize(
     "change",
-    ["tamper", "unlisted", "wrong_architecture", "wrong_platform", "missing_license", "old_source"],
+    [
+        "tamper",
+        "unlisted",
+        "wrong_architecture",
+        "wrong_platform",
+        "missing_license",
+        "missing_network_probe",
+        "invalid_network_probe",
+        "old_source",
+    ],
 )
 def test_packaging_rejects_an_incomplete_or_wrong_runtime(tmp_path, change):
     fixture(tmp_path)
@@ -124,6 +136,14 @@ def test_packaging_rejects_an_incomplete_or_wrong_runtime(tmp_path, change):
         inventory(engine)
     elif change == "missing_license":
         (engine / "licenses/NOTICE").unlink()
+        inventory(engine)
+    elif change == "missing_network_probe":
+        (engine / "_internal/mnemion/product_telemetry/network-state.node").unlink()
+        inventory(engine)
+    elif change == "invalid_network_probe":
+        (engine / "_internal/mnemion/product_telemetry/network-state.node").write_bytes(
+            b"not a library"
+        )
         inventory(engine)
     else:
         manifest = engine / "mnemion-runtime.json"

@@ -7,6 +7,10 @@ import ts from 'typescript'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const check = spawnSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '-p', resolve(root, 'tsconfig.json')], { stdio: 'inherit' })
 if (check.status !== 0) process.exit(check.status || 1)
+const probe = spawnSync(process.env.MNEMION_BUILD_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'),
+  ['-m', 'deploy.build_telemetry_network', '--arch', process.arch, '--output', resolve(root, 'dist/telemetry-network.node')],
+  { cwd: resolve(root, '../..'), stdio: 'inherit', windowsHide: true })
+if (probe.status !== 0) process.exit(probe.status || 1)
 if (process.platform === 'win32') {
   const privacy = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
     '-File', resolve(root, 'scripts/build-telemetry-private-store.ps1'), '-Architecture', process.arch,

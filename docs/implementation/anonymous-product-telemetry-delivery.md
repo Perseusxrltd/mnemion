@@ -182,6 +182,61 @@ with two new reports and two real CORS preflights. CPU admission was synthetic;
 real heap readings and capability presence do not establish pressure-sensor or
 full resource acceptance.
 
+## Native OS-cost admission
+
+The [shared C helper](../../mnemion/product_telemetry/native/network-state.c)
+returns only fixed cost and constraint flags through a
+[Node-API bridge](../../mnemion/product_telemetry/native/network-node.c) or
+[Python loader](../../mnemion/product_telemetry/network.py). These are local
+admission inputs, never report fields, network names, addresses or identifiers.
+The helper makes no Internet probe and changes no network settings.
+
+| OS source | Admission behavior |
+| --- | --- |
+| Windows | [`GetNetworkConnectivityHint`](https://learn.microsoft.com/en-us/windows/win32/api/netioapi/nf-netioapi-getnetworkconnectivityhint) on Windows 10 version 2004 or later. Fixed/variable cost, roaming and approaching/exceeded limits are metered; insufficient connectivity is constrained. Older or unavailable support stays unknown. The rejected COM path is not used. |
+| macOS | Network framework path `expensive`, `constrained` and satisfaction state. This implementation is source-only and has not yet been compiled or qualified on macOS. |
+| Linux | Private local D-Bus reads of NetworkManager's [`Metered` and `State`](https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.html), without service auto-start. Remote `DBUS_*` overrides are ignored. Explicit `NO` can allow automatic admission; guessed `NO` stays unknown, and guessed `YES` is metered. Missing support stays unknown. |
+
+The Linux core now uses nonblocking pending calls and bounded dispatch, with a
+200 ms monotonic limit for each exchange. Messages are capped at 4 KiB, aggregate
+receive storage at 8 KiB, and replies carrying file descriptors are refused.
+The earlier blocking API did not bound stalled authentication; that failure is
+preserved in the validation report. The C core emits no production logs.
+
+Desktop and Python owners first perform a read-only policy/queue/allowance check,
+before starting OS or resource gauges. Reservation still rechecks all rules and
+is the operation that spends the allowance. The
+[native coordinator](../../studio/electron/telemetry-network.ts) and Python
+coordinator allow up to one second for the initial OS read and reject readings
+at least one second old, measured from **query start**, including reply latency.
+Existing active checks may request a refresh after
+250 ms; this is not an idle timer or a guarantee that refresh finishes in 250 ms.
+The one-second wait does not bound all preparation, which can also need a CPU
+delta, or forcibly terminate an OS call.
+
+Cancellation closes the gauges and invalidates late replies; queued work checks
+cancellation before invoking the OS. An outstanding OS call can finish, but the
+coordinator neither adopts its old result nor overlaps it with a new call.
+Losing an OS capability cannot erase a known metered or
+constrained observation. An explicit `unmetered` choice resolves unknown cost
+only; it cannot bypass constraints or an observed metered path. An optional
+additional detector also cannot override the OS's metered result.
+
+The [desktop build](../../studio/electron/scripts/build.mjs) and
+[frozen engine builder](../../deploy/build_native_engine.py) bundle the compiled
+helper. Source/pip installations without it remain unknown. This is build wiring,
+not installed or all-platform acceptance. The
+[validation](../validation/2026-10-25-telemetry-native-conditions.md) preserves
+the rejected COM and earlier replacement measurements, then records **38 Python
+network, 10 Node network and 19 packaging passes** as separate selections.
+The Node tests are not Electron app acceptance. Final actual component probes
+recorded **2.11 MiB added RSS on Windows Node and 2.23 MiB on Linux Electron**,
+both above the full-feature 2 MiB target. The
+[reusable probe](../../deploy/probe_telemetry_network.py) checks the actual binary
+through Python and Node; new Intel/ARM macOS CI steps have not yet run.
+macOS, all-six-installed and whole-app resource/wire/collector qualification
+remain pending; production stays false/null/null.
+
 ## Browser company-policy refresh
 
 The [browser policy reader](../../studio/frontend/src/workspace/telemetry-company.ts)
