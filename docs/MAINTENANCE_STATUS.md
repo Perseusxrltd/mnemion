@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-25T18:12:52+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-25T19:04:47+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,10 +17,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40217231998](https://github.com/Perseusxrltd/mnemion/actions/runs/40217231998) |
+| ci\.yml | main | failure | [Run 40221952456](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456) |
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | public-updates\.yml | v4\.46\.6 | success | [Run 40052003118](https://github.com/Perseusxrltd/mnemion/actions/runs/40052003118) |
 | release\.yml | release/4\.46\.6 | success | [Run 40047223740](https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740) |
 | verify-artifacts\.yml | main | success | [Run 40051560833](https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833) |
-| website-release\.yml | main | success | [Run 40217232001](https://github.com/Perseusxrltd/mnemion/actions/runs/40217232001) |
+| website-release\.yml | main | success | [Run 40221952453](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952453) |
 | website-release\.yml | v4\.46\.6 | success | [Run 40052000728](https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728) |
+
+## Unsuccessful jobs
+
+- [Run 40221952456](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456): service \(3\.12\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- [Run 40221952456](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456): service \(3\.13\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- [Run 40221952456](https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456): service \(3\.14\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.

@@ -25,15 +25,54 @@
   ],
   "runs": [
     {
-      "id": 40217231998,
+      "id": 40221952456,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "cb200518ab6343798cb581446d5f47e8c34a55b5",
+      "source_commit": "f35f1074a16c44bd029dd885bb80c342016c0376",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-25T18:12:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40217231998"
+      "conclusion": "failure",
+      "updated_at": "2026-10-25T19:04:10Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40221952456",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 9,
+        "active": []
+      },
+      "failed_jobs": [
+        {
+          "name": "service (3.12)",
+          "id": 121255287760,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.13)",
+          "id": 121255287784,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.14)",
+          "id": 121255287829,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 40179454634,
@@ -80,15 +119,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833"
     },
     {
-      "id": 40217232001,
+      "id": 40221952453,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "cb200518ab6343798cb581446d5f47e8c34a55b5",
+      "source_commit": "f35f1074a16c44bd029dd885bb80c342016c0376",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-25T17:36:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40217232001"
+      "updated_at": "2026-10-25T18:35:27Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40221952453"
     },
     {
       "id": 40052000728,
@@ -102,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728"
     }
   ],
-  "observed_at": "2026-10-25T18:12:52+00:00"
+  "observed_at": "2026-10-25T19:04:47+00:00"
 }
