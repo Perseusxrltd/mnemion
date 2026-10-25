@@ -142,3 +142,61 @@ def test_publisher_refuses_an_unclosed_week_or_an_unsafe_path(tmp_path, summary)
         (tmp_path / "redirect").symlink_to(store.root, target_is_directory=True)
         with pytest.raises(wire.WireError):
             ReportStore(tmp_path / "redirect")
+
+
+def test_legacy_report_bodies_remain_immutable_and_readable_alongside_volume_reports(
+    tmp_path, summary
+):
+    def clock():
+        return 345600 + 2901 * 604800
+
+    store = ReportStore(tmp_path / "publisher", clock=clock)
+    legacy = deepcopy(summary)
+    legacy["schema_version"] = 1
+    legacy["window_week"] = 2899
+    del legacy["report_range"]
+    # Preserve the old body's bytes, including its original formatting. A read
+    # must not synthesize a volume count or migrate this immutable closed week.
+    original = json.dumps(legacy, indent=2)
+    with closing(sqlite3.connect(store.path)) as database:
+        database.execute("INSERT INTO reports VALUES (?, ?)", (2899, original))
+        database.commit()
+    store(summary)
+    reopened = ReportStore(store.root, clock=clock)
+    assert reopened.reports() == [legacy, summary]
+    with closing(sqlite3.connect(store.path)) as database:
+        assert (
+            database.execute("SELECT body FROM reports WHERE week=2899").fetchone()[0] == original
+        )
+    assert "report_range" not in reopened.reports()[0]
+
+
+@pytest.mark.parametrize(
+    "bounds",
+    [
+        None,
+        {"minimum": True, "maximum_exclusive": 128},
+        {"minimum": 32, "maximum_exclusive": 64},
+        {"minimum": 65, "maximum_exclusive": 130},
+        {"minimum": 64, "maximum_exclusive": 4096},
+        {"minimum": 64, "maximum_exclusive": 128, "source": "PRIVATE_CONTEXT"},
+        {"minimum": 64, "maximum_exclusive": 128},  # Too few for the reported view.
+        {"minimum": 2**24, "maximum_exclusive": 2**25},
+    ],
+)
+def test_invalid_or_inconsistent_volume_never_enters_retained_reports(tmp_path, summary, bounds):
+    store = ReportStore(tmp_path / "publisher", clock=lambda: 345600 + 2901 * 604800)
+    value = deepcopy(summary)
+    value["report_range"] = bounds
+    with pytest.raises(wire.WireError):
+        store(value)
+    assert store.reports() == []
+    assert b"PRIVATE_CONTEXT" not in store.path.read_bytes()
+
+
+def test_total_cannot_claim_more_reports_than_its_suppressed_views_allow(summary):
+    for item in summary["views"]:
+        item.update(state="insufficient_reports", report_range=None, estimates=None)
+    summary["report_range"] = {"minimum": 131072, "maximum_exclusive": 262144}
+    with pytest.raises(wire.WireError):
+        validate(summary)

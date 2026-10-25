@@ -184,6 +184,58 @@ def test_small_windows_and_saturation_do_not_publish_residuals_or_grow_storage(m
     assert not any(window._counts)
 
 
+@pytest.mark.parametrize("count", [0, 63, 64, 127, 128, 700, 4095])
+def test_closed_volume_is_coarse_and_does_not_release_small_view_counts(count):
+    window = AggregateWindow(2900)
+    before = window.storage_bytes
+    for index in range(count):
+        identifier = index % len(wire.VIEWS)
+        assert window.contribute(wire.encode(identifier, 0))
+    assert not window.contribute(b"PRIVATE_INVALID_PACKET")
+    assert window.storage_bytes == before
+    result = window.seal()
+    if count < 64:
+        assert result is None
+    else:
+        assert result["schema_version"] == 2
+        assert result["report_range"] == {
+            "minimum": 1 << (count.bit_length() - 1),
+            "maximum_exclusive": 1 << count.bit_length(),
+        }
+        assert all(
+            item["state"] == "insufficient_reports"
+            and item["report_range"] is None
+            and item["estimates"] is None
+            for item in result["views"]
+        )
+        assert result["participation_or_lifetime_guarantee"] is False
+        assert "PRIVATE" not in json.dumps(result)
+        assert "count" not in result and "users" not in result and "devices" not in result
+    assert window.seal() is None
+    assert not window._total and not any(window._counts)
+    assert not any(value for sums in window._sums for value in sums)
+
+
+def test_collector_publishes_volume_once_at_boundary_without_a_live_or_filter_route():
+    published = []
+    current = [345600 + 2900 * 604800]
+    app = Collector(published.append, clock=lambda: current[0])
+    with TestClient(app) as client:
+        for _ in range(65):
+            assert client.post("/v1/report", content=wire.encode(0, 3)).status_code == 204
+        assert client.post("/v1/report", content=b"PRIVATE_INVALID_PACKET").status_code == 400
+        assert not published
+        assert client.get("/stats").status_code == 404
+        assert client.get("/v1/report?view=feature").status_code == 404
+        current[0] += 604800
+        assert app._advance()
+        assert len(published) == 1
+        assert published[0]["report_range"] == {"minimum": 64, "maximum_exclusive": 128}
+        assert all(item["estimates"] is None for item in published[0]["views"])
+        assert app._advance() and len(published) == 1
+    assert not app._window._total
+
+
 def test_asgi_drops_headers_metadata_malformed_bodies_and_arbitrary_queries(capsys):
     published = []
     current = [345600 + 2900 * 604800]

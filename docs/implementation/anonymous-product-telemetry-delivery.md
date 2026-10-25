@@ -297,13 +297,35 @@ actual server, TLS terminator, proxy or provider: transport metadata and logs
 still require evidence through the complete deployed path.
 
 Weeks are server-owned, fixed Monday-to-Monday windows. Only a closed window is
-passed to a publisher callback. Each view needs **at least 4,096 reports**, and
-output uses power-of-two count ranges such as `[4096, 8192)`, never a distinct-user
-count. Below the threshold the view is `insufficient_reports`; a rare/noisy cell
-whose confidence interval includes zero is `insufficient_precision`, with no
+passed to a publisher callback. The reporting follow-up adds **report schema
+version 2** with a root `report_range` containing one global power-of-two volume
+range after **at least 64 accepted reports** in that week, for example
+`[64, 128)`. Fewer than 64 reports produce no
+closed-week document. This is the collector's unverified contribution volume,
+not a user/device count, adoption measure or total feature usage. It adds no
+live view, filter or exact count.
+
+Each detailed view still needs **at least 4,096 reports of its own**, and
+uses power-of-two count ranges such as `[4096, 8192)`. All views may remain
+`insufficient_reports` in a document that contains a global volume range.
+A rare/noisy cell whose confidence interval includes zero is
+`insufficient_precision`, with no
 published point estimate or residual. Inconsistent estimates suppress the view.
 Published fractions describe sampled categories, not unique users or total
 global feature usage.
+
+Report schema v2 is separate from **wire v1**, whose four-byte packet, category
+randomization and client allowance remain unchanged. The updated reader accepts
+existing immutable v1 reports without rewriting them or inventing a missing
+global range. The new volume bucket does not inherit the categorical
+`ln(3)` bound as a participation or lifetime privacy guarantee; it remains
+subject to the complete privacy and utility qualification.
+
+The [weekly-volume source checks](../validation/2026-10-25-telemetry-weekly-volume.md)
+passed **67 tests in 17.87 seconds**, covering wire distribution/privacy,
+closed-week publication, legacy report compatibility, malformed/inconsistent
+ranges and the actual TLS minimal runtime. This is source/component evidence;
+deployment, installed behavior and full V08 qualification remain open.
 
 Clock rollback and shutdown discard volatile state; publisher failure drops the
 closed result rather than creating a raw-request backlog. The standard
@@ -313,7 +335,7 @@ at **eight weekly rows, 64 KiB per report and 1 MiB for the database**. Inserts
 cannot replace an existing week's report; there is no upsert or partial
 publication. Startup, reads and publication prune expired windows. The active
 collector also invokes pruning at week boundaries when no new result qualifies.
-The [source checks](../validation/2026-10-24-telemetry-delivery.md) now include
+The earlier [source checks](../validation/2026-10-24-telemetry-delivery.md) include
 publisher tests and a **12-check actual plain-loopback HTTP journey** with
 4,096 Python-encoded reports and one Node-encoded report. That isolated journey
 verified immutable output, expiry without another qualifying window, empty logs
@@ -321,7 +343,7 @@ and graceful erasure/cleanup. It qualifies neither a product sender nor TLS,
 provider logging, deployed restart behavior or retention of backup copies. The
 publisher does not provide a public report route or configure a collection
 destination. The final focused Python rerun after the test-only lint correction
-passed **47 tests in 4.52 seconds**.
+passed **47 tests in 4.52 seconds** for the preceding report format.
 
 ## Component resource diagnostic
 
@@ -344,6 +366,11 @@ original evidence; the final Python selection and frontend build passed.
 The conservative simultaneous interval half-width at **4,096 reports per view is
 13.495 percentage points**. This threshold is per view, not total reports:
 with all groups permitted, the fine-feature view receives weight `16/256`.
+The new 64-report global bucket can make coarse closed-week receipt volume
+visible during a small launch while every detailed view remains unavailable.
+It cannot establish how many people contributed, whether the population is
+representative, or which features they used. Open-week loss on restart and
+unverified or repeated contributions also limit interpretation.
 The [synthetic study](../validation/2026-10-24-telemetry-delivery.md) covered
 18 cases with 96 trials each. Two cases had **95/96** simultaneous coverage;
 the other 16 had **96/96**. These are finite simulations, not a 100% guarantee.

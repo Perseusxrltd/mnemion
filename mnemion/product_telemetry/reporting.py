@@ -79,7 +79,7 @@ class AggregateWindow:
         minimum = options["minimum_reports_per_view"]
         result = None
         try:
-            if not any(count >= minimum for count in self._counts):
+            if self._total < options["minimum_reports_per_window"]:
                 return None
             views = []
             categories = sum(len(view["values"]) for view in VIEWS)
@@ -131,9 +131,12 @@ class AggregateWindow:
                     )
                 views.append(item)
             result = {
-                "schema_version": WIRE["version"],
+                "schema_version": options["schema_version"],
                 "window_week": self.week,
                 "window_seconds": options["window_seconds"],
+                # Fixed closed-week contribution volume, never a person/device
+                # count. No exact total or per-view residual is published.
+                "report_range": _range(self._total),
                 "report_unit": "unverified_anonymous_report_not_a_user_or_device",
                 "sampling": "one_count_weighted_local_category_in_an_independently_chosen_permitted_view",
                 "confidence": 1 - options["simultaneous_error_probability"],

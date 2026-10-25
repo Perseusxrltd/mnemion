@@ -40,9 +40,30 @@ not a network, participation or lifetime anonymity guarantee.
 
 The current weekly accumulator stays in memory. Only validated, immutable
 closed-week reports can enter the private SQLite publisher, with at most eight
-retained weeks and a 1 MiB database ceiling. The existing per-view minimums,
-confidence rules and rare-cell suppression still apply. Report counts are not
-people or devices, and a small installation population may produce no report.
+retained weeks and a 1 MiB database ceiling.
+
+The reporting follow-up adds **report schema v2**: a closed week with at least
+**64 accepted reports** can expose one global power-of-two volume bucket, such
+as `[64, 128)`. Below that threshold there is no weekly document. This offers
+coarse evidence of received contributions during a small launch; it does not
+measure people, devices, adoption or total feature usage. Every detailed view
+still requires **4,096 reports of its own**; confidence rules, noise and
+rare-cell suppression remain unchanged. A volume-only result can therefore
+leave all views `insufficient_reports`. The [weekly-volume source selection](../validation/2026-10-25-telemetry-weekly-volume.md)
+passed **67 tests in 17.87 seconds**, including report compatibility and the
+actual TLS minimal runtime; it does not qualify production deployment or
+installed collection.
+
+The reader accepts existing immutable **v1 reports** without rewriting them or
+adding a global bucket. This output-schema change leaves the **four-byte wire
+v1**, client budgets, endpoint selection and eight-week retention unchanged.
+The `server reports` command's outer envelope remains `schema_version: 1`;
+each report item carries its own schema version, with a root `report_range`
+only in v2.
+There is no exact count, identifier, live statistics route or filter API. A
+coarse contribution threshold is not an anonymity or distinct-person threshold,
+and the volume bucket does not extend the packet's categorical privacy bound
+to participation.
 
 Stopping or restarting the collector discards the open week's accumulated data;
 it never flushes raw reports. Certificate rotation that restarts this process

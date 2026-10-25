@@ -25,6 +25,24 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **Native telemetry deadline check — 25 October 2026; source validation.**
+  The [Windows release assertion](validation/2026-10-25-native-telemetry-deadline.md)
+  mixed the transport lifetime with later cleanup. The corrected check observes
+  the peer's real connection close against the reservation deadline and holds
+  cleanup completion independently. Final Windows and Linux selections each
+  passed all 15 cases; the timing allowance and production transport are unchanged.
+  [4.46.10](releases/4.46.10.md) retains the other unreleased repairs and adds
+  coarse weekly report volume. Native release and installed acceptance remain
+  required; production collection stays disabled.
+
+- **Coarse weekly telemetry volume — 25 October 2026; source validation.**
+  The [reporting follow-up](validation/2026-10-25-telemetry-weekly-volume.md)
+  retains one global power-of-two contribution range after 64 accepted reports.
+  Detailed views still require 4,096 each; older immutable report-v1 records
+  remain readable alongside v2. All 67 focused checks passed. This supplies
+  limited volume information, not people/adoption counts or qualified detailed
+  launch statistics. Collection remains disabled; V08 stays Building.
+
 - **Windows test-helper recovery — 25 October 2026; 4.46.9 candidate.**
   [Windows readiness records](validation/2026-10-25-windows-telemetry-test-lifecycle.md)
   exposed an LF-only assertion and waiting helpers that stalled the unpublished

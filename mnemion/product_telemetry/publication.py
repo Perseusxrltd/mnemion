@@ -34,7 +34,6 @@ WHEN (SELECT count(*) FROM reports) >= 8
 BEGIN SELECT RAISE(ABORT, 'telemetry_report_capacity'); END;
 """
 CONSTANTS = {
-    "schema_version": 1,
     "window_seconds": 604800,
     "report_unit": "unverified_anonymous_report_not_a_user_or_device",
     "sampling": "one_count_weighted_local_category_in_an_independently_chosen_permitted_view",
@@ -49,10 +48,28 @@ def _fraction(value) -> bool:
     return type(value) in (int, float) and 0 <= value <= 1 and math.isfinite(value)
 
 
+def _report_range(bounds: object, minimum: int) -> bool:
+    return (
+        type(bounds) is dict
+        and set(bounds) == {"minimum", "maximum_exclusive"}
+        and all(type(value) is int for value in bounds.values())
+        and minimum <= bounds["minimum"] <= WIRE["reporting"]["maximum_reports_per_window"]
+        and not bounds["minimum"] & (bounds["minimum"] - 1)
+        and bounds["maximum_exclusive"] == bounds["minimum"] * 2
+    )
+
+
 def validate(result: object) -> dict:
+    if type(result) is not dict:
+        raise WireError
+    version = result.get("schema_version")
+    if type(version) is not int or version not in (1, WIRE["reporting"]["schema_version"]):
+        raise WireError
+    fields = {*CONSTANTS, "schema_version", "window_week", "views"}
+    if version == 2:
+        fields.add("report_range")
     if (
-        type(result) is not dict
-        or set(result) != {*CONSTANTS, "window_week", "views"}
+        set(result) != fields
         or any(
             type(result[key]) is not type(value) or result[key] != value
             for key, value in CONSTANTS.items()
@@ -63,6 +80,11 @@ def validate(result: object) -> dict:
         or len(result["views"]) != len(VIEWS)
     ):
         raise WireError
+    if version == 2 and not _report_range(
+        result["report_range"], WIRE["reporting"]["minimum_reports_per_window"]
+    ):
+        raise WireError
+    minimum_total, maximum_total = 0, 0
     for spec, item in zip(VIEWS, result["views"], strict=True):
         if (
             type(item) is not dict
@@ -76,19 +98,13 @@ def validate(result: object) -> dict:
         if item["state"] == "insufficient_reports":
             if item["report_range"] is not None or item["estimates"] is not None:
                 raise WireError
+            maximum_total += WIRE["reporting"]["minimum_reports_per_view"] - 1
             continue
         bounds = item["report_range"]
-        if (
-            type(bounds) is not dict
-            or set(bounds) != {"minimum", "maximum_exclusive"}
-            or any(type(value) is not int for value in bounds.values())
-            or not WIRE["reporting"]["minimum_reports_per_view"]
-            <= bounds["minimum"]
-            <= WIRE["reporting"]["maximum_reports_per_window"]
-            or bounds["minimum"] & (bounds["minimum"] - 1)
-            or bounds["maximum_exclusive"] != bounds["minimum"] * 2
-        ):
+        if not _report_range(bounds, WIRE["reporting"]["minimum_reports_per_view"]):
             raise WireError
+        minimum_total += bounds["minimum"]
+        maximum_total += bounds["maximum_exclusive"] - 1
         if item["state"] == "inconsistent_reports":
             if item["estimates"] is not None:
                 raise WireError
@@ -118,6 +134,11 @@ def validate(result: object) -> dict:
                     or not interval[0] <= estimate["fraction"] <= interval[1]
                 ):
                     raise WireError
+    if version == 2 and (
+        minimum_total >= result["report_range"]["maximum_exclusive"]
+        or maximum_total < result["report_range"]["minimum"]
+    ):
+        raise WireError
     return result
 
 

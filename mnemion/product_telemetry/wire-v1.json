@@ -23,6 +23,8 @@
   "maximum_cell_count": 255,
   "maximum_report_bytes": 4,
   "reporting": {
+    "schema_version": 2,
+    "minimum_reports_per_window": 64,
     "minimum_reports_per_view": 4096,
     "maximum_reports_per_window": 10000000,
     "simultaneous_error_probability": 0.05,

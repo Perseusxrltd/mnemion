@@ -55,8 +55,9 @@ after(async () => { setDefaultCACertificates(originalRoots); await rm(certificat
 
 async function peer(t, mode = 'success') {
   const sockets = new Set(), requests = []
-  let connections = 0, enter, release
+  let connections = 0, enter, release, close
   const entered = new Promise(resolve => { enter = resolve })
+  const closed = new Promise(resolve => { close = resolve })
   const handle = socket => {
     socket.on('error', () => {})
     let pending = Buffer.alloc(0)
@@ -78,10 +79,13 @@ async function peer(t, mode = 'success') {
     cert: mode === 'large_handshake' ? cert.repeat(100) : cert,
     minVersion: 'TLSv1.3', secureOptions: constants.SSL_OP_NO_TICKET }, handle)
   server.on('tlsClientError', () => {})
-  server.on('connection', socket => { connections++; sockets.add(socket); socket.once('close', () => sockets.delete(socket)) })
+  server.on('connection', socket => {
+    connections++; sockets.add(socket)
+    socket.once('close', () => { sockets.delete(socket); close(performance.now()) })
+  })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   t.after(async () => { for (const socket of sockets) socket.destroy(); await new Promise(resolve => server.close(resolve)) })
-  return { endpoint: new TelemetryEndpoint('localhost', '127.0.0.1', server.address().port), requests, entered,
+  return { endpoint: new TelemetryEndpoint('localhost', '127.0.0.1', server.address().port), requests, entered, closed,
     release: () => release(), connections: () => connections }
 }
 
@@ -253,12 +257,43 @@ test('an oversized encrypted handshake exhausts the native TLS allowance before 
   f.cleaned()
 })
 
-test('the five-second native deadline closes a silent TLS peer', async t => {
-  const server = await peer(t, 'stall_handshake'), f = await installation(t, server.endpoint), start = performance.now()
-  const result = await sendNativeTelemetry(f.store, f.report, server.endpoint)
+test('the five-second native deadline closes a silent TLS peer before cleanup finishes', { timeout: 15000 }, async t => {
+  const server = await peer(t, 'stall_handshake'), f = await installation(t, server.endpoint)
+  const start = performance.now(), deadline = f.report.monotonicDeadline
+  const cancel = f.store.cancel.bind(f.store)
+  let finishCleanup, enterCleanup, settled = false
+  const cleanup = new Promise(resolve => { finishCleanup = resolve })
+  const cleanupEntered = new Promise(resolve => { enterCleanup = resolve })
+  t.after(() => finishCleanup())
+  // Hold only post-expiry cleanup completion. The actual TCP/TLS transport, private
+  // policy and five-second reservation clock remain unchanged. This proves
+  // that a slow native ACL cleanup cannot keep the connection alive.
+  f.store.cancel = async report => {
+    const local = cancel(report)
+    enterCleanup()
+    await cleanup
+    return local
+  }
+  const pending = sendNativeTelemetry(f.store, f.report, server.endpoint).then(result => { settled = true; return result })
+  let closedAt, closedBeforeCleanup, erasedBeforeCleanup, result
+  try {
+    await server.entered
+    closedAt = await server.closed
+    await cleanupEntered
+    closedBeforeCleanup = !settled
+    erasedBeforeCleanup = f.report.closed
+  } finally { finishCleanup(); result = await pending }
+  assert.equal(closedBeforeCleanup, true)
+  assert.equal(erasedBeforeCleanup, true)
   assert.ok(['deadline', 'suppressed'].includes(result.outcome))
-  assert.ok(performance.now() - start >= 4500 && performance.now() - start < 5700)
-  assert.equal(server.requests.length, 0)
+  // The lease starts during reservation, before send() is entered. Keep the
+  // previous 500 ms early/700 ms late allowance against that real deadline,
+  // measuring the peer's observed close rather than final database cleanup.
+  const timing = { connection_ms: closedAt - start, deadline_remaining_ms: deadline - start,
+    deadline_offset_ms: closedAt - deadline, cleanup_ms: performance.now() - closedAt }
+  t.diagnostic(JSON.stringify(timing))
+  assert.ok(closedAt >= deadline - 500 && closedAt < deadline + 700, JSON.stringify(timing))
+  assert.equal(server.requests.length, 0); assert.equal(server.connections(), 1)
   f.cleaned()
 })
 

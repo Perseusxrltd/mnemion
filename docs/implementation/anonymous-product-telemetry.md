@@ -21,6 +21,15 @@ these restrictions, resource limits, request-data exclusion and clean shutdown.
 No production collector is deployed; provider/ingress privacy, client
 resources, useful reporting and full installed acceptance still gate release.
 
+The [closed-week volume follow-up](../validation/2026-10-25-telemetry-weekly-volume.md)
+adds one global power-of-two report range after 64 accepted contributions, with
+the existing 4,096-per-view precision threshold unchanged. New report schema v2
+preserves immutable v1 reading and the original four-byte wire format. The
+67 focused source checks passed. Volume is not a count of people or installations
+and is not authenticated; detailed statistics can remain unavailable. This
+source follow-up does not activate collection or close the remaining privacy,
+resource, deployment and installed-platform requirements.
+
 The [app and native usage guide](../guides/product-telemetry-controls.md)
 describes the pre-login/offline `/privacy` page and private-stdin
 `mnemion-service telemetry` actions: `schema`, `status`, `preview` and
