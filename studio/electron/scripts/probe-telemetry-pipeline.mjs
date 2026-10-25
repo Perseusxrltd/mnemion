@@ -50,7 +50,7 @@ async function measure() {
   const gauges = new DesktopTelemetryConditions({ online: () => net.isOnline(), thermal: () => powerMonitor.getCurrentThermalState() }, network)
   const conditions = []
   class ObservedActivity extends DesktopTelemetryActivity {
-    async snapshot(...args) { snapshots++; return super.snapshot(...args) }
+    snapshot(...args) { snapshots++; return super.snapshot(...args) }
     async recordMany(values, stamp, day) {
       const pending = super.recordMany(values, stamp, day)
       producerWrites.add(pending)

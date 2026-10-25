@@ -230,6 +230,8 @@ def test_daily_contribution_and_resource_limits_do_not_build_event_history(enabl
 def test_saturated_headless_workflows_stop_opening_sqlite(enabled, monkeypatch):
     root, _, revision, generation = enabled
     choice = {"expected_revision": revision, "expected_generation": generation}
+    now = 0.0
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: now)
     assert sum(aggregate.record(root, observation(), **choice) for _ in range(64)) == 64
     opened = 0
     original = policy._connect
@@ -240,17 +242,38 @@ def test_saturated_headless_workflows_stop_opening_sqlite(enabled, monkeypatch):
         return original(*args, **kwargs)
 
     monkeypatch.setattr(policy, "_connect", connected)
+    file_reads = 0
+    version = aggregate._file_version
+
+    def read_version(*args):
+        nonlocal file_reads
+        file_reads += 1
+        return version(*args)
+
+    monkeypatch.setattr(aggregate, "_file_version", read_version)
     for _ in range(512):
         assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
         assert not aggregate.record(root, observation(), **choice)
     assert opened == 0
+    assert file_reads == 0
+    now = 0.25
+    assert aggregate.workflow_exhausted(root, "memory.recall", "headless")
+    assert file_reads == 1
+    now = 0.499
+    assert aggregate.workflow_exhausted(root, "memory.recall", "headless")
+    assert file_reads == 1
+    now = 0.5
+    assert aggregate.workflow_exhausted(root, "memory.recall", "headless")
+    assert file_reads == 2
     assert telemetry_workflow.begin("memory.read", "headless", root=root) is not None
     assert opened > 0
 
 
-def test_negative_hint_never_bypasses_new_choice_or_restores_old_measurement(enabled):
+def test_negative_hint_never_bypasses_new_choice_or_restores_old_measurement(enabled, monkeypatch):
     root, _, revision, generation = enabled
     choice = {"expected_revision": revision, "expected_generation": generation}
+    now = 0.0
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: now)
     for _ in range(64):
         assert aggregate.record(root, observation(), **choice)
     assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
@@ -265,6 +288,8 @@ def test_negative_hint_never_bypasses_new_choice_or_restores_old_measurement(ena
             "disclosure_version": 1,
         },
     )
+    assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
+    now = 0.25
     fresh = telemetry_workflow.begin("memory.recall", "headless", root=root)
     assert fresh is not None
     fresh.finish("success")
@@ -274,6 +299,8 @@ def test_negative_hint_never_bypasses_new_choice_or_restores_old_measurement(ena
 
 def test_observed_opt_out_stays_quiet_until_fresh_choice_read(enabled, monkeypatch):
     root, _, revision, generation = enabled
+    now = 0.0
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: now)
     off = policy.configure(root, {"enabled": False, "expected_revision": revision})
     assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
     opened = 0
@@ -301,6 +328,9 @@ def test_observed_opt_out_stays_quiet_until_fresh_choice_read(enabled, monkeypat
         },
     )
     opened = 0
+    assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
+    assert opened == 0
+    now = 0.25
     assert telemetry_workflow.begin("memory.recall", "headless", root=root) is not None
     assert opened > 0
     assert not aggregate.record(
@@ -312,20 +342,45 @@ def test_observed_opt_out_stays_quiet_until_fresh_choice_read(enabled, monkeypat
 def test_exhaustion_hint_expires_without_repair_or_lifetime_extension(enabled, monkeypatch, change):
     root, _, revision, generation = enabled
     choice = {"expected_revision": revision, "expected_generation": generation}
+    now = 0.0
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: now)
     for _ in range(64):
         assert aggregate.record(root, observation(), **choice)
     assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
     if change == "expiry":
-        now = aggregate.time.monotonic()
-        monkeypatch.setattr(aggregate.time, "monotonic", lambda: now + 61)
+        now = 61
     elif change == "day":
         monkeypatch.setattr(aggregate, "_day", lambda: 20001)
     else:
         (root / policy.DATABASE_NAME).unlink()
+        assert aggregate.workflow_exhausted(root, "memory.recall", "headless")
+        now = 0.25
     assert not aggregate.workflow_exhausted(root, "memory.recall", "headless")
     if change == "removed":
         assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
         assert not (root / policy.DATABASE_NAME).exists()
+
+
+def test_merged_headless_denials_keep_the_original_expiry(enabled, monkeypatch):
+    root, _, revision, generation = enabled
+    choice = {"expected_revision": revision, "expected_generation": generation}
+    now = 0.0
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: now)
+    scopes = ("memory.recall", "memory.read")
+    for workflow in scopes:
+        assert (
+            sum(aggregate.record(root, observation(workflow=workflow), **choice) for _ in range(64))
+            == 64
+        )
+    # A fresh process can first discover either of the two exhausted scopes.
+    monkeypatch.setattr(aggregate, "_exhaustion", None)
+    assert not aggregate.record(root, observation(), **choice)
+    now = 59
+    assert not aggregate.record(root, observation(workflow="memory.read"), **choice)
+    for workflow in scopes:
+        assert aggregate.workflow_exhausted(root, workflow, "headless")
+    now = 60
+    assert not aggregate.workflow_exhausted(root, "memory.recall", "headless")
 
 
 def test_opt_out_then_reenable_fences_an_old_native_process(enabled):

@@ -18,7 +18,7 @@ from .catalog import CATALOG, SURFACES, WORKFLOW_IDS, MeasurementError, describe
 # One bounded negative hint for the most recently disabled/exhausted store. It can
 # only suppress optional work, never grant consent or skip a successful write's
 # current-policy transaction. No connection, observations or result data survive.
-_exhaustion: tuple[Path, int, int, float, tuple[int, ...]] | None = None
+_exhaustion: tuple[Path, int, int, float, tuple[int, ...], float] | None = None
 
 
 def _day() -> int:
@@ -40,14 +40,23 @@ def _exhausted(root: Path | None, scopes: tuple[int, ...], day: int) -> bool:
         return False
     now = time.monotonic()
     try:
-        if (
-            day != saved[1]
-            or not saved[3] - 60 <= now < saved[3]
-            or _file_version(root) != saved[4]
-        ):
+        if day != saved[1] or not saved[3] - 60 <= now < saved[3]:
             _exhaustion = None
             return False
-        return bool(scopes) and all(saved[2] & (1 << scope) for scope in scopes)
+        if not scopes or not all(saved[2] & (1 << scope) for scope in scopes):
+            return False
+        # Repeated drops need no filesystem allocation within this interval.
+        # A new choice can lose optional samples for at most 250 ms, never gain
+        # permission. Every admitted write/reservation/handoff is still fresh.
+        if now < saved[5]:
+            return True
+        if _file_version(root) != saved[4]:
+            if _exhaustion is saved:
+                _exhaustion = None
+            return False
+        if _exhaustion is saved:
+            _exhaustion = (*saved[:5], min(saved[3], now + 0.25))
+        return True
     except OSError:
         _exhaustion = None
         return False
@@ -75,7 +84,20 @@ def _remember_exhaustion(root: Path, scopes: list[int], day: int, *, disabled=Fa
         bits = -1 if disabled else 0
         for scope in scopes:
             bits |= 1 << scope
-        _exhaustion = root, day, bits, time.monotonic() + 60, _file_version(root)
+        now, file = time.monotonic(), _file_version(root)
+        prior = _exhaustion
+        until = now + 60
+        if (
+            prior is not None
+            and prior[0] == root
+            and prior[1] == day
+            and prior[3] - 60 <= now < prior[3]
+            and prior[4] == file
+        ):
+            if prior[2] >= 0:
+                bits |= prior[2]
+            until = prior[3]
+        _exhaustion = root, day, bits, until, file, min(until, now + 0.25)
     except OSError:
         _exhaustion = None
 

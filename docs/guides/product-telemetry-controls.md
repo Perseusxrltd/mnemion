@@ -93,6 +93,14 @@ completed fixed save/fetch/search transactions in all three variants. Its
 resource measurements and the repeated synthetic diagnostic still do not qualify
 the unchanged limits; renderer/IPC and full platform acceptance remain open.
 
+The latest [source optimization](../validation/2026-10-25-telemetry-denial-io.md)
+can reuse an already observed denial for up to **250 ms**. In a collection-capable
+build, newly re-enabled work may still lose optional samples during that interval;
+your saved choice and status use fresh checks. It cannot enable collection or bypass
+the checks on accepted work. Collection remains unavailable in this source build.
+The latest source checks and isolated burst completed; enabled RSS still exceeds
+the 2 MiB full-feature target, and installed-platform qualification remains open.
+
 The exclusions cover unowned remote clients, client-derived server jobs,
 mixed-user host totals, private operational records, polling/replay, privacy
 controls and unavailable sensors. They restrict product collection; the related

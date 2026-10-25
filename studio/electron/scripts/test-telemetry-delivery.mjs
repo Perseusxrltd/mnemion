@@ -159,9 +159,51 @@ test('simultaneous real Python and native reservations can consume the queue onl
   assert.equal(await completed, 0, stderr)
   assert.equal(stderr, '')
   const pythonWon = JSON.parse(stdout.trim().split('\n').at(-1))
-  assert.equal(Number(Boolean(report)) + Number(pythonWon), 1)
-  assert.equal(f.invoke('inspect').attempts, 1)
+  const winners = Number(Boolean(report)) + Number(pythonWon)
+  assert.ok(winners <= 1, 'contending processes cannot consume the same queue twice')
+  const state = f.invoke('inspect')
+  assert.equal(state.attempts, winners)
+  assert.equal(state.bytes, 65536 * winners)
+  assert.equal(state.pending, winners ? 0 : 1)
+  // Zero lock waiting also permits both processes to defer if a reader
+  // overlaps a commit. A later explicit attempt must find the intact queue.
+  if (!winners) {
+    const later = await f.store.reserve(f.stamp, network)
+    assert.ok(later)
+    assert.deepEqual([f.invoke('inspect').attempts, f.invoke('inspect').pending], [1, 0])
+    await f.store.cancel(later)
+  }
   if (report) await f.store.cancel(report)
+})
+
+test('a contended commit leaves both runtimes an unspent and recoverable queue', { timeout: 30000 }, async t => {
+  const f = await fixture(t)
+  await f.fill()
+  const reader = spawn(python, ['-c',
+    'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("BEGIN"); c.execute("SELECT count(*) FROM pending").fetchall(); print("ready",flush=True); sys.stdin.read(); c.rollback(); c.close()',
+    join(f.root, 'product-telemetry.sqlite3')], { env: environment, stdio: ['pipe', 'pipe', 'pipe'] })
+  t.after(() => reader.kill())
+  let errors = ''
+  reader.stderr.on('data', data => { errors += data })
+  const exited = new Promise((resolve, reject) => { reader.once('error', reject); reader.once('exit', resolve) })
+  const ready = await new Promise((resolve, reject) => {
+    reader.stdout.once('data', resolve)
+    reader.once('error', reject)
+    reader.once('exit', () => reject(new Error('Reader exited before its lock was observed')))
+  })
+  assert.match(String(ready), /^ready\n/)
+  assert.equal(await f.store.reserve(f.stamp, network), null)
+  assert.equal(f.invoke('reserve'), false)
+  reader.stdin.end()
+  assert.equal(await exited, 0, errors)
+  assert.equal(errors, '')
+  const retained = f.invoke('inspect')
+  assert.deepEqual([retained.attempts, retained.bytes, retained.pending, retained.has_lease], [0, 0, 1, false])
+  const report = await f.store.reserve(f.stamp, network)
+  assert.ok(report)
+  const spent = f.invoke('inspect')
+  assert.deepEqual([spent.attempts, spent.bytes, spent.pending], [1, 65536, 0])
+  await f.store.cancel(report)
 })
 
 test('Python opt-out defeats a pending native reserve and the final native write', async t => {

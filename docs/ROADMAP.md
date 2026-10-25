@@ -53,6 +53,15 @@ availability and release gates; each deployment requires its own acceptance.
   all three variants completed **384 requests each**, but enabled ending RSS
   growth exceeded unavailable by **4.41 MiB**. The default synthetic mode still
   measured **6.59 MiB** enabled growth. The 2 MiB and 0.5% CPU targets remain open.
+  The next [denial-I/O source change](validation/2026-10-25-telemetry-denial-io.md)
+  reuses negative observations for up to **250 ms**, allowing brief sample loss
+  after re-enable while retaining fresh checks for admitted work. Focused Python
+  and corrected native checks passed; the first burst measured
+  **2.41/4.83 MiB** opted-out/enabled RSS, above the unchanged target.
+  Later synchronous native snapshot refusals avoid an extra Promise/await;
+  their final source checks and second burst passed, measuring **1.89/4.43 MiB**
+  opted-out/enabled RSS. A single opted-out observation does not qualify the full
+  resource target; enabled RSS and all-platform acceptance remain open.
   Collection is unavailable,
   with no active collector, qualified public ingress or all-six-native acceptance.
   This work is excluded from the isolated 4.46.6

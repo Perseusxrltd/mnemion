@@ -163,6 +163,8 @@ test('both runtimes share daily contribution limits and prune expired or future 
 
 test('exhausted workflows drop before SQLite and fresh choices still use the privacy fence', async t => {
   const { invoke, store } = await fixture(t), stamp = await store.snapshot()
+  let now = 0
+  t.mock.method(performance, 'now', () => now)
   const day = Math.floor(Date.now() / 86400000)
   assert.equal(invoke('record', { value: observation(), stamp, repeat: 64, day }).filter(Boolean).length, 64)
   assert.equal(await store.record(observation(), stamp, day), false)
@@ -180,6 +182,7 @@ test('exhausted workflows drop before SQLite and fresh choices still use the pri
   assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
   const on = invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
     expected_generation: off.store_generation, disclosure_version: 1 } })
+  now = 250
   const fresh = await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop')
   assert.ok(fresh, 'changing the private choice invalidates only the negative cache')
   await fresh.finish('success')
@@ -212,12 +215,16 @@ test('alternating exhausted scopes stay quiet without extending an older denial'
   assert.ok(opens > 0, 'remembering a second scope cannot extend the first scope indefinitely')
 })
 
-test('cached exhaustion never survives a recreated or missing store', async t => {
+test('a recreated or missing store cannot be admitted by a cached denial', async t => {
   const { root, invoke, store } = await fixture(t), stamp = await store.snapshot()
+  let now = 0
+  t.mock.method(performance, 'now', () => now)
   const day = Math.floor(Date.now() / 86400000)
   invoke('record', { value: observation(), stamp, repeat: 64, day })
   assert.equal(await store.record(observation(), stamp, day), false)
   const recreated = invoke('recreate', { value: observation(), day })
+  assert.equal(await store.snapshot('memory.recall', 'desktop'), null, 'the quiet interval can only drop another optional sample')
+  now = 250
   const current = await store.snapshot('memory.recall', 'desktop')
   assert.deepEqual(current, stampOf(recreated))
   assert.equal(await store.record(observation(), stamp, day), false)
@@ -228,6 +235,8 @@ test('cached exhaustion never survives a recreated or missing store', async t =>
 
 test('an observed opt-out stays quiet and re-enabling still requires a fresh read', async t => {
   const { invoke, store } = await fixture(t), stamp = await store.snapshot()
+  let now = 0
+  t.mock.method(performance, 'now', () => now)
   const off = invoke('configure', { choice: { enabled: false, expected_revision: stamp.revision } })
   assert.equal(await store.snapshot(), null)
   let opens = 0
@@ -241,9 +250,38 @@ test('an observed opt-out stays quiet and re-enabling still requires a fresh rea
   assert.equal(opens, 0, 'a verified opt-out does not repeatedly reopen SQLite')
   invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
     expected_generation: off.store_generation, disclosure_version: 1 } })
+  assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+  now = 250
   assert.ok(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'))
   assert.ok(opens > 0, 'a negative hint never supplies permission')
   assert.equal(await store.record(observation(), stamp), false)
+})
+
+test('denied bursts reuse filesystem observations only for a bounded quiet interval', async t => {
+  const { invoke, store } = await fixture(t), stamp = await store.snapshot()
+  let now = 0, observations = 0
+  t.mock.method(performance, 'now', () => now)
+  const day = Math.floor(Date.now() / 86400000)
+  invoke('record', { value: observation(), stamp, repeat: 64, day })
+  assert.equal(await store.record(observation(), stamp, day), false)
+  const version = store.saturationFile.bind(store)
+  t.mock.method(store, 'saturationFile', () => { observations++; return version() })
+  for (let index = 0; index < 512; index++) assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+  assert.equal(observations, 0, 'the denied burst allocates no filesystem statistics')
+  now = 250
+  assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+  assert.equal(observations, 1)
+  now = 499
+  assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+  assert.equal(observations, 1)
+  now = 500
+  assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
+  assert.equal(observations, 2, 'continued work rechecks the file without extending the original hint')
+  const entry = await TelemetryWorkflow.begin(store, 'memory.read', 'desktop')
+  assert.ok(entry)
+  invoke('configure', { choice: { enabled: false, expected_revision: stamp.revision } })
+  await entry.finish('success')
+  assert.deepEqual(invoke('preview', { day }), [], 'an admitted scope still observes opt-out before writing')
 })
 
 test('another SQLite writer causes an immediate drop rather than a queued retry', async t => {

@@ -68,7 +68,7 @@ delivery path, installed platforms or full resource acceptance.
 
 The [producer-overhead follow-up](../validation/2026-10-25-telemetry-producer-overhead.md)
 lets native/Python producers decline repeated work after observing explicit
-opt-out or an exhausted scope. A denial hint must match the private file version,
+opt-out or an exhausted scope. That checkpoint checked the private file version,
 day and a monotonic interval of at most 60 seconds; expiry is lazy, with no idle
 timer or positive consent cache. Every accepted observation, reservation and
 final handoff still uses the full current-policy/storage fences. Contribution
@@ -82,6 +82,18 @@ allows that refusal before a UI snapshot opens SQLite. It changes neither
 accepted-work fences nor contribution/delivery allowance. Both completed
 diagnostic modes retained one spent reservation and cleared the enabled lease;
 the real-memory and synthetic measurements do not establish resource acceptance.
+
+The later [denial-I/O follow-up](../validation/2026-10-25-telemetry-denial-io.md)
+reuses known negative file observations for at most **250 ms** during work.
+File changes may remain unseen until the next refresh; re-enabled work can lose
+optional samples during this interval. Choice/status, admitted writes,
+reservations and final handoffs retain fresh checks. Day/original-expiry checks
+remain in force, Python scope merges preserve that expiry, and no timer or
+positive consent cache is added. Delivery accounting is unchanged.
+The latest native snapshot path returns known refusals synchronously; eligible
+work still uses the fresh asynchronous private-store read. Its final source
+checks and component burst passed; full resource/platform acceptance remains
+open, and existing reservation/handoff checks are unchanged.
 
 | Persistent connection choice | Delivery admission |
 | --- | --- |

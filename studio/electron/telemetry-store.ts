@@ -36,7 +36,7 @@ export class NativeTelemetryStore {
   private sqlite?: Promise<typeof import('node:sqlite')>
   private permissionCheck?: Promise<boolean>
   private saturated?: {
-    bits: Uint8Array; day: number; until: number; userDisabled: boolean
+    bits: Uint8Array; day: number; until: number; checkedUntil: number; userDisabled: boolean
     file: Stats
   }
   constructor(
@@ -56,7 +56,8 @@ export class NativeTelemetryStore {
 
   /** A short negative cache can only drop disabled/exhausted measurements.
    * It never grants consent, skips a write fence or holds a database connection.
-   * Replacing/changing the file, a day change or at most a minute clears it. */
+   * Work can reuse a file observation for at most 250 ms. Day/expiry changes
+   * clear it immediately. There is no idle polling or positive cache. */
   private exhausted(scopes: number | number[], day: number): boolean {
     const saved = this.saturated
     if (!saved) return false
@@ -64,14 +65,20 @@ export class NativeTelemetryStore {
     if (day !== saved.day || !Number.isFinite(now) || now >= saved.until || now < saved.until - 60000) {
       this.saturated = undefined; return false
     }
+    const denied = saved.userDisabled || (typeof scopes === 'number'
+      ? scopes >= 0 && Boolean(saved.bits[scopes >> 3] & (1 << (scopes & 7)))
+      : scopes.length > 0 && scopes.every(scope => Boolean(saved.bits[scope >> 3] & (1 << (scope & 7)))))
+    if (!denied) return false
+    // This quiet interval only suppresses optional samples, including briefly
+    // after re-enabling. It is never used by a write, reservation or handoff.
+    if (now < saved.checkedUntil) return true
     try {
       const current = this.saturationFile(), prior = saved.file
       if (!sameFile(current, prior)) {
         this.saturated = undefined; return false
       }
-      if (saved.userDisabled) return true
-      if (typeof scopes === 'number') return scopes >= 0 && Boolean(saved.bits[scopes >> 3] & (1 << (scopes & 7)))
-      return scopes.length > 0 && scopes.every(scope => Boolean(saved.bits[scope >> 3] & (1 << (scope & 7))))
+      saved.checkedUntil = Math.min(saved.until, now + 250)
+      return true
     } catch { this.saturated = undefined; return false }
   }
 
@@ -83,7 +90,8 @@ export class NativeTelemetryStore {
       const file = this.saturationFile(), now = performance.now(), prior = this.saturated
       const bits = prior && prior.day === day && now < prior.until && now >= prior.until - 60000 && sameFile(file, prior.file)
         ? prior.bits : new Uint8Array(65)
-      this.saturated = { bits, day, until: bits === prior?.bits ? prior.until : now + 60000, file, userDisabled }
+      const until = bits === prior?.bits ? prior.until : now + 60000
+      this.saturated = { bits, day, until, checkedUntil: Math.min(until, now + 250), file, userDisabled }
       for (const scope of scopes) this.saturated.bits[scope >> 3] |= 1 << (scope & 7)
     } catch { this.saturated = undefined }
   }
@@ -148,7 +156,7 @@ export class NativeTelemetryStore {
     return { ...row, connection_mode: mode } as Preference
   }
 
-  async snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> {
+  snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> | null {
     if (!this.available) return null
     let scope = -1
     const day = Math.floor(Date.now() / 86400000)
@@ -158,6 +166,10 @@ export class NativeTelemetryStore {
       scope = index * 4 + origin
     }
     if (this.exhausted(scope, day)) return null
+    return this.readStamp(day)
+  }
+
+  private async readStamp(day: number): Promise<TelemetryStamp | null> {
     let database: DatabaseSync | undefined
     try {
       database = await this.open()

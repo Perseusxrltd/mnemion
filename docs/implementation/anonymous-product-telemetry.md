@@ -114,6 +114,19 @@ exceeded unavailable collection by **4.41 MiB**; negative CPU differences remain
 run variation. The default synthetic mode still measured **6.59 MiB** enabled
 RSS growth. Renderer/IPC and full resource acceptance remain open.
 
+The subsequent [bounded denial-observation reuse](../validation/2026-10-25-telemetry-denial-io.md)
+can skip repeated file-stat/SQLite work for up to **250 ms**. File changes need
+not invalidate the negative hint immediately; newly re-enabled work may lose
+optional samples during that interval. Choice/status and admitted work retain
+fresh checks, with no positive consent cache. The original 60-second expiry and
+day invalidation remain. Focused checks and the first burst diagnostic passed;
+opted-out/enabled RSS remained **2.41/4.83 MiB**, above the 2 MiB target.
+Later source returns immediate native snapshot refusals synchronously to avoid
+their extra Promise/await work; eligible reads retain fresh asynchronous policy
+checks. Its final source checks and second burst completed, measuring
+**1.89/4.43 MiB** opted-out/enabled RSS. The single opted-out observation does not
+qualify the full resource target; enabled RSS and platform acceptance remain open.
+
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
 bounded private publisher in source. Their conditional per-report privacy bound
