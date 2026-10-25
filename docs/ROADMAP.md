@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.6**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-24**.
+Reviewed source distribution: **4.46.7**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-25**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -24,6 +24,17 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+- **Managed backup contention — 25 October 2026; 4.46.7 source hotfix.**
+  [Scheduled snapshot/ledger failures](validation/2026-10-25-host-backup-capture.md)
+  prompted a bounded operator-lock wait for managed captures, with fresh
+  settings and runtime-transition checks afterward. Targeted verification records
+  **17 passes across retained logs**; original fixture failures remain preserved.
+  [4.46.7](releases/4.46.7.md) release/platform and installed acceptance remain
+  pending. The existing ledger job's natural completion and independently
+  verified delivery preserve an older snapshot plus a newer ledger; they are
+  separate evidence.
+  All 66 requirement states and the V08 production gates remain unchanged.
 
 - **Active feature — V08, 24 October 2026; Building/source implementation.**
   [Fresh backup and independent restore](validation/2026-10-24-4465-backup-acceptance.md)

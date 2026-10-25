@@ -131,6 +131,33 @@ def owner_connection(state: Path, admin: Path | None) -> str:
     return owner
 
 
+@contextmanager
+def _capture_state(state: Path, *, lock_held: bool):
+    """Give recovery capture a bounded turn, then read the protected settings."""
+    state, previous = supervision.settings(state)
+    managed = previous.get("managed_updates") is True
+    previous_runtime = update_state.read(state / "updates/active.json") if managed else None
+    with (
+        (
+            update_state.borrowed_lock(state / "updates")
+            if lock_held
+            else update_state.operator_lock(state / "updates", wait_seconds=300)
+        )
+        if managed
+        else nullcontext()
+    ):
+        state, settings = supervision.settings(state)
+        if managed != (settings.get("managed_updates") is True):
+            raise HostRecoveryError(
+                "Host management changed while capture waited; check its current configuration."
+            )
+        if managed and update_state.read(state / "updates/active.json") != previous_runtime:
+            raise HostRecoveryError(
+                "The active host runtime changed while capture waited; run the command again with its current runtime."
+            )
+        yield state, settings
+
+
 def export_ledger(
     state: Path,
     output: Path,
@@ -139,14 +166,11 @@ def export_ledger(
     admin: Path | None = None,
     lock_held: bool = False,
 ) -> dict:
-    state, settings = supervision.settings(state)
-    owner, secret = owner_connection(state, admin), key_file(secret_file)
     with (
-        (update_state.borrowed_lock if lock_held else update_state.lock)(state / "updates")
-        if settings.get("managed_updates")
-        else nullcontext(),
+        _capture_state(state, lock_held=lock_held) as (state, _),
         temporary_directory(prefix="mnemion-host-ledger-") as root,
     ):
+        owner, secret = owner_connection(state, admin), key_file(secret_file)
         ledger = root / "ledger.json"
         report = recovery.export_ledger(owner, ledger)
         receipt = encryption.encrypt_file(ledger, output, secret, kind="ledger")
@@ -234,28 +258,27 @@ def snapshot(
     plan_output: Path | None = None,
     lock_held: bool = False,
 ) -> dict:
-    state, settings = supervision.settings(state)
-    secret = key_file(secret_file)
     if output.exists() or plan_output is not None and plan_output.exists():
         raise HostRecoveryError(
             "Choose new package and plan destinations; existing files are preserved."
         )
-    managed = settings.get("managed_updates") is True
-    owner = owner_connection(state, admin)
-    connector_configs = list(
-        dict.fromkeys(
-            [
-                *(Path(item["config"]) for item in settings.get("connectors", [])),
-                *(path.expanduser().absolute() for path in connector_configs),
-            ]
-        )
-    )
     with (
-        (update_state.borrowed_lock if lock_held else update_state.lock)(state / "updates")
-        if managed
-        else nullcontext(),
+        _capture_state(state, lock_held=lock_held) as (state, settings),
         temporary_directory(prefix="mnemion-host-export-") as root,
     ):
+        if output.exists() or plan_output is not None and plan_output.exists():
+            raise HostRecoveryError(
+                "Choose new package and plan destinations; existing files are preserved."
+            )
+        owner, secret = owner_connection(state, admin), key_file(secret_file)
+        connector_configs = list(
+            dict.fromkeys(
+                [
+                    *(Path(item["config"]) for item in settings.get("connectors", [])),
+                    *(path.expanduser().absolute() for path in connector_configs),
+                ]
+            )
+        )
         assets = Assets(root)
         environment = runtime_environment(settings["environment"])
         # Caches and broker sockets belong to the destination hardware.
