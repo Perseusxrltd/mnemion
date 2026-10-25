@@ -1,5 +1,5 @@
 /** No network or implicit choice: share Python's private SQLite store. */
-import { lstatSync, readFileSync } from 'node:fs'
+import { lstatSync, readFileSync, type Stats } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { DatabaseSync } from 'node:sqlite'
@@ -15,6 +15,8 @@ const integer = (value: unknown, maximum: number, minimum = 0): value is number 
   typeof value === 'number' && Number.isInteger(value) && value >= minimum && value <= maximum
 const generation = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value)
 const stampValid = (value: TelemetryStamp) => value && integer(value.revision, 2147483646) && generation(value.store_generation)
+const sameFile = (left: Stats, right: Stats) => left.dev === right.dev && left.ino === right.ino &&
+  left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs && left.size === right.size
 
 export function nativeTelemetryDefinitions(): { disclosure: NativeTelemetryDisclosure; catalog: MeasurementCatalog } {
   return {
@@ -35,7 +37,7 @@ export class NativeTelemetryStore {
   private permissionCheck?: Promise<boolean>
   private saturated?: {
     bits: Uint8Array; day: number; until: number; userDisabled: boolean
-    file: { dev: bigint; ino: bigint; mtimeNs: bigint; ctimeNs: bigint; size: bigint }
+    file: Stats
   }
   constructor(
     private readonly root: string,
@@ -47,14 +49,15 @@ export class NativeTelemetryStore {
   get available(): boolean { return this.disclosure.collection_available && Boolean(this.disclosure.destination) }
 
   private saturationFile() {
-    const { dev, ino, mtimeNs, ctimeNs, size } = lstatSync(join(this.root, 'product-telemetry.sqlite3'), { bigint: true })
-    return { dev, ino, mtimeNs, ctimeNs, size }
+    // This is only a negative sampling hint. Number precision can at worst
+    // suppress an extra sample until expiry; it never authorizes a write.
+    return lstatSync(join(this.root, 'product-telemetry.sqlite3'))
   }
 
   /** A short negative cache can only drop disabled/exhausted measurements.
    * It never grants consent, skips a write fence or holds a database connection.
    * Replacing/changing the file, a day change or at most a minute clears it. */
-  private exhausted(scopes: number[], day: number): boolean {
+  private exhausted(scopes: number | number[], day: number): boolean {
     const saved = this.saturated
     if (!saved) return false
     const now = performance.now()
@@ -63,20 +66,24 @@ export class NativeTelemetryStore {
     }
     try {
       const current = this.saturationFile(), prior = saved.file
-      if (current.dev !== prior.dev || current.ino !== prior.ino || current.mtimeNs !== prior.mtimeNs ||
-          current.ctimeNs !== prior.ctimeNs || current.size !== prior.size) {
+      if (!sameFile(current, prior)) {
         this.saturated = undefined; return false
       }
-      return saved.userDisabled || (scopes.length > 0 && scopes.every(scope => Boolean(saved.bits[scope >> 3] & (1 << (scope & 7)))))
+      if (saved.userDisabled) return true
+      if (typeof scopes === 'number') return scopes >= 0 && Boolean(saved.bits[scopes >> 3] & (1 << (scopes & 7)))
+      return scopes.length > 0 && scopes.every(scope => Boolean(saved.bits[scope >> 3] & (1 << (scope & 7))))
     } catch { this.saturated = undefined; return false }
   }
 
   private rememberExhausted(scopes: number[], day: number, userDisabled = false): void {
     if (!scopes.length && !userDisabled) return
     try {
-      // Do not combine old exhaustion with a new file version. Another process
-      // may have configured/recreated the store since our previous observation.
-      this.saturated = { bits: new Uint8Array(65), day, until: performance.now() + 60000, file: this.saturationFile(), userDisabled }
+      // Multiple exhausted scopes may share a verified file version. Never
+      // carry old scope bits across a change, a new day or the bounded expiry.
+      const file = this.saturationFile(), now = performance.now(), prior = this.saturated
+      const bits = prior && prior.day === day && now < prior.until && now >= prior.until - 60000 && sameFile(file, prior.file)
+        ? prior.bits : new Uint8Array(65)
+      this.saturated = { bits, day, until: bits === prior?.bits ? prior.until : now + 60000, file, userDisabled }
       for (const scope of scopes) this.saturated.bits[scope >> 3] |= 1 << (scope & 7)
     } catch { this.saturated = undefined }
   }
@@ -143,13 +150,14 @@ export class NativeTelemetryStore {
 
   async snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> {
     if (!this.available) return null
-    const scopes: number[] = [], day = Math.floor(Date.now() / 86400000)
+    let scope = -1
+    const day = Math.floor(Date.now() / 86400000)
     if (workflow !== undefined || surface !== undefined) {
       const index = this.catalog.workflows.indexOf(workflow!), origin = this.catalog.specification.surfaces.indexOf(surface!)
       if (index < 0 || origin < 0) return null
-      scopes.push(index * 4 + origin)
+      scope = index * 4 + origin
     }
-    if (this.exhausted(scopes, day)) return null
+    if (this.exhausted(scope, day)) return null
     let database: DatabaseSync | undefined
     try {
       database = await this.open()

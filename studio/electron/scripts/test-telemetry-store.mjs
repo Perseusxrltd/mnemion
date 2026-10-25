@@ -188,6 +188,30 @@ test('exhausted workflows drop before SQLite and fresh choices still use the pri
   assert.equal((await store.snapshot()).revision, on.revision)
 })
 
+test('alternating exhausted scopes stay quiet without extending an older denial', async t => {
+  const { invoke, store } = await fixture(t), stamp = await store.snapshot()
+  const day = Math.floor(Date.now() / 86400000)
+  const scopes = ['memory.recall', 'memory.read']
+  for (const workflow of scopes) {
+    assert.equal(invoke('record', { value: observation({ workflow }), stamp, repeat: 64, day }).filter(Boolean).length, 64)
+  }
+  let now = 0
+  t.mock.method(performance, 'now', () => now)
+  assert.equal(await store.record(observation(), stamp, day), false)
+  now = 59000
+  assert.equal(await store.record(observation({ workflow: 'memory.read' }), stamp, day), false)
+  let opens = 0
+  const open = store.open.bind(store)
+  store.open = (...args) => { opens++; return open(...args) }
+  for (let index = 0; index < 32; index++) for (const workflow of scopes) {
+    assert.equal(await TelemetryWorkflow.begin(store, workflow, 'desktop'), null)
+  }
+  assert.equal(opens, 0, 'different exhausted scopes share only the same unchanged private file')
+  now = 60000
+  assert.ok(await store.snapshot('memory.recall', 'desktop'), 'an expired denial falls back to a fresh policy read')
+  assert.ok(opens > 0, 'remembering a second scope cannot extend the first scope indefinitely')
+})
+
 test('cached exhaustion never survives a recreated or missing store', async t => {
   const { root, invoke, store } = await fixture(t), stamp = await store.snapshot()
   const day = Math.floor(Date.now() / 86400000)

@@ -75,6 +75,14 @@ final handoff still uses the full current-policy/storage fences. Contribution
 limits and spent allowance are unchanged. The scoped diagnostic still exceeded
 the 2 MiB full-feature RSS target in both opted-out and enabled variants.
 
+The next [native denial-allocation follow-up](../validation/2026-10-25-telemetry-memory-profile.md)
+merges exhausted scope hints only for the same file version/day, preserving the
+original expiry rather than renewing it. Fixed desktop workflow propagation
+allows that refusal before a UI snapshot opens SQLite. It changes neither
+accepted-work fences nor contribution/delivery allowance. Both completed
+diagnostic modes retained one spent reservation and cleared the enabled lease;
+the real-memory and synthetic measurements do not establish resource acceptance.
+
 | Persistent connection choice | Delivery admission |
 | --- | --- |
 | `auto` (default) | Unknown metering refuses the attempt; Wi-Fi/Ethernet alone does not prove an unlimited plan. |

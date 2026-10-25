@@ -48,6 +48,11 @@ availability and release gates; each deployment requires its own acceptance.
   passed focused source checks and reduced repeated denied work in a synthetic
   desktop/TLS diagnostic. Opted-out/enabled RSS remained **3.27/6.40 MiB**, above
   that same target; representative-workload and all-platform acceptance remain open.
+  A subsequent [denial-allocation and real-memory diagnostic](validation/2026-10-25-telemetry-memory-profile.md)
+  adds fixed SDK/API/PostgreSQL transactions. Focused source checks passed;
+  all three variants completed **384 requests each**, but enabled ending RSS
+  growth exceeded unavailable by **4.41 MiB**. The default synthetic mode still
+  measured **6.59 MiB** enabled growth. The 2 MiB and 0.5% CPU targets remain open.
   Collection is unavailable,
   with no active collector, qualified public ingress or all-six-native acceptance.
   This work is excluded from the isolated 4.46.6

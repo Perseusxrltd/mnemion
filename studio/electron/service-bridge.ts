@@ -506,9 +506,12 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(telemetryMessages.telemetry_invalid_request)
     return telemetryAction(action, input)
   })
-  handle('telemetry:snapshot', async event => {
+  handle('telemetry:snapshot', async (event, workflow?: unknown) => {
     trusted(event)
-    try { return await telemetryStore().snapshot() } catch { return null }
+    // Fixed UI scopes let the store drop already-exhausted samples before
+    // opening SQLite. A renderer cannot choose another producer's surface.
+    if (workflow !== undefined && (typeof workflow !== 'string' || workflow.length > 128)) return null
+    try { return await telemetryStore().snapshot(workflow, workflow === undefined ? undefined : 'desktop') } catch { return null }
   })
   handle('telemetry:record', async (event, input: unknown, stamp: TelemetryStamp) => {
     trusted(event)

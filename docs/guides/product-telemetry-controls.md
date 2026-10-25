@@ -88,6 +88,10 @@ reduces repeated local database work when optional measurement is already denied
 or capped. It does not cache permission to collect or change your saved choice.
 Its desktop/TLS diagnostic still exceeded the 2 MiB full-feature RSS target when
 opted out and when enabled; collection remains unavailable.
+The subsequent [real-memory diagnostic](../validation/2026-10-25-telemetry-memory-profile.md)
+completed fixed save/fetch/search transactions in all three variants. Its
+resource measurements and the repeated synthetic diagnostic still do not qualify
+the unchanged limits; renderer/IPC and full platform acceptance remain open.
 
 The exclusions cover unowned remote clients, client-derived server jobs,
 mixed-user host totals, private operational records, polling/replay, privacy

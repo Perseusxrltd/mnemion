@@ -257,6 +257,17 @@ async function browserGlobals(run) {
   }
 }
 
+test('desktop UI snapshots forward the fixed workflow and cannot choose another producer surface', async () => {
+  await browserGlobals(async () => {
+    const calls = [], stamp = { revision: 1, store_generation: 'a'.repeat(32) }
+    window.mnemion = { productTelemetrySnapshot: async workflow => { calls.push(workflow); return stamp } }
+    assert.equal(await exported.productWorkflowStore.snapshot('memory.recall', 'desktop'), stamp)
+    assert.equal(await exported.productWorkflowStore.snapshot('memory.recall', 'native_agent'), null)
+    assert.equal(await exported.productWorkflowStore.snapshot('memory.recall', 'browser'), null)
+    assert.deepEqual(calls, ['memory.recall'])
+  })
+})
+
 test('a browser lock wait retains the original validated primitives and privacy stamp', async () => browserGlobals(async instance => {
   const client = instance.client(), original = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
   const input = measured({ latency_ms: 123.456 })

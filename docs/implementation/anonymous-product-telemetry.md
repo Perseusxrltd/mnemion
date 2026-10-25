@@ -103,6 +103,17 @@ headless desktop/TLS diagnostic measured **3.27 MiB added RSS when opted out and
 Its synthetic burst and after-bootstrap baseline do not qualify representative
 app performance or installed platforms.
 
+The next [denial-allocation and real-memory diagnostic follow-up](../validation/2026-10-25-telemetry-memory-profile.md)
+reduces native snapshot allocations and carries the fixed UI workflow through
+the desktop snapshot bridge. Merged exhausted scopes retain their original
+bounded expiry; accepted work still requires fresh policy. The new fixed
+save/fetch/lexical-search fixture uses real SDK/API/PostgreSQL transactions with
+the Studio wrapper in the main process. Focused source checks passed; measured
+workload results verified **384 requests per variant**. Enabled ending RSS growth
+exceeded unavailable collection by **4.41 MiB**; negative CPU differences remain
+run variation. The default synthetic mode still measured **6.59 MiB** enabled
+RSS growth. Renderer/IPC and full resource acceptance remain open.
+
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
 bounded private publisher in source. Their conditional per-report privacy bound

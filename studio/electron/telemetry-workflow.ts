@@ -2,6 +2,8 @@
 import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import type { TelemetryCatalog } from './telemetry-catalog.js'
 
+const monotonicNow = () => performance.now()
+
 export type WorkflowStore = {
   readonly available: boolean
   readonly catalog: TelemetryCatalog
@@ -20,7 +22,7 @@ export class TelemetryWorkflow {
     private readonly clock: () => number,
   ) { this.started = clock() }
 
-  static async begin(store: WorkflowStore, workflow: string, surface: string, clock = () => performance.now()): Promise<TelemetryWorkflow | null> {
+  static async begin(store: WorkflowStore, workflow: string, surface: string, clock = monotonicNow): Promise<TelemetryWorkflow | null> {
     try {
       if (!store.available || !store.catalog.workflows.includes(workflow) || !store.catalog.specification.surfaces.includes(surface)) return null
       const stamp = await store.snapshot(workflow, surface)

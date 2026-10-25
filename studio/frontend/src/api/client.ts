@@ -42,7 +42,7 @@ declare global {
         (action: 'telemetry.configure', input: TelemetryChoice): Promise<TelemetryStatus>
         (action: 'telemetry.preview'): Promise<TelemetryPreview>
       }
-      productTelemetrySnapshot?: () => Promise<TelemetryStamp | null>
+      productTelemetrySnapshot?: (workflow?: string) => Promise<TelemetryStamp | null>
       productTelemetryRecord?: (values: unknown[], stamp: TelemetryStamp) => Promise<boolean>
       hostControl?: {
         (action: 'host.profiles', input?: Record<string, never>): Promise<HostProfilesStatus>

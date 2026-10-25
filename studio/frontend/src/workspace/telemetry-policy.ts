@@ -277,9 +277,12 @@ export function telemetrySurface(): 'desktop' | 'browser' {
 export const productWorkflowStore: WorkflowStore = {
   get available() { return contract.collection_available && Boolean(contract.destination) },
   catalog: telemetryCatalog,
-  async snapshot() {
+  async snapshot(workflow, surface) {
     if (!this.available) return null
-    if (window.mnemion?.productTelemetrySnapshot) return window.mnemion.productTelemetrySnapshot()
+    if (window.mnemion?.productTelemetrySnapshot) {
+      if (surface !== undefined && surface !== 'desktop') return null
+      return window.mnemion.productTelemetrySnapshot(workflow)
+    }
     if (window.location.protocol === 'file:') return null
     const status = browser.status()
     return status.effective_enabled ? { revision: status.revision, store_generation: status.store_generation } : null
