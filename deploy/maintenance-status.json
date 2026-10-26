@@ -18,15 +18,15 @@
   ],
   "runs": [
     {
-      "id": 40289741948,
+      "id": 40293301106,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "de53ba4609f848f7e91fdc9a8383ded9fb70884f",
+      "source_commit": "ab19e5e072935d7251dd0e64d0129e207cc8366b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T08:33:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40289741948"
+      "updated_at": "2026-10-26T09:11:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293301106"
     },
     {
       "id": 40268195296,
@@ -82,26 +82,112 @@
       }
     },
     {
-      "id": 40290313653,
+      "id": 40293480655,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.15",
+      "source_commit": "de53ba4609f848f7e91fdc9a8383ded9fb70884f",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-26T08:58:27Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293480655",
+      "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 121475928066,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 121475928144,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / macos-15 / arm64",
+          "id": 121475928156,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / ubuntu-22.04-arm / arm64",
+          "id": 121475928210,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / macos-15-intel / x64",
+          "id": 121475928223,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 121475928224,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        }
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 14,
+        "active": []
+      }
+    },
+    {
+      "id": 40296033009,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "43dd197780871e01f62287c5d69f39d7c592abd8",
+      "source_commit": "41729125251df9127a31f2ca83326ac5af75257b",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-26T08:09:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40290313653"
+      "updated_at": "2026-10-26T08:58:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40296033009"
     },
     {
-      "id": 40289742181,
+      "id": 40293301128,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "de53ba4609f848f7e91fdc9a8383ded9fb70884f",
+      "source_commit": "ab19e5e072935d7251dd0e64d0129e207cc8366b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T08:04:27Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40289742181"
+      "updated_at": "2026-10-26T08:35:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293301128"
     },
     {
       "id": 40268192045,
@@ -115,5 +201,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T08:34:32+00:00"
+  "observed_at": "2026-10-26T09:11:52+00:00"
 }
