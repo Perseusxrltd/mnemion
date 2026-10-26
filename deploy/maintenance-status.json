@@ -30,18 +30,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 10,
+        "succeeded": 10,
         "active": [
-          {
-            "id": 121473213164,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
           {
             "id": 121473282516,
             "name": "service (3.12)",
@@ -52,66 +43,12 @@
             ]
           },
           {
-            "id": 121473282623,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 121473282665,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
-          {
-            "id": 121473282677,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
-          {
-            "id": 121473282690,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv sync --locked --python 3.14 --group dev"
-            ]
-          },
-          {
-            "id": 121473282691,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 121473282697,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
             "id": 121473282770,
             "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
@@ -172,15 +109,101 @@
       }
     },
     {
-      "id": 40290313653,
+      "id": 40293480655,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.15",
+      "source_commit": "de53ba4609f848f7e91fdc9a8383ded9fb70884f",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-26T08:58:27Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293480655",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 14,
+        "active": []
+      },
+      "failed_jobs": [
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 121475928066,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 121475928144,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / macos-15 / arm64",
+          "id": 121475928156,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / ubuntu-22.04-arm / arm64",
+          "id": 121475928210,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / macos-15-intel / x64",
+          "id": 121475928223,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 121475928224,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 40296033009,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "43dd197780871e01f62287c5d69f39d7c592abd8",
+      "source_commit": "41729125251df9127a31f2ca83326ac5af75257b",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-26T08:09:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40290313653"
+      "updated_at": "2026-10-26T08:58:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40296033009"
     },
     {
       "id": 40293301128,
@@ -205,5 +228,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T08:36:14+00:00"
+  "observed_at": "2026-10-26T08:59:03+00:00"
 }
