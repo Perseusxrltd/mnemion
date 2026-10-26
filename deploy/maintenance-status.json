@@ -23,100 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "4509ba138fb9d5e73bcd5745de2c64e2b0ef8a70",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T07:22:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40285323866",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 3,
-        "succeeded": 3,
-        "active": [
-          {
-            "id": 121447495282,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
-            ]
-          },
-          {
-            "id": 121447550108,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 121447550130,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 121447550161,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121447550181,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 121447550185,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 121447550186,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121447550194,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 121447550213,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T07:43:18Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40285323866"
     },
     {
       "id": 40268195296,
@@ -139,6 +49,80 @@
       "conclusion": "success",
       "updated_at": "2026-10-26T04:11:56Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121"
+    },
+    {
+      "id": 40286600426,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.14",
+      "source_commit": "a5e574a9676ab724141b024d9ac1bb795ef1a688",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-26T07:40:10Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40286600426",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 21,
+        "completed": 15,
+        "succeeded": 14,
+        "active": [
+          {
+            "id": 121453524267,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 121453524345,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 121453524346,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 121453524362,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 121453524412,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend ci"
+            ]
+          },
+          {
+            "id": 121453524613,
+            "name": "native / macos-15 / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40267817685,
@@ -174,5 +158,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T07:22:36+00:00"
+  "observed_at": "2026-10-26T07:43:48+00:00"
 }
