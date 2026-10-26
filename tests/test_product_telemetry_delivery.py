@@ -309,6 +309,7 @@ def test_v3_migration_keeps_choice_generation_and_does_not_fabricate_a_disclosur
     off = policy.configure(f.root, {"enabled": False, "expected_revision": 0})
     f.sql("DROP TABLE delivery_attempts")
     f.sql("DROP TABLE delivery_state")
+    f.sql("DROP TABLE report_review")
     f.sql("ALTER TABLE preferences DROP COLUMN connection_mode")
     f.sql("PRAGMA user_version=3")
     before = policy.status(f.root)
@@ -328,6 +329,7 @@ def test_v4_upgrade_preserves_spending_and_connection_change_cancels_lease(insta
     report = f.reserve()
     assert report is not None
     spent = f.sql("SELECT * FROM delivery_attempts")
+    f.sql("DROP TABLE report_review")
     f.sql("ALTER TABLE preferences DROP COLUMN connection_mode")
     f.sql("PRAGMA user_version=4")
     before = policy.status(f.root)

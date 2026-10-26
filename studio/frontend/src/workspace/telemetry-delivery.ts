@@ -4,9 +4,13 @@ import type { TelemetryStamp, TelemetryStatus } from '../../../shared/product-te
 import { TelemetryWire, secureRandomBelow } from '../../../electron/telemetry-wire'
 import { pendingState, telemetryCatalog } from './telemetry-aggregate'
 import { budgetKey, budgetState, choiceKey, queueKey, reserveBudget, serializeBudget,
-  clockValid, generationValid, DAY, DEADLINE, JITTER, MAX_CLOCK } from './telemetry-budget'
+  budgetView, clockValid, generationValid, DAY, DEADLINE, JITTER, MAX_CLOCK } from './telemetry-budget'
+import { checkReview, checkReviewMetadata, clearReview, type ReviewContext, type ReviewMetadata, type ReviewReport, type ReviewState } from '../../../electron/telemetry-review'
+import type { ReviewClock } from '../../../electron/telemetry-review-lifetime'
+import { browserReviewContext } from './telemetry-review'
 
-type Port = { storage: () => Storage; status: () => TelemetryStatus; reconcile: () => void; fail: () => void }
+type Port = { storage: () => Storage; status: () => TelemetryStatus; reconcile: () => void; fail: () => void
+  reviewClock?: () => ReviewClock | null; ensureReviewClock?: (epoch: string) => Promise<ReviewClock | null> }
 export type BrowserDeliveryEnvironment = {
   locks: () => LockManager | null; now: () => number; monotonic: () => number
   events: () => Window | null
@@ -23,11 +27,14 @@ export class PreparedBrowserTelemetryReport {
   #claimed = false
   #transportClaimed = false
   #policyClaimed = false
+  #review: ReviewMetadata | null
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>,
-    readonly deadline: number, readonly monotonicDeadline: number, readonly group: string) {
+    readonly deadline: number, readonly monotonicDeadline: number, readonly group: string, reviewed?: ReviewReport | null) {
     this.#body = new Uint8Array(body)
     this.#ticket = ticket
     this.stamp = Object.freeze({ ...stamp })
+    this.#review = reviewed ? { stamp: { ...reviewed.stamp }, groups: [...reviewed.groups], binding: { ...reviewed.binding },
+      lifetime: { ...reviewed.lifetime, clock: { ...reviewed.lifetime.clock } } } : null
   }
   get used(): boolean { return this.#used }
   get closed(): boolean { return this.#closed }
@@ -50,7 +57,15 @@ export class PreparedBrowserTelemetryReport {
   }
   burn(): void { this.#used = true }
   eraseBody(): void { this.#body.fill(0) }
-  clear(): void { this.eraseBody(); this.#ticket = ''; this.#used = true; this.#closed = true }
+  get reviewed(): boolean { return this.#review !== null }
+  reviewCurrent(context: ReviewContext, now: number, clock: ReviewClock | null): boolean {
+    if (!this.#review) return true
+    const checked = checkReviewMetadata(this.#review, context, now, clock)
+    if (!checked) return false
+    this.#review = checked
+    return true
+  }
+  clear(): void { this.eraseBody(); this.#ticket = ''; this.#used = true; this.#closed = true; this.#review = null }
 }
 
 export class BrowserTelemetryDelivery {
@@ -72,6 +87,52 @@ export class BrowserTelemetryDelivery {
   private wire(): TelemetryWire { return this.encoder ??= new TelemetryWire(specification, telemetryCatalog) }
 
   formatExample() { return this.wire().formatExample() }
+  packetPreview(packet: Uint8Array) { return this.wire().preview(packet) }
+  prepareInspection(cells: number[][], groups: string[]): Uint8Array { return this.wire().prepare(cells, groups) }
+
+  checkedReview(state: ReviewState, status: TelemetryStatus, now: number): ReviewState {
+    if (!state.report) return state
+    const checked = checkReview(state, status.effective_enabled ? browserReviewContext(status) : null, now, this.port.reviewClock?.() ?? null)
+    if (checked.report) {
+      try {
+        const view = this.wire().decode(new Uint8Array(checked.report.packet)).view
+        if (!status.company_policy.metric_groups.includes(this.wire().specification.views[view].group)) return clearReview(checked)
+      } catch { return clearReview(checked) }
+    }
+    return checked
+  }
+
+  private async prepareReviewClock(stamp: TelemetryStamp): Promise<void> {
+    const status = this.port.status()
+    if (!status.effective_enabled || status.revision !== stamp.revision || status.store_generation !== stamp.store_generation) return
+    const raw = this.port.storage().getItem(budgetKey)
+    if (raw === null) return
+    const budget = budgetState(raw)
+    if (budget.review.outcome === 'approved' && budget.review.report && budgetView(budget, this.environment.now()).state === 'ready')
+      await this.port.ensureReviewClock?.(budget.review.report.lifetime.clock.epoch)
+  }
+
+  /** Read-only preflight, including the report hold, before resource gauges. */
+  async eligible(stamp: TelemetryStamp): Promise<boolean> {
+    if (!stamp || !clockValid(stamp.revision, 2147483646) || !generationValid(stamp.store_generation)) return false
+    try {
+      await this.prepareReviewClock(stamp)
+      return await this.locked(() => {
+        const status = this.port.status(), now = this.environment.now()
+        if (!status.effective_enabled || status.connection_mode === 'metered' ||
+            status.revision !== stamp.revision || status.store_generation !== stamp.store_generation) return false
+        const raw = this.port.storage().getItem(budgetKey)
+        if (raw === null) return false
+        const budget = budgetState(raw), view = budgetView(budget, now)
+        if (budget.clear !== 'none' || budget.generation !== stamp.store_generation || view.state !== 'ready' || view.attempts_in_rolling_week! >= 7) return false
+        const review = this.checkedReview(budget.review, status, now)
+        if (review.mode === 'review') return review.outcome === 'approved' && review.report !== null
+        const day = Math.floor(now / DAY)
+        return pendingState(this.port.storage().getItem(queueKey)).entries.some(row => row.window_day >= day - 1 && row.window_day <= day &&
+          status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+      }, false)
+    } catch { return false }
+  }
 
   private async locked<T>(run: () => T, fallback: T): Promise<T> {
     // Serialize only this owner's short lock operations. A privacy watcher
@@ -104,6 +165,7 @@ export class BrowserTelemetryDelivery {
     if (!stamp || !clockValid(stamp.revision, 2147483646) || !generationValid(stamp.store_generation) ||
       !['unknown', 'unmetered'].includes(network.network) || network.constrained !== false) return null
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
+    try { await this.prepareReviewClock(expected) } catch { return null }
     const started = this.environment.monotonic()
     return this.locked(() => {
       let body: Uint8Array | undefined
@@ -122,22 +184,35 @@ export class BrowserTelemetryDelivery {
         if (raw === null) return null
         const budget = budgetState(raw), day = Math.floor(now / DAY)
         if (budget.generation !== expected.store_generation) return null
-        const pending = pendingState(this.port.storage().getItem(queueKey))
-        const cells = pending.entries.filter(row => row.window_day >= day - 1 && row.window_day <= day &&
-          status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
-          .map(row => [row.cell, row.count])
-        if (!cells.length) return null
+        const review = this.checkedReview(budget.review, status, now)
+        let cells: number[][] = [], reviewed: ReviewReport | null = null
+        if (review.mode === 'review') {
+          if (review.outcome !== 'approved' || !review.report) {
+            this.port.storage().setItem(budgetKey, serializeBudget({ ...budget, review }))
+            return null
+          }
+          reviewed = review.report
+          body = new Uint8Array(reviewed.packet)
+        } else {
+          const pending = pendingState(this.port.storage().getItem(queueKey))
+          cells = pending.entries.filter(row => row.window_day >= day - 1 && row.window_day <= day &&
+            status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+            .map(row => [row.cell, row.count])
+          if (!cells.length) return null
+        }
         const ticket = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('')
-        const next = reserveBudget(budget, now, ticket, secureRandomBelow(JITTER / 1000 + 1) * 1000)
+        let next = reserveBudget(budget, now, ticket, secureRandomBelow(JITTER / 1000 + 1) * 1000)
         if (!next) return null
-        body = this.wire().prepare(cells, status.company_policy.metric_groups, cohorts)
+        if (reviewed) next = { ...next, clear: 'none', review: clearReview(review, 'consumed') }
+        else body = this.wire().prepare(cells, status.company_policy.metric_groups, cohorts)
+        if (!body) return null
         if (this.environment.monotonic() - started >= DEADLINE) return null
         // No refund on failure, crash, opt-out or reload. Contributions remain.
         this.port.storage().setItem(budgetKey, serializeBudget(next))
         this.port.reconcile()
         if (this.environment.monotonic() - started >= DEADLINE) return null
         const group = this.wire().specification.views[this.wire().decode(body).view].group
-        const report = new PreparedBrowserTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE, group)
+        const report = new PreparedBrowserTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE, group, reviewed)
         // An abandoned expired handle must not accumulate over later days.
         this.invalidate()
         this.owned.add(report)
@@ -158,6 +233,7 @@ export class BrowserTelemetryDelivery {
     const raw = this.port.storage().getItem(budgetKey)
     if (raw === null) return false
     const budget = budgetState(raw)
+    if (report.reviewed && !report.reviewCurrent(browserReviewContext(status), now, this.port.reviewClock?.() ?? null)) return false
     return clockValid(now) && this.environment.monotonic() < report.monotonicDeadline &&
       budget.clear === 'none' && budget.clock_ms <= now && now < report.deadline &&
       budget.lease?.deadline_ms === report.deadline && budget.lease.token === report.ticket &&

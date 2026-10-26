@@ -41,11 +41,24 @@ def read_review_clock(*, initialize=False):
         import ctypes
 
         if _native is None:
+            path = Path(__file__).with_name("network-state.node")
+            try:
+                path.lstat()
+            except FileNotFoundError:
+                # Source/pip/container installs have no bundled addon. Read the
+                # same documented OS clock directly, without a compiler. An
+                # existing but invalid helper never triggers this fallback.
+                from .review_clock_system import read_system_review_clock
+
+                _native = read_system_review_clock
+        if callable(_native):
+            return _native(initialize=initialize)
+        if _native is None:
 
             class NativeClock(ctypes.Structure):
                 _fields_ = [("elapsed_ms", ctypes.c_uint64), ("epoch", ctypes.c_ubyte * 16)]
 
-            library = ctypes.CDLL(str(Path(__file__).with_name("network-state.node")))
+            library = ctypes.CDLL(str(path))
             function = library.mnemion_review_clock_v1
             function.argtypes = [ctypes.c_int, ctypes.POINTER(NativeClock)]
             function.restype = ctypes.c_int

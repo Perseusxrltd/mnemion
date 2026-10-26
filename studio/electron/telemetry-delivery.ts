@@ -7,6 +7,10 @@ import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import { TelemetryWire } from './telemetry-wire.js'
 import { NativeTelemetryStore, nativeCompanyPolicyPath, type NativeTelemetryDisclosure } from './telemetry-store.js'
 import type { MeasurementCatalog } from './telemetry-catalog.js'
+import { checkReview, checkReviewMetadata, clearReview, parseReview, reviewContext, serializeReview,
+  type ReviewContext, type ReviewMetadata, type ReviewReport, type ReviewState } from './telemetry-review.js'
+import { readReviewClock } from './telemetry-review-clock.js'
+import type { ReviewClock } from './telemetry-review-lifetime.js'
 
 const DAY = 86400000, WEEK = 7 * DAY, DEADLINE = 5000, JITTER = 3600000
 const MAX_CLOCK = 86400000000000, COST = 65536, DAILY_BYTES = 256 * 1024
@@ -19,7 +23,7 @@ type Spent = { slot: number; at_ms: number; reserved_bytes: number }
 type Network = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
 
 function state(database: DatabaseSync): { current: State; spent: Spent[] } {
-  if (database.prepare('PRAGMA user_version').get()?.user_version !== 5) throw invalid()
+  if (database.prepare('PRAGMA user_version').get()?.user_version !== 6) throw invalid()
   const row = database.prepare('SELECT clock_ms, next_ms, lease_token, lease_deadline_ms FROM delivery_state WHERE singleton=1').get()
   if (!row || !integer(row.clock_ms) || !integer(row.next_ms) || !integer(row.lease_deadline_ms) ||
       (row.lease_token !== null && !token(row.lease_token)) ||
@@ -44,12 +48,15 @@ export class PreparedTelemetryReport {
   #group: string
   #claimed = false
   #transportClaimed = false
+  #review: ReviewMetadata | null
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>, readonly deadline: number,
-    readonly monotonicDeadline: number, group: string) {
+    readonly monotonicDeadline: number, group: string, reviewed?: ReviewReport | null) {
     this.#body = new Uint8Array(body)
     this.#token = ticket
     this.#group = group
     this.stamp = Object.freeze({ ...stamp })
+    this.#review = reviewed ? { stamp: { ...reviewed.stamp }, groups: [...reviewed.groups], binding: { ...reviewed.binding },
+      lifetime: { ...reviewed.lifetime, clock: { ...reviewed.lifetime.clock } } } : null
   }
   get used(): boolean { return this.#used }
   get closed(): boolean { return this.#closed }
@@ -68,11 +75,20 @@ export class PreparedTelemetryReport {
   }
   burn(): void { this.#used = true }
   eraseBody(): void { this.#body.fill(0) }
-  clear(): void { this.eraseBody(); this.#token = ''; this.#used = true; this.#closed = true }
+  get reviewed(): boolean { return this.#review !== null }
+  reviewCurrent(context: ReviewContext, now: number, clock: ReviewClock | null): boolean {
+    if (!this.#review) return true
+    const checked = checkReviewMetadata(this.#review, context, now, clock)
+    if (!checked) return false
+    this.#review = checked
+    return true
+  }
+  clear(): void { this.eraseBody(); this.#token = ''; this.#used = true; this.#closed = true; this.#review = null }
 }
 
 export class NativeTelemetryDelivery extends NativeTelemetryStore {
   private encoder?: TelemetryWire
+  private routeAddress: string | null | undefined
   constructor(root: string, disclosure: NativeTelemetryDisclosure, catalog: MeasurementCatalog,
     companyFile = nativeCompanyPolicyPath(), private readonly now = () => Date.now(),
     private readonly monotonic = () => performance.now(), private readonly environment?: () => Network) {
@@ -84,6 +100,31 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     return this.encoder
   }
 
+  private reviewContext(stamp: TelemetryStamp, groups: string[]): ReviewContext {
+    if (this.routeAddress === undefined) {
+      // This is immutable release input, shared by every inspection/lease check.
+      const route = JSON.parse(readFileSync(new URL('./telemetry-transport-route.json', import.meta.url), 'utf8'))
+      this.routeAddress = route?.version === 1 && Object.keys(route).sort().join() === 'address,version'
+        && (route.address === null || typeof route.address === 'string') ? route.address : null
+    }
+    return reviewContext({ stamp, groups, binding: { disclosure_version: this.disclosure.version,
+      wire_version: this.wire().specification.version, catalog_version: this.catalog.specification.version,
+      destination: this.disclosure.destination, route_address: this.routeAddress } })
+  }
+
+  private reviewState(database: DatabaseSync, stamp: TelemetryStamp, groups: string[], now: number): ReviewState {
+    const state = parseReview(database.prepare('SELECT state FROM report_review WHERE singleton=1').get()?.state)
+    if (!state.report) return state
+    const checked = checkReview(state, this.reviewContext(stamp, groups), now, readReviewClock())
+    if (checked.report) {
+      try {
+        const view = this.wire().decode(new Uint8Array(checked.report.packet)).view
+        if (!groups.includes(this.wire().specification.views[view].group)) return clearReview(checked)
+      } catch { return clearReview(checked) }
+    }
+    return checked
+  }
+
   /** Read-only preflight before any OS gauge; final reservation rechecks it. */
   async eligible(stamp: TelemetryStamp): Promise<boolean> {
     if (!this.available || !stamp || !integer(stamp.revision, 2147483646) || !token(stamp.store_generation)) return false
@@ -93,12 +134,15 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       database.exec('BEGIN')
       const preference = this.preferences(database), company = this.company(), now = this.now()
       const { current, spent } = state(database)
-      return integer(now, MAX_CLOCK - DAY - JITTER) && preference.enabled === 1 &&
+      const permitted = integer(now, MAX_CLOCK - DAY - JITTER) && preference.enabled === 1 &&
         preference.disclosure_version === this.disclosure.version && preference.connection_mode !== 'metered' &&
         preference.revision === stamp.revision && preference.store_generation === stamp.store_generation &&
         company.enabled && company.groups.length > 0 && now >= current.clock_ms && now >= current.next_ms &&
-        !(current.lease_token && now < current.lease_deadline_ms) && spent.filter(item => item.at_ms > now - WEEK).length < 7 &&
-        Boolean(database.prepare('SELECT 1 FROM pending WHERE window_day >= ? AND window_day <= ? LIMIT 1')
+        !(current.lease_token && now < current.lease_deadline_ms) && spent.filter(item => item.at_ms > now - WEEK).length < 7
+      if (!permitted) return false
+      const review = this.reviewState(database, stamp, company.groups, now)
+      return review.mode === 'review' ? review.outcome === 'approved' && review.report !== null
+        : Boolean(database.prepare('SELECT 1 FROM pending WHERE window_day >= ? AND window_day <= ? LIMIT 1')
           .get(Math.floor(now / DAY) - 1, Math.floor(now / DAY)))
     } catch { return false }
     finally { this.closeDatabase(database) }
@@ -125,19 +169,31 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       if (now < current.clock_ms || now < current.next_ms || (current.lease_token && now < current.lease_deadline_ms)) return null
       const recent = spent.filter(item => item.at_ms > now - WEEK)
       if (recent.length >= 7 || recent.filter(item => item.at_ms > now - DAY).reduce((sum, item) => sum + item.reserved_bytes, 0) + COST > DAILY_BYTES) return null
-      const day = Math.floor(now / DAY)
-      database.prepare('DELETE FROM pending WHERE window_day < ? OR window_day > ?').run(day - 1, day)
-      database.prepare('DELETE FROM producer_budget WHERE window_day != ?').run(day)
-      const rows = database.prepare('SELECT cell, count FROM pending LIMIT 513').all()
-      if (rows.length > 512) throw invalid()
-      const remove = database.prepare('DELETE FROM pending WHERE cell=?'), cells: [number, number][] = []
-      for (const row of rows) {
-        if (!integer(row.cell, 65535) || !integer(row.count, 255) || row.count < 1) throw invalid()
-        if (company.groups.includes(this.catalog.describe(row.cell).group)) cells.push([row.cell, row.count])
-        else remove.run(row.cell)
+      const review = this.reviewState(database, expected, company.groups, now)
+      let body: Uint8Array, reviewed: ReviewReport | null = null
+      if (review.mode === 'review') {
+        if (review.outcome !== 'approved' || !review.report) {
+          database.prepare('UPDATE report_review SET state=? WHERE singleton=1').run(serializeReview(review))
+          database.exec('COMMIT')
+          return null
+        }
+        reviewed = review.report
+        body = new Uint8Array(reviewed.packet)
+      } else {
+        const day = Math.floor(now / DAY)
+        database.prepare('DELETE FROM pending WHERE window_day < ? OR window_day > ?').run(day - 1, day)
+        database.prepare('DELETE FROM producer_budget WHERE window_day != ?').run(day)
+        const rows = database.prepare('SELECT cell, count FROM pending LIMIT 513').all()
+        if (rows.length > 512) throw invalid()
+        const remove = database.prepare('DELETE FROM pending WHERE cell=?'), cells: [number, number][] = []
+        for (const row of rows) {
+          if (!integer(row.cell, 65535) || !integer(row.count, 255) || row.count < 1) throw invalid()
+          if (company.groups.includes(this.catalog.describe(row.cell).group)) cells.push([row.cell, row.count])
+          else remove.run(row.cell)
+        }
+        if (!cells.length) return null
+        body = this.wire().prepare(cells, company.groups, cohorts)
       }
-      if (!cells.length) return null
-      const body = this.wire().prepare(cells, company.groups, cohorts)
       const ticket = randomBytes(16).toString('hex'), jitter = randomInt(JITTER + 1)
       if (this.monotonic() - started >= DEADLINE) return null
       database.prepare('DELETE FROM delivery_attempts WHERE at_ms <= ?').run(now - WEEK)
@@ -145,9 +201,11 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       database.prepare('INSERT INTO delivery_attempts VALUES (?, ?, ?)').run(slot, now, COST)
       database.prepare('UPDATE delivery_state SET clock_ms=?, next_ms=?, lease_token=?, lease_deadline_ms=? WHERE singleton=1')
         .run(now, now + DAY + jitter, ticket, now + DEADLINE)
-      database.exec('DELETE FROM pending; COMMIT;')
+      if (reviewed) database.prepare('UPDATE report_review SET state=? WHERE singleton=1').run(serializeReview(clearReview(review, 'consumed')))
+      else database.exec('DELETE FROM pending')
+      database.exec('COMMIT')
       return new PreparedTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE,
-        this.wire().specification.views[this.wire().decode(body).view].group)
+        this.wire().specification.views[this.wire().decode(body).view].group, reviewed)
     } catch { return null }
     finally { this.closeDatabase(database) }
   }
@@ -156,6 +214,8 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     if (!(report instanceof PreparedTelemetryReport) || report.closed || !this.available) return false
     const now = this.now(), { current } = state(database)
     const preference = this.preferences(database), company = this.company()
+    if (report.reviewed && !report.reviewCurrent(this.reviewContext({ revision: preference.revision,
+      store_generation: preference.store_generation }, company.groups), now, readReviewClock())) return false
     if (this.environment) {
       const observed = this.environment()
       if (observed.constrained !== false || !['unknown', 'unmetered'].includes(observed.network) ||

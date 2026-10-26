@@ -18,7 +18,7 @@ def execute(root: Path | None, request: object) -> dict:
     if not isinstance(request, dict) or type(request.get("action")) is not str:
         raise policy.PolicyError("telemetry_invalid_request")
     action = request["action"]
-    if action in {"status", "schema", "preview"}:
+    if action in {"status", "schema", "preview", "review_status"}:
         if set(request) != {"action"}:
             raise policy.PolicyError("telemetry_invalid_request")
         if action == "schema":
@@ -31,6 +31,24 @@ def execute(root: Path | None, request: object) -> dict:
                     "status": {"mutation": False, "fields": []},
                     "schema": {"mutation": False, "fields": []},
                     "preview": {"mutation": False, "fields": []},
+                    "review_status": {"mutation": False, "fields": []},
+                    **{
+                        name: {
+                            "mutation": True,
+                            "fields": [
+                                "expected_revision",
+                                "expected_generation",
+                                "expected_review_token",
+                            ]
+                            + (["mode"] if name == "review_mode" else []),
+                        }
+                        for name in (
+                            "review_mode",
+                            "inspect_report",
+                            "approve_report",
+                            "discard_report",
+                        )
+                    },
                     "configure": {
                         "mutation": True,
                         "fields": [
@@ -49,11 +67,29 @@ def execute(root: Path | None, request: object) -> dict:
                 "owned_origin_coverage": origin_specification(),
                 "transport_available": policy.transport_available(),
                 "transport_catalog": wire_specification(),
+                "report_review": {
+                    "modes": ["automatic", "review"],
+                    "maximum_lifetime_seconds": 900,
+                    "requires_collection_permission": True,
+                    "approval_sends_immediately": False,
+                    "expiry_resumes_automatic_delivery": False,
+                    "interactive_privacy_qualified": False,
+                },
             }
+        if action == "review_status":
+            from .inspection import status
+
+            return status(root)
         return policy.preview(root) if action == "preview" else policy.status(root)
     if action == "configure":
         return policy.configure(
             root, {key: value for key, value in request.items() if key != "action"}
+        )
+    if action in {"review_mode", "inspect_report", "approve_report", "discard_report"}:
+        from .inspection import execute
+
+        return execute(
+            root, action, {key: value for key, value in request.items() if key != "action"}
         )
     raise policy.PolicyError("telemetry_invalid_request")
 

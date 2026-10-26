@@ -13,7 +13,7 @@ import secrets
 import sqlite3
 import time
 
-from . import aggregate, policy
+from . import aggregate, policy, review, review_storage
 from .wire import WireError, decode, prepare, view
 
 DAY_MS = 86400000
@@ -132,9 +132,12 @@ class PreparedReport:
         "_claim_lock",
         "_claimed",
         "_transport_claimed",
+        "_review",
     )
 
-    def __init__(self, body, token, revision, generation, deadline, monotonic_deadline):
+    def __init__(
+        self, body, token, revision, generation, deadline, monotonic_deadline, review_report=None
+    ):
         self._body = bytearray(body)
         self._token = token
         self.revision, self.generation, self.deadline_ms = revision, generation, deadline
@@ -147,6 +150,11 @@ class PreparedReport:
         self._claim_lock = Lock()
         self._claimed = False
         self._transport_claimed = False
+        self._review = (
+            {key: review_report[key] for key in ("stamp", "groups", "binding", "lifetime")}
+            if review_report
+            else None
+        )
 
     def claim_transport(self):
         with self._claim_lock:
@@ -170,6 +178,7 @@ class PreparedReport:
         self._token = ""
         self._used = True
         self._closed = True
+        self._review = None
 
     def preview(self):
         from .wire import preview
@@ -244,6 +253,12 @@ class DeliveryBudget:
                     return False
                 if len([row for row in recent if row[1] > now - WEEK_MS]) >= MAX_ATTEMPTS:
                     return False
+                inspection = review_storage.read(connection)
+                if inspection["mode"] == "review":
+                    from .inspection import checked
+
+                    inspection = checked(inspection, preference, company, now)
+                    return inspection["outcome"] == "approved" and inspection["report"] is not None
                 day = now // DAY_MS
                 return (
                     connection.execute(
@@ -298,13 +313,27 @@ class DeliveryBudget:
                     > DAILY_BYTES
                 ):
                     return None
-                aggregate._prune(connection, now // DAY_MS, company["metric_groups"])
-                rows = connection.execute("SELECT cell, count FROM pending LIMIT 513").fetchall()
-                if not rows:
-                    return None
-                # Prepare before durable spending. Entropy/encoding failure has
-                # no exposure, while every returned reservation is fully spent.
-                body = prepare(rows, groups=company["metric_groups"], cohorts=cohorts)
+                inspection = review_storage.read(connection)
+                review_report = None
+                if inspection["mode"] == "review":
+                    from .inspection import checked
+
+                    inspection = checked(inspection, preference, company, now)
+                    if inspection["outcome"] != "approved" or inspection["report"] is None:
+                        review_storage.write(connection, inspection)
+                        connection.commit()
+                        return None
+                    review_report = inspection["report"]
+                    body = bytes(review_report["packet"])
+                else:
+                    aggregate._prune(connection, now // DAY_MS, company["metric_groups"])
+                    rows = connection.execute(
+                        "SELECT cell, count FROM pending LIMIT 513"
+                    ).fetchall()
+                    if not rows:
+                        return None
+                    # Automatic mode prepares exactly once before spending.
+                    body = prepare(rows, groups=company["metric_groups"], cohorts=cohorts)
                 token = secrets.token_hex(16)
                 jitter = secrets.randbelow(JITTER_MS + 1)
                 if not _integer(jitter, JITTER_MS):
@@ -328,7 +357,12 @@ class DeliveryBudget:
                 )
                 # A reservation consumes this queue. It can never be replayed
                 # after a failed attempt, crash, cancellation or re-enable.
-                connection.execute("DELETE FROM pending")
+                if review_report is not None:
+                    # Staging already consumed its own snapshot. Preserve any
+                    # observations produced while the user reviewed the bytes.
+                    review_storage.write(connection, review.clear_review(inspection, "consumed"))
+                else:
+                    connection.execute("DELETE FROM pending")
                 connection.commit()
             return PreparedReport(
                 body,
@@ -337,6 +371,7 @@ class DeliveryBudget:
                 expected_generation,
                 now + DEADLINE_MS,
                 started + DEADLINE_MS / 1000,
+                review_report,
             )
         except _FAILURES:
             return None
@@ -348,6 +383,13 @@ class DeliveryBudget:
         state, _ = _state(connection)
         preference = policy._preferences(connection)
         company = policy.company_policy(self.policy_path)
+        if report._review is not None:
+            from .inspection import current_metadata
+
+            metadata = current_metadata(report._review, preference, company, now)
+            if metadata is None:
+                return False
+            report._review = metadata
         return (
             _integer(now)
             and _monotonic() < report._monotonic_deadline

@@ -38,9 +38,10 @@ wire usage or installed sender cancellation.
 
 ## One private native/Python allowance
 
-[Policy storage version 5](../../mnemion/product_telemetry/policy.py) retains the
+[Policy storage version 6](../../mnemion/product_telemetry/policy.py) retains the
 seven-slot attempt ledger and delivery-state row introduced in version 4, and
-adds the private `connection_mode` preference. Native and Python processes using the same OS account
+the version-5 `connection_mode` preference. Version 6 adds one bounded private
+review row and fences older senders. Native and Python processes using the same OS account
 and configured store serialize reservations with the same database transactions
 used for choice changes. This is not a person-wide allowance across independent
 installations, browser profiles or copied stores. The public control schema
@@ -139,7 +140,7 @@ damaged settings.
 
 ## Reservation consumes the queue
 
-Within one write transaction, reservation rechecks policy, clock, cooldown,
+In default automatic mode, within one write transaction, reservation rechecks policy, clock, cooldown,
 active lease and both spending limits. It selects permitted bounded cells and
 prepares one [four-byte randomized body](anonymous-product-telemetry-delivery.md).
 Encoding and entropy must succeed before spending is committed. The transaction
@@ -160,6 +161,34 @@ Those values and the local generation never enter the report body or analytics
 identity. Counters describe reservations, not successful uploads; `ready` is an
 accounting state and does not enable collection.
 
+## Optional review before reservation
+
+The [new source controls](../validation/2026-10-26-telemetry-report-review.md)
+allow manual mode to be selected before collection permission. Staging itself
+requires current permission, disclosure, a configured route, usable observations
+and available delivery allowance. It reads no performance gauges and spends no
+attempt. [Inspection](../../mnemion/product_telemetry/inspection.py) stores one
+randomized four-byte report and consumes only that pending snapshot. Repeated
+inspection neither resamples it nor renews its original expiry.
+
+Approval changes that report's state; a later eligible owner reserves the
+**same bytes** once, with the existing five-second lease and spending rules.
+The report's original review lifetime, policy revision/generation, metric groups,
+disclosure, catalog, wire version and destination binding are checked again at
+handoff. New observations produced during review remain pending, and contribution
+limits and spent budgets are not reset. The staged snapshot is never restored
+after discard, expiry, invalidation or an unsuccessful delivery attempt.
+
+Native/Python storage uses private SQLite schema **6**. Browser choice schema
+**5** and budget schema **2** retain spending and use a write-ahead pending-entry
+clear under the origin lock. These versions fence older senders from bypassing
+a newly selected hold. Status reads do not migrate storage or reveal packet
+bytes. Manual mode remains selected after expiry, discard and consumption;
+returning to automatic is an explicit action that clears the held report.
+Production collection stays false/null/null, and this unreleased implementation
+has passing source and isolated Chromium control checks. Interactive privacy,
+utility, full resource and installed acceptance remain open.
+
 ## Review-clock foundation
 
 The later [source checkpoint](../validation/2026-10-26-telemetry-preview.md#review-clock-foundation)
@@ -176,19 +205,27 @@ shared C clock through Node-API or Python. Linux/macOS source reads an OS boot
 epoch and suspend-inclusive elapsed time; Windows source uses an explicitly
 initialized volatile per-user epoch and interrupt time. Ordinary native reads
 cannot initialize or repair the Windows marker. These epochs are private local
-control only and must never enter telemetry or its wire body. Linux and Windows
-x64 runtime component checks passed; Windows ARM64, macOS and installed
-review-clock acceptance remain open.
+control only and must never enter telemetry or its wire body. Linux, Windows
+x64 and later macOS Intel/ARM runtime component checks passed; Windows ARM64
+and installed review acceptance remain open.
+
+For headless Python without a packaged helper, the
+[direct OS reader](../../mnemion/product_telemetry/review_clock_system.py) uses
+the same review clock without a compiler. An existing broken helper or an
+unavailable helper result is never bypassed. Actual Linux/Windows x64 comparisons
+matched the helper; the new direct macOS reader still awaits source CI. This
+fallback changes no delivery allowance, permission or network-admission rule.
 
 [BrowserReviewClock](../../studio/frontend/src/workspace/telemetry-review-clock.ts)
 uses only live same-origin pages, a short Web Lock and bounded BroadcastChannel
 discovery. It creates no worker or persistent storage. `read()` opens no channel,
 waits for nothing and cannot initialize an epoch. Explicit `ensure()` can create
 one or join a still-live matching epoch; losing all peers prevents revival of
-an old lifetime. The clock components are not wired to packet storage or user
-controls: **staging, review UI and approval remain unimplemented**. They are not
-in released 4.46.13 and do not establish full rollback, resource or platform
-acceptance. V08 stays Building and collection remains unavailable.
+an old lifetime. The new report-review source connects this clock to staging,
+approval and handoff without changing its original lifetime. It is not in
+released 4.46.13, and clock component checks do not establish the new review
+path's full rollback, resource or platform acceptance. V08 stays Building and
+collection remains unavailable.
 
 ## Cancellation and the final handoff
 
@@ -245,7 +282,7 @@ allowance. No account, device or cross-origin identifier joins those stores.
 
 | Boundary | Native/Python | Browser |
 | --- | --- | --- |
-| Durable state | Existing private SQLite policy database, storage version 5 | Origin-local localStorage choice version 4, separate budget version 1 and the existing aggregate queue |
+| Durable state | Existing private SQLite policy database, storage version 6 | Origin-local localStorage choice version 5, separate budget version 2 and the existing aggregate queue |
 | Serialization | SQLite transaction shared with explicit choice changes | The same privacy Web Lock for choice, producer writes, reservation and final handoff; delivery refuses an unavailable or busy lock |
 | Queue consumption | Attempt accounting and queue deletion commit together | Spending and a clear intent are written first; queue cleanup must finish before new work is admitted |
 

@@ -192,14 +192,18 @@ def record_many(
                 return False
             company = policy.company_policy(policy_path)
             policy._queue_schema(connection)
+            from . import review_storage
+
             if not _permitted(preference, company, expected_revision, expected_generation):
                 connection.execute("DELETE FROM pending")
                 connection.execute("DELETE FROM producer_budget")
+                review_storage.invalidate(connection)
                 connection.commit()
                 if not preference["enabled"]:
                     _remember_exhaustion(root, [], day, disabled=True)
                 return False
             _prune(connection, day, company["metric_groups"])
+            review_storage.maintain(connection, preference, company)
             existing = {row[0] for row in connection.execute("SELECT cell FROM pending")}
             recorded = False
             exhausted = []

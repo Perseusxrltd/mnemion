@@ -73,6 +73,19 @@ def probe(artifact: Path, *, node: str | None = None, initialize_review_clock=Fa
         or (not clock_available and (clock.elapsed_ms or any(clock.epoch)))
     ):
         raise ValueError("The actual review clock returned invalid control state")
+    from mnemion.product_telemetry.review_clock_system import read_system_review_clock
+
+    # The compiler-free package path must share the exact native epoch/timebase.
+    # It is read-only here, including when C explicitly initialized Windows.
+    system_clock = read_system_review_clock()
+    shared_system_clock = bool(
+        clock_available
+        and system_clock
+        and system_clock["epoch"] == bytes(clock.epoch).hex()
+        and system_clock["elapsed_ms"] >= clock.elapsed_ms
+    )
+    if bool(system_clock) != bool(clock_available) or (clock_available and not shared_system_clock):
+        raise ValueError("The source-install review clock does not match the packaged helper")
     result = {
         "schema_version": 1,
         "platform": operating_system,
@@ -86,6 +99,8 @@ def probe(artifact: Path, *, node: str | None = None, initialize_review_clock=Fa
             "seconds": elapsed,
             "aggregate_cpu_available": bool(available),
             "review_clock_available": bool(clock_available),
+            "system_review_clock_available": bool(system_clock),
+            "system_review_clock_matches_helper": shared_system_clock,
         },
         "qualification": "component only; not installed or whole-feature resource acceptance",
     }

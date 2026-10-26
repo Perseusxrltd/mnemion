@@ -208,6 +208,16 @@ class LocalTelemetryChoice(BaseModel):
     connection_mode: Literal["auto", "unmetered", "metered"] = "auto"
 
 
+class LocalTelemetryReview(BaseModel):
+    """Compare-and-set controls for an OS-account report, never a remote vault."""
+
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: Annotated[int, Field(strict=True, ge=0, le=2147483646)]
+    expected_generation: Annotated[str | None, Field(pattern=r"^[0-9a-f]{32}$")]
+    expected_review_token: Annotated[str | None, Field(pattern=r"^[0-9a-f]{32}$")]
+    mode: Literal["automatic", "review"] | None = None
+
+
 def create_mcp(
     base_url: str,
     *,
@@ -323,10 +333,21 @@ def create_mcp(
         )
         async def mnemion_telemetry(
             ctx: Context,
-            action: Literal["status", "schema", "preview", "configure"] = "status",
+            action: Literal[
+                "status",
+                "schema",
+                "preview",
+                "configure",
+                "review_status",
+                "review_mode",
+                "inspect_report",
+                "approve_report",
+                "discard_report",
+            ] = "status",
             choice: LocalTelemetryChoice | None = None,
+            review: LocalTelemetryReview | None = None,
         ) -> dict[str, Any]:
-            """Control optional anonymous product counts for this local OS account, including offline opt-out. Read schema for the disclosure, default and exclusions. Remote HTTP callers cannot change this policy; this tool never produces analytics."""
+            """Control optional product counts for this local OS account, including offline opt-out and exact report review. Read schema for the disclosure and action fields. Remote HTTP callers cannot use these controls. Inspection requires existing collection permission; this tool never sends statistics itself."""
             if not owned_stdio(ctx):
                 raise MnemionError(
                     403,
@@ -335,9 +356,15 @@ def create_mcp(
                 )
             from ..product_telemetry.cli import execute
 
+            if choice is not None and review is not None:
+                raise MnemionError(
+                    422, "telemetry_invalid_request", "Use one documented privacy action at a time."
+                )
+
             request = {
                 "action": action,
                 **(choice.model_dump(exclude_unset=True) if choice else {}),
+                **(review.model_dump(exclude_unset=True) if review else {}),
             }
             return await anyio.to_thread.run_sync(
                 lambda: execute(None, request), limiter=server.worker_capacity

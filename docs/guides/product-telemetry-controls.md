@@ -1,7 +1,8 @@
 # Product telemetry privacy controls
 
 **V08 remains in development; updated 26 October 2026.** Product
-telemetry is unavailable. The local controls below ship in 4.46.13, but
+telemetry is unavailable. Basic choice, status and format controls ship in
+4.46.13; the report-review actions below are newer, unreleased source. In either case,
 saving an enabled preference does not start collection: `collection_available`
 and `effective_enabled` remain `false`, with no destination or release route.
 Use [release status](../RELEASE_STATUS.md) to check availability in your version.
@@ -51,11 +52,11 @@ A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
 
-New source adds a [clock foundation for bounded report review](../validation/2026-10-26-telemetry-preview.md#review-clock-foundation),
-but **exact-packet staging, review UI and approval are not implemented**. There
-is no new app or agent review action to use. The published format example stays
-unchanged; these clock changes are excluded from 4.46.13 and do not enable
-collection.
+New source adds [optional report review](#optional-report-review-unreleased-source)
+on top of the bounded clock foundation. Source checks and an isolated Chromium
+control journey passed; full acceptance remains open and this work is excluded
+from 4.46.13. The published synthetic format example stays unchanged, and the
+current unavailable collection gate still prevents staging an actual report.
 
 **Telemetry connection settings** offers `auto`, `unmetered` and `metered`.
 Automatic mode pauses delivery when metering is unknown; an unmetered declaration
@@ -114,6 +115,37 @@ the required coordination between tabs also keeps it off. Clearing site storage
 removes the saved choice and requires fresh disclosure; no identifier or
 fingerprint is used to recover it.
 
+## Optional report review (unreleased source)
+
+In **Review reports before sending**, select **Pause reports for manual review**
+if you want to approve individual reports. You can select this before granting
+collection permission. Automatic delivery remains the default.
+
+Once collection is permitted under its current disclosure, authorized local
+observations exist and the allowance is ready, **Inspect next report** stages
+one exact four-byte body and shows its Base64 and decoded fields. This explicitly
+consumes the current pending snapshot, without spending delivery allowance.
+Inspecting the held report again preserves its bytes and original expiry: at
+most 15 minutes, possibly less if the observations expire sooner.
+
+**Approve this report** permits one eligible attempt with those bytes. The app
+or browser can offer it to its existing awake delivery owner; approval is not a
+delivery receipt and cannot override permission, company policy, metering or
+resource checks. Later reports remain paused. **Discard report**, expiry and
+invalidation also keep manual mode selected. Leaving manual review explicitly
+clears the held report and restores automatic delivery opportunities.
+
+The consumed snapshot is not restored. New observations, contribution limits
+and already spent delivery budgets are preserved. Closing all browser tabs
+prevents reuse of that browser review. Refresh/focus clears displayed bytes;
+inspect again to revalidate and reveal a still-valid report. Selective approvals
+can affect aggregate statistics; interactive privacy and utility qualification
+remain open. See the [source validation boundary](../validation/2026-10-26-telemetry-report-review.md).
+
+The Chromium check used synthetic observations and an in-memory capability;
+it verified controls without sending a report or spending a delivery attempt.
+It does not qualify production collection, network delivery or installed apps.
+
 ## From a native agent or terminal
 
 A runtime built with these source controls accepts one JSON line on private
@@ -125,7 +157,7 @@ printf '%s\n' '{"action":"status"}' | mnemion-service telemetry
 printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 ```
 
-`schema` describes the four local actions, disclosure and `measurement_catalog`,
+`schema` describes the available local actions, disclosure and `measurement_catalog`,
 including fixed numeric buckets, contribution limits and exclusions. It also
 returns `owned_control_coverage`, the full owned-CLI operation map, and
 `owned_origin_coverage` for the desktop, Studio, UI, MCP and maintenance boundaries.
@@ -152,10 +184,10 @@ no active attempt. The catalog is included; `local_aggregates` stays empty while
 collection is unavailable. When present, local counts are a private snapshot,
 not a serialized outbound report or event history. The
 [format-preview evidence](../validation/2026-10-26-telemetry-preview.md)
-now includes component checks and the five installed-control targets described
-above. Intel Mac and the complete release/telemetry acceptance remain open. The
+retains the earlier component and five-target results; published 4.46.13 later
+qualified all six basic-control targets. Full telemetry acceptance and the new
 [actual-packet inspection requirement](../implementation/anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview)
-remains open. Success returns
+remain open. Success returns
 `{"event":"result","ok":true,"result":...}`; refusal returns a fixed error code
 with `ok: false` and exit status 2.
 
@@ -188,10 +220,53 @@ disclosure; an explicit supported choice creates its new local token.
 A successful change clears pending aggregates and local contribution accounting,
 so re-enabling cannot revive old data. The separate delivery allowance retains
 spent attempts and cooldown across opt-out; changing a choice does not refund
-it. Reading or changing these controls starts no network activity. The desktop agent
+it. These basic read and choice actions start no network activity. The desktop agent
 exposes the same typed `telemetry.schema`,
 `telemetry.status`, `telemetry.preview` and `telemetry.configure` actions without
 requiring a workspace.
+
+### Report actions in the new source
+
+These actions are unavailable in released 4.46.13. Read `schema` and
+`review_status` from a runtime built with the new source:
+
+```sh
+printf '%s\n' '{"action":"review_status"}' | mnemion-service telemetry
+```
+
+Headless Python can use the documented OS review clock without compiling a
+helper when that helper is absent. A broken or unavailable packaged helper
+continues to refuse review; this does not enable collection. Linux/Windows x64
+comparison checks passed; the new direct macOS path remains unqualified.
+
+| Local action | Behavior |
+| --- | --- |
+| `review_status` | Read-only stored snapshot of mode, outcome, token and expiry; `packet` is null. It does not initialize, repair, migrate or verify current report eligibility. |
+| `review_mode` | Set `mode` to `review` or `automatic`; selecting manual mode does not grant collection permission. |
+| `inspect_report` | Stage or revalidate one report; only this explicit mutation returns its exact `packet`. |
+| `approve_report` | Approve the current held report for one eligible attempt; the standalone CLI does not send or start an owner. |
+| `discard_report` | Erase the held report and remain in manual mode, without restoring its snapshot or allowance. |
+
+Every mutation requires `expected_revision` from `status.revision`,
+`expected_generation` from `status.store_generation`, and `expected_review_token`
+from `review.token` in the latest review response. Add `mode` only for
+`review_mode`. These are private compare-and-set values, not report fields;
+refresh after `telemetry_choice_changed` or `telemetry_review_changed`.
+For a genuinely new store, selecting manual mode uses the initial `0`/`null`/`null`
+values below; existing stores must use their actual returned values:
+
+```sh
+printf '%s\n' '{"action":"review_mode","mode":"review","expected_revision":0,"expected_generation":null,"expected_review_token":null}' | mnemion-service telemetry
+```
+
+Use the returned values for `inspect_report`, then the latest inspection values
+for `approve_report` or `discard_report`. Check `message`, `review.outcome` and
+`packet`; a successful command may report `no_observations`,
+`collection_not_permitted`, `transport_unavailable` or `delivery_not_ready`
+without creating a report. `consumed` means claimed, not confirmed delivery.
+The native desktop equivalents use the `telemetry.` prefix on these same five
+names. Native CLI approval arms the next existing awake owner; the app/browser
+may offer that owner an opportunity immediately. None creates a background service.
 
 ## From local stdio MCP
 
@@ -224,6 +299,25 @@ input schema and omit `disclosure_version` while collection is unavailable.
 Enabling still needs current private revision and
 generation; opt-out, company restriction and damaged-store behavior are the same
 as the native controls above.
+
+The new maintained local stdio tool also accepts the five report actions above.
+Use `{"action":"review_status"}` for a stored snapshot. Mutations put the same
+compare-and-set fields in `review`, with `mode` only for `review_mode`:
+
+```json
+{
+  "action": "review_mode",
+  "review": {
+    "mode": "review",
+    "expected_revision": 0,
+    "expected_generation": null,
+    "expected_review_token": null
+  }
+}
+```
+
+That example is only for a new store. Use current response values thereafter;
+do not combine `choice` and `review`. The tool itself sends no statistics.
 
 The tool is absent from the ordinary HTTP gateway. HTTP calls cannot change
 local telemetry policy or acquire a measurement owner, even if the server has a

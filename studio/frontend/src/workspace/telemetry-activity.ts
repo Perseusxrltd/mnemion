@@ -17,6 +17,7 @@ export class BrowserTelemetryActivity {
       reserve: async stamp => {
         const status = this.client.status()
         if (status.connection_mode === 'metered' || status.delivery_budget?.state !== 'ready') return null
+        if (!await this.client.delivery.eligible(stamp)) return null
         const network = this.conditions.read().network
         if (network === 'metered' || (network === 'unknown' && status.connection_mode !== 'unmetered')) return null
         const stop = this.stop = new AbortController()
@@ -57,7 +58,9 @@ export class BrowserTelemetryActivity {
     // Capture pagehide even between recording and the deferred dispatch. These
     // page-owned listeners do not run a task or wake a dormant browser.
     if (typeof window !== 'undefined') {
-      window.addEventListener('pagehide', () => { this.hidden = true; this.stop?.abort(); this.activity.pause('page') })
+      window.addEventListener('pagehide', () => {
+        this.hidden = true; this.client.reviewClock.close(); this.stop?.abort(); this.activity.pause('page')
+      })
       window.addEventListener('pageshow', () => { this.hidden = false; this.activity.resume('page') })
     }
   }

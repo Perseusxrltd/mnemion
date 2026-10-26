@@ -28,7 +28,7 @@ import { NativeTelemetryStore, nativeTelemetryDefinitions } from './telemetry-st
 import { DesktopTelemetryActivity } from './telemetry-activity.js'
 import { DesktopTelemetryConditions } from './telemetry-conditions.js'
 import { desktopIpcSelection, desktopTelemetryOrigins, measureDesktop } from './desktop-measurement.js'
-import type { TelemetryStamp } from '../shared/product-telemetry.js'
+import type { TelemetryReview, TelemetryStamp } from '../shared/product-telemetry.js'
 import type { HostConnection, HostRequest } from '../shared/host-control.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
 import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
@@ -313,11 +313,18 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       deadlineMs: 30000, messages: hostMessages }))
     return hosts
   }
-  function telemetryAction(action: string, input: Record<string, unknown> = {}, signal?: AbortSignal) {
+  async function telemetryAction(action: string, input: Record<string, unknown> = {}, signal?: AbortSignal) {
     const root = join(localBase(), 'mnemion-product-telemetry')
-    return new ProductTelemetry(sourceProcess({ executable: engineExecutable(), root,
+    const result = await new ProductTelemetry(sourceProcess({ executable: engineExecutable(), root,
       privateRoots: [], command: 'telemetry', environment: localEnvironment(process.env, root),
       deadlineMs: 15000, messages: telemetryMessages })).execute(action, input, signal)
+    const inspection = result as unknown as Partial<TelemetryReview>
+    if (action === 'telemetry.approve_report' && inspection.review?.outcome === 'approved' && inspection.status?.effective_enabled === true && !signal?.aborted) {
+      const owner = telemetryStore()
+      if (owner instanceof DesktopTelemetryActivity) owner.offerApproved({ revision: inspection.status.revision,
+        store_generation: inspection.status.store_generation })
+    }
+    return result
   }
   function telemetryStore(): NativeTelemetryStore {
     if (!measurements) {

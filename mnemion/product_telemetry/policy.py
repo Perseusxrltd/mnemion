@@ -30,7 +30,7 @@ MAX_PENDING_AGE_SECONDS = 48 * 3600
 MAX_DOCUMENT_BYTES = 8192
 METRIC_GROUPS = tuple(CONTRACT["metric_groups"])
 DATABASE_NAME = "product-telemetry.sqlite3"
-STORAGE_VERSION = 5
+STORAGE_VERSION = 6
 CONNECTION_MODES = ("auto", "unmetered", "metered")
 
 # Attempt accounting is not a measurement or a stable analytics identity. It
@@ -51,6 +51,17 @@ CREATE TABLE delivery_attempts (
     at_ms INTEGER NOT NULL CHECK (at_ms BETWEEN 0 AND 86400000000000),
     reserved_bytes INTEGER NOT NULL CHECK (reserved_bytes = 65536)
 );
+"""
+
+# One optional held packet and bounded local control metadata. Older senders
+# reject storage version six instead of bypassing a newly enabled review hold.
+REVIEW_SCHEMA = """
+CREATE TABLE report_review (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    state TEXT NOT NULL CHECK (length(state) <= 4096)
+);
+INSERT INTO report_review VALUES
+    (1, '{"version":1,"mode":"automatic","token":null,"outcome":"inactive","report":null}');
 """
 
 
@@ -93,6 +104,7 @@ CREATE TABLE pending (
 """
     + QUEUE_SCHEMA
     + DELIVERY_SCHEMA
+    + REVIEW_SCHEMA
 )
 
 
@@ -227,7 +239,7 @@ def _preferences(connection: sqlite3.Connection) -> dict:
     version = connection.execute("PRAGMA user_version").fetchone()[0]
     if (
         connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
-        or version not in (1, 2, 3, 4, STORAGE_VERSION)
+        or version not in (1, 2, 3, 4, 5, STORAGE_VERSION)
         or connection.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
     ):
         raise PolicyError("telemetry_storage_unavailable")
@@ -297,6 +309,13 @@ def _queue_schema(connection: sqlite3.Connection) -> None:
             "ALTER TABLE preferences ADD COLUMN connection_mode TEXT NOT NULL DEFAULT 'auto' "
             "CHECK (connection_mode IN ('auto', 'unmetered', 'metered'))"
         )
+    if version < 6:
+        statement = ""
+        for line in REVIEW_SCHEMA.splitlines(keepends=True):
+            statement += line
+            if sqlite3.complete_statement(statement):
+                connection.execute(statement)
+                statement = ""
     connection.execute(f"PRAGMA user_version={STORAGE_VERSION}")
 
 
@@ -496,6 +515,11 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
             connection.execute(
                 "UPDATE delivery_state SET lease_token=NULL, lease_deadline_ms=0 WHERE singleton=1"
             )
+            from .review_storage import invalidate
+
+            # A choice erases the held packet, while a preselected manual
+            # review mode survives enabling and never resumes by itself.
+            invalidate(connection)
             connection.commit()
     except sqlite3.OperationalError as error:
         if getattr(error, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):

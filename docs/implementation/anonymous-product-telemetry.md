@@ -10,8 +10,8 @@ product collection is unavailable. V08 is the
 active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
 passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
 texts and the other 65 states remain unchanged. Local privacy controls ship in
-4.46.13; the later CPU admission and report-review clock changes documented
-below remain source-only.
+4.46.13; the later CPU admission and exact-report review changes documented
+below remain source-only and under validation.
 
 The [dedicated collector source](anonymous-product-telemetry-collector.md) now
 provides a bounded TLS entrypoint, metadata removal, private report access and
@@ -498,8 +498,9 @@ format defines bounded cohort views and an ingress adapter. Later source adds
 senders and owner wiring, but installed delivery and a qualified endpoint remain
 unaccepted. The fixed-enum requirement still
 excludes arbitrary combinations, exact timestamps and identity fields. The
-current app/native/browser preview shows a separately labeled synthetic format
-example; it does not inspect an actual outgoing packet.
+read-only app/native/browser format preview shows a separately labeled synthetic
+example. The new explicit inspection action can stage an actual report only
+after collection permission and observations exist.
 
 ```json
 {
@@ -518,16 +519,24 @@ example; it does not inspect an actual outgoing packet.
 
 Resource and bandwidth views use separately reviewed enums/buckets rather than
 adding an exact machine profile to this envelope. Counts and charts must explain
-sampling, clipping, bucket ranges and dropped reports. The local preview must
-make the exact serialized outbound body and schema available before enabling or
-sending, and disclose transport metadata separately; a clean JSON body alone is not
-evidence that the whole path is anonymous.
+sampling, clipping, bucket ranges and dropped reports. Transport metadata must
+be disclosed separately; a clean body alone is not evidence that the whole path
+is anonymous.
+
+**26 October 2026 clarification:** show the format/categories and allow optional
+manual review to be selected **before collection permission**. Create an actual
+packet only **after authorized observations exist**, and expose its exact bytes
+**before emission in manual mode**. Automatic delivery remains the default;
+manual review is optional and explicitly named. This sequence supersedes the
+earlier literal requirement for an actual packet before enabling: collecting
+data before permission is not authorized. That earlier sequence is not claimed
+as tested, and no canonical requirement text or state changes.
 
 The 26 October source format example is labeled `kind: "synthetic_example"`
-and the actual outbound state remains `not_inspected`. The exact-packet
-inspection requirement above remains an **open acceptance gate**. Showing fixed
-example bytes and their schema before enabling does not establish inspection of
-the actual next outgoing packet or close that gate.
+and its actual outbound state remains `not_inspected`. It is separate from the
+new explicit `inspect_report` mutation. Source checks and an isolated Chromium
+review journey passed, while interactive privacy/utility and installed acceptance
+remain open. The fixed example alone does not establish actual-packet inspection.
 
 The subsequent [review-clock foundation](../validation/2026-10-26-telemetry-preview.md#review-clock-foundation)
 adds private native clock readers and a portable lifetime validator, capped at
@@ -535,10 +544,28 @@ adds private native clock readers and a portable lifetime validator, capped at
 and elapsed-time checks reject rollback, epoch loss/change and expiry without
 renewing the original age. Browser coordination keeps its epoch only among
 live same-origin pages; ordinary reads never initialize it. Epochs are local
-control values, not analytics identifiers or outbound fields. **Actual packet
-staging, review UI and approval remain unimplemented.** This source foundation
-is excluded from released 4.46.13; it changes neither the current synthetic
-preview nor production collection's false/null/null gates.
+control values, not analytics identifiers or outbound fields. Later macOS
+Intel/ARM component checks qualified the shared clock; their overall CI and
+installed-review acceptance are separate.
+Headless Python now reads the same OS clock directly when the packaged helper
+is absent; a present broken or unavailable helper is never bypassed. Direct
+Linux/Windows x64 comparisons passed; the new direct macOS path remains pending.
+
+The [new report-review source](../validation/2026-10-26-telemetry-report-review.md)
+implements one private four-byte stage, app controls and local agent actions.
+Inspection consumes its pending snapshot without spending delivery allowance;
+repeat inspection preserves the bytes and original expiry. Approval permits one
+eligible attempt using those bytes. Later observations, contribution limits and
+spent delivery budgets are preserved. Expiry, discard or invalidation never
+leave manual mode automatically. Status and format preview remain read-only
+and do not reveal the staged body. Private SQLite schema 6 and browser
+choice 5/budget 2 fence older senders. Final verification passed **306 Python,
+116 browser-source and two Python/Node SQLite handoff checks**, plus the isolated
+Chromium review flow and both builds. The browser fixture used synthetic input,
+made no report request and spent no delivery attempt. These changes are excluded
+from 4.46.13; interactive privacy/utility, full resources/sensors, wire and
+installed/platform acceptance remain open. Production remains false/null/null
+and V08 remains Building.
 
 ## Collector and release conditions
 

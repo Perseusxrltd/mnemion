@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
+import { TelemetryWire } from '../dist/telemetry-wire.js'
 import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -18,14 +19,25 @@ const program = `
 import json,sys,sqlite3
 from contextlib import closing
 from pathlib import Path
-from mnemion.product_telemetry import policy,aggregate,delivery
+from mnemion.product_telemetry import policy,aggregate,delivery,inspection,review_clock
 request=json.loads(sys.stdin.readline())
 root,company=Path(request['root']),Path(request['company'])
 policy.COLLECTION_AVAILABLE=True
 policy.COLLECTOR_URL='https://example.invalid/v1/report'
 policy.company_policy_file=lambda:company
+policy.transport_available=lambda:True
 aggregate._day=lambda:request['now']//86400000
 delivery._now_ms=lambda:request['now']
+inspection._now_ms=lambda:request['now']
+if request.get('native_clock'):
+ import ctypes
+ class NativeClock(ctypes.Structure):
+  _fields_=[('elapsed_ms',ctypes.c_uint64),('epoch',ctypes.c_ubyte*16)]
+ library=ctypes.CDLL(request['native_clock'])
+ function=library.mnemion_review_clock_v1
+ function.argtypes=[ctypes.c_int,ctypes.POINTER(NativeClock)]
+ function.restype=ctypes.c_int
+ review_clock._native=(library,function,NativeClock)
 if request.get('wait'):
  print('ready',flush=True)
  sys.stdin.readline()
@@ -47,6 +59,12 @@ elif action=='reserve':
 elif action=='fill':
  state=policy.status(root)
  result=aggregate.record(root,{'kind':'submission','workflow':'memory.recall','surface':'native_agent'},expected_revision=state['revision'],expected_generation=state['store_generation'])
+elif action=='review_status': result=inspection.status(root)
+elif action in ('review_mode','inspect_report','approve_report','discard_report'):
+ state=inspection.status(root)
+ control={'expected_revision':state['status']['revision'],'expected_generation':state['status']['store_generation'],'expected_review_token':state['review']['token']}
+ if action=='review_mode': control['mode']=request['value']
+ result=inspection.execute(root,action,control)
 else:
  with closing(sqlite3.connect(root / policy.DATABASE_NAME)) as db:
   clock,next_ms,ticket,deadline=db.execute('SELECT clock_ms,next_ms,lease_token,lease_deadline_ms FROM delivery_state').fetchone()
@@ -65,7 +83,8 @@ async function fixture(t) {
   })
   const root = join(temporary, 'private'), company = join(temporary, 'policy.json')
   let now = 1700000000000
-  const request = (action, extra = {}) => JSON.stringify({ action, root, company, now, ...extra }) + '\n'
+  const request = (action, extra = {}) => JSON.stringify({ action, root, company, now,
+    native_clock: resolve(repository, 'studio/electron/dist/telemetry-network.node'), ...extra }) + '\n'
   const invoke = (action, extra = {}) => {
     const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', timeout: 20000, input: request(action, extra) })
     assert.equal(child.status, 0, child.stderr)
@@ -81,6 +100,61 @@ async function fixture(t) {
     setNow: value => { now = value }, now: () => now,
     fill: async () => assert.equal(await store.record(observation, await store.snapshot(), Math.floor(now / 86400000)), true) }
 }
+
+test('Python inspection holds native delivery until approval and preserves exact bytes and later observations', async t => {
+  const f = await fixture(t)
+  f.setNow(Date.now())
+  f.invoke('review_mode', { value: 'review' })
+  await f.fill()
+  const inspected = f.invoke('inspect_report')
+  assert.equal(inspected.review.outcome, 'held')
+  assert.equal(inspected.packet.body_bytes, 4)
+  assert.equal(await f.store.reserve(f.stamp, network), null)
+  assert.equal(f.invoke('inspect').attempts, 0)
+  await f.fill()
+  assert.equal(f.invoke('inspect').pending, 1)
+  assert.equal(f.invoke('approve_report').review.outcome, 'approved')
+  const prepare = TelemetryWire.prototype.prepare
+  let redraws = 0
+  TelemetryWire.prototype.prepare = function (...args) { redraws++; return prepare.apply(this, args) }
+  try {
+    const report = await f.store.reserve(f.stamp, network)
+    assert.ok(report)
+    assert.equal(report.reviewed, true)
+    assert.equal(Buffer.from(report.body()).toString('base64'), inspected.packet.body_base64)
+    assert.equal(redraws, 0)
+    const bodies = []
+    assert.equal(await f.store.guardedWrite(report, body => { bodies.push(Buffer.from(body).toString('base64')); return true }), true)
+    assert.deepEqual(bodies, [inspected.packet.body_base64])
+    assert.deepEqual([f.invoke('inspect').attempts, f.invoke('inspect').pending], [1, 1])
+    const state = f.invoke('review_status')
+    assert.equal(state.review.outcome, 'consumed')
+    assert.equal(state.review.report_available, false)
+    assert.equal(state.packet, null)
+    await f.store.cancel(report)
+    assert.equal(await f.store.reserve(f.stamp, network), null)
+  } finally { TelemetryWire.prototype.prepare = prepare }
+})
+
+test('a changed full review scope blocks native handoff even when the selected metric group remains allowed', async t => {
+  const f = await fixture(t)
+  f.setNow(Date.now())
+  f.invoke('review_mode', { value: 'review' })
+  await f.fill()
+  f.invoke('inspect_report')
+  f.invoke('approve_report')
+  const report = await f.store.reserve(f.stamp, network)
+  assert.ok(report)
+  const wire = new TelemetryWire(JSON.parse(await readFile(new URL('../dist/telemetry-wire-v1.json', import.meta.url), 'utf8')), f.definitions.catalog)
+  const group = wire.specification.views[wire.decode(report.body()).view].group
+  f.invoke('company', { value: { schema_version: 1, enabled: true, metric_groups: [group] } })
+  let writes = 0
+  assert.equal(await f.store.guardedWrite(report, () => { writes++; return true }), false)
+  assert.equal(writes, 0)
+  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.equal(f.invoke('inspect').attempts, 1)
+  assert.equal(f.invoke('inspect').has_lease, false)
+})
 
 test('helper readiness accepts split CRLF and rejected helpers are fully reaped', { timeout: 15000 }, async t => {
   const children = new TelemetryFixtureChildren(python, environment)

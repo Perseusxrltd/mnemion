@@ -185,3 +185,13 @@ false/null/null.
 | Windows x64 read-only component | `53f4af8ea73faefa2c5deecaa0004642c915483da9dca0c6159e6ff4c2c12a58` |
 | Windows x64 initialized component | `b6b9a6ad4ceb7d85be0b3dce15471944d6fd9f98314ae56ae31d84188bb42684` |
 | Linux Electron component | `046c5545e388c931b8bc6232309d20b72d9f78fd89cc150e1fe183534063f8f9` |
+
+## Later report-review source
+
+The subsequent [report-review checkpoint](2026-10-26-telemetry-report-review.md)
+adds actual staging, review UI and approval in unreleased source. Its own source
+tests, Python/Node handoff checks and isolated Chromium controls passed; full
+interactive privacy/utility, resources and installed acceptance remain open.
+It records later macOS Intel/ARM clock-component qualification and direct
+Linux/Windows x64 headless clock comparisons. The new direct macOS Python path
+is still pending. The clock-only limitations above describe that earlier stage.

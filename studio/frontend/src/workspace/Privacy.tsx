@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
-import type { TelemetryConnectionMode, TelemetryPreview, TelemetryStatus } from '../../../shared/product-telemetry'
-import { choiceKey, telemetryConfigure, telemetryPreview, telemetryStatus } from './telemetry-policy'
+import type { TelemetryConnectionMode, TelemetryPreview, TelemetryReview, TelemetryReviewAction, TelemetryStatus } from '../../../shared/product-telemetry'
+import { choiceKey, telemetryConfigure, telemetryPreview, telemetryReviewAction, telemetryReviewStatus, telemetryStatus } from './telemetry-policy'
+import { budgetKey } from './telemetry-budget'
 import './workspace.css'
 
 const reasons: Record<TelemetryStatus['reason'], string> = {
@@ -20,6 +21,7 @@ const reasons: Record<TelemetryStatus['reason'], string> = {
 export default function Privacy() {
   const [status, setStatus] = useState<TelemetryStatus>()
   const [preview, setPreview] = useState<TelemetryPreview>()
+  const [review, setReview] = useState<TelemetryReview>()
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [pendingChoice, setPendingChoice] = useState<boolean>()
@@ -27,15 +29,22 @@ export default function Privacy() {
   const clearPreview = useCallback(() => {
     previewRequest.current++
     setPreview(undefined)
+    setReview(value => value ? { ...value, packet: null } : undefined)
   }, [])
   const refresh = useCallback(async () => {
     clearPreview()
-    try { setStatus(await telemetryStatus()); setError(undefined) }
-    catch (error) { setError(error instanceof Error ? error.message : 'Privacy settings are unavailable.') }
+    const request = previewRequest.current
+    try {
+      const [status, report] = await Promise.all([telemetryStatus(), telemetryReviewStatus()])
+      if (request === previewRequest.current) { setStatus(status); setReview(report); setError(undefined) }
+    }
+    catch (error) {
+      if (request === previewRequest.current) setError(error instanceof Error ? error.message : 'Privacy settings are unavailable.')
+    }
   }, [clearPreview])
   useEffect(() => {
     void refresh()
-    const changed = (event: StorageEvent) => { if (event.key === choiceKey || event.key === null) void refresh() }
+    const changed = (event: StorageEvent) => { if (event.key === choiceKey || event.key === budgetKey || event.key === null) void refresh() }
     window.addEventListener('storage', changed)
     window.addEventListener('focus', refresh)
     return () => { previewRequest.current++; window.removeEventListener('storage', changed); window.removeEventListener('focus', refresh) }
@@ -43,19 +52,47 @@ export default function Privacy() {
   async function choose(enabled: boolean, connectionMode?: TelemetryConnectionMode) {
     if (!status || busy) return
     clearPreview()
+    const request = previewRequest.current
     setBusy(true); setPendingChoice(enabled); setError(undefined)
     try {
-      setStatus(await telemetryConfigure({ enabled, expected_revision: status.revision,
+      const saved = await telemetryConfigure({ enabled, expected_revision: status.revision,
         expected_generation: status.store_generation,
         // Editing a connection setting never acknowledges an unseen disclosure.
         disclosure_version: connectionMode === undefined
           ? enabled && status.collection_available ? status.required_disclosure_version : 0
           : status.disclosure_version,
-        ...(connectionMode === undefined ? {} : { connection_mode: connectionMode }) }))
+        ...(connectionMode === undefined ? {} : { connection_mode: connectionMode }) })
+      const report = await telemetryReviewStatus()
+      if (request === previewRequest.current) { setStatus(saved); setReview(report) }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'The privacy choice could not be saved.')
-      try { setStatus(await telemetryStatus()) } catch { /* Keep the explicit failure visible. */ }
+      if (request === previewRequest.current) {
+        setError(error instanceof Error ? error.message : 'The privacy choice could not be saved.')
+        try {
+          const latest = await telemetryStatus()
+          if (request === previewRequest.current) setStatus(latest)
+        } catch { /* Keep the explicit failure visible. */ }
+      }
     } finally { setPendingChoice(undefined); setBusy(false) }
+  }
+  async function controlReport(action: TelemetryReviewAction, mode?: 'automatic' | 'review') {
+    if (!status || !review?.review || busy) return
+    const input = { expected_revision: status.revision, expected_generation: status.store_generation,
+      expected_review_token: review.review.token, ...(mode === undefined ? {} : { mode }) }
+    clearPreview()
+    const request = previewRequest.current
+    setBusy(true); setError(undefined)
+    try {
+      const result = await telemetryReviewAction(action, input)
+      if (request === previewRequest.current) { setReview(result); setStatus(result.status) }
+    } catch (error) {
+      if (request === previewRequest.current) {
+        setError(error instanceof Error ? error.message : 'The report could not be changed.')
+        try {
+          const latest = await telemetryReviewStatus()
+          if (request === previewRequest.current) { setReview(latest); setStatus(latest.status) }
+        } catch { /* Keep the failure visible. */ }
+      }
+    } finally { setBusy(false) }
   }
   return <div className="workspace"><main className="ws-page ws-privacy" aria-labelledby="privacy-heading">
     <Link className="ws-link" to="/workspace"><ArrowLeft size={16} /> Back to workspaces</Link>
@@ -134,6 +171,41 @@ export default function Privacy() {
             <pre className="ws-code">{JSON.stringify(preview.local_aggregates, null, 2)}</pre>
           </details>}
         </>}
+      </section>
+      <section className="ws-panel" aria-labelledby="telemetry-review-heading">
+        <h2 id="telemetry-review-heading">Review reports before sending</h2>
+        <p>Optionally pause every report until you approve it. You can select this before enabling collection.</p>
+        <label className="ws-check"><input type="checkbox" checked={review?.review?.mode === 'review'}
+          disabled={busy || !review?.review || status.storage === 'unreadable'}
+          onChange={event => void controlReport('review_mode', event.target.checked ? 'review' : 'automatic')} />
+          Pause reports for manual review</label>
+        {!status.effective_enabled && <p>No new report can be prepared until collection is permitted under the current disclosure.</p>}
+        {review?.review && <p role="status">{review.review.mode === 'automatic' ? 'Automatic delivery is selected.'
+          : review.review.outcome === 'approved' ? 'This report is approved for one eligible attempt. Later reports remain paused.'
+          : review.review.outcome === 'consumed' ? 'The report was claimed for an attempt. This does not confirm delivery; later reports remain paused.'
+          : review.review.outcome === 'expired' ? 'The review expired. Reports remain paused.'
+          : review.review.outcome === 'invalidated' ? 'The earlier report is no longer valid. Reports remain paused.'
+          : review.review.outcome === 'discarded' ? 'The report was discarded. Reports remain paused.'
+          : 'Sending is paused. Inspect a report when local observations are available.'}</p>}
+        {review && ['no_report', 'no_observations'].includes(review.message) && <p>No real report is available yet.</p>}
+        {review?.message === 'delivery_not_ready' && <p>The delivery allowance is not ready. A report can be prepared when its next attempt is eligible.</p>}
+        {review?.message === 'transport_unavailable' && <p>This build has no configured collector route.</p>}
+        <div className="ws-actions">
+          <button className="ws-button" disabled={busy || review?.review?.mode !== 'review' || !status.effective_enabled}
+            onClick={() => void controlReport('inspect_report')}>Inspect next report</button>
+          <button className="ws-button ws-primary" disabled={busy || !review?.packet || review.review?.outcome !== 'held'}
+            onClick={() => void controlReport('approve_report')}>Approve this report</button>
+          <button className="ws-button" disabled={busy || !review?.review?.report_available || review.review.mode !== 'review'}
+            onClick={() => void controlReport('discard_report')}>Discard report</button>
+        </div>
+        {review?.packet && <>
+          <p><strong>Exact report:</strong> {review.packet.body_bytes} bytes, shown as Base64. Approval allows these bytes once; it does not generate a replacement.</p>
+          <pre className="ws-code" aria-label="Exact report bytes">{review.packet.body_base64}</pre>
+          <p>Review expires by {new Date(review.review!.expires_ms!).toLocaleTimeString()}. Its age and permissions are checked again on approval and sending.</p>
+          <details><summary>Report fields</summary><pre className="ws-code">{JSON.stringify(review.packet, null, 2)}</pre></details>
+        </>}
+        <p><small>Review lasts at most 15 minutes and can end sooner. Expired or discarded reports are lost; they never restore an allowance. Leaving manual review clears the held report and resumes automatic delivery. Closing all browser tabs prevents reuse of that review. Selective sharing can affect the accuracy of aggregate statistics.</small></p>
+        <p><small>Stored status is a snapshot. Refresh or inspect again after another user, agent or process changes it. Approval cannot override your privacy choice, company policy, connection limits or resource pressure.</small></p>
       </section>
       <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling documentation</Link>
     </>}

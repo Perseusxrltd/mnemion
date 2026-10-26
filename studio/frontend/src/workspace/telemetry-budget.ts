@@ -1,16 +1,18 @@
 /** Origin-local spending metadata. Never a request body or analytics identity. */
 import type { TelemetryStatus } from '../../../shared/product-telemetry'
 import { browserTransportAvailable } from './telemetry-capability'
+import { freshReview, reviewState, type ReviewState } from '../../../electron/telemetry-review'
 export const choiceKey = 'mnemion.product-telemetry.choice.v1'
 export const queueKey = 'mnemion.product-telemetry.pending.v1'
 export const budgetKey = 'mnemion.product-telemetry.budget.v1'
 export const DAY = 86400000, WEEK = 7 * DAY, DEADLINE = 5000, JITTER = 3600000
 export const COST = 65536, DAILY_BYTES = 262144, MAX_CLOCK = 86400000000000
 export type BrowserBudget = {
-  version: 1; generation: string; clock_ms: number; next_ms: number
+  version: 2; generation: string; clock_ms: number; next_ms: number
   attempts: { at_ms: number; reserved_bytes: number }[]
   lease: { token: string; deadline_ms: number } | null
   clear: 'none' | 'entries' | 'all'
+  review: ReviewState
 }
 export const generationValid = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value)
 export const clockValid = (value: unknown, maximum = MAX_CLOCK): value is number =>
@@ -21,14 +23,16 @@ const failure = () => new Error('telemetry_budget_unavailable')
 
 export function freshBudget(generation: string): BrowserBudget {
   if (!generationValid(generation)) throw failure()
-  return { version: 1, generation, clock_ms: 0, next_ms: 0, attempts: [], lease: null, clear: 'none' }
+  return { version: 2, generation, clock_ms: 0, next_ms: 0, attempts: [], lease: null, clear: 'none', review: freshReview() }
 }
 
-export function budgetState(raw: string): BrowserBudget {
+export function budgetState(raw: string, allowLegacy = false): BrowserBudget {
   if (typeof raw !== 'string' || raw.length > 8192) throw failure()
   const value: unknown = JSON.parse(raw)
-  if (!object(value) || !keys(value, ['version', 'generation', 'clock_ms', 'next_ms', 'attempts', 'lease', 'clear']) ||
-      value.version !== 1 || !generationValid(value.generation) || !clockValid(value.clock_ms) || !clockValid(value.next_ms) ||
+  if (!object(value)) throw failure()
+  const legacy = allowLegacy && value.version === 1
+  if (!keys(value, ['version', 'generation', 'clock_ms', 'next_ms', 'attempts', 'lease', 'clear', ...(legacy ? [] : ['review'])]) ||
+      (legacy ? value.version !== 1 : value.version !== 2) || !generationValid(value.generation) || !clockValid(value.clock_ms) || !clockValid(value.next_ms) ||
       !Array.isArray(value.attempts) || value.attempts.length > 7 || !['none', 'entries', 'all'].includes(value.clear as string)) throw failure()
   const at = new Set<number>()
   for (const item of value.attempts) {
@@ -43,7 +47,7 @@ export function budgetState(raw: string): BrowserBudget {
     if (Math.max(...at) !== value.clock_ms || value.next_ms < value.clock_ms + DAY ||
         value.next_ms > value.clock_ms + DAY + JITTER) throw failure()
   } else if (value.clock_ms !== 0 || value.next_ms !== 0 || lease !== null) throw failure()
-  return value as BrowserBudget
+  return { ...value, version: 2, review: legacy ? freshReview() : reviewState(value.review) } as BrowserBudget
 }
 
 export function serializeBudget(value: BrowserBudget): string {

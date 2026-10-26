@@ -9,7 +9,7 @@ import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } f
 import type { CaptureArchiveInfo, CaptureBackupInput, CaptureDrained, CaptureDrainInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSourceView, SourceConfigure, SourceControl, SourcePreviewSelection } from '../../../shared/desktop-sources'
 import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
 import type { HostInspection, HostProfile, HostProfilesStatus, HostReceipt } from '../../../shared/host-control'
-import type { TelemetryChoice, TelemetryPreview, TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
+import type { TelemetryChoice, TelemetryPreview, TelemetryReview, TelemetryReviewAction, TelemetryReviewChoice, TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
 import { measuredLegacyClient } from '../workspace/measurement-action'
 
 declare global {
@@ -41,6 +41,8 @@ declare global {
         (action: 'telemetry.status'): Promise<TelemetryStatus>
         (action: 'telemetry.configure', input: TelemetryChoice): Promise<TelemetryStatus>
         (action: 'telemetry.preview'): Promise<TelemetryPreview>
+        (action: 'telemetry.review_status'): Promise<TelemetryReview>
+        (action: `telemetry.${TelemetryReviewAction}`, input: TelemetryReviewChoice): Promise<TelemetryReview>
       }
       productTelemetrySnapshot?: (workflow?: string) => Promise<TelemetryStamp | null>
       productTelemetryRecord?: (values: unknown[], stamp: TelemetryStamp) => Promise<boolean>

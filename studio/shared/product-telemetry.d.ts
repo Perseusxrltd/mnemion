@@ -1,6 +1,17 @@
 /** Shared declaration-only contract; local controls contain no analytics IDs. */
 export type TelemetryGroup = 'usage' | 'reliability' | 'performance' | 'resources'
-export type TelemetryAction = 'status' | 'configure' | 'schema' | 'preview'
+export type TelemetryAction = 'status' | 'configure' | 'schema' | 'preview' | 'review_status' | 'review_mode' | 'inspect_report' | 'approve_report' | 'discard_report'
+export type TelemetryReviewAction = 'review_mode' | 'inspect_report' | 'approve_report' | 'discard_report'
+export type TelemetryReviewChoice = {
+  expected_revision: number; expected_generation: string | null; expected_review_token: string | null
+  mode?: 'automatic' | 'review'
+}
+export type TelemetryReview = {
+  schema_version: 1; status: TelemetryStatus
+  review: { mode: 'automatic' | 'review'; token: string | null; outcome: string; report_available: boolean;
+    created_ms: number | null; expires_ms: number | null } | null
+  packet: TelemetryWirePreview | null; message: string; interactive_privacy_qualified: false
+}
 export type TelemetryConnectionMode = 'auto' | 'unmetered' | 'metered'
 export type TelemetryChoice = { enabled: boolean; expected_revision: number; expected_generation?: string | null; disclosure_version?: number; connection_mode?: TelemetryConnectionMode }
 export type TelemetryStamp = { revision: number; store_generation: string | null }

@@ -296,7 +296,7 @@
   "exclusions": {
     "lookup_or_preview": "Catalogs, identity/status inspection and dry-run previews do not count as memory work.",
     "delegated_alias": "The inner owned tool call contributes once; the alias does not add another observation.",
-    "privacy_controls": "No collection for disclosure, schema, payload preview, opt-out or re-enable.",
+    "privacy_controls": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
     "unowned_http": "A remote HTTP caller cannot authorize collection using the gateway OS account."
   }
 }

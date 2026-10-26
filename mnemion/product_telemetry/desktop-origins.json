@@ -4,7 +4,7 @@
   "exclusions": {
     "state_inspection": "Status, discovery and polling do not identify a new user workflow.",
     "configuration_preview": "Internal setup validation and secret previews are not product usage observations.",
-    "privacy_control": "Changing or inspecting privacy settings never generates telemetry.",
+    "privacy_control": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
     "secondary_receipt_owner": "A host request can return an older remote receipt without a fresh-operation marker.",
     "recovery_transport": "Inspecting or archiving a recovery receipt does not repeat the original operation."
   },
@@ -13,6 +13,11 @@
     "telemetry.schema": { "exclusion": "privacy_control" },
     "telemetry.preview": { "exclusion": "privacy_control" },
     "telemetry.configure": { "exclusion": "privacy_control" },
+    "telemetry.review_status": { "exclusion": "privacy_control" },
+    "telemetry.review_mode": { "exclusion": "privacy_control" },
+    "telemetry.inspect_report": { "exclusion": "privacy_control" },
+    "telemetry.approve_report": { "exclusion": "privacy_control" },
+    "telemetry.discard_report": { "exclusion": "privacy_control" },
     "host.profiles": { "exclusion": "state_inspection" },
     "host.schema": { "exclusion": "state_inspection" },
     "host.inspect": { "exclusion": "state_inspection" },

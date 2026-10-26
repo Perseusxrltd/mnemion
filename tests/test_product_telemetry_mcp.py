@@ -196,6 +196,67 @@ def test_local_agent_connection_controls_preserve_stale_opt_out_without_measurin
     assert cells(installation) == []
 
 
+def test_local_stdio_report_review_uses_shared_cas_and_remote_callers_cannot_approve(
+    installation, monkeypatch
+):
+    from mnemion.product_telemetry import inspection
+
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "transport_available", lambda: True)
+    monkeypatch.setattr(
+        inspection,
+        "read_review_clock",
+        lambda **_: {"epoch": "a" * 32, "elapsed_ms": 1000},
+    )
+    server = gateway(lambda _: pytest.fail("Report review must not call a workspace or collector"))
+
+    def control(action, state, **extra):
+        return {
+            "action": action,
+            "review": {
+                "expected_revision": state["status"]["revision"],
+                "expected_generation": state["status"]["store_generation"],
+                "expected_review_token": state["review"]["token"],
+                **extra,
+            },
+        }
+
+    initial = call(server, "mnemion_telemetry", {"action": "review_status"}).structured_content
+    paused = call(server, "mnemion_telemetry", control("review_mode", initial, mode="review"))
+    assert not paused.is_error and paused.structured_content["review"]["outcome"] == "paused"
+    assert cells(installation) == []
+    assert aggregate.record(
+        installation,
+        {"kind": "submission", "workflow": "memory.recall", "surface": "headless"},
+        expected_revision=initial["status"]["revision"],
+        expected_generation=initial["status"]["store_generation"],
+    )
+    staged = call(server, "mnemion_telemetry", control("inspect_report", paused.structured_content))
+    assert not staged.is_error and staged.structured_content["packet"]["body_bytes"] == 4
+    request = control("approve_report", staged.structured_content)
+    denied = call(server, "mnemion_telemetry", request, http_context(server))
+    assert denied.is_error and denied.structured_content["code"] == "local_stdio_required"
+    assert inspection.status(installation)["review"]["outcome"] == "held"
+    approved = call(server, "mnemion_telemetry", request)
+    assert not approved.is_error and approved.structured_content["review"]["outcome"] == "approved"
+    assert approved.structured_content["packet"] is None
+    assert policy.status(installation)["delivery_budget"]["attempts_in_rolling_week"] == 0
+    repeated = call(
+        server, "mnemion_telemetry", control("inspect_report", approved.structured_content)
+    )
+    assert repeated.structured_content["packet"] == staged.structured_content["packet"]
+    discarded = call(
+        server, "mnemion_telemetry", control("discard_report", repeated.structured_content)
+    )
+    assert discarded.structured_content["review"]["outcome"] == "discarded"
+    assert discarded.structured_content["review"]["mode"] == "review"
+    assert discarded.structured_content["packet"] is None
+    stale = call(server, "mnemion_telemetry", request)
+    assert stale.is_error
+    assert inspection.status(installation)["review"]["outcome"] == "discarded"
+    assert cells(installation) == []
+
+
 def test_only_owned_stdio_lifespan_registers_an_optional_delivery_owner(monkeypatch):
     from contextlib import asynccontextmanager
     from mnemion.product_telemetry import activity
