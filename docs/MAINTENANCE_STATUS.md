@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T23:48:05+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T23:58:01+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,15 +16,33 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40416515726](https://github.com/Perseusxrltd/mnemion/actions/runs/40416515726) |
+| ci\.yml | main | in\_progress | [Run 40423189707](https://github.com/Perseusxrltd/mnemion/actions/runs/40423189707) |
 | public-updates\.yml | v4\.46\.28 | success | [Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731) |
 | release\.yml | release/4\.46\.28 | success | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
 | release\.yml | release/4\.46\.29 | success | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
 | release\.yml | release/4\.46\.30 | failure | [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100) |
 | release\.yml | release/4\.46\.31 | cancelled | [Run 40417437026](https://github.com/Perseusxrltd/mnemion/actions/runs/40417437026) |
-| verify-artifacts\.yml | main | skipped | [Run 40422136119](https://github.com/Perseusxrltd/mnemion/actions/runs/40422136119) |
-| website-release\.yml | main | success | [Run 40416515248](https://github.com/Perseusxrltd/mnemion/actions/runs/40416515248) |
+| verify-artifacts\.yml | main | in\_progress | [Run 40423232306](https://github.com/Perseusxrltd/mnemion/actions/runs/40423232306) |
+| website-release\.yml | main | success | [Run 40423189752](https://github.com/Perseusxrltd/mnemion/actions/runs/40423189752) |
 | website-release\.yml | v4\.46\.28 | success | [Run 40411254189](https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189) |
+
+## Active jobs
+
+[Run 40423189707](https://github.com/Perseusxrltd/mnemion/actions/runs/40423189707): 4/12 jobs completed; 4 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+
+[Run 40423232306](https://github.com/Perseusxrltd/mnemion/actions/runs/40423232306): 0/1 jobs completed; 0 succeeded.
+
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+
 
 ## Unsuccessful jobs
 
