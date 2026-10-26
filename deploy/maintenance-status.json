@@ -23,18 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "4b8e8a3e407970c271600be803e387b0143a70c7",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T19:23:20Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40385484447",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 12,
-        "succeeded": 12,
-        "active": []
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T19:46:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40385484447"
     },
     {
       "id": 40366545289,
@@ -135,24 +127,67 @@
       "workflow": "release.yml",
       "branch": "release/4.46.26",
       "source_commit": "d2e55fbf12400004c8e931a8e53a492e46a279c5",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T19:45:54Z",
+      "updated_at": "2026-10-26T19:46:45Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 15,
-        "completed": 14,
-        "succeeded": 13,
+        "total": 21,
+        "completed": 15,
+        "succeeded": 14,
         "active": [
           {
-            "id": 121806920293,
-            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "id": 121807385661,
+            "name": "native / ubuntu-22.04-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify the actual x64 engine under Windows ARM emulation"
+              "Linux desktop libraries"
             ]
+          },
+          {
+            "id": 121807385681,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 121807385710,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --project studio/client --locked --python \"C:\\hostedtoolcache\\windows\\Python\\3.13.17\\x64\\python.exe\" --no-managed-python"
+            ]
+          },
+          {
+            "id": 121807385724,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Locked native service build dependencies"
+            ]
+          },
+          {
+            "id": 121807385800,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 121807385814,
+            "name": "native / macos-15 / arm64",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
           }
         ]
       },
@@ -192,5 +227,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T19:46:27+00:00"
+  "observed_at": "2026-10-26T19:47:14+00:00"
 }
