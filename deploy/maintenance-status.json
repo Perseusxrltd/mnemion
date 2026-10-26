@@ -18,23 +18,32 @@
   ],
   "runs": [
     {
-      "id": 40258081039,
+      "id": 40259911807,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "bd3b212567d878c8b28c1d4c3eb8c86c47bb5311",
+      "source_commit": "b9a29886830b63fac75c863e57d55287cc9bd321",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T02:14:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258081039",
+      "updated_at": "2026-10-26T02:37:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40259911807",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "completed": 4,
+        "succeeded": 4,
         "active": [
           {
-            "id": 121364215100,
+            "id": 121369911968,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/electron test"
+            ]
+          },
+          {
+            "id": 121369951018,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -43,16 +52,16 @@
             ]
           },
           {
-            "id": 121364215113,
+            "id": 121369951027,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
-            "id": 121364215174,
+            "id": 121369951076,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -61,12 +70,39 @@
             ]
           },
           {
-            "id": 121364215176,
+            "id": 121369951126,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 121369951127,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 121369951141,
             "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 121369951181,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           }
         ]
@@ -160,43 +196,16 @@
       "workflow": "release.yml",
       "branch": "release/4.46.12",
       "source_commit": "bd3b212567d878c8b28c1d4c3eb8c86c47bb5311",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T02:26:05Z",
+      "updated_at": "2026-10-26T02:30:29Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258369359",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 24,
-        "completed": 11,
-        "succeeded": 10,
+        "total": 32,
+        "completed": 22,
+        "succeeded": 21,
         "active": [
-          {
-            "id": 121367031912,
-            "name": "checks / studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify wheel and source package include the matching web Studio"
-            ]
-          },
-          {
-            "id": 121367067736,
-            "name": "native / Encrypted files / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
-            ]
-          },
-          {
-            "id": 121367072819,
-            "name": "checks / legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
           {
             "id": 121367072844,
             "name": "checks / service (3.14)",
@@ -207,21 +216,12 @@
             ]
           },
           {
-            "id": 121367072859,
-            "name": "checks / supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
             "id": 121367072880,
             "name": "checks / service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -230,7 +230,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -243,43 +243,58 @@
             ]
           },
           {
-            "id": 121367255154,
-            "name": "native / native_database / Database / windows / x64",
+            "id": 121368345611,
+            "name": "native / ubuntu-22.04-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
-            "id": 121367255166,
-            "name": "native / native_database / Database / linux / arm64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121367255206,
-            "name": "native / native_database / Database / macos / arm64",
+            "id": 121368345666,
+            "name": "native / macos-15 / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
-            "id": 121367255222,
-            "name": "native / native_database / Database / macos / x64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121367255286,
-            "name": "native / native_database / Database / linux / x64",
+            "id": 121368345683,
+            "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 121368345684,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 121368345735,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 121368345759,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
           }
         ]
       },
@@ -330,16 +345,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258978127"
     },
     {
-      "id": 40258080932,
+      "id": 40259911830,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "bd3b212567d878c8b28c1d4c3eb8c86c47bb5311",
+      "source_commit": "b9a29886830b63fac75c863e57d55287cc9bd321",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T02:14:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258080932"
+      "updated_at": "2026-10-26T02:36:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40259911830"
     }
   ],
-  "observed_at": "2026-10-26T02:26:11+00:00"
+  "observed_at": "2026-10-26T02:37:42+00:00"
 }
