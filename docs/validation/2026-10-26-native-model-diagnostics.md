@@ -69,3 +69,24 @@ is retroactively assigned to that failure. A Windows x64 native diagnostic run
 is planned after integration; it has not qualified these changes, and no new
 release is claimed. All 66 requirement texts/states are unchanged; V08 remains
 Building and production collection/destination/route remain false/null/null.
+
+
+## Focused Windows native acceptance
+
+[Run 40251151874](https://github.com/Perseusxrltd/mnemion/actions/runs/40251151874)
+completed successfully on **26 October at 01:22 UTC**, with all nine jobs
+passing. Its source was `97fce09abc588ed1d4a9a1f09a3144b7f581bfbc`, differing
+from reviewed source `14bae7463ecc049cb19a87bf41652c267d79b782` only in
+verified generated status files.
+
+The retained installed-hosting artifact reports a real Windows x64 NSIS
+installation, native setup, semantic save/recall, restart persistence, backup,
+recovery, vault and capture journeys passing. The separate workflow step for
+Windows installation, authenticated upgrade and relaunch also passed. The
+artifact SHA-256 is `7864da4fc53d161549f9887f422a685d0a592b4c60cc4ffc3b1ff59e4a9a1884`.
+
+This supersedes the earlier planned-validation status for this source. It
+qualifies the new Windows run; it does not establish the cause of the original
+intermittent restart failure or change the failed frozen 4.46.10 release.
+Nothing was published by this diagnostic, and it does not qualify the later
+renderer refusal optimization, production telemetry or all native platforms.

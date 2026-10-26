@@ -72,3 +72,18 @@ The **2 MiB added RSS and 0.5% of one core** targets remain unchanged and
 unaccepted. Installed-platform, whole-wire, production ingress/privacy and
 complete V08 acceptance remain open. All 66 requirement texts and states are
 preserved.
+
+## First compiled CI observation
+
+[Run 40253331957](https://github.com/Perseusxrltd/mnemion/actions/runs/40253331957)
+checked out source `b1232c760b2179f953dfac110b86b45af5a497e4`. The compiled
+frontend built successfully, then the harness stopped before launching Electron:
+its shared-module verifier traversed only static imports, while the app loads
+workspace and privacy routes lazily. All owned fixtures were removed, the
+collector stopped and production disclosure was unchanged. This run provides no
+app-journey or resource acceptance.
+
+The verifier now traverses both static and lazy imports. It still requires one
+copy of each policy/client module, reachable from both the app and measurement
+entry, and reports fixed module/chunk details if the check fails. The original
+failed build log and cleanup remain retained; corrected CI results are pending.

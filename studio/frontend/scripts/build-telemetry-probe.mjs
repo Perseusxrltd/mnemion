@@ -39,7 +39,10 @@ if (!probe || !application || !/^assets\/[A-Za-z0-9._-]+\.js$/.test(probe)) {
 function dependencies(file, seen = new Set()) {
   if (seen.has(file)) return seen
   seen.add(file)
-  for (const dependency of chunks.find(chunk => chunk.fileName === file)?.imports ?? []) {
+  const chunk = chunks.find(chunk => chunk.fileName === file)
+  // Workspace and privacy routes are loaded lazily in the actual app. Their
+  // shared modules still belong to the same compiled graph.
+  for (const dependency of [...(chunk?.imports ?? []), ...(chunk?.dynamicImports ?? [])]) {
     dependencies(dependency, seen)
   }
   return seen
@@ -48,7 +51,10 @@ const appDependencies = dependencies(application), probeDependencies = dependenc
 for (const module of ['workspace/telemetry-policy.ts', 'workspace/measured-client.ts']) {
   const matches = chunks.filter(chunk => Object.keys(chunk.modules).some(name => name.replaceAll('\\', '/').endsWith(module)))
   if (matches.length !== 1 || !appDependencies.has(matches[0].fileName) || !probeDependencies.has(matches[0].fileName)) {
-    throw new Error('App and measurement entry must share their actual telemetry modules')
+    throw new Error('App and measurement entry must share their actual telemetry modules: ' + JSON.stringify({
+      module, matches: matches.map(chunk => ({ file: chunk.fileName,
+        app: appDependencies.has(chunk.fileName), probe: probeDependencies.has(chunk.fileName) })),
+    }))
   }
 }
 function hashes(path, prefix = '') {
