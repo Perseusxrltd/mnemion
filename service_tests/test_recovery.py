@@ -30,6 +30,10 @@ from mnemion.service.models import (
 from mnemion.service.export import ExportService
 from mnemion.service.retrieval import RetrievalService
 
+# Backup assertions include a specific leased job. A session-wide database lets
+# another test's expired lease re-enter this queue after its initial drain.
+from service_tests.test_reindex import postgres as postgres
+
 
 @pytest.fixture
 def destination(postgres):
