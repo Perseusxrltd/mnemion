@@ -18,59 +18,41 @@
   ],
   "runs": [
     {
-      "id": 40259911807,
+      "id": 40261897311,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "b9a29886830b63fac75c863e57d55287cc9bd321",
+      "source_commit": "a7347f81d6a30a40e321d28d070970440ec83e82",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T02:37:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40259911807",
+      "updated_at": "2026-10-26T03:01:01Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40261897311",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 3,
+        "succeeded": 3,
         "active": [
           {
-            "id": 121369911968,
+            "id": 121375952547,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Run npm --prefix packages/client test"
             ]
           },
           {
-            "id": 121369951018,
-            "name": "service (3.12)",
+            "id": 121375984016,
+            "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Matching PostgreSQL recovery tools"
             ]
           },
           {
-            "id": 121369951027,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 121369951076,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121369951126,
+            "id": 121375984044,
             "name": "container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -79,30 +61,57 @@
             ]
           },
           {
-            "id": 121369951127,
-            "name": "legacy",
+            "id": 121375984045,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Run python -m pip install uv==0.12.24"
             ]
           },
           {
-            "id": 121369951141,
-            "name": "service (3.13)",
+            "id": 121375984059,
+            "name": "container (ubuntu-22.04-arm)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Build the actual deployment image with its documentation"
             ]
           },
           {
-            "id": 121369951181,
+            "id": 121375984070,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121375984101,
             "name": "supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 121375984106,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121375984124,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           }
         ]
@@ -203,102 +212,42 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 32,
-        "completed": 22,
-        "succeeded": 21,
+        "completed": 31,
+        "succeeded": 28,
         "active": [
-          {
-            "id": 121367072844,
-            "name": "checks / service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121367072880,
-            "name": "checks / service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121367072884,
-            "name": "checks / supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 121367072903,
-            "name": "checks / service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121368345611,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121368345666,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
           {
             "id": 121368345683,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 121368345684,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
               "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121368345735,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 121368345759,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "checks / supervision (macos-15-intel)",
+          "id": 121367072884,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 18,
+          "steps": [
+            "Verify managed installation, host recovery, signed updates and rollback with real processes"
+          ]
+        },
+        {
+          "name": "native / macos-15-intel / x64",
+          "id": 121368345735,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Package the native desktop with one bounded upstream-download retry"
+          ]
+        }
+      ]
     },
     {
       "id": 40234157718,
@@ -345,16 +294,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258978127"
     },
     {
-      "id": 40259911830,
+      "id": 40261897369,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "b9a29886830b63fac75c863e57d55287cc9bd321",
+      "source_commit": "a7347f81d6a30a40e321d28d070970440ec83e82",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T02:36:28Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40259911830"
+      "updated_at": "2026-10-26T03:00:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40261897369"
     }
   ],
-  "observed_at": "2026-10-26T02:37:42+00:00"
+  "observed_at": "2026-10-26T03:01:25+00:00"
 }
