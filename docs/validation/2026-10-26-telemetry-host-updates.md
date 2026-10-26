@@ -84,6 +84,27 @@ passed. Private original logs/receipts remain under
 `mnemion-completion/2026-10-26-telemetry-host-updates`; credentials from disposable
 integration fixtures are not published here.
 
+### Browser CI expectation corrected in the same batch
+
+The first main integration was `ab5be2589aca57c5db1c9a5dcacf14d346badb31`.
+Its [source CI](https://github.com/Perseusxrltd/mnemion/actions/runs/40357519721)
+caught a stale browser test expectation: it required 87 mapped/seven unmeasured
+categories while the correctly regenerated inventory reports 88/six. The failed
+Studio job and its original log remain preserved; that source run cannot qualify
+the release. Its already-frozen checkout is retained, with no native dispatch.
+
+The browser preview test now compares the complete returned inventory with the
+checked Git source and explicitly verifies the managed rollback owner. Lazy
+loading, unchanged private storage and absent outgoing bytes remain asserted.
+The equivalent Python preview assertion also reads the canonical source instead
+of duplicating the category counts. The generator still has independent fixed
+coverage, missing-origin and new-interface tests. The browser telemetry selection
+passed **120 cases in 7.883 s**. The updated Python preview selection passed its
+**15 cases**; these are the same cases already included in the 164-case total
+above. This correction changes tests and documentation, not product behavior or
+the release version; full corrected source CI remains required. Unfinished
+superseded CI jobs provide no qualification credit.
+
 ## Inventory and remaining qualification
 
 The generated inventory now has **88 mapped and six unmeasured categories out of

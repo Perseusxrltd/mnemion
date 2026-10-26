@@ -2,6 +2,7 @@
 
 import base64
 import json
+from pathlib import Path
 import socket
 
 import pytest
@@ -74,7 +75,10 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
     assert cli.execute(root, {"action": "schema"})["transport_available"] is True
     coverage = value["workflow_coverage"]
     assert coverage == cli.execute(root, {"action": "schema"})["workflow_coverage"]
-    assert coverage["summary"] == {"total": 94, "mapped": 88, "unmeasured": 6}
+    source = (
+        Path(__file__).resolve().parents[1] / "mnemion/product_telemetry/workflow-coverage.json"
+    )
+    assert coverage == json.loads(source.read_text())
     if condition != "enabled":
         assert value["local_aggregates"] == []
     if condition in {"in_flight", "cooldown"}:
