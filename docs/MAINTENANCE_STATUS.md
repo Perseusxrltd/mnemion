@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T00:31:51+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T00:32:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -28,11 +28,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40249741909](https://github.com/Perseusxrltd/mnemion/actions/runs/40249741909): 0/3 jobs completed; 0 succeeded.
+[Run 40249741909](https://github.com/Perseusxrltd/mnemion/actions/runs/40249741909): 4/12 jobs completed; 4 succeeded.
 
-- studio: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- lint: in\_progress — Scan exact source with pinned rules and an archived-key rejection control.
-- Select checks: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
+- studio: in\_progress — Run npm --prefix packages/client test.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
 
 
 ## Unsuccessful jobs
