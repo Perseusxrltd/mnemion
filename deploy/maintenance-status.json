@@ -23,28 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "c4789bb289af2d5383c3f07a9a0c96e52378eefd",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T04:02:58Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40266942861",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 121391566610,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T04:04:22Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40266942861"
     },
     {
       "id": 40251151874,
@@ -241,5 +223,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40266942758"
     }
   ],
-  "observed_at": "2026-10-26T04:03:26+00:00"
+  "observed_at": "2026-10-26T04:05:08+00:00"
 }
