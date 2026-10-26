@@ -23,46 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "cce346d4085661406b62cabedde0afaa34f38d50",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T21:57:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40408566855",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 9,
-        "succeeded": 9,
-        "active": [
-          {
-            "id": 121872643337,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121872643432,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121872643490,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T22:20:45Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40408566855"
     },
     {
       "id": 40411258731,
@@ -171,7 +135,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Locked native service build dependencies"
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           },
           {
@@ -180,7 +144,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Select the service interpreter independently of the desktop client"
+              "Run npm --prefix studio/electron ci"
             ]
           },
           {
@@ -198,7 +162,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -216,7 +180,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           }
         ]
@@ -257,5 +221,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189"
     }
   ],
-  "observed_at": "2026-10-26T22:18:10+00:00"
+  "observed_at": "2026-10-26T22:21:27+00:00"
 }
