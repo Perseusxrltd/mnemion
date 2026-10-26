@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { LocalStatus } from '../shared/local-workspace.js'
 import type { ModelDefinition } from '../shared/local-models.js'
-import { ModelSetupFailure, type ModelSetupPhase, type ModelSetupReason } from './native-model-diagnostics.js'
+import { ModelSetupFailure, modelActionFailure, type ModelSetupPhase, type ModelSetupReason, type ModelSetupOperation } from './native-model-diagnostics.js'
 
 type Call = (action: string, input?: Record<string, unknown>, workspace?: string) => Promise<any>
 
@@ -19,7 +19,8 @@ export async function verifyNativeModels(window: BrowserWindow, call: Call): Pro
     if (!address || typeof address === 'string') throw new ModelSetupFailure('initial', 'action_failed')
     return await verifyProfiles(window, call, 'http://127.0.0.1:' + address.port, () => requests)
   } catch (error) {
-    throw error instanceof ModelSetupFailure ? error : new ModelSetupFailure('initial', 'action_failed')
+    throw error instanceof ModelSetupFailure ? error : new ModelSetupFailure('initial', 'action_failed', undefined,
+      { operation: 'listener_start', actionFailure: modelActionFailure(error) })
   } finally {
     server.closeAllConnections()
     await new Promise<void>(resolve => server.close(() => resolve()))
@@ -28,11 +29,13 @@ export async function verifyNativeModels(window: BrowserWindow, call: Call): Pro
 
 async function verifyProfiles(window: BrowserWindow, call: Call, origin: string, requests: () => number): Promise<Record<string, boolean>> {
   let phase: ModelSetupPhase = 'initial'
+  let operation: ModelSetupOperation = 'status'
   let observed: LocalStatus | undefined
-  const status = async () => { observed = await call('status') as LocalStatus; return observed }
-  const fail = (reason: ModelSetupReason): never => { throw new ModelSetupFailure(phase, reason, observed) }
-  const failure = (error: unknown) => error instanceof ModelSetupFailure ? error : new ModelSetupFailure(phase, 'action_failed', observed)
-  const before = await status()
+  const status = async (step: ModelSetupOperation = 'status') => { operation = step; observed = await call('status') as LocalStatus; return observed }
+  const fail = (reason: ModelSetupReason): never => { throw new ModelSetupFailure(phase, reason, observed, { operation }) }
+  const failure = (error: unknown) => error instanceof ModelSetupFailure ? error : new ModelSetupFailure(phase, 'action_failed', observed,
+    { operation, actionFailure: modelActionFailure(error) })
+  const before = await status().catch(error => { throw failure(error) })
   const workspace = before.info?.settings?.workspace_id
   if (!workspace || !before.info?.model_access) fail('missing_status')
   const suffix = randomUUID().slice(0, 8)
@@ -44,6 +47,7 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
       protocol: 'ollama', endpoint: origin + '/api/chat', model: 'fixture-only', revision: 'native-v1' } },
   ]
   const steady = async () => {
+    operation = 'app_idle'
     const ready = await window.webContents.executeJavaScript(`(async()=>{const end=Date.now()+30000;while(Date.now()<end){if(window.mnemion.updateSafety())return true;await new Promise(r=>setTimeout(r,100));}return false;})()`)
     if (!ready) fail('pending_app_work')
   }
@@ -53,6 +57,7 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
       const current = await status()
       await steady()
       try {
+        operation = 'apply'
         return await call('local.models', { workspace_id: workspace,
           expected_revision: current.info!.model_access!.revision, ...input }, workspace) as LocalStatus
       } catch (error) {
@@ -66,7 +71,7 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
   const wait = async () => {
     const end = Date.now() + 120000
     while (Date.now() < end) {
-      const current = await status()
+      const current = await status('restart_status')
       // A structured error may arrive before the process closes. Preserve it
       // immediately; waiting for close used to replace it with a timeout.
       if (current.errorCode || current.state === 'error') fail('restart_error')
@@ -75,7 +80,8 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
     }
     fail('restart_timeout')
   }
-  const oldLocation = await window.webContents.executeJavaScript('window.location.hash')
+  operation = 'read_view'
+  const oldLocation = await window.webContents.executeJavaScript('window.location.hash').catch(error => { throw failure(error) })
   let failed = false
   try {
     for (const provider of providers) {
@@ -88,9 +94,11 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
     const current = await status()
     if (!providers.every(provider => current.info!.model_access!.providers.some(p => p.kind === provider.kind && p.profile.id === provider.profile.id && p.has_api_key))) fail('profiles_missing')
     const path = join(before.info!.data_directory, 'model-providers.json')
+    operation = 'private_state'
     const privateRecord = JSON.parse(await readFile(path, 'utf8'))
     if (privateRecord.providers.filter((p: any) => p.api_key === key).length !== 2) fail('private_credentials_missing')
     if (process.platform !== 'win32' && ((await stat(path)).mode & 0o077)) fail('permissions')
+    operation = 'public_choices'
     const choices = await window.webContents.executeJavaScript(`(async()=>{
       const s=(await window.mnemion.workspaceStatus()).active;
       async function get(path){const r=await window.mnemion.serviceRequest({url:s.endpoint+path,method:'GET',headers:{Authorization:'Bearer '+s.sessionToken}});if(r.status!==200)throw new Error('Native model choices unavailable');return JSON.parse(new TextDecoder().decode(r.body));}
@@ -101,7 +109,9 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
         !choices.librarian.items.some((p: any) => p.id === providers[1].profile.id) ||
         choices.settings.enabled || JSON.stringify(choices).includes(key)) fail('public_choices_invalid')
     phase = 'app'
+    operation = 'open_setup'
     await window.webContents.executeJavaScript("window.location.hash='/workspace/setup'")
+    operation = 'app_choices'
     const visible = await window.webContents.executeJavaScript(`(async()=>{const end=Date.now()+30000;while(Date.now()<end){const card=document.getElementById('model-providers');if(card?.textContent.includes('Native embedding setup proof')&&card.textContent.includes('Native librarian setup proof'))return true;await new Promise(r=>setTimeout(r,100));}return false;})()`)
     if (!visible) fail('app_choices_missing')
     if (requests()) fail('unselected_network')
@@ -116,6 +126,7 @@ async function verifyProfiles(window: BrowserWindow, call: Call, origin: string,
     // let fixture cleanup replace the first error with a later timeout.
     if (!failed) try {
       phase = 'restore_view'
+      operation = 'restore_view'
       await window.webContents.executeJavaScript(`window.location.hash=${JSON.stringify(oldLocation)}`)
       for (const provider of providers) {
         phase = provider.kind === 'embedding' ? 'remove_embedding' : 'remove_librarian'

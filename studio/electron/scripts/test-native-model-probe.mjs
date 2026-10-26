@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createConnection } from 'node:net'
 import { verifyNativeModels } from '../dist/native-model-probe.js'
-import { ModelSetupFailure, modelSetupDiagnostic, modelSetupFailure } from '../dist/native-model-diagnostics.js'
+import { ModelSetupFailure, modelActionFailure, modelSetupDiagnostic, modelSetupFailure } from '../dist/native-model-diagnostics.js'
 
 const secret = 'PRIVATE_FIXTURE_CREDENTIAL_https://private.invalid/team'
 const engine = { category: 'database', database_reason: 'connection_closed', locations: [
@@ -15,7 +15,7 @@ const engine = { category: 'database', database_reason: 'connection_closed', loc
 test('model setup artifacts retain only closed phases, conditions and validated engine diagnostics', () => {
   const report = new ModelSetupFailure('save_embedding', 'restart_error', {
     state: 'stopping', stage: 'access', diagnostic: engine, message: secret,
-  })
+  }, { operation: 'restart_status', actionFailure: 'runtime_timeout' })
   assert.deepEqual(modelSetupFailure(String(report)), report.diagnostic)
   assert.ok(!String(report).includes(secret))
   for (const key of Object.keys(report.diagnostic)) {
@@ -27,6 +27,22 @@ test('model setup artifacts retain only closed phases, conditions and validated 
   }
   assert.equal(modelSetupFailure(String(report) + '\n' + secret), undefined)
   assert.equal(modelSetupFailure('Error: Installed model setup failed: ' + JSON.stringify({ ...report.diagnostic, message: secret })), undefined)
+  const previous = { phase: 'save_librarian', reason: 'action_failed', state: 'running', stage: 'ready', cleanup: 'not_started' }
+  assert.deepEqual(modelSetupFailure('Error: Installed model setup failed: ' + JSON.stringify(previous)), previous)
+})
+
+test('action diagnostics recognize exact known conditions while rejecting arbitrary detail', () => {
+  const text = 'The host settings change could not be confirmed. Refresh its status before retrying.'
+  assert.equal(modelActionFailure(new Error(text)), 'settings_timeout')
+  assert.equal(modelActionFailure(new Error('Installed operator local.models failed: ' + text)), 'settings_timeout')
+  assert.equal(modelActionFailure(new Error('Installed operator status failed: ' + text)), 'settings_timeout')
+  for (const detail of [text + secret, secret + text, text + '\n', 'Installed operator private failed: ' + text]) {
+    assert.equal(modelActionFailure(new Error(detail)), 'unclassified')
+  }
+  assert.equal(modelActionFailure({ message: text, code: 'ENOMEM' }), 'unclassified')
+  for (const [code, expected] of [['ENOENT', 'private_state_missing'], ['EACCES', 'private_state_denied'], ['ENOMEM', 'resource_pressure']]) {
+    assert.equal(modelActionFailure(Object.assign(new Error(secret), { code, path: secret })), expected)
+  }
 })
 
 async function fixture(t, failAt) {
@@ -88,7 +104,7 @@ test('the first startup error survives without another mutation or a cleanup tim
   await assert.rejects(verifyNativeModels(f.window, f.call), error => {
     const report = modelSetupFailure(String(error))
     assert.deepEqual(report, { phase: 'save_embedding', reason: 'restart_error', state: 'stopping', stage: 'access',
-      cleanup: 'not_started', engineDiagnostic: engine })
+      cleanup: 'not_started', operation: 'restart_status', engineDiagnostic: engine })
     assert.ok(!String(error).includes(secret))
     return true
   })
@@ -109,12 +125,47 @@ test('cleanup failure fails the check and identifies its own step without export
   const f = await fixture(t, 'cleanup')
   await assert.rejects(verifyNativeModels(f.window, f.call), error => {
     assert.deepEqual(modelSetupFailure(String(error)), { phase: 'remove_embedding', reason: 'action_failed',
-      state: 'running', stage: 'ready', cleanup: 'failed' })
+      state: 'running', stage: 'ready', cleanup: 'failed', operation: 'apply', actionFailure: 'unclassified' })
     assert.ok(!String(error).includes(secret))
     return true
   })
   assert.deepEqual(f.actions, ['save', 'save', 'remove'])
   await assertListenerClosed(f.origin())
+})
+
+test('an uncertain librarian save identifies the failing action without replay or cleanup writes', { timeout: 5000 }, async t => {
+  const f = await fixture(t)
+  const call = async (action, input) => {
+    const result = await f.call(action, input)
+    if (action === 'local.models' && input.provider?.kind === 'librarian') {
+      const error = new Error('Installed operator local.models failed: The host settings change could not be confirmed. Refresh its status before retrying.')
+      error.stack = secret
+      throw error
+    }
+    return result
+  }
+  await assert.rejects(verifyNativeModels(f.window, call), error => {
+    assert.deepEqual(modelSetupFailure(String(error)), { phase: 'save_librarian', reason: 'action_failed',
+      state: 'running', stage: 'ready', cleanup: 'not_started', operation: 'apply', actionFailure: 'settings_timeout' })
+    assert.ok(!String(error).includes(secret))
+    return true
+  })
+  assert.deepEqual(f.actions, ['save', 'save'])
+  assert.equal(f.providers.length, 2)
+  await assertListenerClosed(f.origin())
+})
+
+test('an initial operator failure remains a status failure, with no mutation or leaked detail', { timeout: 5000 }, async () => {
+  const actions = []
+  await assert.rejects(verifyNativeModels({}, async action => {
+    actions.push(action)
+    throw new Error('The installed operator client timed out.')
+  }), error => {
+    assert.deepEqual(modelSetupFailure(String(error)), { phase: 'initial', reason: 'action_failed',
+      state: 'unknown', stage: 'unknown', cleanup: 'not_started', operation: 'status', actionFailure: 'operator_timeout' })
+    return true
+  })
+  assert.deepEqual(actions, ['status'])
 })
 
 test('a removal acknowledgement cannot pass while its private test profiles remain', { timeout: 5000 }, async t => {

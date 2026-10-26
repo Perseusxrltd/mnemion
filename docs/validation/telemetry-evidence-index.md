@@ -51,6 +51,7 @@ Their operation/path counts are not counts of fully qualified workflows.
 | 25 October | [Dedicated collector service](2026-10-25-telemetry-collector-service.md) | Actual TLS, minimal runtime and isolated VPS socket/sandbox checks. Initial staging failures remain; no production-provider privacy or client resource acceptance. |
 | 25 October | [Closed-week report volume](2026-10-25-telemetry-weekly-volume.md) | Historical report v2 added a coarse global range after 64 reports, retaining the 4,096 per-view gate and immutable v1 reading; 67 source checks. Later report v3 restricts estimates to automatic reports. |
 | 26 October | [Native handoff and release-resource guards](2026-10-26-telemetry-release-guards.md) | 37 Linux and 17 actual Windows x64 checks. Preserves six failed 4.46.15 native jobs, held 4.46.16 dispatch, watcher/slot reproduction and active-wire packaging correction. Six-target release qualification remains separate. |
+| 26 October | [Installed model action diagnostics](2026-10-26-native-model-action-diagnostics.md) | Preserves the 4.46.17 Mac ARM librarian-save failure and 4.46.18 hold before dispatch. Eight source checks qualify closed operation/error classification; the original cause and installed qualification remain open. |
 
 Current format and API details live in the
 [delivery design](../implementation/anonymous-product-telemetry-delivery.md),
