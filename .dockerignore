@@ -41,13 +41,7 @@ studio/shared/*
 !studio/shared/*.ts
 !studio/electron/
 studio/electron/*
-!studio/electron/workspace-recovery.ts
-!studio/electron/company-sign-in-protocol.ts
-!studio/electron/capture-messages.ts
-!studio/electron/telemetry-catalog.ts
-!studio/electron/telemetry-workflow.ts
-!studio/electron/telemetry-wire.ts
-!studio/electron/telemetry-owner.ts
+!studio/electron/*.ts
 !studio/README.md
 !assets/
 assets/*
