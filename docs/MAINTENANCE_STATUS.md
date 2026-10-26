@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T09:11:52+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T10:10:00+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.13](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.13). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,14 +16,28 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40293301106](https://github.com/Perseusxrltd/mnemion/actions/runs/40293301106) |
+| ci\.yml | main | success | [Run 40299183411](https://github.com/Perseusxrltd/mnemion/actions/runs/40299183411) |
+| database-cache\.yml | main | success | [Run 40304827056](https://github.com/Perseusxrltd/mnemion/actions/runs/40304827056) |
 | public-updates\.yml | v4\.46\.13 | success | [Run 40268195296](https://github.com/Perseusxrltd/mnemion/actions/runs/40268195296) |
 | release\.yml | release/4\.46\.13 | success | [Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121) |
 | release\.yml | release/4\.46\.14 | failure | [Run 40286600426](https://github.com/Perseusxrltd/mnemion/actions/runs/40286600426) |
 | release\.yml | release/4\.46\.15 | failure | [Run 40293480655](https://github.com/Perseusxrltd/mnemion/actions/runs/40293480655) |
+| release\.yml | release/4\.46\.17 | in\_progress | [Run 40303268742](https://github.com/Perseusxrltd/mnemion/actions/runs/40303268742) |
 | verify-artifacts\.yml | main | skipped | [Run 40296033009](https://github.com/Perseusxrltd/mnemion/actions/runs/40296033009) |
-| website-release\.yml | main | success | [Run 40293301128](https://github.com/Perseusxrltd/mnemion/actions/runs/40293301128) |
+| website-release\.yml | main | success | [Run 40299183400](https://github.com/Perseusxrltd/mnemion/actions/runs/40299183400) |
 | website-release\.yml | v4\.46\.13 | success | [Run 40268192045](https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045) |
+
+## Active jobs
+
+[Run 40303268742](https://github.com/Perseusxrltd/mnemion/actions/runs/40303268742): 15/21 jobs completed; 14 succeeded.
+
+- native / windows-11-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+
 
 ## Unsuccessful jobs
 
