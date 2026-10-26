@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T21:19:09+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T21:20:44+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,28 +16,24 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40403218324](https://github.com/Perseusxrltd/mnemion/actions/runs/40403218324) |
+| ci\.yml | main | success | [Run 40403218324](https://github.com/Perseusxrltd/mnemion/actions/runs/40403218324) |
 | public-updates\.yml | v4\.46\.22 | success | [Run 40366545289](https://github.com/Perseusxrltd/mnemion/actions/runs/40366545289) |
 | release\.yml | release/4\.46\.22 | success | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
 | release\.yml | release/4\.46\.24 | failure | [Run 40372679179](https://github.com/Perseusxrltd/mnemion/actions/runs/40372679179) |
 | release\.yml | release/4\.46\.25 | failure | [Run 40376743057](https://github.com/Perseusxrltd/mnemion/actions/runs/40376743057) |
 | release\.yml | release/4\.46\.26 | failure | [Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169) |
 | release\.yml | release/4\.46\.27 | success | [Run 40391018946](https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946) |
-| release\.yml | release/4\.46\.28 | in\_progress | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
+| release\.yml | release/4\.46\.28 | queued | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
+| release\.yml | release/4\.46\.29 | pending | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
 | verify-artifacts\.yml | main | in\_progress | [Run 40402981613](https://github.com/Perseusxrltd/mnemion/actions/runs/40402981613) |
 | website-release\.yml | main | success | [Run 40403218446](https://github.com/Perseusxrltd/mnemion/actions/runs/40403218446) |
 | website-release\.yml | v4\.46\.22 | success | [Run 40366540445](https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445) |
 
 ## Active jobs
 
-[Run 40403218324](https://github.com/Perseusxrltd/mnemion/actions/runs/40403218324): 7/8 jobs completed; 2 succeeded.
+[Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490): 14/15 jobs completed; 13 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-
-[Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490): 11/13 jobs completed; 10 succeeded.
-
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- native / native\_database / Database / macos / arm64: in\_progress — Complete job.
+- native / Service engine / Windows x64: queued.
 
 [Run 40402981613](https://github.com/Perseusxrltd/mnemion/actions/runs/40402981613): 0/1 jobs completed; 0 succeeded.
 

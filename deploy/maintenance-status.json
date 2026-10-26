@@ -23,28 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "2666615d9803dead4aa53fdf93358d20a11ce331",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T21:18:22Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40403218324",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 121854218021,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T21:20:04Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40403218324"
     },
     {
       "id": 40366545289,
@@ -187,35 +169,43 @@
       "workflow": "release.yml",
       "branch": "release/4.46.28",
       "source_commit": "f40a4bbc9cbca435c0b06292dd808fcd45ffe5ae",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T21:18:50Z",
+      "updated_at": "2026-10-26T21:19:34Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 13,
-        "completed": 11,
-        "succeeded": 10,
+        "total": 15,
+        "completed": 14,
+        "succeeded": 13,
         "active": [
           {
-            "id": 121853623426,
-            "name": "native / Encrypted files / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
-            ]
-          },
-          {
-            "id": 121854030943,
-            "name": "native / native_database / Database / macos / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Complete job"
-            ]
+            "id": 121854829239,
+            "name": "native / Service engine / Windows x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
           }
         ]
+      },
+      "failed_jobs": []
+    },
+    {
+      "id": 40403384477,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.29",
+      "source_commit": "39ed946a58b8a4dd10da2dd8f4b88bc71582df12",
+      "status": "pending",
+      "conclusion": null,
+      "updated_at": "2026-10-26T21:19:32Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -271,5 +261,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T21:19:09+00:00"
+  "observed_at": "2026-10-26T21:20:44+00:00"
 }
