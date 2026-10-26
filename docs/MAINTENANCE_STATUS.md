@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T01:22:11+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T01:29:26+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40253251007](https://github.com/Perseusxrltd/mnemion/actions/runs/40253251007) |
+| ci\.yml | main | in\_progress | [Run 40254387366](https://github.com/Perseusxrltd/mnemion/actions/runs/40254387366) |
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | desktop\.yml | main | success | [Run 40251151874](https://github.com/Perseusxrltd/mnemion/actions/runs/40251151874) |
 | release\.yml | release/4\.46\.10 | failure | [Run 40245659798](https://github.com/Perseusxrltd/mnemion/actions/runs/40245659798) |
@@ -24,16 +24,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.8 | cancelled | [Run 40236329055](https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055) |
 | release\.yml | release/4\.46\.9 | cancelled | [Run 40243385008](https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008) |
 | verify-artifacts\.yml | main | skipped | [Run 40249478892](https://github.com/Perseusxrltd/mnemion/actions/runs/40249478892) |
-| website-release\.yml | main | success | [Run 40253250997](https://github.com/Perseusxrltd/mnemion/actions/runs/40253250997) |
+| website-release\.yml | main | success | [Run 40254387375](https://github.com/Perseusxrltd/mnemion/actions/runs/40254387375) |
 
 ## Active jobs
 
-[Run 40253251007](https://github.com/Perseusxrltd/mnemion/actions/runs/40253251007): 8/12 jobs completed; 8 succeeded.
+[Run 40254387366](https://github.com/Perseusxrltd/mnemion/actions/runs/40254387366): 2/12 jobs completed; 2 succeeded.
 
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- supervision \(macos-15\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- dependency-audit: in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- service \(3\.14\): in\_progress — Initialize containers.
+- service \(3\.13\): in\_progress — Initialize containers.
+- supervision \(macos-15-intel\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
+- service \(3\.12\): in\_progress — Initialize containers.
 
 
 ## Unsuccessful jobs
