@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T19:30:06+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T19:45:42+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,28 +21,20 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.22 | success | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
 | release\.yml | release/4\.46\.24 | failure | [Run 40372679179](https://github.com/Perseusxrltd/mnemion/actions/runs/40372679179) |
 | release\.yml | release/4\.46\.25 | failure | [Run 40376743057](https://github.com/Perseusxrltd/mnemion/actions/runs/40376743057) |
-| release\.yml | release/4\.46\.26 | queued | [Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169) |
-| verify-artifacts\.yml | main | skipped | [Run 40387116328](https://github.com/Perseusxrltd/mnemion/actions/runs/40387116328) |
+| release\.yml | release/4\.46\.26 | in\_progress | [Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169) |
+| verify-artifacts\.yml | main | skipped | [Run 40389518102](https://github.com/Perseusxrltd/mnemion/actions/runs/40389518102) |
 | website-release\.yml | main | success | [Run 40385484524](https://github.com/Perseusxrltd/mnemion/actions/runs/40385484524) |
 | website-release\.yml | v4\.46\.22 | success | [Run 40366540445](https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445) |
 
 ## Active jobs
 
-[Run 40385484447](https://github.com/Perseusxrltd/mnemion/actions/runs/40385484447): 8/12 jobs completed; 8 succeeded.
+[Run 40385484447](https://github.com/Perseusxrltd/mnemion/actions/runs/40385484447): 11/12 jobs completed; 11 succeeded.
 
-- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169): 7/13 jobs completed; 6 succeeded.
+[Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169): 13/14 jobs completed; 12 succeeded.
 
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- native / native\_database / Database / linux / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / native\_database / Database / windows / x64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / native\_database / Database / macos / arm64: queued.
-- native / native\_database / Database / linux / x64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / native\_database / Database / macos / x64: in\_progress — Set up job.
+- native / native\_database / Database / macos / arm64: in\_progress — Restore an exact database build from the repository cache.
 
 
 ## Unsuccessful jobs

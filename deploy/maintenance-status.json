@@ -30,39 +30,12 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "completed": 11,
+        "succeeded": 11,
         "active": [
-          {
-            "id": 121792586463,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
           {
             "id": 121792586580,
             "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121792586590,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121792586753,
-            "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -168,70 +141,27 @@
     },
     {
       "id": 40384317169,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "release.yml",
       "branch": "release/4.46.26",
       "source_commit": "d2e55fbf12400004c8e931a8e53a492e46a279c5",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T19:29:58Z",
+      "updated_at": "2026-10-26T19:45:34Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 13,
-        "completed": 7,
-        "succeeded": 6,
+        "total": 14,
+        "completed": 13,
+        "succeeded": 12,
         "active": [
           {
-            "id": 121798396211,
-            "name": "native / Encrypted files / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
-            ]
-          },
-          {
-            "id": 121798772662,
-            "name": "native / native_database / Database / linux / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 121798772677,
-            "name": "native / native_database / Database / windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 121798772730,
+            "id": 121806663042,
             "name": "native / native_database / Database / macos / arm64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121798772792,
-            "name": "native / native_database / Database / linux / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 121798772795,
-            "name": "native / native_database / Database / macos / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Set up job"
+              "Restore an exact database build from the repository cache"
             ]
           }
         ]
@@ -239,15 +169,15 @@
       "failed_jobs": []
     },
     {
-      "id": 40387116328,
+      "id": 40389518102,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "13175664855636b6cfb8e39217332459359d9407",
+      "source_commit": "3b55053f31336382a2d736ea1ee873ac0fb7f169",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-26T19:28:54Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40387116328"
+      "updated_at": "2026-10-26T19:45:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40389518102"
     },
     {
       "id": 40385484524,
@@ -272,5 +202,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T19:30:06+00:00"
+  "observed_at": "2026-10-26T19:45:42+00:00"
 }
