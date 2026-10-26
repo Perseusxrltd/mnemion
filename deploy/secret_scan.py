@@ -34,6 +34,8 @@ import uuid
 import zipfile
 
 VERSION = "8.30.1"
+# Exact public-data exception; its provenance and narrow scope are tested.
+ELECTRON_WASM_FRAGMENT = "EAAAWhAAAJkQAACeEAAAnxAAAKoYAACqGAAAgBsAAKobAACu"
 ARCHIVES = {
     "linux_x64.tar.gz": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
     "linux_arm64.tar.gz": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080",
@@ -465,6 +467,20 @@ def summarize_findings(findings, locations):
                 if path.is_symlink() or not path.is_file():
                     raise ScanError("Rejected scan input changed before evidence was recorded")
                 inputs[source] = digest(path)
+            position = {}
+            first_column, last_column = finding.get("StartColumn"), finding.get("EndColumn")
+            if all(
+                type(value) is int and 0 < value <= MAX_EXPANSION
+                for value in (first_column, last_column)
+            ):
+                position.update({
+                    "first_column": first_column,
+                    "last_column": last_column,
+                    "column_origin": "scanner_fragment",
+                })
+            entropy = finding.get("Entropy")
+            if type(entropy) in (int, float) and 0 <= entropy <= 8:
+                position["match_entropy"] = entropy
             details.append(
                 {
                     "finding": index,
@@ -473,6 +489,7 @@ def summarize_findings(findings, locations):
                     "member_path_sha256": location["member_path_sha256"],
                     "first_line": max(first, location["first_line"]) - location["first_line"] + 1,
                     "last_line": min(last, location["last_line"]) - location["first_line"] + 1,
+                    **position,
                 }
             )
     return {
@@ -593,6 +610,13 @@ def canary(executable, rules, directory):
             + "G7b" * 14
             + "r\n",
         )
+        archive.writestr("electron-wasm-reference.txt", "public_data = " + ELECTRON_WASM_FRAGMENT + "\n")
+        archive.writestr(
+            "square-format.txt",
+            "token = EAAA" + hashlib.sha256(b"mnemion synthetic square canary").hexdigest()[:44] + "\n",
+        )
+        neighbor = ELECTRON_WASM_FRAGMENT[:-1] + ("A" if ELECTRON_WASM_FRAGMENT[-1] != "A" else "B")
+        archive.writestr("square-neighbor.txt", "token = " + neighbor + "\n")
     with zipfile.ZipFile(package, "w") as archive:
         archive.writestr("synthetic-1.0-py3-none-any.whl", nested.getvalue())
     evidence = directory / "canary-evidence"
@@ -609,6 +633,7 @@ def canary(executable, rules, directory):
                 if (
                     rules_found.count("mnemion-application-or-backup-key") >= 6
                     and "mnemion-vault-key" in rules_found
+                    and rules_found.count("square-access-token") >= 2
                 ):
                     return
     raise ScanError("Secret scanner canary did not reject every synthetic key placement")

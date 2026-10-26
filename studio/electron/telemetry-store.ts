@@ -1,6 +1,6 @@
 /** No network or implicit choice: share Python's private SQLite store. */
 import { lstatSync, readFileSync, type Stats } from 'node:fs'
-import { isAbsolute, join } from 'node:path'
+import { dirname, isAbsolute, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { DatabaseSync } from 'node:sqlite'
 import type { TelemetryConnectionMode, TelemetryDisclosure, TelemetryStamp } from '../shared/product-telemetry.js'
@@ -116,12 +116,27 @@ export class NativeTelemetryStore {
     return path
   }
 
+  private absentCompanyParent(): boolean {
+    // Windows also reports ENOENT when a parent is a regular file. Verify the
+    // nearest existing ancestor before treating the optional path as absent.
+    let path = dirname(this.companyFile)
+    for (let depth = 0; depth < 32; depth++) {
+      const info = lstatSync(path, { throwIfNoEntry: false })
+      if (info) return info.isDirectory() && !info.isSymbolicLink()
+      const parent = dirname(path)
+      if (parent === path) return false
+      path = parent
+    }
+    return false
+  }
+
   protected company(): Company {
     try {
       // An absent optional file is common. Avoid allocating an ENOENT error
       // on every fresh read; other filesystem errors still deny below.
       const info = lstatSync(this.companyFile, { throwIfNoEntry: false })
-      if (!info) return { enabled: true, groups: [...this.disclosure.metric_groups] }
+      if (!info) return this.absentCompanyParent()
+        ? { enabled: true, groups: [...this.disclosure.metric_groups] } : { enabled: false, groups: [] }
       if (!info.isFile() || info.isSymbolicLink() || info.size > 8192) throw failure()
       const raw = readFileSync(this.companyFile)
       if (raw.length > 8192) throw failure()
@@ -131,9 +146,10 @@ export class NativeTelemetryStore {
           value.metric_groups.length > this.disclosure.metric_groups.length || new Set(value.metric_groups).size !== value.metric_groups.length ||
           value.metric_groups.some((group: unknown) => typeof group !== 'string' || !this.disclosure.metric_groups.includes(group))) throw failure()
       return { enabled: value.enabled, groups: value.metric_groups }
-    } catch (error) {
-      return (error as NodeJS.ErrnoException)?.code === 'ENOENT'
-        ? { enabled: true, groups: [...this.disclosure.metric_groups] } : { enabled: false, groups: [] }
+    } catch {
+      // Once a file was observed, disappearance or any failed read is
+      // uncertainty. A later fresh check can establish genuine absence.
+      return { enabled: false, groups: [] }
     }
   }
 

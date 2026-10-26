@@ -164,6 +164,48 @@ def test_choice_survives_separate_native_processes_without_desktop(tmp_path):
     assert invoke({"action": "preview"})["outbound_bytes"] == 0
 
 
+def test_missing_company_directory_remains_optional_and_fresh(tmp_path):
+    selected = tmp_path / "new" / "nested" / "company.json"
+    assert policy.company_policy(selected)["state"] == "unmanaged"
+    selected.parent.mkdir(parents=True)
+    selected.write_text(json.dumps({"schema_version": 1, "enabled": False, "metric_groups": []}))
+    assert policy.company_policy(selected)["enabled"] is False
+
+
+def test_missing_error_from_invalid_company_ancestor_is_unreadable(tmp_path, monkeypatch):
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("")
+    selected = blocked / "missing" / "company.json"
+    original = Path.lstat
+
+    def windows_missing(path, *args, **kwargs):
+        # Windows reports ENOENT for this invalid path instead of ENOTDIR.
+        if path == selected:
+            raise FileNotFoundError(2, "missing", str(path))
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "lstat", windows_missing)
+    assert policy.company_policy(selected) == {
+        "state": "unreadable", "enabled": False, "metric_groups": []
+    }
+
+
+def test_company_policy_disappearing_after_stat_is_unreadable(tmp_path, monkeypatch):
+    selected = tmp_path / "company.json"
+    selected.write_text(json.dumps({"schema_version": 1, "enabled": False, "metric_groups": []}))
+    original = Path.open
+
+    def remove_before_read(path, *args, **kwargs):
+        if path == selected:
+            path.unlink()
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", remove_before_read)
+    assert policy.company_policy(selected) == {
+        "state": "unreadable", "enabled": False, "metric_groups": []
+    }
+
+
 def test_company_policy_only_restricts_choice(installation, monkeypatch):
     root, company = installation
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)

@@ -43,12 +43,17 @@ test('absent company policy avoids exceptions while every fresh restriction stil
     import { join } from 'node:path'
     const require = createRequire(import.meta.url), fs = require('node:fs')
     const root = fs.mkdtempSync(join(tmpdir(), 'mnemion-policy-cold-'))
-    const file = join(root, 'company.json'), lstat = fs.lstatSync
+    const file = join(root, 'company.json'), lstat = fs.lstatSync, readFile = fs.readFileSync
     let reads = 0, missingExceptions = 0
+    let removeDuringRead = null
     fs.lstatSync = function (path, ...args) {
       if (path === file) reads++
       try { return lstat.call(this, path, ...args) }
       catch (error) { if (path === file && error.code === 'ENOENT') missingExceptions++; throw error }
+    }
+    fs.readFileSync = function (path, ...args) {
+      if (path === removeDuringRead) fs.rmSync(path)
+      return readFile.call(this, path, ...args)
     }
     try {
       const { NativeTelemetryStore, nativeTelemetryDefinitions } = await import(${JSON.stringify(target)})
@@ -70,6 +75,18 @@ test('absent company policy avoids exceptions while every fresh restriction stil
       fs.writeFileSync(blockedParent, '')
       const blocked = new NativeTelemetryStore(root, disclosure, catalog, join(blockedParent, 'company.json'))
       assert.deepEqual(blocked.company(), { enabled: false, groups: [] }, 'ENOTDIR cannot become an absent policy')
+      const nestedBlocked = new NativeTelemetryStore(root, disclosure, catalog, join(blockedParent, 'missing', 'company.json'))
+      assert.deepEqual(nestedBlocked.company(), { enabled: false, groups: [] }, 'An invalid ancestor cannot become a missing policy directory')
+      const absentDirectory = join(root, 'new', 'nested'), absentFile = join(absentDirectory, 'company.json')
+      const absent = new NativeTelemetryStore(root, disclosure, catalog, absentFile)
+      assert.deepEqual(absent.company(), { enabled: true, groups: disclosure.metric_groups })
+      fs.mkdirSync(absentDirectory, { recursive: true })
+      fs.writeFileSync(absentFile, JSON.stringify({ schema_version: 1, enabled: false, metric_groups: [] }))
+      assert.deepEqual(absent.company(), { enabled: false, groups: [] }, 'A newly created restriction must apply immediately')
+      removeDuringRead = absentFile
+      assert.deepEqual(absent.company(), { enabled: false, groups: [] }, 'A policy disappearing after stat is an uncertain read, not permission')
+      removeDuringRead = null
+      assert.deepEqual(absent.company(), { enabled: true, groups: disclosure.metric_groups }, 'A subsequent verified absence remains supported')
       console.log(JSON.stringify({ missing_policy_reads: 32, missing_exceptions: duringReads, fresh_restrictions_applied: true }))
       assert.equal(duringReads, 0, 'Missing optional company policy must not allocate exceptions')
     } finally { fs.rmSync(root, { recursive: true, force: true }) }

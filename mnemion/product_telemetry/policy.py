@@ -141,11 +141,34 @@ def company_policy_file() -> Path:
     return Path("/etc/mnemion/telemetry-policy.json")
 
 
+def _absent_company_parent(selected: Path) -> bool:
+    """Windows can report a missing entry for a non-directory ancestor."""
+    parent = selected.parent
+    for _ in range(32):
+        try:
+            metadata = parent.lstat()
+        except FileNotFoundError:
+            above = parent.parent
+            if above == parent:
+                return False
+            parent = above
+        else:
+            return stat.S_ISDIR(metadata.st_mode)
+    return False
+
+
 def company_policy(path: Path | None = None) -> dict:
     """A machine policy can restrict choice, never enable an opted-out user."""
     selected = path if path is not None else company_policy_file()
     try:
-        metadata = selected.lstat()
+        try:
+            metadata = selected.lstat()
+        except FileNotFoundError:
+            if _absent_company_parent(selected):
+                return {
+                    "state": "unmanaged", "enabled": True, "metric_groups": list(METRIC_GROUPS)
+                }
+            raise ValueError from None
         if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > MAX_DOCUMENT_BYTES:
             raise ValueError
         with selected.open("rb") as stream:
@@ -173,8 +196,6 @@ def company_policy(path: Path | None = None) -> dict:
             "enabled": value["enabled"],
             "metric_groups": sorted(value["metric_groups"]),
         }
-    except FileNotFoundError:
-        return {"state": "unmanaged", "enabled": True, "metric_groups": list(METRIC_GROUPS)}
     except (OSError, ValueError, RecursionError):
         return {"state": "unreadable", "enabled": False, "metric_groups": []}
 

@@ -57,3 +57,10 @@ regexes = [
   '''^f4556650ac31d35461610bac4ed81b1a181b2d8a43ea2854cbae22ca74560813$''',
   '''^f4556650ac31d35461610bac4ed81b1a181b2d$''',
 ]
+
+[[allowlists]]
+description = "Reviewed exact truncated Base64 fragment of Electron 44.9.3 WebAssembly data, verified against the official upstream resource; no complete files or other tokens are excluded."
+regexTarget = "secret"
+regexes = [
+  '''^EAAAWhAAAJkQAACeEAAAnxAAAKoYAACqGAAAgBsAAKobAACu$''',
+]

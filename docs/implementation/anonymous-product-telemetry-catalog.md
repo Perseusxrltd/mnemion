@@ -18,9 +18,11 @@ All 66 requirement texts and the other 65 states remain unchanged; V08 stays Bui
 
 The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 now makes all 94 categories visible in app/browser and native format inspection:
-93 have mapped source boundaries; `update.verify` remains unmeasured as a
-separate category. It is generated
-from these maps and verified by the release checker. This reconciles catalog
+93 have mapped source boundaries. `update.verify` remains deliberately unmeasured
+as a separate category: verification belongs to the existing `update.download`
+cycle, including managed-host staging (`host_updates.stage`). No independent
+verification action is currently declared. The inventory is generated from these
+maps and verified by the release checker. This reconciles catalog
 references without claiming complete per-action, sensor or installed coverage;
 the [initial coverage report](../validation/2026-10-26-telemetry-coverage.md)
 preserves its 86-mapped/eight-unmeasured checkpoint. The

@@ -264,8 +264,18 @@ descriptions. Fresh authority/TLS checks, preview/wire semantics and budgets
 remain unchanged. Actual Electron passed 100 checks with two Windows-specific
 skips; 134 browser-source tests, all-coordinate Python comparison and both builds
 passed. Original allocation failures remain retained. No RSS/CPU saving is
-established; the selected six-case changed-source comparison after integration
-has no result yet.
+established.
+
+The [completed metadata-allocation resource diagnostic](../validation/2026-10-27-telemetry-metadata-allocation-results.md)
+passed six functional cases with 2,075 matched source inputs each and cleanup.
+Enabled main matched maxima were **9,261,056 / 2,936,832 bytes** and ending
+matched-phase differences **9,261,056 / 1,593,344 bytes**. Both maxima exceed
+2 MiB; the first enabled renderer comparison is unavailable because its initial
+role is ambiguous. All roles and both orders are retained. Profiled CPU is
+descriptive, and these observations do not establish a causal regression or
+production-only overhead. Resource acceptance remains false; prior failures,
+the 2 MiB / 0.5% ceilings and privacy/platform gates are unchanged. No new
+resource run or budget change is selected.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
@@ -388,10 +398,12 @@ recorded boundaries, not provider/ingress privacy or a production deployment.
 
 - **Coverage and installed behavior:** finish the action-by-action ownership and
   exclusion review, including autonomous work and unknown remote clients. All
-  six native targets and web still need the staged-report approval/delivery,
-  current-owner, cancellation, storage-loss and pressure/sensor journeys. The
-  4.46.22 mode/opt-out restart evidence does not qualify later source changes or
-  the full restart/update lifecycle.
+  six native targets still need installed staged-report approval/delivery,
+  current-owner, cancellation, storage-loss and pressure/sensor journeys. Web has
+  [scoped compiled-app review/delivery and restart evidence](../validation/2026-10-26-telemetry-browser-admission.md);
+  production trust and remaining owner, cancellation, storage-loss, sensor/resource
+  and privacy qualification remain open. The 4.46.22 mode/opt-out restart evidence
+  does not qualify later source changes or the full restart/update lifecycle.
 - **Resources and architecture:** the fixed compiled-app comparisons still exceed
   the unchanged **2 MiB / 0.5%** acceptance gates. Ending RSS, matched maxima,
   other process roles and profiled CPU are retained in the evidence index; no
