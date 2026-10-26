@@ -25,15 +25,15 @@
   ],
   "runs": [
     {
-      "id": 40250939420,
+      "id": 40253251007,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "14bae7463ecc049cb19a87bf41652c267d79b782",
+      "source_commit": "b1232c760b2179f953dfac110b86b45af5a497e4",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T00:47:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40250939420",
+      "updated_at": "2026-10-26T01:15:01Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40253251007",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
@@ -41,7 +41,7 @@
         "succeeded": 3,
         "active": [
           {
-            "id": 121342755254,
+            "id": 121349555151,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
@@ -50,7 +50,7 @@
             ]
           },
           {
-            "id": 121342792520,
+            "id": 121349595851,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
@@ -59,7 +59,16 @@
             ]
           },
           {
-            "id": 121342792538,
+            "id": 121349595888,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121349595890,
             "name": "supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -68,25 +77,7 @@
             ]
           },
           {
-            "id": 121342792551,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 121342792580,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 121342792583,
+            "id": 121349595911,
             "name": "container (ubuntu-22.04-arm)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -95,30 +86,39 @@
             ]
           },
           {
-            "id": 121342792589,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 121342792601,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 121342792621,
+            "id": 121349595945,
             "name": "container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 121349595952,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 121349595973,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121349596043,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
             ]
           }
         ]
@@ -135,6 +135,35 @@
       "conclusion": "success",
       "updated_at": "2026-10-25T09:23:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634"
+    },
+    {
+      "id": 40251151874,
+      "attempt": 1,
+      "workflow": "desktop.yml",
+      "branch": "main",
+      "source_commit": "97fce09abc588ed1d4a9a1f09a3144b7f581bfbc",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-26T00:53:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40251151874",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 9,
+        "completed": 8,
+        "succeeded": 8,
+        "active": [
+          {
+            "id": 121344319531,
+            "name": "windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Native Windows installation, authenticated upgrade and relaunch"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40245659798,
@@ -221,16 +250,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40249478892"
     },
     {
-      "id": 40250939496,
+      "id": 40253250997,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "14bae7463ecc049cb19a87bf41652c267d79b782",
+      "source_commit": "b1232c760b2179f953dfac110b86b45af5a497e4",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T00:46:21Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40250939496"
+      "updated_at": "2026-10-26T01:14:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40253250997"
     }
   ],
-  "observed_at": "2026-10-26T00:47:48+00:00"
+  "observed_at": "2026-10-26T01:15:28+00:00"
 }
