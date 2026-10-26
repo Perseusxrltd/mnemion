@@ -160,10 +160,12 @@ try {
   const preview = await launch({ phase: 'capture-preview', port })
   if (!preview.nativeEmptyCapturePreview) throw new Error('The installed empty capture preview did not complete')
   if (!['nativeTelemetryDisclosurePreview', 'nativeTelemetryAppAgentChoice', 'nativeTelemetryPreviewClearedOnRefresh',
-    'nativeTelemetryNoAttemptDuringInspection'].every(field => preview[field] === true)) throw new Error('Installed privacy controls did not complete')
+    'nativeTelemetryNoAttemptDuringInspection', 'nativeTelemetryReviewBeforePermission',
+    'nativeTelemetryReviewAppAgentChoice'].every(field => preview[field] === true)) throw new Error('Installed privacy controls did not complete')
   await stop()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.nativeTelemetryOptOutSurvivesRestart) throw new Error('Installed telemetry opt-out did not survive restart')
+  if (!first.nativeTelemetryReviewModeSurvivesRestart) throw new Error('Installed report-review mode did not survive restart')
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
   if (!first.nativeNgrokSdkLoaded) throw new Error('The installed engine did not load its remote connection runtime')
   if (!first.journalRegistrationControls) throw new Error('The installed UI did not verify host journal registration and separate publication approval')
@@ -252,6 +254,8 @@ try {
     nativeTelemetryDisclosurePreview: true, nativeTelemetryAppAgentChoice: true,
     nativeTelemetryPreviewClearedOnRefresh: true, nativeTelemetryNoAttemptDuringInspection: true,
     nativeTelemetryOptOutSurvivesRestart: true,
+    nativeTelemetryReviewBeforePermission: true, nativeTelemetryReviewAppAgentChoice: true,
+    nativeTelemetryReviewModeSurvivesRestart: true,
     nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
     nativeJournalRegistrationAndSeparateApproval: true,
     nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,

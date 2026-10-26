@@ -74,6 +74,11 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       if (privacy.user_enabled || privacy.effective_enabled || privacy.reason !== 'user_disabled' || privacy.pending_records !== 0) {
         throw new Error('The installed app lost the saved telemetry opt-out after restart');
       }
+      const review = await bridge.productTelemetry('telemetry.review_status');
+      if (review.review?.mode !== 'review' || review.packet !== null || review.review.report_available ||
+          review.status.effective_enabled || review.status.delivery_budget?.attempts_in_rolling_week !== 0) {
+        throw new Error('The installed app lost manual review or created an attempt after restart');
+      }
       const initial = await bridge.localStatus();
       if (!initial.available || initial.info?.configured) throw new Error('The installed app must offer a fresh complete local runtime');
       await click('Create on this computer');
@@ -211,6 +216,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     return { phase: config.phase, memoryId, spaceId: originalSpace.id, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
       nativeTelemetryOptOutSurvivesRestart: config.phase === 'create',
+      nativeTelemetryReviewModeSurvivesRestart: config.phase === 'create',
       journalRegistrationControls: config.phase === 'create',
       authenticatedApi: true, serverVersionRetained: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
       automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true,

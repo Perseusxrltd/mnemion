@@ -119,6 +119,14 @@ measurements and the lease while preserving spent attempts/cooldown. A stale
 opt-out preserves a newer connection choice; an omitted field also preserves it.
 Editing the connection choice does not acknowledge an unseen disclosure.
 
+The [new headless Windows cost reader](../validation/2026-10-26-telemetry-headless-network.md)
+can supply the same OS admission flags when the packaged helper is absent;
+it does not bypass a present broken or unreadable helper. Linux/macOS source
+installs without the helper remain unknown. A completed valid unknown probe
+does not itself assert a constraint: the existing explicit unmetered choice
+can resolve unknown cost, while automatic mode and all other vetoes remain
+unchanged. The Windows component pass is not installed/resource acceptance.
+
 Explicit native/Python `configure` permits up to **250 ms per busy SQLite lock**
 after a brief-reader regression exposed a failed opt-out. This is not a total
 250 ms bound for the entire action or a guarantee that a persistent lock can be
@@ -213,8 +221,10 @@ For headless Python without a packaged helper, the
 [direct OS reader](../../mnemion/product_telemetry/review_clock_system.py) uses
 the same review clock without a compiler. An existing broken helper or an
 unavailable helper result is never bypassed. Actual Linux/Windows x64 comparisons
-matched the helper; the new direct macOS reader still awaits source CI. This
-fallback changes no delivery allowance, permission or network-admission rule.
+matched the helper; the [later macOS Intel/ARM64 comparison](../validation/2026-10-26-telemetry-report-review.md#compiler-free-headless-review-clock)
+also passed with Python 3.12.10 and Node 22.23.2. Whole-CI, installed and resource
+qualification remain separate. This fallback changes no delivery allowance,
+permission or network-admission rule.
 
 [BrowserReviewClock](../../studio/frontend/src/workspace/telemetry-review-clock.ts)
 uses only live same-origin pages, a short Web Lock and bounded BroadcastChannel

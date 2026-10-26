@@ -13,6 +13,16 @@ export async function verifyNativeTelemetry(window: BrowserWindow): Promise<Reco
     const button = text => [...document.querySelectorAll('.ws-privacy button')].find(node =>
       node.textContent.trim() === text && !node.disabled && node.getClientRects().length);
     const checkbox = () => document.querySelector('.ws-privacy .ws-check input[type="checkbox"]');
+    const reviewCheckbox = () => document.querySelector('.ws-privacy section[aria-labelledby="telemetry-review-heading"] input[type="checkbox"]');
+    async function reviewMode(enabled) {
+      const node = await until(() => {
+        const value = reviewCheckbox();
+        return value && !value.disabled && value.checked !== enabled ? value : null;
+      }, 'Missing installed report-review choice');
+      node.click();
+      await until(() => reviewCheckbox()?.checked === enabled && !reviewCheckbox().disabled,
+        'The installed report-review choice did not save');
+    }
     async function click(text) {
       const node = await until(() => button(text), 'Missing installed privacy control');
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -33,11 +43,25 @@ export async function verifyNativeTelemetry(window: BrowserWindow): Promise<Reco
         shown.status.storage !== 'new' || shown.status.disclosure_version !== 0) {
       throw new Error('The installed format preview changed consent or claimed actual outgoing data');
     }
+    await reviewMode(true);
+    const held = await bridge.productTelemetry('telemetry.review_status');
+    if (held.review?.mode !== 'review' || held.review.report_available || held.packet !== null ||
+        held.status.disclosure_version !== 0 || held.status.effective_enabled || held.status.pending_records !== 0) {
+      throw new Error('Selecting manual review collected data or acknowledged disclosure');
+    }
+    for (const text of ['Inspect next report', 'Approve this report', 'Discard report']) {
+      const control = [...document.querySelectorAll('.ws-privacy button')].find(node => node.textContent.trim() === text);
+      if (!control?.disabled) throw new Error('A report action is available without authorized observations');
+    }
     await click('Disable product telemetry');
     await until(() => checkbox()?.checked === false && button('Disable product telemetry'), 'The app did not save telemetry opt-out');
     const disabled = await bridge.productTelemetry('telemetry.status');
     if (disabled.user_enabled || disabled.effective_enabled || disabled.pending_records !== 0 || disabled.reason !== 'user_disabled') {
       throw new Error('The native agent did not observe the app telemetry opt-out');
+    }
+    const paused = await bridge.productTelemetry('telemetry.review_status');
+    if (paused.review?.mode !== 'review' || paused.packet !== null || paused.review.report_available) {
+      throw new Error('Opt-out lost the saved manual-review choice');
     }
     await click('Show report format');
     await until(() => document.querySelector('.ws-privacy pre')?.textContent === 'AQAHAA==', 'The opted-out format preview did not render');
@@ -50,6 +74,17 @@ export async function verifyNativeTelemetry(window: BrowserWindow): Promise<Reco
     window.dispatchEvent(new Event('focus'));
     await until(() => checkbox()?.checked === true && button('Show report format') && !document.querySelector('.ws-privacy pre'),
       'The privacy page retained an old preview after an agent choice');
+    const currentReview = await bridge.productTelemetry('telemetry.review_status');
+    const automatic = await bridge.productTelemetry('telemetry.review_mode', {
+      expected_revision: currentReview.status.revision, expected_generation: currentReview.status.store_generation,
+      expected_review_token: currentReview.review.token, mode: 'automatic' });
+    if (automatic.review?.mode !== 'automatic' || automatic.status.effective_enabled || automatic.packet !== null) {
+      throw new Error('The agent could not change review mode without granting collection');
+    }
+    window.dispatchEvent(new Event('focus'));
+    await until(() => reviewCheckbox()?.checked === false && !reviewCheckbox().disabled,
+      'The app did not refresh an agent report-review choice');
+    await reviewMode(true);
     await click('Disable product telemetry');
     await until(() => checkbox()?.checked === false && button('Disable product telemetry'), 'Final disposable opt-out did not save');
     const final = await bridge.productTelemetry('telemetry.status');
@@ -57,6 +92,7 @@ export async function verifyNativeTelemetry(window: BrowserWindow): Promise<Reco
       throw new Error('Read-only privacy inspection reserved or retained telemetry');
     }
     return { nativeTelemetryDisclosurePreview: true, nativeTelemetryAppAgentChoice: true,
-      nativeTelemetryPreviewClearedOnRefresh: true, nativeTelemetryNoAttemptDuringInspection: true };
+      nativeTelemetryPreviewClearedOnRefresh: true, nativeTelemetryNoAttemptDuringInspection: true,
+      nativeTelemetryReviewBeforePermission: true, nativeTelemetryReviewAppAgentChoice: true };
   })()`)
 }

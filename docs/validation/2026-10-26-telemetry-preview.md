@@ -193,5 +193,7 @@ adds actual staging, review UI and approval in unreleased source. Its own source
 tests, Python/Node handoff checks and isolated Chromium controls passed; full
 interactive privacy/utility, resources and installed acceptance remain open.
 It records later macOS Intel/ARM clock-component qualification and direct
-Linux/Windows x64 headless clock comparisons. The new direct macOS Python path
-is still pending. The clock-only limitations above describe that earlier stage.
+Linux/Windows x64 headless clock comparisons. The **26 October 06:21 UTC**
+follow-up also qualified direct Python/helper agreement on macOS Intel/ARM64;
+whole-CI, Electron, installed review and resource acceptance remain separate.
+The clock-only limitations above describe that earlier stage.

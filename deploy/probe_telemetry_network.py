@@ -86,6 +86,28 @@ def probe(artifact: Path, *, node: str | None = None, initialize_review_clock=Fa
     )
     if bool(system_clock) != bool(clock_available) or (clock_available and not shared_system_clock):
         raise ValueError("The source-install review clock does not match the packaged helper")
+    system_network = None
+    if sys.platform == "win32":
+        from mnemion.product_telemetry.network_system import read_system_network_state
+
+        # Bookend the direct call: a changing real connection cannot be called
+        # a cross-runtime mismatch or a parity pass from one stale observation.
+        before = function()
+        system_started = time.monotonic()
+        system_value = read_system_network_state()
+        system_elapsed = time.monotonic() - system_started
+        after = function()
+        if system_value not in FLAGS or system_elapsed >= 1:
+            raise ValueError("The direct Windows network probe failed its flag/deadline contract")
+        stable = before == after
+        if stable and system_value != before:
+            raise ValueError("The direct Windows network cost does not match the packaged helper")
+        system_network = {
+            "flags": system_value,
+            "seconds": system_elapsed,
+            "bookends_stable": stable,
+            "matches_helper": stable and system_value == before,
+        }
     result = {
         "schema_version": 1,
         "platform": operating_system,
@@ -101,6 +123,7 @@ def probe(artifact: Path, *, node: str | None = None, initialize_review_clock=Fa
             "review_clock_available": bool(clock_available),
             "system_review_clock_available": bool(system_clock),
             "system_review_clock_matches_helper": shared_system_clock,
+            "system_network": system_network,
         },
         "qualification": "component only; not installed or whole-feature resource acceptance",
     }

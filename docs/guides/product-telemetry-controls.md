@@ -70,8 +70,7 @@ can read OS cost flags on supported Windows, Linux and macOS systems. Later
 [macOS Python/Node component probes](../validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
 passed; complete network-admission/resource qualification under installed
 Electron remains open.
-A source/pip installation without the
-compiled helper remains unknown, so automatic mode keeps delivery paused.
+Automatic mode keeps delivery paused whenever OS cost remains unknown.
 Declaring an unmetered connection cannot override an OS-reported metered or
 constrained path. These checks run only for an eligible, already-awake opportunity;
 they add no idle sampler, Internet connectivity probe or network-setting change.
@@ -80,6 +79,12 @@ actual Windows/Linux flag/deadline probes completed; these do not qualify an
 installed telemetry release. The measured Windows Node and Linux Electron
 components still exceed the 2 MiB full-feature RSS target. Full platform/resource
 qualification remains pending.
+
+New source adds a [compiler-free Windows cost reader](../validation/2026-10-26-telemetry-headless-network.md)
+when the packaged helper is absent. Its Windows x64 component comparison passed;
+this follow-up is excluded from released 4.46.13. A present broken helper is
+never bypassed. Linux/macOS source installs without the helper still require an
+explicit unmetered choice to resolve unknown cost, subject to every other veto.
 
 The [producer-overhead source follow-up](../validation/2026-10-25-telemetry-producer-overhead.md)
 reduces repeated local database work when optional measurement is already denied
@@ -237,7 +242,9 @@ printf '%s\n' '{"action":"review_status"}' | mnemion-service telemetry
 Headless Python can use the documented OS review clock without compiling a
 helper when that helper is absent. A broken or unavailable packaged helper
 continues to refuse review; this does not enable collection. Linux/Windows x64
-comparison checks passed; the new direct macOS path remains unqualified.
+and [macOS Intel/ARM64 comparison checks](../validation/2026-10-26-telemetry-report-review.md#compiler-free-headless-review-clock)
+passed at component scope. They do not establish installed review or full
+resource acceptance.
 
 | Local action | Behavior |
 | --- | --- |

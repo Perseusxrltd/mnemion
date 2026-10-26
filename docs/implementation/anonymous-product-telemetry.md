@@ -107,6 +107,13 @@ an explicit unmetered declaration, and unsupported browser pressure/heap sensors
 refuse delivery. Full workflow/owner coverage, whole-wire/resource measurements
 and native/web release acceptance remain open.
 
+The later [headless Windows network reader](../validation/2026-10-26-telemetry-headless-network.md)
+uses the documented local OS cost hint only when the packaged helper is absent.
+Its 82 focused checks and Windows x64 Python/helper comparison passed at component
+scope. Linux/macOS without the helper still report unknown cost; automatic mode
+refuses that uncertainty. This new source is excluded from 4.46.13 and does not
+qualify installed delivery, resources or production collection.
+
 The subsequent [browser company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
 adds one bounded, credential-free read of the Studio page's own
 `/studio/telemetry-policy` before an already-reserved report can be sent. It
@@ -200,8 +207,8 @@ original outcomes remain retained. Enabled main-process matched maxima were
 **3,608,576 / 3,391,488 bytes**; endings were **3,125,248 / 1,933,312 bytes**.
 The profiled CPU differences of **0.295167% / 0.307298%** are descriptive,
 not acceptance. Earlier report checks and offline findings remain preserved.
-The stop-rule decision selects a cold initialization and storage-runtime
-ownership review: overlapping first-call windows suggest file-backed residency,
+The stop-rule decision selects a [cold initialization and storage-runtime
+ownership review](../validation/2026-10-26-telemetry-storage-ownership.md): overlapping first-call windows suggest file-backed residency,
 without proving SQLite alone caused the difference. No repeat benchmark or
 budget revision is selected. The **2 MiB / 0.5%** gates remain unchanged and
 unaccepted. That diagnostic remains separate from the now-published 4.46.13
@@ -549,7 +556,10 @@ Intel/ARM component checks qualified the shared clock; their overall CI and
 installed-review acceptance are separate.
 Headless Python now reads the same OS clock directly when the packaged helper
 is absent; a present broken or unavailable helper is never bypassed. Direct
-Linux/Windows x64 comparisons passed; the new direct macOS path remains pending.
+Linux/Windows x64 comparisons passed. The [26 October macOS follow-up](../validation/2026-10-26-telemetry-report-review.md#compiler-free-headless-review-clock)
+also qualified direct Python/helper agreement on Intel and ARM64 with Node
+22.23.2. These component results do not establish whole-CI, Electron, installed
+review or resource acceptance.
 
 The [new report-review source](../validation/2026-10-26-telemetry-report-review.md)
 implements one private four-byte stage, app controls and local agent actions.

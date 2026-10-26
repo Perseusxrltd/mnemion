@@ -11,20 +11,30 @@ _native = None
 
 
 def native_state() -> int:
-    """Load the release-owned C ABI; a source install without it stays unknown."""
+    """Use the release-owned C ABI, or the supported compiler-free OS reader."""
     global _native
     if _native is None:
         try:
-            import ctypes
+            path = Path(__file__).with_name("network-state.node")
+            try:
+                path.lstat()
+            except FileNotFoundError:
+                # Only absence permits the direct system path. A present
+                # broken helper is never bypassed by a different detector.
+                from .network_system import read_system_network_state
 
-            library = ctypes.CDLL(str(Path(__file__).with_name("network-state.node")))
-            function = library.mnemion_network_state_v1
-            function.argtypes = []
-            function.restype = ctypes.c_uint32
-            _native = (library, function)
+                _native = read_system_network_state
+            if _native is None:
+                import ctypes
+
+                library = ctypes.CDLL(str(path))
+                function = library.mnemion_network_state_v1
+                function.argtypes = []
+                function.restype = ctypes.c_uint32
+                _native = (library, function)
         except (OSError, AttributeError):
             _native = False
-    return _native[1]() if _native else 0
+    return _native() if callable(_native) else _native[1]() if _native else 0
 
 
 def network_flags(value) -> dict:

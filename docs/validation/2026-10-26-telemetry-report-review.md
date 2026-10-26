@@ -61,6 +61,13 @@ Interactive selection/privacy, statistical utility, complete resources and
 sensors, whole-wire and installed/platform acceptance remain open. No production
 endpoint or collector is activated, and none of these checks completes V08.
 
+The updated [installed privacy probe](../../studio/electron/native-telemetry-probe.ts),
+[hosting probe](../../studio/electron/local-hosting-probe.ts) and
+[installer gate](../../studio/electron/scripts/smoke-installed-hosting.mjs)
+prepare six-platform assertions for manual review before permission, app/agent
+mode refresh, opt-out retention and restart persistence; these new installed
+assertions have not been executed.
+
 ## Compiler-free headless review clock
 
 [Direct OS clock access](../../mnemion/product_telemetry/review_clock_system.py)
@@ -71,9 +78,21 @@ worker or persistent clock file and grants no collection permission.
 Actual Linux x64 and Windows x64 components verified that direct Python clocks
 match the packaged helper. The Windows direct path uses the documented
 `kernelbase.dll` `QueryInterruptTime` export; the initial mismatch failure is
-retained. These are component checks. The new direct macOS Python path still
-awaits its source CI; the earlier compiled macOS clock evidence below remains
-valid and separate.
+retained. These are component checks; the earlier compiled macOS clock evidence
+below remains valid and separate.
+
+The **26 October 06:21:07 UTC** qualification and **06:24:10 UTC** follow-up
+qualified direct Python/helper agreement on
+[macOS ARM64](https://github.com/Perseusxrltd/mnemion/actions/runs/40278695164/job/121427396170)
+and [macOS x64](https://github.com/Perseusxrltd/mnemion/actions/runs/40278695164/job/121427396141),
+source `dffbfa49aa3565512c622c5d784bceb7da52eff8`. Python **3.12.10** and Node
+**22.23.2** shared the clock on both targets. Neither receipt qualifies Electron,
+installed review or resources; the overall CI was still in progress at that
+checkpoint. These source additions are excluded from published 4.46.13.
+
+That [source CI run](https://github.com/Perseusxrltd/mnemion/actions/runs/40278695164)
+subsequently completed successfully at **06:44:48 UTC**. This later CI result
+does not qualify the newly prepared installed assertions or full resources.
 
 ## Retained clock qualification
 
@@ -109,5 +128,7 @@ Original failures remain preserved. The macOS qualification receipt SHA-256 is
 | Linux direct-clock comparison | `5f18471e3db6d14760d8d6e25c6f09b89656bba98e803a62e1026147abe50811` |
 | Windows direct-clock comparison | `dd41de0ecb3f2d17b50057b44abb475e0030e769dcf427a5d09a5f141db81654` |
 | Original Windows direct-clock failure | `8d5ecdf68bc6752752a871c1443dc1fec289cbd453fbbeae138cdc21009d83d5` |
+| Direct macOS component qualification | `45105f923194ca82259ee32ff0e00dbef31910416ac25348e342284248b6b2cb` |
+| Direct macOS follow-up receipt | `a714c69a584b4e328579eebdb5607bb1808af0ce680d7140725312430560d620` |
 | Electron build | `5e8be4ed286ae0fc76d4c1440a631a5664a43b83fa432d25fc79d5a278b966f6` |
 | Full frontend build | `52ed2012e2858085b266c56bff5f2b6b2b3129b8dc619dcd251ffd416efcb65b` |
