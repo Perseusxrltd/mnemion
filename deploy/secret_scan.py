@@ -473,11 +473,13 @@ def summarize_findings(findings, locations):
                 type(value) is int and 0 < value <= MAX_EXPANSION
                 for value in (first_column, last_column)
             ):
-                position.update({
-                    "first_column": first_column,
-                    "last_column": last_column,
-                    "column_origin": "scanner_fragment",
-                })
+                position.update(
+                    {
+                        "first_column": first_column,
+                        "last_column": last_column,
+                        "column_origin": "scanner_fragment",
+                    }
+                )
             entropy = finding.get("Entropy")
             if type(entropy) in (int, float) and 0 <= entropy <= 8:
                 position["match_entropy"] = entropy
@@ -610,10 +612,14 @@ def canary(executable, rules, directory):
             + "G7b" * 14
             + "r\n",
         )
-        archive.writestr("electron-wasm-reference.txt", "public_data = " + ELECTRON_WASM_FRAGMENT + "\n")
+        archive.writestr(
+            "electron-wasm-reference.txt", "public_data = " + ELECTRON_WASM_FRAGMENT + "\n"
+        )
         archive.writestr(
             "square-format.txt",
-            "token = EAAA" + hashlib.sha256(b"mnemion synthetic square canary").hexdigest()[:44] + "\n",
+            "token = EAAA"
+            + hashlib.sha256(b"mnemion synthetic square canary").hexdigest()[:44]
+            + "\n",
         )
         neighbor = ELECTRON_WASM_FRAGMENT[:-1] + ("A" if ELECTRON_WASM_FRAGMENT[-1] != "A" else "B")
         archive.writestr("square-neighbor.txt", "token = " + neighbor + "\n")

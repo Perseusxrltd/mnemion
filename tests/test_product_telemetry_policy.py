@@ -186,7 +186,9 @@ def test_missing_error_from_invalid_company_ancestor_is_unreadable(tmp_path, mon
 
     monkeypatch.setattr(Path, "lstat", windows_missing)
     assert policy.company_policy(selected) == {
-        "state": "unreadable", "enabled": False, "metric_groups": []
+        "state": "unreadable",
+        "enabled": False,
+        "metric_groups": [],
     }
 
 
@@ -202,7 +204,9 @@ def test_company_policy_disappearing_after_stat_is_unreadable(tmp_path, monkeypa
 
     monkeypatch.setattr(Path, "open", remove_before_read)
     assert policy.company_policy(selected) == {
-        "state": "unreadable", "enabled": False, "metric_groups": []
+        "state": "unreadable",
+        "enabled": False,
+        "metric_groups": [],
     }
 
 

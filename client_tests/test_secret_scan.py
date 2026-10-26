@@ -83,16 +83,25 @@ def test_rejection_summary_is_bounded_and_drops_unrecognized_rule_text(tmp_path)
     package = tmp_path / "input.txt"
     package.write_text("sample\n")
     observed = scan.scan_input([package], io.BytesIO())
-    findings = [{"RuleID": "untrusted private/rule text", "StartLine": 2, "EndLine": 2,
-                 "StartColumn": "untrusted private/column", "EndColumn": -1,
-                 "Entropy": float("nan")}] * 200
+    findings = [
+        {
+            "RuleID": "untrusted private/rule text",
+            "StartLine": 2,
+            "EndLine": 2,
+            "StartColumn": "untrusted private/column",
+            "EndColumn": -1,
+            "Entropy": float("nan"),
+        }
+    ] * 200
     result = scan.summarize_findings(findings, observed["locations"])
     assert result["total"] == 200
     assert result["by_rule"] == {"unrecognized-rule": 200}
     assert len(result["locations"]) == 64 and result["locations_truncated"] is True
     assert "untrusted private/rule text" not in json.dumps(result)
     assert "untrusted private/column" not in json.dumps(result, allow_nan=False)
-    assert all("first_column" not in row and "match_entropy" not in row for row in result["locations"])
+    assert all(
+        "first_column" not in row and "match_entropy" not in row for row in result["locations"]
+    )
 
 
 def test_archive_expansion_and_depth_limits_fail_instead_of_skipping(tmp_path, monkeypatch):
@@ -357,14 +366,23 @@ def test_fips_exception_is_only_the_public_default_and_exact_observed_fragment()
 
 def test_electron_wasm_exception_is_one_exact_verified_public_fragment():
     config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
-    exception = next(item for item in config["allowlists"] if "Electron 44.9.3 WebAssembly" in item["description"])
+    exception = next(
+        item
+        for item in config["allowlists"]
+        if "Electron 44.9.3 WebAssembly" in item["description"]
+    )
     value = scan.ELECTRON_WASM_FRAGMENT
-    assert hashlib.sha256(value.encode()).hexdigest() == "0503a3e3ff318b5b861741387a30b3772a1678ec1d26bf9524df4dc773eb3f61"
+    assert (
+        hashlib.sha256(value.encode()).hexdigest()
+        == "0503a3e3ff318b5b861741387a30b3772a1678ec1d26bf9524df4dc773eb3f61"
+    )
     assert exception["regexTarget"] == "secret"
     assert exception["regexes"] == ["^" + re.escape(value) + "$"]
     for index in range(len(value)):
         replacement = "A" if value[index] != "A" else "B"
-        assert not re.fullmatch(exception["regexes"][0], value[:index] + replacement + value[index + 1:])
+        assert not re.fullmatch(
+            exception["regexes"][0], value[:index] + replacement + value[index + 1 :]
+        )
     for other in (value[:-1], value + "A", "A" + value, value + ";token=another-value"):
         assert not re.fullmatch(exception["regexes"][0], other)
 
@@ -390,7 +408,9 @@ def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
 
 
 @pytest.mark.parametrize("square_findings", [0, 1])
-def test_canary_requires_square_and_nearby_fragment_detection(tmp_path, monkeypatch, square_findings):
+def test_canary_requires_square_and_nearby_fragment_detection(
+    tmp_path, monkeypatch, square_findings
+):
     def scanned(_executable, _rules, _paths, evidence):
         evidence.mkdir()
         findings = [{"RuleID": "mnemion-application-or-backup-key"}] * 6

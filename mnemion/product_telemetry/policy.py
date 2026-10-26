@@ -165,9 +165,7 @@ def company_policy(path: Path | None = None) -> dict:
             metadata = selected.lstat()
         except FileNotFoundError:
             if _absent_company_parent(selected):
-                return {
-                    "state": "unmanaged", "enabled": True, "metric_groups": list(METRIC_GROUPS)
-                }
+                return {"state": "unmanaged", "enabled": True, "metric_groups": list(METRIC_GROUPS)}
             raise ValueError from None
         if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > MAX_DOCUMENT_BYTES:
             raise ValueError
