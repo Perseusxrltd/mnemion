@@ -27,6 +27,9 @@ typedef void (*NExecute)(NEnv, void *);
 typedef void (*NComplete)(NEnv, int, void *);
 static struct {
     int (*uint32)(NEnv, uint32_t, NValue *);
+    int (*number)(NEnv, double, NValue *);
+    int (*array)(NEnv, size_t, NValue *);
+    int (*element)(NEnv, NValue, uint32_t, NValue);
     int (*string)(NEnv, const char *, size_t, NValue *);
     int (*function)(NEnv, const char *, size_t, NCallback, void *, NValue *);
     int (*property)(NEnv, NValue, const char *, NValue);
@@ -81,10 +84,27 @@ static NValue read_state(NEnv env, NInfo info) {
     return promise;
 }
 
+static NValue read_cpu_totals(NEnv env, NInfo info) {
+    (void)info;
+    MnmCpuTotals totals = {0};
+    const int available = mnemion_cpu_totals_v1(&totals);
+    NValue result = NULL, value = NULL;
+    if (api.array(env, available ? 3 : 0, &result) != 0) return NULL;
+    if (!available) return result;
+    const double values[] = {(double)totals.idle, (double)totals.total, (double)totals.count};
+    for (uint32_t i = 0; i < 3; ++i) {
+        if (api.number(env, values[i], &value) != 0 || api.element(env, result, i, value) != 0) return NULL;
+    }
+    return result;
+}
+
 MNM_EXPORT int32_t node_api_module_get_api_version_v1(void) { return 8; }
 MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
 #define LOAD(field, name) if (!host_symbol(&api.field, sizeof(api.field), name)) return NULL
     LOAD(uint32, "napi_create_uint32");
+    LOAD(number, "napi_create_double");
+    LOAD(array, "napi_create_array_with_length");
+    LOAD(element, "napi_set_element");
     LOAD(string, "napi_create_string_utf8");
     LOAD(function, "napi_create_function");
     LOAD(property, "napi_set_named_property");
@@ -97,5 +117,7 @@ MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
     NValue function = NULL;
     if (api.function(env, "readState", 9, read_state, NULL, &function) != 0 ||
         api.property(env, exports, "readState", function) != 0) return NULL;
+    if (api.function(env, "readCpuTotals", 13, read_cpu_totals, NULL, &function) != 0 ||
+        api.property(env, exports, "readCpuTotals", function) != 0) return NULL;
     return exports;
 }

@@ -19,6 +19,10 @@ import pytest
 from mnemion.product_telemetry.network import NativeNetworkConditions, network_flags
 
 
+class CpuTotals(ctypes.Structure):
+    _fields_ = [("idle", ctypes.c_uint64), ("total", ctypes.c_uint64), ("count", ctypes.c_uint32)]
+
+
 @pytest.mark.parametrize(
     "value", [True, False, None, "9", float("nan"), 1, 2, 3, 7, 11, 15, 256, -1]
 )
@@ -235,7 +239,7 @@ def compiled(tmp_path_factory):
     )
     output = tmp_path_factory.mktemp("network-core") / "network-state.node"
     # Retain decoder symbols only in this private fixture. Release builds hide
-    # them and expose the versioned, no-argument C ABI plus Node registration.
+    # them and expose the versioned policy/aggregate C ABI plus Node registration.
     subprocess.run(
         [
             "cc",
@@ -265,7 +269,75 @@ def compiled(tmp_path_factory):
     library.mnm_windows_cost.restype = ctypes.c_uint32
     library.mnm_linux_cost.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
     library.mnm_linux_cost.restype = ctypes.c_uint32
+    library.mnemion_cpu_totals_v1.argtypes = [ctypes.POINTER(CpuTotals)]
+    library.mnemion_cpu_totals_v1.restype = ctypes.c_int
+    library.mnm_cpu_totals.argtypes = [ctypes.c_uint64] * 5 + [
+        ctypes.c_uint32,
+        ctypes.POINTER(CpuTotals),
+    ]
+    library.mnm_cpu_totals.restype = ctypes.c_int
+    library.mnm_linux_cpu_totals.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.POINTER(CpuTotals),
+    ]
+    library.mnm_linux_cpu_totals.restype = ctypes.c_int
     return library, output
+
+
+def test_linux_cpu_aggregate_preserves_node_busy_time_without_per_core_metadata(compiled):
+    library, _ = compiled
+    value = CpuTotals()
+    line = b"cpu  100 20 30 400 99999 5 77777 888 9 0\n"
+    assert library.mnm_linux_cpu_totals(line, len(line), 4, ctypes.byref(value)) == 1
+    assert (value.idle, value.total, value.count) == (400, 555, 4)
+    # iowait, softirq and guest columns must not silently change the admission
+    # definition previously supplied by the Linux Node/libuv CPU times API.
+    changed = b"cpu  100 20 30 400 0 5 0 0 0 0\n"
+    assert library.mnm_linux_cpu_totals(changed, len(changed), 4, ctypes.byref(value)) == 1
+    assert (value.idle, value.total, value.count) == (400, 555, 4)
+    assert library.mnemion_cpu_totals_v1(ctypes.byref(value)) == 1
+    assert 0 <= value.idle <= value.total <= 2**53 - 1
+    assert value.total > 0 and 0 < value.count <= 1048576
+    assert library.mnemion_cpu_totals_v1(None) == 0
+
+
+@pytest.mark.parametrize(
+    "line,count",
+    [
+        (None, 1),
+        (b"", 1),
+        (b"cpu0 1 2 3 4 5 6\n", 1),
+        (b"cpu 1 2 3 4 5\n", 1),
+        (b"cpu 1 2 3 4 5 6", 1),
+        (b"cpu 1 2 3 4 5 6x\n", 1),
+        (b"cpu 1 2 3 4 -5 6\n", 1),
+        (b"cpu 1 2 3 4 5 18446744073709551616\n", 1),
+        (b"cpu 0 0 0 9007199254740991 0 1\n", 1),
+        (b"cpu 0 0 0 0 0 0\n", 1),
+        (b"cpu 1 2 3 4 5 6\n", 0),
+        (b"cpu 1 2 3 4 5 6\n", 1048577),
+        (b"cpu " + b" " * 500 + b"1 2 3 4 5 6\n", 1),
+    ],
+)
+def test_cpu_parser_rejects_truncation_overflow_and_unknown_samples(compiled, line, count):
+    library, _ = compiled
+    value = CpuTotals(123, 456, 2)
+    length = len(line) if line is not None else 20
+    assert library.mnm_linux_cpu_totals(line, length, count, ctypes.byref(value)) == 0
+    assert (value.idle, value.total, value.count) == (0, 0, 0)
+
+
+def test_native_cpu_totals_never_wrap_or_round_a_js_counter(compiled):
+    library, _ = compiled
+    value = CpuTotals()
+    maximum = 2**53 - 1
+    assert library.mnm_cpu_totals(maximum - 1, 1, 0, 0, 0, 1, ctypes.byref(value)) == 1
+    assert (value.idle, value.total, value.count) == (maximum - 1, maximum, 1)
+    for idle, user in [(maximum, 1), (2**64 - 1, 1), (0, 0)]:
+        assert library.mnm_cpu_totals(idle, user, 0, 0, 0, 1, ctypes.byref(value)) == 0
+        assert (value.idle, value.total, value.count) == (0, 0, 0)
 
 
 @pytest.mark.parametrize(

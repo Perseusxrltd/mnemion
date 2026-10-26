@@ -25,13 +25,21 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**26 October 2026 publication checkpoint:** [4.46.13 is public](releases/4.46.13.md),
+with [all six installed targets, artifact verification and website sync passed](validation/2026-10-26-44613-native-acceptance.md).
+Public automatic-update checks remain in progress at this checkpoint. The last
+separately verified actual Windows/shared-host pair remains
+[4.46.6](validation/2026-10-26-issue45-acceptance.md). V08 stays Building with
+collection unavailable and destination/route null; publication does not close
+its resource, privacy or remaining acceptance gates.
+
 At **26 October 2026, 03:55 UTC**, the [one six-case attribution run](validation/2026-10-26-telemetry-attribution.md)
 has completed with all functional journeys and reviewed source matches. Both
 enabled matched main-process RSS maxima exceed 2 MiB. Cold initialization and
 storage-runtime ownership review is next; no benchmark repeat or budget revision
 is selected. V08 remains Building, with the 2 MiB / 0.5% gates unaccepted and
 production collection disabled. Frozen 4.46.13 remains a separate native/public
-acceptance gate at this checkpoint.
+acceptance gate at that earlier checkpoint.
 
 - **V08 renderer and IPC — 26 October 2026; source evidence.** The
   [development-app journey](validation/2026-10-26-telemetry-renderer.md) passed

@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: MIT
- * Read OS cost policy only. Never enumerate names/addresses, make an Internet
- * request, change a network setting, log, or retain an OS connection. */
+ * Read OS cost policy and aggregate CPU counters. Never enumerate names,
+ * addresses or CPU models, make an Internet request, change settings or log. */
+#if defined(__linux__) && !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include "network-state.h"
 #include <stddef.h>
 #include <string.h>
@@ -21,6 +24,45 @@ uint32_t mnm_linux_cost(uint32_t cost, uint32_t state) {
     else if (cost != 0u && cost != 4u) value |= MNM_CONSTRAINED;
     if (state != 70u) value |= MNM_CONSTRAINED;
     return value;
+}
+
+int mnm_cpu_totals(uint64_t idle, uint64_t user, uint64_t nice, uint64_t system,
+                   uint64_t irq, uint32_t count, MnmCpuTotals *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    /* Exact integers in both Node's number and the C ABI; no wrapping sum. */
+    const uint64_t maximum = UINT64_C(9007199254740991);
+    const uint64_t values[] = {idle, user, nice, system, irq};
+    uint64_t total = 0;
+    if (!count || count > 1048576u) return 0;
+    for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); ++i) {
+        if (values[i] > maximum - total) return 0;
+        total += values[i];
+    }
+    if (!total) return 0;
+    output->idle = idle; output->total = total; output->count = count;
+    return 1;
+}
+
+int mnm_linux_cpu_totals(const char *line, size_t length, uint32_t count, MnmCpuTotals *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    if (!line || length < 4 || length > 512 || memcmp(line, "cpu ", 4) != 0) return 0;
+    uint64_t values[6] = {0};
+    size_t at = 4;
+    for (size_t field = 0; field < 6; ++field) {
+        while (at < length && (line[at] == ' ' || line[at] == '\t')) ++at;
+        if (at == length || line[at] < '0' || line[at] > '9') return 0;
+        do {
+            const uint64_t digit = (uint64_t)(line[at++] - '0');
+            if (values[field] > (UINT64_MAX - digit) / 10u) return 0;
+            values[field] = values[field] * 10u + digit;
+        } while (at < length && line[at] >= '0' && line[at] <= '9');
+        if (at == length || (line[at] != ' ' && line[at] != '\t' && line[at] != '\n')) return 0;
+    }
+    /* Match Node/libuv's user + nice + system + idle + irq definition.
+     * iowait and the later softirq/steal/guest columns do not enter that sum. */
+    return mnm_cpu_totals(values[3], values[0], values[1], values[2], values[5], count, output);
 }
 
 #if defined(_WIN32)
@@ -58,10 +100,21 @@ MNM_EXPORT uint32_t mnemion_network_state_v1(void) {
                             hint.ApproachingDataLimit, hint.OverDataLimit, hint.Roaming);
 }
 
+MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    /* Preserve Node's existing Windows accounting. Its CPU times expose IRQ
+     * separately from kernel-minus-idle, so GetSystemTimes alone would change
+     * the idle fraction. The consumer uses its established Node fallback. */
+    return 0;
+}
+
 #elif defined(__APPLE__)
 #include <Network/Network.h>
 #include <dispatch/dispatch.h>
 #include <stdatomic.h>
+#include <mach/mach.h>
+#include <unistd.h>
 
 MNM_EXPORT uint32_t mnemion_network_state_v1(void) {
     /* Objective-C ARC retains captured dispatch objects until the cancelled
@@ -86,10 +139,45 @@ MNM_EXPORT uint32_t mnemion_network_state_v1(void) {
     return atomic_load(&value);
 }
 
+MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    const long count = sysconf(_SC_NPROCESSORS_ONLN);
+    if (count <= 0 || count > 1048576) return 0;
+    host_cpu_load_info_data_t info = {0};
+    mach_msg_type_number_t size = HOST_CPU_LOAD_INFO_COUNT;
+    const mach_port_t host = mach_host_self();
+    if (host == MACH_PORT_NULL) return 0;
+    const kern_return_t result = host_statistics(host, HOST_CPU_LOAD_INFO, (host_info_t)&info, &size);
+    (void)mach_port_deallocate(mach_task_self(), host);
+    if (result != KERN_SUCCESS || size != HOST_CPU_LOAD_INFO_COUNT) return 0;
+    return mnm_cpu_totals(info.cpu_ticks[CPU_STATE_IDLE], info.cpu_ticks[CPU_STATE_USER],
+                          info.cpu_ticks[CPU_STATE_NICE], info.cpu_ticks[CPU_STATE_SYSTEM],
+                          0, (uint32_t)count, output);
+}
+
 #elif defined(__linux__)
 #include <dlfcn.h>
 #include <pthread.h>
 #include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    const long count = sysconf(_SC_NPROCESSORS_ONLN);
+    if (count <= 0 || count > 1048576) return 0;
+    const int descriptor = open("/proc/stat", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (descriptor < 0) return 0;
+    char line[512];
+    const ssize_t length = read(descriptor, line, sizeof(line));
+    (void)close(descriptor);
+    if (length <= 0) return 0;
+    const char *end = memchr(line, '\n', (size_t)length);
+    if (!end) return 0;
+    return mnm_linux_cpu_totals(line, (size_t)(end - line) + 1, (uint32_t)count, output);
+}
 
 /* D-Bus's published stable C ABI. Opaque iterator storage is deliberately
  * larger than DBusMessageIter (72 bytes on supported 64-bit targets), aligned
@@ -256,4 +344,8 @@ MNM_EXPORT uint32_t mnemion_network_state_v1(void) {
 }
 #else
 MNM_EXPORT uint32_t mnemion_network_state_v1(void) { return MNM_UNKNOWN; }
+MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
+    if (output) memset(output, 0, sizeof(*output));
+    return 0;
+}
 #endif

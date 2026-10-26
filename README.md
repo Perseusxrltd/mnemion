@@ -16,6 +16,13 @@ Download current published builds from [the official product page](https://www.p
 The automatically reconciled [release status](docs/RELEASE_STATUS.md) records
 the version, available platforms and release-gate evidence. It distinguishes
 published capability from the unfinished full product roadmap.
+**[4.46.13](docs/releases/4.46.13.md) was published on 26 October 2026**, carrying
+the managed-backup contention correction, native validation repairs and inactive
+privacy controls. [All six installed targets qualified](docs/validation/2026-10-26-44613-native-acceptance.md);
+public automatic-update checks remained in progress at this publication
+checkpoint. The last separately verified actual Windows/shared-host pair is
+[4.46.6](docs/validation/2026-10-26-issue45-acceptance.md). Product telemetry
+remains Building, with collection unavailable and no destination or route.
 Desktop releases include [encrypted backups and independent
 recovery](docs/service/native-backups.md); their published delivery evidence is
 recorded in the release status above.
@@ -72,13 +79,14 @@ to manage people, applications and space grants without the original agent.
 The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
 remaining host delegation, independent recovery and company hosting workflows.
 
-**Independent host control is development work.** The
-[source guide](docs/guides/company-host-control.md) covers `/hosts` before sign-in,
+**Independent host control is available in the published desktop.** The
+[company-host guide](docs/guides/company-host-control.md) covers `/hosts` before sign-in,
 protected per-device logins, restricted SSH roles, durable operations, reviewed
 signed upgrades with independent encrypted Git backups, and local OS-owner
-custodian recovery. Focused source checks passed; the new native gates
-have not run. Clean installed-client and production acceptance remain open, and
-published availability continues to follow release status above.
+custodian recovery. It links accepted installed-client, actual shared-host,
+two-custodian, fresh-backup and isolated-restore journeys with their retained
+failures. Broader fleet, whole-machine boot and provider-wake acceptance remain
+open; a new release still requires its own actual deployment check.
 
 Published 4.2.0 includes [individual sign-in, invitations and device sessions](docs/service/sign-in.md),
 with [six-platform installed migration and recovery acceptance](docs/validation/2026-10-13-personal-access-release.md).

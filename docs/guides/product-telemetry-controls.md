@@ -1,7 +1,7 @@
 # Product telemetry privacy controls
 
-**V08 remains in development; source reference, 26 October 2026.** Product
-telemetry is unavailable. The controls below are implemented in source, but
+**V08 remains in development; updated 26 October 2026.** Product
+telemetry is unavailable. The local controls below ship in 4.46.13, but
 saving an enabled preference does not start collection: `collection_available`
 and `effective_enabled` remain `false`, with no destination or release route.
 Use [release status](../RELEASE_STATUS.md) to check availability in your version.
@@ -14,14 +14,14 @@ a production destination. Full resource, transport/privacy and installed-platfor
 acceptance remain unfinished. The [implementation contract](../implementation/anonymous-product-telemetry.md)
 preserves the detailed source evidence and remaining scope.
 
-At the 26 October checkpoint, [five installed privacy-control targets](../validation/2026-10-26-telemetry-preview.md)
-qualified from frozen 4.46.12: Linux x64/ARM64, Windows x64/ARM64 and macOS ARM64,
-with 64 required fields each. Windows ARM used an ARM desktop with emulated x64
-engine/database components. Intel Mac packaging failed before its installed
-journey, and the separate supervision job failed; the overall candidate remained
-unpublished. This is control acceptance, not active telemetry or full V08
-acceptance. As of **26 October, 03:55 UTC**, frozen 4.46.13 still awaits its
-native/public gates.
+The [4.46.13 privacy-control qualification](../validation/2026-10-26-44613-native-acceptance.md)
+passed all six installed targets: Linux, Windows and macOS, each on x64 and
+ARM64, with 64 required fields per target. Windows ARM used an ARM desktop with
+emulated x64 engine/database components. The version is published after artifact
+verification. This qualifies the controls, not active telemetry or full V08;
+public automatic-update checks and actual user installation checks are separate.
+The earlier [five-target 4.46.12 evidence](../validation/2026-10-26-telemetry-preview.md)
+remains retained with that candidate's original failures.
 
 ## In the app
 
@@ -67,7 +67,7 @@ compiled helper remains unknown, so automatic mode keeps delivery paused.
 Declaring an unmetered connection cannot override an OS-reported metered or
 constrained path. These checks run only for an eligible, already-awake opportunity;
 they add no idle sampler, Internet connectivity probe or network-setting change.
-They remain unreleased and do not activate collection. Focused source checks and
+They are included in 4.46.13 and do not activate collection. Focused source checks and
 actual Windows/Linux flag/deadline probes completed; these do not qualify an
 installed telemetry release. The measured Windows Node and Linux Electron
 components still exceed the 2 MiB full-feature RSS target. Full platform/resource

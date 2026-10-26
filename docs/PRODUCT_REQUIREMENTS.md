@@ -32,7 +32,16 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
-**26 October 2026, 03:55 UTC, current V08 — Building/source implementation:** bounded
+**26 October 2026 publication checkpoint:** [4.46.13 is public](releases/4.46.13.md).
+[Six installed targets](validation/2026-10-26-44613-native-acceptance.md) passed
+all 64 required fields each; artifact verification and website sync also passed.
+Public automatic-update checks remain in progress at this checkpoint, and the
+last separately verified actual Windows/shared-host pair remains
+[4.46.6](validation/2026-10-26-issue45-acceptance.md). V08 stays Building with
+collection unavailable and destination/route null. No requirement text, state
+or count changes with this publication.
+
+**26 October 2026, 03:55 UTC, historical V08 — Building/source implementation:** bounded
 sender components, owned workflow hooks and a dedicated collector now exist in
 [source](implementation/anonymous-product-telemetry.md).
 [Isolated TLS and collector-service checks](validation/2026-10-25-telemetry-collector-service.md)

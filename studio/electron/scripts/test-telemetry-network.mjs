@@ -4,6 +4,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { createRequire } from 'node:module'
 import { NativeNetworkConditions, networkFlags } from '../dist/telemetry-network.js'
 import { DesktopTelemetryConditions } from '../dist/telemetry-conditions.js'
+import { readCpuTotals } from '../dist/telemetry-cpu.js'
 
 const tick = () => new Promise(resolve => setImmediate(resolve))
 const plain = value => { const { observed, ...conditions } = networkFlags(value); return conditions }
@@ -100,11 +101,115 @@ test('a missing native reply stops preparation after its one-second deadline', a
   await awake
 })
 
-test('the compiled Node ABI exposes only fixed policy flags', async () => {
+test('the compiled Node ABI exposes only policy flags and aggregate CPU counters', async () => {
   const binding = createRequire(import.meta.url)('../dist/telemetry-network.node')
-  assert.deepEqual(Object.keys(binding), ['readState'])
+  assert.deepEqual(Object.keys(binding).sort(), ['readCpuTotals', 'readState'])
   const value = await binding.readState()
   assert.ok([0, 8, 9, 10, 12, 13, 14].includes(value))
+  const cpu = binding.readCpuTotals()
+  assert.ok(Array.isArray(cpu) && (cpu.length === 0 || cpu.length === 3))
+  if (cpu.length) {
+    assert.ok(cpu.every(value => Number.isSafeInteger(value) && value >= 0))
+    assert.ok(cpu[0] <= cpu[1] && cpu[1] > 0 && cpu[2] > 0 && cpu[2] <= 1048576)
+  }
+})
+
+test('valid aggregate CPU counters avoid the per-core OS allocation path', () => {
+  const result = readCpuTotals(() => [300, 1000, 2], () => { throw new Error('Per-core path must remain unused') })
+  assert.deepEqual(result, { idle: 300, total: 1000, count: 2, source: 'native' })
+})
+
+test('older, missing or invalid aggregate CPU support retains the current Node fallback', () => {
+  const core = { model: 'unused', speed: 0, times: { user: 100, nice: 0, sys: 50, idle: 300, irq: 10 } }
+  for (const value of [null, [], [1, 2], [1, 2, 3, 4], [3, 2, 1], [1, 2, 0], [NaN, 2, 1], [0, Infinity, 1], [0, 2 ** 53, 1], [0, 1, 1048577]]) {
+    assert.deepEqual(readCpuTotals(() => value, () => [core, core]), { idle: 600, total: 920, count: 2, source: 'node' })
+  }
+  assert.equal(readCpuTotals(() => { throw new Error('Native unavailable') }, () => []), null)
+  assert.equal(readCpuTotals(() => null, () => [{ ...core, times: { ...core.times, idle: NaN } }]), null)
+})
+
+test('CPU admission requires comparable providers and two fresh samples after missing data', async () => {
+  let now = 0, value = { idle: 0, total: 100, count: 2, source: 'native' }
+  const network = new NativeNetworkConditions(async () => 9, () => now)
+  const conditions = new DesktopTelemetryConditions({ online: () => true, thermal: () => 'nominal' }, network, () => value, () => now)
+  try {
+    assert.equal(await network.start(new AbortController().signal), true)
+    assert.equal(conditions.read().constrained, true)
+    now = 250; value = { ...value, idle: 60, total: 200 }
+    assert.equal(conditions.read().constrained, false)
+    await tick()
+    now = 500; value = { idle: 700, total: 1000, count: 2, source: 'node' }
+    assert.equal(conditions.read().constrained, true)
+    await tick()
+    now = 750; value = { ...value, idle: 750, total: 1100 }
+    assert.equal(conditions.read().constrained, false)
+    await tick()
+    now = 1000; value = null
+    assert.equal(conditions.read().constrained, true)
+    await tick()
+    now = 1250; value = { idle: 800, total: 1200, count: 2, source: 'node' }
+    assert.equal(conditions.read().constrained, true)
+    await tick()
+    now = 1500; value = { ...value, idle: 830, total: 1300 }
+    assert.equal(conditions.read().constrained, false)
+    now = 1750; value = { ...value, idle: 860, total: 1400, count: 4 }
+    assert.equal(conditions.read().constrained, true)
+    now = 2000; value = { ...value, idle: 900, total: 1500 }
+    await network.start(new AbortController().signal)
+    assert.equal(conditions.read().constrained, false)
+  } finally { conditions.close() }
+})
+
+test('a CPU read error or a long idle gap requires two fresh readings', async () => {
+  let now = 0, broken = false, value = { idle: 100, total: 200, count: 2, source: 'native' }
+  const network = new NativeNetworkConditions(async () => 9, () => now)
+  const conditions = new DesktopTelemetryConditions({ online: () => true, thermal: () => 'nominal' }, network,
+    () => { if (broken) throw new Error('OS read unavailable'); return value }, () => now)
+  try {
+    await network.start(new AbortController().signal)
+    conditions.read()
+    now = 250; value = { ...value, idle: 200, total: 300 }
+    assert.equal(conditions.read().constrained, false)
+    await tick()
+    now = 500; broken = true
+    assert.equal(conditions.read().constrained, true)
+    now = 750; broken = false; value = { ...value, idle: 300, total: 400 }
+    assert.equal(conditions.read().constrained, true)
+    await tick()
+    now = 1000; value = { ...value, idle: 400, total: 500 }
+    assert.equal(conditions.read().constrained, false)
+    await tick()
+    now = 122000; value = { ...value, idle: 1000, total: 1500 }
+    await network.start(new AbortController().signal)
+    assert.equal(conditions.read().constrained, true)
+    now = 122250; value = { ...value, idle: 1100, total: 1600 }
+    assert.equal(conditions.read().constrained, false)
+  } finally { conditions.close() }
+})
+
+test('busy, reset, inconsistent and rolled-back CPU readings cannot allow delivery', async () => {
+  let now = 0, value = { idle: 100, total: 200, count: 2, source: 'native' }
+  const network = new NativeNetworkConditions(async () => 9, () => now)
+  const conditions = new DesktopTelemetryConditions({ online: () => true, thermal: () => 'nominal' }, network, () => value, () => now)
+  try {
+    await network.start(new AbortController().signal)
+    conditions.read()
+    now = 250; value = { ...value, idle: 110, total: 300 }
+    assert.equal(conditions.read().constrained, true)
+    now = 500; value = { ...value, idle: 50, total: 100 }
+    assert.equal(conditions.read().constrained, true)
+    now = 750; value = { ...value, idle: 90, total: 110 }
+    assert.equal(conditions.read().constrained, true)
+    now = 1000; value = { ...value, idle: 100, total: 160 }
+    await network.start(new AbortController().signal)
+    assert.equal(conditions.read().constrained, false)
+    now = 999
+    assert.equal(conditions.read().constrained, true)
+    now = 1250; value = { ...value, idle: 150, total: 210 }
+    assert.equal(conditions.read().constrained, true)
+    now = 1500; value = { ...value, idle: 190, total: 310 }
+    assert.equal(conditions.read().constrained, false)
+  } finally { conditions.close() }
 })
 
 test('an additional detector cannot erase the actual OS metered veto', async () => {

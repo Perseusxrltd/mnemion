@@ -9,8 +9,8 @@ implemented in source;
 product collection is unavailable. V08 is the
 active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
 passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
-texts and the other 65 states remain unchanged. These controls and this
-documentation update are excluded from the isolated 4.46.6 dependency-security release.
+texts and the other 65 states remain unchanged. Local privacy controls ship in
+4.46.13; the later CPU admission change documented below remains source-only.
 
 The [dedicated collector source](anonymous-product-telemetry-collector.md) now
 provides a bounded TLS entrypoint, metadata removal, private report access and
@@ -75,15 +75,16 @@ example; queue contents, spent allowance and consent remain unchanged, and no
 network request is made. The app clears previews on choice changes, status
 refresh or window focus and discards late responses. Any displayed local counts
 are separately labeled snapshots. The
-[preview evidence](../validation/2026-10-26-telemetry-preview.md) now includes
-five qualified installed targets from frozen 4.46.12: Linux x64/ARM64, Windows
-x64/ARM64 and macOS ARM64. Each passed all 64 required fields, including actual
+[preview evidence](../validation/2026-10-26-telemetry-preview.md) preserves the
+five-target 4.46.12 result. The later
+[4.46.13 qualification](../validation/2026-10-26-44613-native-acceptance.md)
+passed all six installed targets: Linux, Windows and macOS, each on x64 and
+ARM64. Each passed all 64 required fields, including actual
 privacy controls, app/native choice visibility, inspection without spending,
 preview clearing and opt-out persistence through restart. Windows ARM used an
-ARM desktop with emulated x64 engine/database components. The overall run failed
-in Intel Mac packaging and supervision; the Intel installed journey was skipped.
-This is five-target control acceptance, with no public-release, full V08 or
-4.46.13 acceptance inferred.
+ARM desktop with emulated x64 engine/database components. Version 4.46.13 is
+published after artifact verification; its public update checks are separate.
+This qualifies the privacy controls, not active collection or full V08.
 `transport_available` describes valid configured release-route capability,
 separate from consent and a live send; it remains false here.
 Owned CLI, desktop/native-operator, Studio/browser and
@@ -201,8 +202,21 @@ The stop-rule decision selects a cold initialization and storage-runtime
 ownership review: overlapping first-call windows suggest file-backed residency,
 without proving SQLite alone caused the difference. No repeat benchmark or
 budget revision is selected. The **2 MiB / 0.5%** gates remain unchanged and
-unaccepted. As of **26 October, 03:55 UTC**, frozen 4.46.13 remains separate and
-pending native/public acceptance; collection stays false/null/null.
+unaccepted. That diagnostic remains separate from the now-published 4.46.13
+native-control qualification; collection stays false/null/null.
+
+The resulting [CPU admission change](../validation/2026-10-26-telemetry-cpu-admission.md)
+removes the per-core allocation path on Linux and macOS by reading fixed
+aggregate counters through the existing native helper. The upstream Linux
+`os.cpus()` implementation allocates a 458,752-byte scratch array per call;
+the new reader uses a 512-byte stack buffer for `/proc/stat`. Windows and
+unavailable helpers retain the existing Node fallback. Provider/count changes,
+unknown samples, counter resets and clock rollback require two new comparable
+readings, preserving the 20% idle threshold and other admission restrictions.
+The build, focused admission/transport checks and actual Linux Electron ABI
+probe passed. Its **2,883,584-byte component RSS observation** still exceeds
+2 MiB and does not qualify the full resource limit. This source change is
+excluded from published 4.46.13; no renderer benchmark was repeated.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a

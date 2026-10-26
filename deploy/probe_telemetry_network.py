@@ -1,4 +1,4 @@
-"""Check the actual release-owned network probe, without creating telemetry."""
+"""Check release-owned network/aggregate CPU admission, without creating telemetry."""
 
 from __future__ import annotations
 
@@ -16,6 +16,10 @@ import time
 from deploy.native_resources import binary_target
 
 FLAGS = {0, 8, 9, 10, 12, 13, 14}
+
+
+class CpuTotals(ctypes.Structure):
+    _fields_ = [("idle", ctypes.c_uint64), ("total", ctypes.c_uint64), ("count", ctypes.c_uint32)]
 
 
 def probe(artifact: Path, *, node: str | None = None) -> dict:
@@ -36,12 +40,36 @@ def probe(artifact: Path, *, node: str | None = None) -> dict:
     elapsed = time.monotonic() - started
     if value not in FLAGS or elapsed >= 1:
         raise ValueError("The actual C probe failed its flag/deadline contract")
+    cpu = CpuTotals()
+    read_cpu = library.mnemion_cpu_totals_v1
+    read_cpu.argtypes = [ctypes.POINTER(CpuTotals)]
+    read_cpu.restype = ctypes.c_int
+    available = read_cpu(ctypes.byref(cpu))
+    if (
+        available not in (0, 1)
+        or (
+            available
+            and not (
+                0 <= cpu.idle <= cpu.total <= 9007199254740991
+                and cpu.total > 0
+                and 0 < cpu.count <= 1048576
+            )
+        )
+        or (not available and (cpu.idle or cpu.total or cpu.count))
+    ):
+        raise ValueError("The actual aggregate CPU probe returned invalid counters")
     result = {
         "schema_version": 1,
         "platform": operating_system,
         "architecture": sorted(target[1]),
         "artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
-        "python": {"version": platform.python_version(), "flags": value, "seconds": elapsed},
+        "probe_scope": "network_and_aggregate_cpu",
+        "python": {
+            "version": platform.python_version(),
+            "flags": value,
+            "seconds": elapsed,
+            "aggregate_cpu_available": bool(available),
+        },
         "qualification": "component only; not installed or whole-feature resource acceptance",
     }
     if node:
@@ -51,12 +79,16 @@ def probe(artifact: Path, *, node: str | None = None) -> dict:
         program = """
 const before=process.memoryUsage().rss, started=performance.now();
 const binding=require(process.argv[1]);
-if(Object.keys(binding).join()!=='readState') throw new Error('Unexpected native ABI');
+if(Object.keys(binding).sort().join()!=='readCpuTotals,readState') throw new Error('Unexpected native ABI');
 binding.readState().then(flags=>{
   const seconds=(performance.now()-started)/1000;
   if(![0,8,9,10,12,13,14].includes(flags)||seconds>=1) throw new Error('Native probe failed');
+  const cpu=binding.readCpuTotals();
+  if(!Array.isArray(cpu)||(cpu.length!==0&&(cpu.length!==3||
+    cpu.some(value=>!Number.isSafeInteger(value)||value<0)||cpu[0]>cpu[1]||cpu[1]===0||cpu[2]===0||cpu[2]>1048576)))
+    throw new Error('Aggregate CPU probe failed');
   console.log(JSON.stringify({version:process.versions.node,electron:process.versions.electron??null,
-    flags,seconds,added_rss_bytes:process.memoryUsage().rss-before}));
+    flags,seconds,aggregate_cpu_available:cpu.length===3,added_rss_bytes:process.memoryUsage().rss-before}));
 });
 """
         child = subprocess.run(

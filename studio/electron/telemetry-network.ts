@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url'
 import type { TelemetryConditions } from './telemetry-activity.js'
 
 type Probe = () => Promise<number>
-let binding: { readState: Probe } | false | undefined
-async function nativeState(): Promise<number> {
+let binding: { readState: Probe; readCpuTotals?: () => unknown } | false | undefined
+function nativeBinding() {
   if (binding === undefined) {
     try {
       const path = fileURLToPath(new URL('./telemetry-network.node', import.meta.url))
@@ -14,7 +14,18 @@ async function nativeState(): Promise<number> {
       binding = typeof loaded?.readState === 'function' ? loaded : false
     } catch { binding = false }
   }
-  return binding ? binding.readState() : 0
+  return binding
+}
+
+async function nativeState(): Promise<number> {
+  const loaded = nativeBinding()
+  return loaded ? loaded.readState() : 0
+}
+
+/** Aggregate counters only. Older/missing binaries retain the Node fallback. */
+export function nativeCpuTotals(): unknown {
+  const loaded = nativeBinding()
+  return loaded && typeof loaded.readCpuTotals === 'function' ? loaded.readCpuTotals() : null
 }
 
 export function networkFlags(value: unknown): TelemetryConditions & { observed: boolean } {

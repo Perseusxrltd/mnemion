@@ -1,10 +1,10 @@
 /** Local current gauges, never report fields, network identifiers or a timer. */
-import { cpus } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
 import type { TelemetryConditions } from './telemetry-activity.js'
 import { NativeNetworkConditions } from './telemetry-network.js'
+import { readCpuTotals, type CpuTotals } from './telemetry-cpu.js'
 
-type CpuSample = { at: number; idle: number; total: number; count: number }
+type CpuSample = CpuTotals & { at: number }
 
 export class DesktopTelemetryConditions {
   private previous?: CpuSample
@@ -14,7 +14,8 @@ export class DesktopTelemetryConditions {
     online: () => boolean
     thermal: () => string
     metering?: () => TelemetryConditions['network']
-  }, private readonly network = new NativeNetworkConditions()) {}
+  }, private readonly network = new NativeNetworkConditions(),
+  private readonly cpu = readCpuTotals, private readonly clock = () => performance.now()) {}
 
   async prepare(stop: AbortSignal): Promise<boolean> {
     if (stop.aborted || !this.platform.online() || !await this.network.start(stop)) return false
@@ -31,19 +32,22 @@ export class DesktopTelemetryConditions {
 
   read(): TelemetryConditions {
     try {
-      const now = performance.now()
+      const now = this.clock()
+      if (!Number.isFinite(now) || now < this.sampledAt) {
+        this.previous = undefined; this.sampledAt = -Infinity; this.cpuConstrained = true
+        return { network: 'unknown', constrained: true }
+      }
       // Reuse a sub-second CPU delta during the existing attempt's policy
       // checks. There is no sampling task or wake while the app is idle.
       if (now - this.sampledAt >= 250) {
-        const cores = cpus()
-        const current = { at: now, idle: 0, total: 0, count: cores.length }
-        for (const { times } of cores) {
-          current.idle += times.idle
-          current.total += times.user + times.nice + times.sys + times.idle + times.irq
-        }
+        const totals = this.cpu()
+        const current = totals ? { ...totals, at: now } : undefined
         const prior = this.previous
-        this.cpuConstrained = !prior || !cores.length || prior.count !== current.count ||
+        // Counter units can differ by provider. Hotplug, fallback transitions,
+        // resets and unknown samples always need two new comparable readings.
+        this.cpuConstrained = !prior || !current || prior.source !== current.source || prior.count !== current.count ||
           now - prior.at > 120000 || current.total <= prior.total || current.idle < prior.idle ||
+          current.idle - prior.idle > current.total - prior.total ||
           (current.idle - prior.idle) / (current.total - prior.total) < 0.2
         this.previous = current
         this.sampledAt = now
@@ -54,6 +58,9 @@ export class DesktopTelemetryConditions {
       return { network: metering, constrained: network.constrained ||
         !this.platform.online() || this.cpuConstrained || !Number.isFinite(available) || available < 128 * 1024 * 1024 ||
         ['serious', 'critical'].includes(thermal) }
-    } catch { return { network: 'unknown', constrained: true } }
+    } catch {
+      this.previous = undefined; this.sampledAt = -Infinity; this.cpuConstrained = true
+      return { network: 'unknown', constrained: true }
+    }
   }
 }
