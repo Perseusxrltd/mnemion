@@ -59,6 +59,8 @@ jobs:
       - run: npm --prefix packages/client run build
       - run: npm --prefix studio/frontend ci
       - run: npm --prefix studio/electron ci
+      - name: Install the pinned Electron executable
+        run: node studio/electron/node_modules/electron/install.js
       - name: Build the real desktop bridge
         env:
           MNEMION_BUILD_PYTHON: ${{ github.workspace }}/.venv/bin/python

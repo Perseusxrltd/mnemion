@@ -87,3 +87,24 @@ The verifier now traverses both static and lazy imports. It still requires one
 copy of each policy/client module, reachable from both the app and measurement
 entry, and reports fixed module/chunk details if the check fails. The original
 failed build log and cleanup remain retained; corrected CI results are pending.
+
+## Clean-runner executable preparation
+
+[Run 40254401380](https://github.com/Perseusxrltd/mnemion/actions/runs/40254401380)
+used source `8a81ce68f0060cb06693cb44c0f381e907911cd6`. Compilation and the
+shared-module checks passed. Electron then could not launch because its native
+executable had not been downloaded. The installed Electron 44.9.3 package has
+an explicit installer command and no automatic postinstall script. Cleanup
+again removed the owned profiles and stopped the fixture collector.
+
+The diagnostic workflow now explicitly installs the locked Electron runtime.
+The harness also checks for its executable before constructing the database or
+collector fixtures. No collection or resource pass is inferred from either
+failed CI attempt.
+
+Pushes limited to these six explicitly listed diagnostic files and documentation
+now leave the product's native/service queues free. Runtime changes, release
+workflows, unknown files, unavailable Git history, pull requests and actual
+release/manual validation retain the full checks. Five real-Git selection tests
+and the existing website-content checks passed: **28 tests in 3.37 seconds**.
+This changes check selection, not the release acceptance gates.

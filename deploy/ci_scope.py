@@ -1,4 +1,4 @@
-"""Keep documentation-only pushes out of the native/service test queues."""
+"""Keep documentation and isolated diagnostics out of native/service push queues."""
 
 from __future__ import annotations
 
@@ -17,6 +17,18 @@ METADATA = {
     "deploy/website-content.json",
     "docs/website/content.json",
     "docs/website/content.schema.json",
+}
+
+# These files only prepare or run the separately dispatched, disposable
+# renderer diagnostic. No application/release builder imports them. Keep this
+# explicit: runtime, release workflows and unknown files still run all checks.
+RENDERER_DIAGNOSTICS = {
+    ".github/workflows/telemetry-renderer.yml",
+    "deploy/probe_telemetry_renderer.py",
+    "deploy/report_telemetry_renderer.py",
+    "deploy/telemetry_memory_fixture.py",
+    "studio/electron/scripts/probe-telemetry-renderer.mjs",
+    "studio/frontend/scripts/build-telemetry-probe.mjs",
 }
 
 
@@ -62,9 +74,16 @@ def scope(root: Path, event: dict, *, event_name: str, release: bool = False) ->
         # A shallow checkout or unavailable push base must retain every check.
         return {"runtime": True, "reason": "unavailable_diff"}
     only_docs = bool(paths) and all(documentation(path) for path in paths)
+    only_diagnostics = bool(paths) and all(
+        documentation(path) or path in RENDERER_DIAGNOSTICS for path in paths
+    )
     return {
-        "runtime": not only_docs,
-        "reason": "documentation_only" if only_docs else "runtime_or_unknown_files",
+        "runtime": not only_diagnostics,
+        "reason": "documentation_only"
+        if only_docs
+        else "diagnostic_only"
+        if only_diagnostics
+        else "runtime_or_unknown_files",
     }
 
 

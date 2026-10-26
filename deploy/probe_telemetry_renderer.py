@@ -121,6 +121,13 @@ async def stop(process):
 
 async def run(source, output, playwright):
     output.mkdir(mode=0o700)
+    executable = {
+        "win32": "electron.exe",
+        "darwin": "Electron.app/Contents/MacOS/Electron",
+    }.get(sys.platform, "electron")
+    electron = source / "studio/electron/node_modules/electron/dist" / executable
+    if not electron.is_file():
+        raise RuntimeError("Install the pinned Electron executable before starting this diagnostic")
     original = (source / "mnemion/product_telemetry/disclosure.json").read_bytes()
     assert not json.loads(original)["collection_available"]
     assert not policy.COLLECTION_AVAILABLE and policy.COLLECTOR_URL is None
@@ -245,10 +252,6 @@ async def run(source, output, playwright):
                                     if not key.startswith("MNEMION_")
                                 }
                                 environment.pop("ELECTRON_RUN_AS_NODE", None)
-                                executable = {
-                                    "win32": "electron.exe",
-                                    "darwin": "Electron.app/Contents/MacOS/Electron",
-                                }.get(sys.platform, "electron")
                                 environment.update(
                                     PYTHONPATH=str(source),
                                     MNEMION_BUILD_PYTHON=sys.executable,
@@ -261,11 +264,7 @@ async def run(source, output, playwright):
                                     MNEMION_COST_RESULT=str(output / f"{label}.json"),
                                     MNEMION_PROBE_ARTIFACTS=str(output),
                                     MNEMION_PROBE_PLAYWRIGHT=str(playwright),
-                                    MNEMION_PROBE_ELECTRON=str(
-                                        source
-                                        / "studio/electron/node_modules/electron/dist"
-                                        / executable
-                                    ),
+                                    MNEMION_PROBE_ELECTRON=str(electron),
                                     VITE_DEV_PORT=str(port),
                                     NODE_EXTRA_CA_CERTS=str(certificate),
                                 )
