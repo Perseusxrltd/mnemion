@@ -146,12 +146,6 @@
       "updated_at": "2026-10-26T19:28:49Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40376743057",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-11-arm / arm64",
@@ -164,7 +158,13 @@
             "Retain generated desktop-content secret scan receipt"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
     },
     {
       "id": 40384317169,
@@ -172,37 +172,28 @@
       "workflow": "release.yml",
       "branch": "release/4.46.26",
       "source_commit": "d2e55fbf12400004c8e931a8e53a492e46a279c5",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T19:29:19Z",
+      "updated_at": "2026-10-26T19:29:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 8,
-        "completed": 4,
-        "succeeded": 3,
+        "total": 13,
+        "completed": 7,
+        "succeeded": 6,
         "active": [
-          {
-            "id": 121798396146,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
           {
             "id": 121798396211,
             "name": "native / Encrypted files / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
-            "id": 121798396878,
-            "name": "native / native_database / Private state / Windows / arm64",
+            "id": 121798772662,
+            "name": "native / native_database / Database / linux / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -210,12 +201,37 @@
             ]
           },
           {
-            "id": 121798396901,
-            "name": "native / native_database / Private state / Windows / x64",
+            "id": 121798772677,
+            "name": "native / native_database / Database / windows / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          },
+          {
+            "id": 121798772730,
+            "name": "native / native_database / Database / macos / arm64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 121798772792,
+            "name": "native / native_database / Database / linux / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          },
+          {
+            "id": 121798772795,
+            "name": "native / native_database / Database / macos / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Set up job"
             ]
           }
         ]
@@ -256,5 +272,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T19:29:26+00:00"
+  "observed_at": "2026-10-26T19:30:06+00:00"
 }
