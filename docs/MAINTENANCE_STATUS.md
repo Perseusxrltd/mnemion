@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T16:33:55+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T17:02:47+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.19](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.19). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,25 +16,21 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526) |
+| ci\.yml | main | failure | [Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526) |
 | public-updates\.yml | v4\.46\.19 | success | [Run 40344852373](https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373) |
 | release\.yml | release/4\.46\.19 | success | [Run 40333990605](https://github.com/Perseusxrltd/mnemion/actions/runs/40333990605) |
-| release\.yml | release/4\.46\.22 | queued | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
+| release\.yml | release/4\.46\.22 | in\_progress | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
 | verify-artifacts\.yml | main | skipped | [Run 40360187989](https://github.com/Perseusxrltd/mnemion/actions/runs/40360187989) |
 | website-release\.yml | main | success | [Run 40359469878](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469878) |
 | website-release\.yml | v4\.46\.19 | success | [Run 40344847819](https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819) |
 
 ## Active jobs
 
-[Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526): 7/12 jobs completed; 7 succeeded.
-
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15\): queued.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-
 [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614): 20/21 jobs completed; 19 succeeded.
 
-- native / macos-15 / arm64: queued.
+- native / macos-15 / arm64: in\_progress — Packaged Mac update, restart guards and relaunch.
 
+
+## Unsuccessful jobs
+
+- [Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.

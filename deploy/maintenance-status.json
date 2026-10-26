@@ -23,62 +23,27 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "e747707e1dfe4d7cedd3de7c574f501e3607a74d",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-26T16:29:43Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-26T17:01:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
-        "active": [
-          {
-            "id": 121701369395,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121701369508,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121701369540,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121701369592,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121701369848,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15)",
+          "id": 121701369508,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 40344852373,
@@ -108,9 +73,9 @@
       "workflow": "release.yml",
       "branch": "release/4.46.22",
       "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T16:33:20Z",
+      "updated_at": "2026-10-26T16:43:29Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614",
       "job_details_schema": 2,
       "job_progress": {
@@ -121,9 +86,11 @@
           {
             "id": 121703380937,
             "name": "native / macos-15 / arm64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Packaged Mac update, restart guards and relaunch"
+            ]
           }
         ]
       },
@@ -163,5 +130,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819"
     }
   ],
-  "observed_at": "2026-10-26T16:33:55+00:00"
+  "observed_at": "2026-10-26T17:02:47+00:00"
 }
