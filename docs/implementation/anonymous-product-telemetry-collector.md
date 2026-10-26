@@ -7,6 +7,18 @@ disclosed destination and release-owned route remain unset. See the
 [full V08 contract](anonymous-product-telemetry.md) and
 [source validation](../validation/2026-10-25-telemetry-collector-service.md).
 
+The [26 October read-only ingress review](../validation/2026-10-26-telemetry-ingress-review.md)
+confirms that the production collector/listener is not installed. An existing
+free certificate and active renewal timer offer a candidate; one verified TLS
+handshake using the bounded ISRG X1/X2 authorities reached the existing memory
+HTTPS listener without an HTTP request or report. Production route and release
+authorities remain unset. Corrected firewall inspection found ten IPv4/IPv6 logging targets,
+alongside weekly/four-rotation UFW retention and persistent journal presence.
+Provider policies and backup metadata do not qualify this VPS's logging,
+snapshot or retention settings. No host changes or private-key/network-log/
+backup-content reads occurred; production and provider/privacy acceptance remain
+open.
+
 The collector runs independently of workspace services. It imports no memory
 engine, embedding model, workspace authentication or connector. Its separate
 [runtime lock](../../deploy/collector/uv.lock) contains Uvicorn 0.54.0, h11 0.16.0
