@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T22:35:46+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T22:52:57+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,27 +22,18 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.29 | in\_progress | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
 | release\.yml | release/4\.46\.30 | pending | [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100) |
 | verify-artifacts\.yml | main | success | [Run 40410428285](https://github.com/Perseusxrltd/mnemion/actions/runs/40410428285) |
-| website-release\.yml | main | success | [Run 40413510214](https://github.com/Perseusxrltd/mnemion/actions/runs/40413510214) |
+| website-release\.yml | main | success | [Run 40415692444](https://github.com/Perseusxrltd/mnemion/actions/runs/40415692444) |
 | website-release\.yml | v4\.46\.28 | success | [Run 40411254189](https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189) |
 
 ## Active jobs
 
-[Run 40413510185](https://github.com/Perseusxrltd/mnemion/actions/runs/40413510185): 4/12 jobs completed; 4 succeeded.
+[Run 40413510185](https://github.com/Perseusxrltd/mnemion/actions/runs/40413510185): 9/12 jobs completed; 9 succeeded.
 
-- studio: in\_progress — Verify wheel and source package include the matching web Studio.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- container \(ubuntu-22\.04-arm\): in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
 
-[Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 16/21 jobs completed; 15 succeeded.
+[Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 20/21 jobs completed; 19 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / windows-2022 / x64: in\_progress — Packaged window, sandboxed bridge, and local client.
-- native / macos-15 / arm64: in\_progress — Packaged window, sandboxed bridge, and local client.
 
