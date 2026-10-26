@@ -72,6 +72,24 @@ Explicit native configuration may wait **250 ms per busy SQLite lock**, not
 desktop actions allow at most **25 ms** for an optional snapshot before the
 original action.
 
+The [app review and approval follow-up](../validation/2026-10-26-telemetry-app-review.md)
+fixes an approved report being ignored after an earlier automatic preflight.
+The shared app/browser owner preserves the automatic once-per-awake-minute
+cadence and permits at most one additional explicit approval preflight per
+minute. Only one copied policy stamp can wait for active cleanup; pause/close
+clears it. Fresh eligibility, consent, spending, sensors and transport remain
+mandatory, with no timer or idle wake added.
+
+The completed compiled Linux x64 app journey passed **nine review checks**, with
+two launches, three save/fetch/recall cycles, nine operations and 12 successful
+HTTP requests. Exactly one accepted four-byte TLS report matched the inspected
+body; opt-out, manual mode and spent allowance survived restart. All **2,172
+source and compiled inputs** matched, and cleanup passed. Separately, **24 actual
+Electron-runtime tests and 14 browser-source tests** passed without skips.
+Original probe errors and approval failures are retained. Actual web-browser
+delivery, six installed targets, privacy and resource acceptance remain open;
+no new resource run or saving is claimed.
+
 ### Owned observations and storage
 
 The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
@@ -216,9 +234,17 @@ literal routing, existing review binding and privacy/budget fences remain
 mandatory; browser TLS is unchanged. Source checks passed 78 distinct Python
 cases and 54 cases in the actual local Electron binary running Node mode, with
 Ruff and the Electron build passing. Original fixture failures and corrections
-are retained. The allocation rationale establishes no RSS saving; one fixed
-six-case follow-up is planned after integrating this changed source. Resource,
-provider/privacy and installed-platform acceptance remain open.
+are retained.
+
+The [completed scoped-trust resource follow-up](../validation/2026-10-26-telemetry-scoped-trust-results.md)
+at `4b8e8a3e` completed all six functional cases, matching 2,053 source files
+each, with cleanup passing. Enabled main matched maxima were
+**4,341,760 / 3,428,352 bytes** and endings **2,625,536 / 3,215,360 bytes**;
+the unchanged 2 MiB gate still fails. All roles, opted-out controls and prior
+failures remain retained. Different ambient fixture trust across revisions
+prevents a causal savings claim; combined CPU is descriptive. No repeat
+measurement is selected. CPU/resource, provider/privacy and installed-platform
+acceptance remain open.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file

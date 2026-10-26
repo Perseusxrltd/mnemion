@@ -48,3 +48,52 @@ test('an active send receives cancellation without replay or a shutdown flush', 
   owner.offer(stamp); await started; owner.close(); await owner.settled()
   assert.equal(signals, 1); assert.equal(attempts, 1)
 })
+
+test('manual approval gets one immediate check after an automatic preflight', async () => {
+  let reservations = 0, now = 0
+  const owner = new TelemetryActivity({ available: () => true,
+    reserve: async () => { reservations++; return null },
+    send: async () => assert.fail('No report was reserved'), cancel: async () => {} }, () => now)
+  owner.offer(stamp); await owner.settled()
+  assert.equal(reservations, 1)
+  owner.offer(stamp, true); await owner.settled()
+  assert.equal(reservations, 2)
+  for (let index = 0; index < 10; index++) { owner.offer(stamp); owner.offer(stamp, true) }
+  await owner.settled()
+  assert.equal(reservations, 2, 'Repeated approvals cannot create a burst of preflights')
+  now = 60001
+  owner.offer(stamp, true); await owner.settled()
+  assert.equal(reservations, 3)
+  owner.close()
+})
+
+test('one explicit approval follows active cleanup with its original policy stamp', async () => {
+  let finish, reservations = 0
+  const pending = new Promise(resolve => { finish = resolve })
+  const seen = []
+  const owner = new TelemetryActivity({ available: () => true,
+    reserve: async expected => { seen.push({ ...expected }); if (++reservations === 1) await pending; return null },
+    send: async () => assert.fail('No report was reserved'), cancel: async () => {} }, () => 0)
+  owner.offer(stamp); await Promise.resolve()
+  const approval = { ...stamp, revision: 2 }
+  owner.offer(approval, true); owner.offer(approval, true)
+  approval.revision = 99
+  finish(); await owner.settled()
+  assert.deepEqual(seen, [stamp, { ...stamp, revision: 2 }])
+  owner.close()
+})
+
+for (const transition of ['pause', 'close']) test('pending approval is discarded on ' + transition, async () => {
+  let finish, reservations = 0
+  const pending = new Promise(resolve => { finish = resolve })
+  const owner = new TelemetryActivity({ available: () => true,
+    reserve: async () => { reservations++; await pending; return null },
+    send: async () => assert.fail('No report was reserved'), cancel: async () => {} }, () => 0)
+  owner.offer(stamp); await Promise.resolve()
+  owner.offer(stamp, true)
+  if (transition === 'pause') owner.pause('lifecycle')
+  else owner.close()
+  finish(); await owner.settled()
+  assert.equal(reservations, 1)
+  owner.close()
+})

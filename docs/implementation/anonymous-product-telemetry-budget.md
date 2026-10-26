@@ -31,6 +31,14 @@ destination/address binding, deadline or consent/generation fence, and adds no
 CA digest to reports. Passing local source checks do not qualify whole-wire
 cost, installed delivery or the unchanged 2 MiB / 0.5% resource gates.
 
+The [completed scoped-trust resource result](../validation/2026-10-26-telemetry-scoped-trust-results.md)
+retains six functional cases with 2,053 matched source files each and passing
+cleanup. Both enabled main matched maxima and endings remain above 2 MiB.
+All roles, opted-out controls and earlier failures remain retained; differing
+ambient fixture trust across revisions prevents a causal savings comparison.
+Combined CPU remains descriptive, the resource gate fails, and no repeat
+measurement or budget change is selected.
+
 The later [five-target installed-control qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
 verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
 fields each**, including fixed format preview, app/native choice parity and
@@ -194,8 +202,10 @@ allow manual mode to be selected before collection permission. Staging itself
 requires current permission, disclosure, a configured route, usable observations
 and available delivery allowance. It reads no performance gauges and spends no
 attempt. [Inspection](../../mnemion/product_telemetry/inspection.py) stores one
-randomized four-byte report and consumes only that pending snapshot. Repeated
-inspection neither resamples it nor renews its original expiry.
+fixed four-byte reviewed report under the
+[current selection contract](../validation/2026-10-26-telemetry-review-selection.md)
+and consumes only that pending snapshot. Repeated inspection changes neither
+its bytes nor its original expiry.
 
 Approval changes that report's state; a later eligible owner reserves the
 **same bytes** once, with the existing five-second lease and spending rules.
@@ -204,6 +214,14 @@ disclosure, catalog, wire version and destination binding are checked again at
 handoff. New observations produced during review remain pending, and contribution
 limits and spent budgets are not reset. The staged snapshot is never restored
 after discard, expiry, invalidation or an unsuccessful delivery attempt.
+
+The [approval handoff correction](../validation/2026-10-26-telemetry-app-review.md)
+keeps automatic app/browser preflights at their existing once-per-awake-minute
+cadence and permits at most one additional explicit approval preflight per
+minute. Native and browser approval callers use this shared owner path. A single
+copied policy stamp can wait for active cancellation/cleanup; pause or close
+discards it. Every attempt still needs current eligibility, consent, spending,
+sensors and transport checks. This creates no timer, wake or extra allowance.
 
 Native/Python storage uses private SQLite schema **6**. Browser choice schema
 **5** and budget schema **2** retain spending and use a write-ahead pending-entry
@@ -214,6 +232,13 @@ returning to automatic is an explicit action that clears the held report.
 Production collection stays false/null/null, and this unreleased implementation
 has passing source and isolated Chromium control checks. Interactive privacy,
 utility, full resource and installed acceptance remain open.
+
+The later [compiled Linux app journey](../validation/2026-10-26-telemetry-app-review.md)
+passed nine review checks and delivered exactly one accepted four-byte TLS body
+matching inspection. Opt-out/manual mode and one spent attempt survived restart;
+cleanup passed. Its 24 Electron-runtime and 14 browser-source tests passed
+separately. These results qualify the recorded source fixture, not actual
+web-browser delivery, installed targets, provider privacy or resources.
 
 ## Review-clock foundation
 

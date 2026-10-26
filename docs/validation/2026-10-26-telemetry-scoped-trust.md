@@ -127,8 +127,17 @@ run `40372901181`, still fails the unchanged 2 MiB gate: enabled main matched
 maxima were **3,145,728 / 3,186,688 bytes**, with endings of
 **2,768,896 / 2,428,928 bytes**. Both opted-out comparisons, all process roles and
 earlier rejected SQLite results remain retained. The 0.5% CPU limit also remains
-unchanged. One fixed six-case resource follow-up on the integrated changed
-source is planned; no result, causal saving or acceptance is claimed here.
+unchanged. At the source-checkpoint, one fixed six-case resource follow-up on
+the integrated changed source was planned.
+
+The [completed result](2026-10-26-telemetry-scoped-trust-results.md), run
+`40386632526` at `4b8e8a3e`, now retains all six functional cases with 2,053 matched
+source files each and passing cleanup. Enabled main matched maxima were
+**4,341,760 / 3,428,352 bytes**, with endings of **2,625,536 / 3,215,360 bytes**;
+the 2 MiB gate still fails. All roles and opted-out controls remain retained.
+Different ambient fixture trust across revisions prevents an isolated causal
+savings claim; combined CPU is descriptive, not acceptance. No repeat
+measurement is selected.
 
 Resource, whole-wire, actual provider/ingress privacy, production certificate
 selection and rotation, installed-platform behavior and full V08 acceptance

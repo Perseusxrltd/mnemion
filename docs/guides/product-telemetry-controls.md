@@ -154,6 +154,13 @@ permission. Inspect/approve/discard stayed disabled with no report available,
 and manual mode survived opt-out and restart. Those checks did not stage,
 approve or send a report.
 
+A later [compiled Linux source-app journey](../validation/2026-10-26-telemetry-app-review.md)
+passed nine checks covering staging, repeat inspection, native opt-out,
+re-enable, discard, approval and restart. One accepted four-byte TLS report
+matched the inspected body, and manual mode, opt-out and spent allowance
+persisted. This uses isolated source-app fixtures; actual web-browser delivery,
+six installed targets, provider privacy and resource acceptance remain open.
+
 Once collection is permitted under its current disclosure, authorized local
 observations exist and the allowance is ready, **Inspect next report** stages
 one exact four-byte body and shows its Base64 and decoded fields. This explicitly
@@ -162,9 +169,11 @@ Inspecting the held report again preserves its bytes and original expiry: at
 most 15 minutes, possibly less if the observations expire sooner.
 
 **Approve this report** permits one eligible attempt with those bytes. The app
-or browser can offer it to its existing awake delivery owner; approval is not a
-delivery receipt and cannot override permission, company policy, metering or
-resource checks. Later reports remain paused. **Discard report**, expiry and
+or browser can request a fresh eligibility check even after recent automatic
+activity, at most once per minute for explicit approval. If an earlier attempt
+is still closing, the request waits for cleanup. Approval is not a delivery
+receipt and cannot override permission, company policy, metering or resource
+checks. Later reports remain paused. **Discard report**, expiry and
 invalidation also keep manual mode selected. Leaving manual review explicitly
 clears the held report and restores automatic delivery opportunities.
 
@@ -187,7 +196,7 @@ This source correction is excluded from frozen 4.46.14. Interactive privacy,
 utility and installed qualification remain open despite the passing final
 fixed-body source and component checks linked above.
 
-The Chromium check used synthetic observations and an in-memory capability;
+The earlier Chromium check used synthetic observations and an in-memory capability;
 it verified controls without sending a report or spending a delivery attempt.
 It does not qualify production collection, network delivery or installed apps.
 

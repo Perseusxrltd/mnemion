@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.27**.
+Reviewed source distribution: **4.46.28**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,19 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, source-app report review and approval handoff:**
+[The completed journey](validation/2026-10-26-telemetry-app-review.md) passed
+nine review checks in the compiled Linux app, including one TLS report matching
+inspection and opt-out/manual-mode/spending persistence across restart. All
+2,172 source and compiled inputs matched. A shared owner fix gives explicit
+approval a bounded opportunity after recent automatic activity; privacy and
+spending gates remain unchanged. Separately, 24 Electron-runtime and 14
+browser-source tests passed without skips; original failures remain retained.
+No new resource run was selected, and the
+[scoped-trust result](validation/2026-10-26-telemetry-scoped-trust-results.md)
+still fails 2 MiB. All 66 states remain unchanged; V08 stays Building and inactive,
+with actual web-browser, installed-platform, resource and privacy acceptance open.
 
 **26 October 2026, release-owned telemetry TLS trust source:**
 [The scoped trust follow-up](validation/2026-10-26-telemetry-scoped-trust.md)

@@ -420,7 +420,7 @@ export async function telemetryReviewAction(action: TelemetryReviewAction, input
   try {
     const result = await browser.reviewAction(action, input)
     if (action === 'approve_report' && result.review?.outcome === 'approved' && result.status.effective_enabled)
-      browserActivity.offer({ revision: result.status.revision, store_generation: result.status.store_generation })
+      browserActivity.offerApproved({ revision: result.status.revision, store_generation: result.status.store_generation })
     return result
   } catch (error) {
     const messages: Record<string, string> = {

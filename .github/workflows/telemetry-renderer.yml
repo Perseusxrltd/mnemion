@@ -1,5 +1,5 @@
 name: Telemetry renderer diagnostic
-run-name: Telemetry renderer ${{ inputs.source }}
+run-name: Telemetry ${{ inputs.review_journey && 'review' || 'renderer' }} ${{ inputs.source }}
 
 on:
   workflow_dispatch:
@@ -12,12 +12,16 @@ on:
         description: Six fixed counterbalanced attribution journeys; never resource acceptance
         type: boolean
         default: false
+      review_journey:
+        description: Real manual review, approval, opt-out and restart; separate from resource measurement
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: telemetry-renderer-${{ inputs.source }}
+  group: telemetry-renderer-${{ inputs.source }}${{ inputs.review_journey && '-review' || '' }}
   cancel-in-progress: false
 
 jobs:
@@ -44,6 +48,7 @@ jobs:
         env:
           REVIEWED_SOURCE: ${{ inputs.source }}
           TELEMETRY_ATTRIBUTION: ${{ inputs.attribution }}
+          TELEMETRY_REVIEW_JOURNEY: ${{ inputs.review_journey }}
         run: |
           python - <<'PY'
           import json, os, re, subprocess
@@ -51,10 +56,14 @@ jobs:
           source = os.environ['REVIEWED_SOURCE']
           assert re.fullmatch('[0-9a-f]{40}', source)
           assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == source
+          attribution = os.environ['TELEMETRY_ATTRIBUTION'] == 'true'
+          review = os.environ['TELEMETRY_REVIEW_JOURNEY'] == 'true'
+          assert not (attribution and review), 'Choose resource attribution or report review'
           Path('output/telemetry-renderer').mkdir(parents=True)
-          Path('output/telemetry-renderer/source.json').write_text(json.dumps({
-              'source': source, 'attribution': os.environ['TELEMETRY_ATTRIBUTION'] == 'true',
-          }) + '\n')
+          metadata = {'source': source, 'attribution': attribution}
+          if review:
+              metadata['review_journey'] = True
+          Path('output/telemetry-renderer/source.json').write_text(json.dumps(metadata) + '\n')
           PY
       - name: Install Linux desktop dependencies
         run: |
@@ -76,22 +85,25 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: npm install --prefix "$RUNNER_TEMP/telemetry-controller" --no-audit --no-fund --ignore-scripts playwright@1.64.0-alpha-1790635538000
-      - name: Measure the declared compiled app journeys
+      - name: Exercise the declared compiled app journeys
         env:
           TELEMETRY_ATTRIBUTION: ${{ inputs.attribution }}
+          TELEMETRY_REVIEW_JOURNEY: ${{ inputs.review_journey }}
         run: |
           args=()
           if [ "$TELEMETRY_ATTRIBUTION" = "true" ]; then args+=(--attribution); fi
+          if [ "$TELEMETRY_REVIEW_JOURNEY" = "true" ]; then args+=(--review-journey); fi
           xvfb-run -a uv run --no-sync python -m deploy.probe_telemetry_renderer \
             --source "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/output/telemetry-renderer/workload" \
             --playwright-module "$RUNNER_TEMP/telemetry-controller/node_modules/playwright/index.mjs" "${args[@]}"
       - name: Summarize retained measurements
+        if: ${{ !inputs.review_journey }}
         run: uv run --no-sync python -m deploy.report_telemetry_renderer output/telemetry-renderer/workload --output output/telemetry-renderer/summary.json
       - name: Preserve original observations and cleanup
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: telemetry-renderer-linux-x64
+          name: telemetry-${{ inputs.review_journey && 'review' || 'renderer' }}-linux-x64
           path: output/telemetry-renderer/
           if-no-files-found: error
           retention-days: 7

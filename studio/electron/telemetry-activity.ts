@@ -47,7 +47,7 @@ export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
     return recorded
   }
   pauseDelivery(reason?: string): void { this.activity.pause(reason) }
-  offerApproved(stamp: TelemetryStamp): void { this.activity.offer(stamp) }
+  offerApproved(stamp: TelemetryStamp): void { this.activity.offer(stamp, true) }
   resumeDelivery(reason?: string): void { this.activity.resume(reason) }
   closeDelivery(): void { this.activity.close() }
   deliverySettled(): Promise<void> { return this.activity.settled() }

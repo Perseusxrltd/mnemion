@@ -149,7 +149,22 @@ async def stop(process):
             pass
 
 
-async def run(source, output, playwright, *, attribution=False):
+REVIEW_CHECKS = (
+    "disclosure_required",
+    "manual_choice_before_permission",
+    "app_disclosure_acknowledged",
+    "exact_review_preserved",
+    "native_optout_invalidates_review",
+    "reenable_starts_empty",
+    "discard_does_not_spend",
+    "approved_attempt_uses_inspected_body",
+    "optout_and_review_survive_restart",
+)
+
+
+async def run(source, output, playwright, *, attribution=False, review_journey=False):
+    if review_journey and (attribution or sys.platform != "linux"):
+        raise ValueError("The review journey is a separate Linux source-app check")
     output.mkdir(mode=0o700)
     executable = {
         "win32": "electron.exe",
@@ -163,10 +178,13 @@ async def run(source, output, playwright, *, attribution=False):
     assert not policy.COLLECTION_AVAILABLE and policy.COLLECTOR_URL is None
     saved_policy = policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL
     counts = {"reports": 0, "accepted": 0, "body_bytes": 0, "forbidden_metadata": 0}
+    reviewed_bodies = []
     published = []
     collector = Collector(published.append)
 
     async def ingress(scope, receive, send):
+        reviewed_body = bytearray()
+        is_report = scope.get("type") == "http" and scope.get("method") == "POST"
         if scope["type"] == "http":
             counts["reports"] += int(scope.get("method") == "POST")
             counts["forbidden_metadata"] += bool(
@@ -178,6 +196,8 @@ async def run(source, output, playwright, *, attribution=False):
             event = await receive()
             if event["type"] == "http.request":
                 counts["body_bytes"] += len(event.get("body", b""))
+                if review_journey and len(reviewed_body) + len(event.get("body", b"")) <= 4:
+                    reviewed_body.extend(event.get("body", b""))
             return event
 
         async def sending(event):
@@ -186,6 +206,9 @@ async def run(source, output, playwright, *, attribution=False):
             await send(event)
 
         await collector(scope, received, sending)
+        if review_journey and is_report and len(reviewed_bodies) < 8:
+            # Only the disposable fixture's four-byte packet; no real user data.
+            reviewed_bodies.append(reviewed_body.hex())
 
     results, roots = [], []
     task = None
@@ -233,6 +256,8 @@ async def run(source, output, playwright, *, attribution=False):
                         (label, label, available, enabled, 1)
                         for label, available, enabled in triplet
                     ]
+                    if review_journey:
+                        cases = [("review", "review", True, True, 1)]
                     if attribution:
                         # Fixed before measurement. Never add another launch to
                         # select a favorable outcome from unchanged source.
@@ -283,19 +308,41 @@ async def run(source, output, playwright, *, attribution=False):
                                 source / "studio/electron/scripts/probe-telemetry-renderer.mjs",
                                 app / "probe-telemetry-renderer.mjs",
                             )
-                            policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = True, destination
-                            configured = policy.configure(
-                                root / "mnemion-product-telemetry",
-                                {
-                                    "enabled": enabled,
-                                    "expected_revision": 0,
-                                    "disclosure_version": 1,
-                                    "connection_mode": "unmetered",
-                                },
-                                policy_path=root / "company-absent.json",
-                            )
-                            assert configured["effective_enabled"] is enabled
-                            policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = saved_policy
+                            engine = root / "absent-engine"
+                            if review_journey:
+                                shutil.copyfile(
+                                    source / "studio/electron/scripts/probe-telemetry-review.mjs",
+                                    app / "probe-telemetry-review.mjs",
+                                )
+                                if any(character.isspace() for character in sys.executable):
+                                    raise ValueError("Use an interpreter path without whitespace")
+                                # Use the real source CLI behind the normal private-stdin
+                                # bridge. The installed engine is not replaced or qualified.
+                                engine = root / "source-engine"
+                                engine.write_text(
+                                    f"#!{sys.executable}\nimport sys\n"
+                                    f"sys.path.insert(0, {str(copy)!r})\n"
+                                    "from mnemion.service.cli import main\n"
+                                    "raise SystemExit(main())\n"
+                                )
+                                engine.chmod(0o700)
+                            else:
+                                policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = (
+                                    True,
+                                    destination,
+                                )
+                                configured = policy.configure(
+                                    root / "mnemion-product-telemetry",
+                                    {
+                                        "enabled": enabled,
+                                        "expected_revision": 0,
+                                        "disclosure_version": 1,
+                                        "connection_mode": "unmetered",
+                                    },
+                                    policy_path=root / "company-absent.json",
+                                )
+                                assert configured["effective_enabled"] is enabled
+                                policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = saved_policy
                             async with memory_workspace(root) as (memory, memory_counts):
                                 with socket.socket() as selection:
                                     selection.bind(("127.0.0.1", 0))
@@ -313,7 +360,7 @@ async def run(source, output, playwright, *, attribution=False):
                                     MNEMION_LEGACY_STUDIO="0",
                                     MNEMION_AUTO_UPDATE="0",
                                     MNEMION_START_AT_LOGIN="0",
-                                    MNEMION_LOCAL_ENGINE=str(root / "absent-engine"),
+                                    MNEMION_LOCAL_ENGINE=str(engine),
                                     MNEMION_LOCAL_DATABASE=str(root / "absent-database"),
                                     MNEMION_COST_RESULT=str(output / f"{label}.json"),
                                     MNEMION_PROBE_ARTIFACTS=str(output),
@@ -354,6 +401,7 @@ async def run(source, output, playwright, *, attribution=False):
                                             "condition": condition,
                                             "replicate": replicate,
                                             "attribution": attribution,
+                                            "review_journey": review_journey,
                                             "memory": memory,
                                             "destination": destination,
                                             "probe_entry": compiled["probe_entry"],
@@ -447,9 +495,14 @@ async def run(source, output, playwright, *, attribution=False):
                                     b"PRIVATE_RENDERER_MEMORY_CANARY" not in raw
                                     and memory["api_key"].encode() not in raw
                                 )
+                                if review_journey:
+                                    result["collector_body_matches_inspection"] = (
+                                        reviewed_bodies == [result.get("approved_body_hex")]
+                                    )
                                 result["journey_completed"] = (
                                     result["memory_results_verified"]
-                                    and result["memory_api"]["successful"] >= 384
+                                    and result["memory_api"]["successful"]
+                                    >= (9 if review_journey else 384)
                                     and result["fixture_content_absent_from_queue"]
                                     and result["collector"]
                                     == {
@@ -463,6 +516,17 @@ async def run(source, output, playwright, *, attribution=False):
                                     and result["durable"]["lease_cleared"]
                                     and not result["page_errors"]
                                     and not result.get("allocation", {}).get("errors")
+                                    and (
+                                        not review_journey
+                                        or (
+                                            result["collector_body_matches_inspection"]
+                                            and all(
+                                                result.get("review_checks", {}).get(name) is True
+                                                for name in REVIEW_CHECKS
+                                            )
+                                            and result.get("app_launches") == 2
+                                        )
+                                    )
                                 )
                         result["isolated_profile_removed"] = not root.exists()
                         results.append(result)
@@ -506,6 +570,7 @@ async def run(source, output, playwright, *, attribution=False):
             "sampling_interval_ms": 100,
             "resource_acceptance": False,
             "attribution": attribution,
+            "review_journey": review_journey,
             "declared_case_order": [row[0] for row in cases],
             "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification.",
         },
@@ -524,6 +589,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Six fixed counterbalanced launches with bounded first-activation and OS counters",
     )
+    parser.add_argument(
+        "--review-journey",
+        action="store_true",
+        help="Two Linux source-app launches for actual manual review, TLS delivery and restart",
+    )
     args = parser.parse_args()
     asyncio.run(
         run(
@@ -531,5 +601,6 @@ if __name__ == "__main__":
             args.output.resolve(),
             args.playwright_module.resolve(),
             attribution=args.attribution,
+            review_journey=args.review_journey,
         )
     )

@@ -246,7 +246,10 @@ async function controller() {
 }
 
 if (process.versions.electron) await bootstrap()
-else {
+else if (input.review_journey) {
+  const { reviewController } = await import('./probe-telemetry-review.mjs')
+  await reviewController({ root, input, application, marker }).catch(error => { console.error(error); process.exitCode = 1 })
+} else {
   // The app and measurement entry share one compiled module graph, served as
   // static files. No development compiler runs during the measured interval.
   await controller().catch(error => { console.error(error); process.exitCode = 1 })
