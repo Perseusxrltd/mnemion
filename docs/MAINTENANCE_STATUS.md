@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T05:40:47+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T05:58:51+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.13](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.13). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40275432671](https://github.com/Perseusxrltd/mnemion/actions/runs/40275432671) |
+| ci\.yml | main | in\_progress | [Run 40277005529](https://github.com/Perseusxrltd/mnemion/actions/runs/40277005529) |
 | public-updates\.yml | v4\.46\.13 | success | [Run 40268195296](https://github.com/Perseusxrltd/mnemion/actions/runs/40268195296) |
 | release\.yml | release/4\.46\.13 | success | [Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121) |
 | verify-artifacts\.yml | main | success | [Run 40267817685](https://github.com/Perseusxrltd/mnemion/actions/runs/40267817685) |
@@ -25,15 +25,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40275432671](https://github.com/Perseusxrltd/mnemion/actions/runs/40275432671): 3/12 jobs completed; 3 succeeded.
+[Run 40277005529](https://github.com/Perseusxrltd/mnemion/actions/runs/40277005529): 3/12 jobs completed; 3 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.12\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
-- service \(3\.14\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- studio: in\_progress — Run npm --prefix packages/client test.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.12\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 
