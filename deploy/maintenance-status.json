@@ -30,8 +30,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 9,
-        "succeeded": 9,
+        "completed": 10,
+        "succeeded": 10,
         "active": [
           {
             "id": 121592149780,
@@ -45,15 +45,6 @@
           {
             "id": 121592149978,
             "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121592149997,
-            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -289,5 +280,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T13:32:07+00:00"
+  "observed_at": "2026-10-26T13:38:42+00:00"
 }

@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T13:32:07+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T13:38:42+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.13](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.13). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -30,11 +30,10 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40328700855](https://github.com/Perseusxrltd/mnemion/actions/runs/40328700855): 9/12 jobs completed; 9 succeeded.
+[Run 40328700855](https://github.com/Perseusxrltd/mnemion/actions/runs/40328700855): 10/12 jobs completed; 10 succeeded.
 
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 
 ## Unsuccessful jobs
