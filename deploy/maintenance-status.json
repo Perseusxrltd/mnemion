@@ -23,16 +23,96 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "e747707e1dfe4d7cedd3de7c574f501e3607a74d",
-      "status": "pending",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T16:28:32Z",
+      "updated_at": "2026-10-26T16:29:43Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 0,
-        "completed": 0,
-        "succeeded": 0,
-        "active": []
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 121701267810,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python deploy/bundle_studio.py"
+            ]
+          },
+          {
+            "id": 121701369082,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 121701369368,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 121701369389,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 121701369395,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121701369508,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 121701369540,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121701369592,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121701369848,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          }
+        ]
       },
       "failed_jobs": []
     },
@@ -130,5 +210,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819"
     }
   ],
-  "observed_at": "2026-10-26T16:29:32+00:00"
+  "observed_at": "2026-10-26T16:30:14+00:00"
 }

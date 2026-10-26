@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T16:29:32+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T16:30:14+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.19](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.19). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | pending | [Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526) |
+| ci\.yml | main | queued | [Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526) |
 | public-updates\.yml | v4\.46\.19 | success | [Run 40344852373](https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373) |
 | release\.yml | release/4\.46\.19 | success | [Run 40333990605](https://github.com/Perseusxrltd/mnemion/actions/runs/40333990605) |
 | release\.yml | release/4\.46\.22 | in\_progress | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
@@ -25,6 +25,18 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | website-release\.yml | v4\.46\.19 | success | [Run 40344847819](https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819) |
 
 ## Active jobs
+
+[Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526): 3/12 jobs completed; 3 succeeded.
+
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-15\): queued.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
 
 [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614): 20/21 jobs completed; 18 succeeded.
 
