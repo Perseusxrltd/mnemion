@@ -155,28 +155,10 @@
       "workflow": "release.yml",
       "branch": "release/4.46.13",
       "source_commit": "24db08327dbe916d834769a3e54a2acd59532bc8",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T03:21:49Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 32,
-        "completed": 31,
-        "succeeded": 30,
-        "active": [
-          {
-            "id": 121381324308,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T04:11:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121"
     },
     {
       "id": 40236329055,
@@ -201,15 +183,33 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008"
     },
     {
-      "id": 40263253780,
+      "id": 40267817685,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "4847c05cd54f3a67874aa8604f34818f8f0b567f",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-26T03:16:27Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40263253780"
+      "source_commit": "a85d3c666a6f61119b12269b19741435022d2471",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-26T04:12:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40267817685",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 121393941325,
+            "name": "verify",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify every uploaded byte, production signature and complete feed"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40266942758,
@@ -223,5 +223,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40266942758"
     }
   ],
-  "observed_at": "2026-10-26T04:05:08+00:00"
+  "observed_at": "2026-10-26T04:12:29+00:00"
 }
