@@ -169,15 +169,15 @@
       "workflow": "release.yml",
       "branch": "release/4.46.28",
       "source_commit": "f40a4bbc9cbca435c0b06292dd808fcd45ffe5ae",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T21:17:06Z",
+      "updated_at": "2026-10-26T21:17:28Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490",
       "job_details_schema": 2,
       "job_progress": {
         "total": 8,
-        "completed": 4,
-        "succeeded": 3,
+        "completed": 6,
+        "succeeded": 5,
         "active": [
           {
             "id": 121853623426,
@@ -185,32 +185,16 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 121853623442,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
             "id": 121853624063,
             "name": "native / native_database / Private state / Windows / x64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 121853624146,
-            "name": "native / native_database / Private state / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           }
         ]
@@ -269,5 +253,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T21:17:17+00:00"
+  "observed_at": "2026-10-26T21:17:55+00:00"
 }

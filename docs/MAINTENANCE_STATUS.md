@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T21:17:17+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T21:17:55+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,19 +23,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.25 | failure | [Run 40376743057](https://github.com/Perseusxrltd/mnemion/actions/runs/40376743057) |
 | release\.yml | release/4\.46\.26 | failure | [Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169) |
 | release\.yml | release/4\.46\.27 | success | [Run 40391018946](https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946) |
-| release\.yml | release/4\.46\.28 | queued | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
+| release\.yml | release/4\.46\.28 | in\_progress | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
 | verify-artifacts\.yml | main | in\_progress | [Run 40402981613](https://github.com/Perseusxrltd/mnemion/actions/runs/40402981613) |
 | website-release\.yml | main | success | [Run 40398877004](https://github.com/Perseusxrltd/mnemion/actions/runs/40398877004) |
 | website-release\.yml | v4\.46\.22 | success | [Run 40366540445](https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445) |
 
 ## Active jobs
 
-[Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490): 4/8 jobs completed; 3 succeeded.
+[Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490): 6/8 jobs completed; 5 succeeded.
 
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / Encrypted files / Windows / x64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / native\_database / Private state / Windows / x64: queued.
-- native / native\_database / Private state / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
+- native / native\_database / Private state / Windows / x64: in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
 
 [Run 40402981613](https://github.com/Perseusxrltd/mnemion/actions/runs/40402981613): 0/1 jobs completed; 0 succeeded.
 
