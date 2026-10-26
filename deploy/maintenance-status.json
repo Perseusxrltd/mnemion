@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.46.19",
-    "published_at": "2026-10-26T14:59:16Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.19"
+    "version": "v4.46.22",
+    "published_at": "2026-10-26T17:13:08Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22"
   },
   "issues": [
     {
@@ -18,96 +18,82 @@
   ],
   "runs": [
     {
-      "id": 40357519721,
+      "id": 40345454839,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "ab5be2589aca57c5db1c9a5dcacf14d346badb31",
+      "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T15:35:45Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40345454839"
+    },
+    {
+      "id": 40366545289,
+      "attempt": 1,
+      "workflow": "public-updates.yml",
+      "branch": "v4.46.22",
+      "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T16:16:29Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40357519721",
+      "updated_at": "2026-10-26T17:13:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366545289",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "total": 7,
+        "completed": 1,
+        "succeeded": 1,
         "active": [
           {
-            "id": 121693844575,
-            "name": "studio",
+            "id": 121725808407,
+            "name": "linux / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
+              "Install public release and observe its automatic update"
             ]
           },
           {
-            "id": 121693930871,
-            "name": "supervision (macos-15-intel)",
+            "id": 121725808460,
+            "name": "macos / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Install public release and observe its automatic update"
             ]
           },
           {
-            "id": 121693930935,
-            "name": "service (3.14)",
+            "id": 121725808524,
+            "name": "windows / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Install public release and observe its automatic update"
             ]
           },
           {
-            "id": 121693930950,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121693930974,
-            "name": "supervision (macos-15)",
+            "id": 121725808558,
+            "name": "macos / arm64 public upgrade",
             "status": "queued",
             "runner_assigned": null,
             "steps": []
           },
           {
-            "id": 121693931034,
-            "name": "service (3.12)",
+            "id": 121725808564,
+            "name": "windows / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Install public release and observe its automatic update"
             ]
           },
           {
-            "id": 121693931156,
-            "name": "container (ubuntu-22.04-arm)",
+            "id": 121725808583,
+            "name": "linux / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
-          {
-            "id": 121693931186,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 121693932824,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Install public release and observe its automatic update"
             ]
           }
         ]
@@ -115,107 +101,49 @@
       "failed_jobs": []
     },
     {
-      "id": 40344852373,
-      "attempt": 1,
-      "workflow": "public-updates.yml",
-      "branch": "v4.46.19",
-      "source_commit": "93eb300170d0755bf6b8156281419126ef91a25b",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-26T15:14:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373"
-    },
-    {
-      "id": 40333990605,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.19",
-      "source_commit": "93eb300170d0755bf6b8156281419126ef91a25b",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-26T14:53:16Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40333990605"
-    },
-    {
       "id": 40351425614,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "release.yml",
       "branch": "release/4.46.22",
       "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T16:00:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 21,
-        "completed": 19,
-        "succeeded": 17,
-        "active": [
-          {
-            "id": 121675589461,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121675589504,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": [
-        {
-          "name": "native / macos-15 / arm64",
-          "id": 121675589488,
-          "conclusion": "cancelled",
-          "runner_assigned": false,
-          "steps_reported": 0,
-          "steps": []
-        }
-      ]
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T17:07:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614"
     },
     {
-      "id": 40343874190,
+      "id": 40365617692,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "50a2a354ff67d6ea188be999f0936c72bf34185b",
+      "source_commit": "a00197846588d8723ac67bc1321141f06d7c4d6d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T14:59:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40343874190"
+      "updated_at": "2026-10-26T17:13:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40365617692"
     },
     {
-      "id": 40357519693,
+      "id": 40345454886,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "ab5be2589aca57c5db1c9a5dcacf14d346badb31",
+      "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T16:16:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40357519693"
+      "updated_at": "2026-10-26T15:03:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40345454886"
     },
     {
-      "id": 40344847819,
+      "id": 40366540445,
       "attempt": 1,
       "workflow": "website-release.yml",
-      "branch": "v4.46.19",
-      "source_commit": "93eb300170d0755bf6b8156281419126ef91a25b",
+      "branch": "v4.46.22",
+      "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T14:59:38Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819"
+      "updated_at": "2026-10-26T17:13:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T16:17:31+00:00"
+  "observed_at": "2026-10-26T17:14:03+00:00"
 }
