@@ -30,61 +30,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 9,
+        "succeeded": 9,
         "active": [
-          {
-            "id": 121523777821,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          },
-          {
-            "id": 121523854599,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 121523854647,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 121523854698,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 121523854733,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
           {
             "id": 121523854755,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -93,7 +48,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -102,16 +57,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 121523854877,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Compile and exercise the native network admission probe in Python and Node"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
@@ -274,26 +220,16 @@
       "workflow": "release.yml",
       "branch": "release/4.46.17",
       "source_commit": "79dc0f42f486af6c7d3368c48d970f0c39f9abd5",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T10:00:09Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-26T10:48:32Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40303268742",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 20,
-        "succeeded": 18,
-        "active": [
-          {
-            "id": 121508256609,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          }
-        ]
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
       },
       "failed_jobs": [
         {
@@ -309,15 +245,15 @@
       ]
     },
     {
-      "id": 40296033009,
+      "id": 40310282067,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "41729125251df9127a31f2ca83326ac5af75257b",
+      "source_commit": "1a3c2d77cf51fc460f727ffe493e997771c87991",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-26T08:58:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40296033009"
+      "updated_at": "2026-10-26T10:48:36Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40310282067"
     },
     {
       "id": 40308440222,
@@ -342,5 +278,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T10:35:58+00:00"
+  "observed_at": "2026-10-26T10:49:12+00:00"
 }
