@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T01:38:49+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T01:39:28+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -20,7 +20,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | database-cache\.yml | main | success | [Run 40179454634](https://github.com/Perseusxrltd/mnemion/actions/runs/40179454634) |
 | desktop\.yml | main | success | [Run 40251151874](https://github.com/Perseusxrltd/mnemion/actions/runs/40251151874) |
 | release\.yml | release/4\.46\.10 | failure | [Run 40245659798](https://github.com/Perseusxrltd/mnemion/actions/runs/40245659798) |
-| release\.yml | release/4\.46\.11 | queued | [Run 40254768233](https://github.com/Perseusxrltd/mnemion/actions/runs/40254768233) |
+| release\.yml | release/4\.46\.11 | in\_progress | [Run 40254768233](https://github.com/Perseusxrltd/mnemion/actions/runs/40254768233) |
 | release\.yml | release/4\.46\.7 | cancelled | [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718) |
 | release\.yml | release/4\.46\.8 | cancelled | [Run 40236329055](https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055) |
 | release\.yml | release/4\.46\.9 | cancelled | [Run 40243385008](https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008) |
@@ -29,18 +29,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40255161956](https://github.com/Perseusxrltd/mnemion/actions/runs/40255161956): 2/12 jobs completed; 2 succeeded.
+[Run 40255161956](https://github.com/Perseusxrltd/mnemion/actions/runs/40255161956): 5/12 jobs completed; 5 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- studio: in\_progress — Run npm --prefix studio/electron test.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.14\): in\_progress — Initialize containers.
-- dependency-audit: in\_progress — Run uvx pip-audit --path \.venv/lib/python3\.12/site-packages.
-- service \(3\.13\): in\_progress — Initialize containers.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Run npm --prefix packages/client ci && npm --prefix packages/client test.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Initialize containers.
-- supervision \(macos-15-intel\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
 
 [Run 40254768233](https://github.com/Perseusxrltd/mnemion/actions/runs/40254768233): 22/32 jobs completed; 21 succeeded.
 
@@ -48,12 +45,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - checks / service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / ubuntu-22\.04 / x64: in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
-- native / windows-2022 / x64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / windows-11-arm / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Set up job.
-- native / macos-15-intel / x64: in\_progress — Set up job.
-- native / macos-15 / arm64: queued.
+- native / ubuntu-22\.04 / x64: in\_progress — Run npm --prefix packages/client ci.
+- native / windows-2022 / x64: in\_progress — Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
+- native / windows-11-arm / arm64: in\_progress — Select the service interpreter independently of the desktop client.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
+- native / macos-15-intel / x64: in\_progress — Locked native service build dependencies.
+- native / macos-15 / arm64: in\_progress — Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
 
 
 ## Unsuccessful jobs
