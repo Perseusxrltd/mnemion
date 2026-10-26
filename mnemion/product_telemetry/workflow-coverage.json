@@ -810,6 +810,4129 @@
       ]
     }
   ],
+  "action_coverage": {
+    "scope": "declared_actions_and_variants",
+    "qualification": "Interface actions and reviewed source routes, including fixed variants. Missing interface mappings remain unmeasured even when their category has another owner. Declarations do not prove every screen, sensor or installed runtime; no private activity is inspected and no collection is authorized.",
+    "interface_checked_owners": [
+      "control_cli",
+      "native_commands",
+      "studio_actions",
+      "legacy_ui"
+    ],
+    "summary": {
+      "total": 525,
+      "mapped": 296,
+      "excluded": 224,
+      "delegated": 5,
+      "unmeasured": 0
+    },
+    "reasons": {
+      "control_cli.configuration_preview": "Preview or intermediate authorization steps do not establish a completed setup, import or sign-in.",
+      "control_cli.state_inspection": "Discovery, configuration reads, polling and inspection of earlier outcomes are not new workflow uses.",
+      "control_cli.producer_transport": "Substeps belong to the originating capture or source producer; measuring this transport would double-count and infer ownership.",
+      "control_cli.recovery_transport": "Upload chunks and continuation/status calls belong to the enclosing recovery controller, not separate recoveries.",
+      "control_cli.session_maintenance": "Credential refresh is background session maintenance, not a new sign-in.",
+      "native_commands.configuration_preview": "Internal setup validation and secret previews are not product usage observations.",
+      "native_commands.state_inspection": "Status, discovery and polling do not identify a new user workflow.",
+      "native_commands.recovery_transport": "Inspecting or archiving a recovery receipt does not repeat the original operation.",
+      "native_commands.privacy_control": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
+      "studio_actions.automatic_query": "Automatic queries, polling and saved state do not own a new action.",
+      "studio_actions.continuation_transport": "The enclosing operation owns its upload or continuation steps.",
+      "studio_actions.configuration_preview": "Configuration previews do not establish a completed setup.",
+      "studio_actions.transport_helper": "A transport helper does not own an additional user action.",
+      "studio_actions.generic_transport": "Generic SDK requests have no inferred workflow or collection owner.",
+      "legacy_ui.automatic_query": "Route loading, React Query refresh and state inspection do not own a new user action.",
+      "legacy_ui.external_application": "Handing a link to Obsidian does not observe that application's use.",
+      "local_stdio.delegated_alias": "The inner owned tool call contributes once; the alias does not add another observation.",
+      "local_stdio.lookup_or_preview": "Catalogs, identity/status inspection and dry-run previews do not count as memory work.",
+      "local_stdio.privacy_controls": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
+      "headless_controls.control_secret": "Generating or inspecting private keys is not product telemetry.",
+      "headless_controls.control_inspection": "Capture status and configuration previews do not identify a new work operation."
+    },
+    "actions": [
+      {
+        "owner": "control_cli",
+        "action": "agents.package",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.configuration_preview"
+      },
+      {
+        "owner": "control_cli",
+        "action": "blocks.list",
+        "state": "mapped",
+        "workflows": [
+          "memory.core_read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "blocks.set",
+        "state": "mapped",
+        "workflows": [
+          "memory.core_write"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.fences",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.grant.configure",
+        "state": "mapped",
+        "workflows": [
+          "capture.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.grant.revoke",
+        "state": "mapped",
+        "workflows": [
+          "capture.remove"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.grant.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.index.progress",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.pages.accept",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.producer_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.pages.receipt",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.policy.change",
+        "state": "mapped",
+        "workflows": [
+          "capture.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.policy.review",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.policy.versions",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.retention.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.source.configure",
+        "state": "mapped",
+        "workflows": [
+          "capture.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.source.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.source.revoke",
+        "state": "mapped",
+        "workflows": [
+          "capture.remove"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "capture.source.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.check_configuration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.configuration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.finish",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.link",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.links",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.revoke",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "company.start",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.configuration_preview"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.begin",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.producer_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.bind",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.bindings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.create",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.disable",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.enable",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.finish",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.producer_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.page",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.producer_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.proposals",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.refresh",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.producer_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.resolve",
+        "state": "mapped",
+        "workflows": [
+          "sources.repair"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.resume",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.scopes",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.suspend",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.sync_report",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.producer_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.sync_request",
+        "state": "mapped",
+        "workflows": [
+          "sources.sync"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.sync_status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "connectors.unbind",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.choices",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.control",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "activate",
+        "state": "mapped",
+        "workflows": [
+          "models.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.control",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "cancel",
+        "state": "mapped",
+        "workflows": [
+          "models.cancel"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.control",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "pause",
+        "state": "mapped",
+        "workflows": [
+          "models.pause"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.control",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "resume",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.control",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "retry",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.reindex",
+        "state": "mapped",
+        "workflows": [
+          "models.reindex"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.resume",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "embedding.settings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.assess",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.assess"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.cancel",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.cancel"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.compare",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.compare"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.create_dataset",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.create_dataset"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.dataset",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.datasets",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.export",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.export"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.remove_dataset",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.remove_dataset"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.results",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.run",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.runs",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "evaluations.start",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.run"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "grants.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "grants.revoke",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "grants.set",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "health.live",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "health.ready",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "health.sources",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "identity.me",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "insights.runtime",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "insights.space",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.backfill.control",
+        "state": "mapped",
+        "workflows": [
+          "journal.backfill"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.backfill.start",
+        "state": "mapped",
+        "workflows": [
+          "journal.backfill"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.backfill.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.configure",
+        "state": "mapped",
+        "workflows": [
+          "journal.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.organize",
+        "state": "mapped",
+        "workflows": [
+          "journal.organize"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.push",
+        "state": "mapped",
+        "workflows": [
+          "journal.push"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "journal.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "keys.create",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "keys.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "keys.revoke",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "knowledge.map",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.cancel",
+        "state": "mapped",
+        "workflows": [
+          "librarian.cancel"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.configure",
+        "state": "mapped",
+        "workflows": [
+          "librarian.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.coverage",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.decide",
+        "selector": [
+          "body",
+          "action"
+        ],
+        "variant": "accept",
+        "state": "mapped",
+        "workflows": [
+          "librarian.accept"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.decide",
+        "selector": [
+          "body",
+          "action"
+        ],
+        "variant": "reject",
+        "state": "mapped",
+        "workflows": [
+          "librarian.reject"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.decide",
+        "selector": [
+          "body",
+          "action"
+        ],
+        "variant": "undo",
+        "state": "mapped",
+        "workflows": [
+          "librarian.undo"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.items",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.models",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.proposals",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.run",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.runs",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.settings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "librarian.start",
+        "state": "mapped",
+        "workflows": [
+          "librarian.run"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.forget",
+        "state": "mapped",
+        "workflows": [
+          "memory.forget"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.get",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.history",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.list",
+        "state": "mapped",
+        "workflows": [
+          "memory.list"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.resolve",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.review",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.revise",
+        "state": "mapped",
+        "workflows": [
+          "memory.revise"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memories.save",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.buffer.import",
+        "state": "mapped",
+        "workflows": [
+          "memory.import"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.buffer.preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.configuration_preview"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.preview",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.restore",
+        "state": "mapped",
+        "workflows": [
+          "journal.recover"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.advance",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.begin",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.chunk",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.decisions",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.files",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "memory.journal.upload.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.recovery_transport"
+      },
+      {
+        "owner": "control_cli",
+        "action": "oauth.bind",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "oauth.bindings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "oauth.configuration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "oauth.connections",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "oauth.disconnect",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "oauth.revoke",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "obsidian.export",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "operations.activity",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "operations.get",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "operations.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "operations.retry",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "operations.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "principals.create",
+        "state": "mapped",
+        "workflows": [
+          "access.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "principals.disable",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "principals.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "recovery.configure",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "recovery.directory",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "retrieval.context",
+        "state": "mapped",
+        "workflows": [
+          "memory.context"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "retrieval.search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.accept_invitation",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.account",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.configuration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.create_invitation",
+        "state": "mapped",
+        "workflows": [
+          "access.invite"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.invitations",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.login",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.logout",
+        "state": "mapped",
+        "workflows": [
+          "workspace.disconnect"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.preview_invitation",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.configuration_preview"
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.refresh",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.session_maintenance"
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.revoke_invitation",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.revoke_session",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.sessions",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "sign_in.set_password",
+        "state": "mapped",
+        "workflows": [
+          "access.configure"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sources.attachment",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "sources.get",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "spaces.create",
+        "state": "mapped",
+        "workflows": [
+          "setup.create"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "spaces.get",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "spaces.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.audit",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.delete",
+        "state": "mapped",
+        "workflows": [
+          "vault.delete"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.export",
+        "state": "mapped",
+        "workflows": [
+          "vault.export"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.get",
+        "state": "mapped",
+        "workflows": [
+          "vault.read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.grant",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.grants",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.import",
+        "state": "mapped",
+        "workflows": [
+          "vault.import"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.keepass.export",
+        "state": "mapped",
+        "workflows": [
+          "vault.export"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.keepass.import",
+        "state": "mapped",
+        "workflows": [
+          "vault.import"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.keepass.preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.configuration_preview"
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.list",
+        "state": "mapped",
+        "workflows": [
+          "vault.read"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.put",
+        "state": "mapped",
+        "workflows": [
+          "vault.write"
+        ]
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "agent.install",
+        "state": "mapped",
+        "workflows": [
+          "setup.agent_install"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "agent.preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "native_commands",
+        "action": "agent.remove",
+        "state": "mapped",
+        "workflows": [
+          "setup.agent_remove"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "agent.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "app.preferences",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "app.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "app.update-check",
+        "state": "mapped",
+        "workflows": [
+          "update.check"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "app.update-restart",
+        "state": "mapped",
+        "workflows": [
+          "update.restart"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.cancel",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.recovery_transport"
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.configure",
+        "state": "mapped",
+        "workflows": [
+          "backup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.inspect",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.inventory",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.key",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.prune",
+        "state": "mapped",
+        "workflows": [
+          "backup.prune"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.restore",
+        "state": "mapped",
+        "workflows": [
+          "recovery.restore"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.run",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "backup.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "catalog",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.create",
+        "state": "mapped",
+        "workflows": [
+          "host.adopt"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.enroll",
+        "state": "mapped",
+        "workflows": [
+          "host.enroll"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.forget",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.inspect",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.profiles",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.recoveries",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.recovery",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.recovery_transport"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "backup.create",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "backup.verify",
+        "state": "mapped",
+        "workflows": [
+          "backup.verify"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "host.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "operations.get",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "operations.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "operations.resolve",
+        "state": "mapped",
+        "workflows": [
+          "host.resolve"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "operators.grant",
+        "state": "mapped",
+        "workflows": [
+          "host.enroll"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "operators.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "operators.revoke",
+        "state": "mapped",
+        "workflows": [
+          "host.revoke"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "service.start",
+        "state": "mapped",
+        "workflows": [
+          "host.start"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "service.stop",
+        "state": "mapped",
+        "workflows": [
+          "host.stop"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "upgrade.apply",
+        "state": "mapped",
+        "workflows": [
+          "update.apply"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request",
+        "selector": "request.action",
+        "variant": "upgrade.plan",
+        "state": "mapped",
+        "workflows": [
+          "host.plan_upgrade"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.request.archive",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.recovery_transport"
+      },
+      {
+        "owner": "native_commands",
+        "action": "host.schema",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.company",
+        "state": "mapped",
+        "workflows": [
+          "access.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.company-discover",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.create",
+        "state": "mapped",
+        "workflows": [
+          "setup.create"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.journal",
+        "state": "mapped",
+        "workflows": [
+          "journal.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.memory",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.models",
+        "state": "mapped",
+        "workflows": [
+          "models.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.open",
+        "state": "mapped",
+        "workflows": [
+          "workspace.open"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.port",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.preferences",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.remote",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.remote-check",
+        "state": "mapped",
+        "workflows": [
+          "host.inspect"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.start",
+        "state": "mapped",
+        "workflows": [
+          "host.start"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.stop",
+        "state": "mapped",
+        "workflows": [
+          "host.stop"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.vault",
+        "state": "mapped",
+        "workflows": [
+          "vault.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "local.vault-key",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "native_commands",
+        "action": "recovery.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "recovery.use",
+        "state": "mapped",
+        "workflows": [
+          "recovery.finish"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.backup",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.backup.inspect",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.configure",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.drain",
+        "state": "mapped",
+        "workflows": [
+          "capture.drain"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.pause",
+        "selector": "enabled",
+        "variant": "false",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.pause",
+        "selector": "enabled",
+        "variant": "true",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.remove",
+        "state": "mapped",
+        "workflows": [
+          "sources.remove"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.repair",
+        "state": "mapped",
+        "workflows": [
+          "sources.repair"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.restore",
+        "state": "mapped",
+        "workflows": [
+          "recovery.restore"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.restore.discard",
+        "state": "mapped",
+        "workflows": [
+          "recovery.discard"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.restore.finish",
+        "state": "mapped",
+        "workflows": [
+          "recovery.finish"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.restore.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "source.sync",
+        "state": "mapped",
+        "workflows": [
+          "sources.sync"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.approve_report",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.configure",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.discard_report",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.inspect_report",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.review_mode",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.review_status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.schema",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "telemetry.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.privacy_control"
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.connect",
+        "state": "mapped",
+        "workflows": [
+          "workspace.connect"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.disconnect",
+        "state": "mapped",
+        "workflows": [
+          "workspace.disconnect"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.forget",
+        "state": "mapped",
+        "workflows": [
+          "workspace.forget"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.inspect",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.restore",
+        "state": "mapped",
+        "workflows": [
+          "workspace.open"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.sign-in",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.state_inspection"
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.verify",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "activity",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "advanceJournalUpload",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.continuation_transport"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "agentPackage",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.configuration_preview"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "assessEvaluation",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.assess"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "attachment",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "beginJournalUpload",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.continuation_transport"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "blocks",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "cancelEvaluation",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.cancel"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "cancelLibrarian",
+        "state": "mapped",
+        "workflows": [
+          "librarian.cancel"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "companyConfiguration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "companyLinks",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "compareEvaluations",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.compare"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "configureJournal",
+        "state": "mapped",
+        "workflows": [
+          "journal.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "configureLibrarian",
+        "state": "mapped",
+        "workflows": [
+          "librarian.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "configureRecoveryDirectory",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "connectorBindings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "connectorProposals",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "connectorScopes",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "connectorSyncStatus",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "connectors",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "context",
+        "state": "mapped",
+        "workflows": [
+          "memory.context"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "controlJournalBackfill",
+        "state": "mapped",
+        "workflows": [
+          "journal.backfill"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "controlReindex",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "activate",
+        "state": "mapped",
+        "workflows": [
+          "models.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "controlReindex",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "cancel",
+        "state": "mapped",
+        "workflows": [
+          "models.cancel"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "controlReindex",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "pause",
+        "state": "mapped",
+        "workflows": [
+          "models.pause"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "controlReindex",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "resume",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "controlReindex",
+        "selector": [
+          "parameters",
+          "action"
+        ],
+        "variant": "retry",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "createConnector",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "createEvaluationDataset",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.create_dataset"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "createKey",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "createPrincipal",
+        "state": "mapped",
+        "workflows": [
+          "access.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "createSignInInvitation",
+        "state": "mapped",
+        "workflows": [
+          "access.invite"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "createSpace",
+        "state": "mapped",
+        "workflows": [
+          "setup.create"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "decideLibrarian",
+        "selector": [
+          "body",
+          "action"
+        ],
+        "variant": "accept",
+        "state": "mapped",
+        "workflows": [
+          "librarian.accept"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "decideLibrarian",
+        "selector": [
+          "body",
+          "action"
+        ],
+        "variant": "reject",
+        "state": "mapped",
+        "workflows": [
+          "librarian.reject"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "decideLibrarian",
+        "selector": [
+          "body",
+          "action"
+        ],
+        "variant": "undo",
+        "state": "mapped",
+        "workflows": [
+          "librarian.undo"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "deleteVault",
+        "state": "mapped",
+        "workflows": [
+          "vault.delete"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "deviceSessions",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "disableConnector",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "disablePrincipal",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "embeddingChoices",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "embeddingSettings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "enableConnector",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "evaluationDataset",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "evaluationDatasets",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "evaluationResults",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "evaluationRun",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "evaluationRuns",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "exportEvaluation",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.export"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "exportKeePass",
+        "state": "mapped",
+        "workflows": [
+          "vault.export"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "exportObsidian",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "exportVault",
+        "state": "mapped",
+        "workflows": [
+          "vault.export"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "fetch",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "forget",
+        "state": "mapped",
+        "workflows": [
+          "memory.forget"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "grant",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "grantVault",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "history",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "idempotencyOf",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.transport_helper"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "importKeePass",
+        "state": "mapped",
+        "workflows": [
+          "vault.import"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "importLegacyBuffer",
+        "state": "mapped",
+        "workflows": [
+          "memory.import"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "importVault",
+        "state": "mapped",
+        "workflows": [
+          "vault.import"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "insights",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalBackfillStatus",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalPath",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.transport_helper"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalStatus",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalUpload",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalUploadDecisions",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalUploadFiles",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "journalUploadPath",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.transport_helper"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "keys",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "knowledge",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianChoices",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianCoverage",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianPath",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.transport_helper"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianProposals",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianRunItems",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianRuns",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "librarianSettings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "linkCompanyIdentity",
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "listJournalUploads",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "me",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "oauthConfiguration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "oauthConnections",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "operation",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "operations",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "organizeJournal",
+        "state": "mapped",
+        "workflows": [
+          "journal.organize"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "passwordAccount",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "pauseConnectorScope",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "previewJournalRecovery",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "previewKeePass",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.configuration_preview"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "previewLegacyBuffer",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.configuration_preview"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "principals",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "pushJournal",
+        "state": "mapped",
+        "workflows": [
+          "journal.push"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "putBlock",
+        "state": "mapped",
+        "workflows": [
+          "memory.core_write"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "putConnectorBinding",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "putVaultValue",
+        "state": "mapped",
+        "workflows": [
+          "vault.write"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "recoveryDirectory",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "removeConnectorBinding",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "removeEvaluationDataset",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.remove_dataset"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "request",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.generic_transport"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "requestConnectorSync",
+        "state": "mapped",
+        "workflows": [
+          "sources.sync"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "resolveAlias",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "resolveConnectorProposal",
+        "state": "mapped",
+        "workflows": [
+          "sources.repair"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "restoreJournal",
+        "state": "mapped",
+        "workflows": [
+          "journal.recover"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "resumeConnectorScope",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "resumeEmbeddingProcessing",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "retryOperation",
+        "state": "mapped",
+        "workflows": [
+          "models.resume"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "review",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revise",
+        "state": "mapped",
+        "workflows": [
+          "memory.revise"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revokeCompanyIdentity",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revokeGrant",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revokeKey",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revokeOAuthConnection",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revokeSession",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "revokeSignInInvitation",
+        "state": "mapped",
+        "workflows": [
+          "access.revoke"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "runtimeInsights",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "save",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "sendJournalChunk",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.continuation_transport"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "setPassword",
+        "state": "mapped",
+        "workflows": [
+          "access.configure"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "signInConfiguration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "signInInvitations",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "source",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "sourceHealth",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "space",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "spaces",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "startEvaluation",
+        "state": "mapped",
+        "workflows": [
+          "evaluation.run"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "startJournalBackfill",
+        "state": "mapped",
+        "workflows": [
+          "journal.backfill"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "startLibrarian",
+        "state": "mapped",
+        "workflows": [
+          "librarian.run"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "startReindex",
+        "state": "mapped",
+        "workflows": [
+          "models.reindex"
+        ]
+      },
+      {
+        "owner": "studio_actions",
+        "action": "vaultAudit",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "vaultEntries",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "vaultGrants",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "vaultStatus",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "vaultValue",
+        "state": "mapped",
+        "workflows": [
+          "vault.read"
+        ]
+      },
+      {
+        "owner": "browser_connections",
+        "action": "connect",
+        "state": "mapped",
+        "workflows": [
+          "workspace.connect"
+        ]
+      },
+      {
+        "owner": "browser_connections",
+        "action": "disconnect",
+        "state": "mapped",
+        "workflows": [
+          "workspace.disconnect"
+        ]
+      },
+      {
+        "owner": "browser_connections",
+        "action": "forget",
+        "state": "mapped",
+        "workflows": [
+          "workspace.forget"
+        ]
+      },
+      {
+        "owner": "browser_connections",
+        "action": "open",
+        "state": "mapped",
+        "workflows": [
+          "workspace.open"
+        ]
+      },
+      {
+        "owner": "browser_connections",
+        "action": "sign_in",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "agents",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "challengeDrawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "config",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "connector",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "connectors",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "contested",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "createDrawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "deleteDrawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.forget"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "downloadVault",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "drawer",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "drawers",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "getCoreMemories",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "getCoreMemory",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "installConnector",
+        "state": "mapped",
+        "workflows": [
+          "setup.agent_install"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "kgEntities",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "kgEntity",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "kgGraph",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "obsidianStatus",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "openObsidian",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.external_application"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "recentDrawers",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "syncObsidian",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "taxonomy",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "trustStats",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "legacy_ui.automatic_query"
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "uninstallConnector",
+        "state": "mapped",
+        "workflows": [
+          "setup.agent_remove"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "updateCoreMemory",
+        "state": "mapped",
+        "workflows": [
+          "memory.core_write"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "updateLLM",
+        "state": "mapped",
+        "workflows": [
+          "models.configure"
+        ]
+      },
+      {
+        "owner": "legacy_ui",
+        "action": "verifyDrawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.capture_thought",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.fetch",
+        "state": "delegated",
+        "workflows": [],
+        "reason": "local_stdio.delegated_alias"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.legacy_fetch",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.legacy_search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.list_thoughts",
+        "state": "mapped",
+        "workflows": [
+          "memory.list"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_context",
+        "state": "mapped",
+        "workflows": [
+          "memory.context"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_fetch",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_forget",
+        "state": "mapped",
+        "workflows": [
+          "memory.forget"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_map",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_profile",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_revise",
+        "state": "mapped",
+        "workflows": [
+          "memory.revise"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_save",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.memory_spaces",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion",
+        "state": "delegated",
+        "workflows": [],
+        "reason": "local_stdio.delegated_alias"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_add_drawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_delete_drawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.forget"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_operation",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_operations",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_read",
+        "state": "delegated",
+        "workflows": [],
+        "delegate": "control_cli"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_telemetry",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.privacy_controls"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.mnemion_write",
+        "state": "delegated",
+        "workflows": [],
+        "delegate": "control_cli"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.search",
+        "state": "delegated",
+        "workflows": [],
+        "reason": "local_stdio.delegated_alias"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.search_thoughts",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.thought_stats",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.vault_get",
+        "state": "mapped",
+        "workflows": [
+          "vault.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.vault_list",
+        "state": "mapped",
+        "workflows": [
+          "vault.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "gateway.vault_put",
+        "state": "mapped",
+        "workflows": [
+          "vault.write"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.capture_thought",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.fetch",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.list_thoughts",
+        "state": "mapped",
+        "workflows": [
+          "memory.list"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_add_drawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_challenge",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_check_duplicate",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_consolidate",
+        "state": "mapped",
+        "workflows": [
+          "librarian.run"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_delete_drawer",
+        "state": "mapped",
+        "workflows": [
+          "memory.forget"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_diary_read",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_diary_write",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_find_tunnels",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_get_aaak_spec",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_get_contested",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_get_core_memory",
+        "state": "mapped",
+        "workflows": [
+          "memory.core_read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_get_evidence_trail",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_get_taxonomy",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_graph_stats",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_kg_add",
+        "state": "mapped",
+        "workflows": [
+          "memory.revise"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_kg_invalidate",
+        "state": "mapped",
+        "workflows": [
+          "memory.revise"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_kg_query",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_kg_stats",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_kg_timeline",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_list_rooms",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_list_wings",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_memory_guard_scan",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_predict_next",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_reconstruct",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_resolve_contest",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_source_add",
+        "state": "mapped",
+        "workflows": [
+          "memory.save"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_source_list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_source_read",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_source_search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_telemetry",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.privacy_controls"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_traverse",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_trust_stats",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_update_core_memory",
+        "state": "mapped",
+        "workflows": [
+          "memory.core_write"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_verify",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_wiki_blast_radius",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_wiki_compile",
+        "state": "mapped",
+        "workflows": [
+          "librarian.run"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_wiki_context_pack",
+        "state": "mapped",
+        "workflows": [
+          "memory.context"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_wiki_export_obsidian",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_wiki_lint",
+        "state": "mapped",
+        "workflows": [
+          "memory.review"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.mnemion_wiki_page_get",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.search_thoughts",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "local_stdio",
+        "action": "legacy.thought_stats",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "local_stdio.lookup_or_preview"
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "desktop.scheduled_capture",
+        "state": "mapped",
+        "workflows": [
+          "capture.collect"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "desktop.scheduled_source",
+        "state": "mapped",
+        "workflows": [
+          "sources.scan"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "desktop.update_apply",
+        "state": "mapped",
+        "workflows": [
+          "update.apply"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "desktop.update_download",
+        "state": "mapped",
+        "workflows": [
+          "update.download"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "headless.standalone_capture",
+        "state": "mapped",
+        "workflows": [
+          "capture.collect"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "headless.standalone_source",
+        "state": "mapped",
+        "workflows": [
+          "sources.scan"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "backup",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "discard",
+        "state": "mapped",
+        "workflows": [
+          "recovery.discard"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "drain",
+        "state": "mapped",
+        "workflows": [
+          "capture.drain"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "enroll",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "finish",
+        "state": "mapped",
+        "workflows": [
+          "recovery.finish"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "inspect",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "key",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "headless_controls.control_secret"
+      },
+      {
+        "owner": "headless_controls",
+        "action": "pause",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "headless_controls.control_inspection"
+      },
+      {
+        "owner": "headless_controls",
+        "action": "restore",
+        "state": "mapped",
+        "workflows": [
+          "recovery.restore"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "resume",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "retire",
+        "state": "mapped",
+        "workflows": [
+          "sources.remove"
+        ]
+      },
+      {
+        "owner": "headless_controls",
+        "action": "status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "headless_controls.control_inspection"
+      },
+      {
+        "owner": "headless_models",
+        "action": "embedding",
+        "state": "mapped",
+        "workflows": [
+          "models.prepare"
+        ]
+      },
+      {
+        "owner": "headless_models",
+        "action": "librarian_tokenizer",
+        "state": "mapped",
+        "workflows": [
+          "models.prepare"
+        ]
+      }
+    ]
+  },
   "source_inputs": {
     "catalog.json": "cd9108b5c25fd0ab7f96490638340ebe873dd38e4fd6e636065103fa8f2e9141",
     "control-origins.json": "5482267dab262234d00f7591fea63c3da9defe391250ccdb2d46110e4f9e40de",
@@ -817,6 +4940,10 @@
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
-    "maintenance-origins.json": "08695f5f4a92e2394064db546c81ea492633b6dfc9ea14e804fa9395e937ae37"
+    "maintenance-origins.json": "08695f5f4a92e2394064db546c81ea492633b6dfc9ea14e804fa9395e937ae37",
+    "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
+    "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
+    "packages/client/src/index.ts": "5dab6820e3e24b873defa56558447ea85869dc1a6716d2e01f3b2424b23ca7a4",
+    "studio/frontend/src/api/client.ts": "59ba6d0d469ef45667a33c4b914bbb801639b2039557b451083e7afcc1ea7f77"
   }
 }

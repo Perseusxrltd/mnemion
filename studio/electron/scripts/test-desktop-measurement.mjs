@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { desktopActions } from '../dist/desktop-actions.js'
 import { desktopIpcOrigins, desktopIpcSelection, desktopTelemetryOrigins, desktopTelemetrySelection, measureDesktop } from '../dist/desktop-measurement.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
@@ -33,6 +34,8 @@ test('a synchronous refusal starts the original action without a timer or an awa
 
 test('every native operator action and supported UI entry has a reviewed classification', () => {
   assert.deepEqual(Object.keys(desktopTelemetryOrigins.operations).sort(), Object.keys(desktopActions).sort())
+  const coverage = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/workflow-coverage.json', import.meta.url)))
+  assert.deepEqual([...new Set(coverage.action_coverage.actions.filter(row => row.owner === 'native_commands').map(row => row.action))].sort(), Object.keys(desktopActions).sort())
   for (const [action, spec] of Object.entries(desktopTelemetryOrigins.operations)) {
     if (spec.exclusion) assert.ok(Object.hasOwn(desktopTelemetryOrigins.exclusions, spec.exclusion), action)
     else for (const name of spec.variants ? Object.values(spec.variants) : [spec.workflow]) assert.ok(catalog.workflows.includes(name), action)

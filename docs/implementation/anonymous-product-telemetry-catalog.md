@@ -25,6 +25,26 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
+The [individual-action preview](../validation/2026-10-26-telemetry-action-preview.md)
+now also lists **525 actions and fixed variants: 296 mapped, 224 excluded,
+five delegated and zero unmeasured among the represented declarations**. The
+[action generator](../../deploy/telemetry_actions.py) independently reads the
+control contract, native action declarations, SDK class methods and legacy API
+declarations before applying the reviewed maps. Other owners use source-route
+maps and do not gain independent call-site proof. A newly declared interface
+action without a mapping appears as unmeasured even if its category has another
+owner. Fixed exclusion reasons and delegation are visible separately; none of
+these rows authorizes collection or represents activity history.
+
+Eight evaluated observations and retained commands from actual Chrome verify
+the action view on changed compiled assets based on `93eb300`, using package
+4.46.19 metadata before 4.46.20 preparation. Pagination, search, exclusions,
+delegation and refresh clearing passed with empty browser storage and no
+observed report or foreign requests. This is scoped browser evidence, not
+installed/native or production qualification; the
+[action-preview report](../validation/2026-10-26-telemetry-action-preview.md)
+retains the exact asset binding and cleanup receipt.
+
 Current [wire v2 and report v3](../validation/2026-10-26-telemetry-review-selection.md)
 retain a four-byte body and 23 permitted views. Automatic packets use the
 randomized encoder. Manually reviewed packets use a constant body for the first
@@ -602,11 +622,14 @@ A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not
 feature adoption. The explicit CLI, desktop and Studio maps do not finish the
 remaining action-by-action coverage reconciliation or qualify their producers.
-The current local preview marks whole catalog categories as unmeasured when
-they have no declared source mapping. It does not yet enumerate every action
-or surface. Making each unmapped action visible as unmeasured in that preview
-remains an open coverage item, including when another action maps to the same
-category. No unmapped action may fall into an arbitrary “other operation” event.
+The local preview now has category and individual-action views. For its four
+independently enumerated interfaces, an action without a reviewed mapping is
+shown as unmeasured even when another action maps to the same category. Other
+owners are represented by their reviewed source-route maps; the preview does
+not prove every call site or discover all unlisted interfaces. The requirement
+to make every unmapped supported action visible remains in force, and the
+remaining interface/action reconciliation stays open. No unmapped action may
+fall into an arbitrary “other operation” event.
 
 ## Private operational metrics and remaining decisions
 

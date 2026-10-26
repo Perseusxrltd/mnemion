@@ -22,6 +22,7 @@ const { telemetryCatalog } = load(new URL('../src/workspace/telemetry-aggregate.
 const { TelemetryWorkflow } = load(new URL('../../electron/telemetry-workflow.ts', import.meta.url))
 const methods = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/studio-methods.json', import.meta.url)))
 const controls = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/control-origins.json', import.meta.url)))
+const actionCoverage = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/workflow-coverage.json', import.meta.url))).action_coverage
 const { measureUiAction, measuredLegacyClient, uiMeasurementOrigins } = load(new URL('../src/workspace/measurement-action.ts', import.meta.url))
 const { api: legacyApi } = load(new URL('../src/api/client.ts', import.meta.url))
 
@@ -45,6 +46,7 @@ function fixture(fetch) {
 }
 
 test('every legacy Studio method and browser connection action has fixed ownership', () => {
+  assert.deepEqual([...new Set(actionCoverage.actions.filter(row => row.owner === 'legacy_ui').map(row => row.action))].sort(), Object.keys(legacyApi).sort())
   assert.deepEqual([...Object.keys(uiMeasurementOrigins.legacy), ...Object.keys(uiMeasurementOrigins.legacy_excluded)].sort(), Object.keys(legacyApi).sort())
   for (const group of [uiMeasurementOrigins.browser, uiMeasurementOrigins.legacy]) for (const spec of Object.values(group)) {
     assert.ok(telemetryCatalog.workflows.includes(spec.workflow))
@@ -126,6 +128,7 @@ test('an immediate refusal does not schedule a timer or defer the original UI ac
 
 test('all current SDK methods have a reviewed Studio owner or explicit exclusion', () => {
   const names = Object.getOwnPropertyNames(sdk.MnemionClient.prototype).filter(name => name !== 'constructor')
+  assert.deepEqual([...new Set(actionCoverage.actions.filter(row => row.owner === 'studio_actions').map(row => row.action))].sort(), names.sort())
   assert.deepEqual([...Object.keys(methods.methods), ...Object.keys(methods.excluded)].sort(), names.sort())
   for (const [name, operation] of Object.entries(methods.methods)) {
     assert.ok(controls.operations[operation] && !controls.operations[operation].exclusion, name)

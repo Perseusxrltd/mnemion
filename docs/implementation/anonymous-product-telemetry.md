@@ -74,6 +74,18 @@ marks 87 categories with declared source mappings and seven unmeasured. It is
 available in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
+The [individual-action preview](../validation/2026-10-26-telemetry-action-preview.md)
+adds **525 declared actions and fixed variants: 296 mapped, 224 excluded,
+five delegated and zero unmeasured among these declarations**. It independently
+reads four shipped-interface declarations; other owners use reviewed source-route
+maps. Missing mappings in those interfaces remain visible as unmeasured even
+when the category has another owner. Search, source/state filters and pages of
+50 rows inspect fixed metadata without invoking actions or adding a producer.
+Actual Chrome verification passed on changed compiled assets based on
+`93eb300`, with package 4.46.19 metadata before 4.46.20 preparation. It confirmed
+pagination, filters, delegation, on-demand loading and refresh clearing; the
+linked report preserves that browser scope separately from installed/native
+and production qualification.
 Payload-byte observations are not whole-wire traffic measurements.
 Owners cover the control CLI, desktop/native operator, Studio/browser, explicit
 local stdio, selected fresh maintenance and explicit local model preparation.
@@ -92,7 +104,7 @@ receives only the fixed preparation kind; model/profile identifiers and normal
 command output stay outside telemetry. Listing, registry helpers and nested
 deployment/startup preparation acquire no owner. Model resource/sensor
 qualification, rollback completion, delivered-item measurements, switch
-ownership and full per-action preview visibility remain open, alongside the
+ownership and complete interface/call-site coverage remain open, alongside the
 installed and resource acceptance gates. The action report preserves the
 earlier 86-mapped/eight-unmeasured audit separately from this source follow-up.
 

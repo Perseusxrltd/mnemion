@@ -11,6 +11,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from .telemetry_actions import build as action_coverage
+
 
 INPUTS = (
     "catalog.json",
@@ -65,7 +67,8 @@ def build(root: Path) -> dict:
     for entry in documents["desktop-origins.json"]["operations"].values():
         add("native_commands", entry)
     for operation in documents["studio-methods.json"]["methods"].values():
-        add("studio_actions", controls[operation])
+        if operation in controls:
+            add("studio_actions", controls[operation])
     ui = documents["ui-origins.json"]
     for group, owner in (("browser", "browser_connections"), ("legacy", "legacy_ui")):
         for entry in ui[group].values():
@@ -96,6 +99,7 @@ def build(root: Path) -> dict:
         for name, owners in workflows.items()
     ]
     mapped = sum(row["state"] == "mapped" for row in rows)
+    actions, action_inputs = action_coverage(root, documents)
     return {
         "schema_version": 1,
         "catalog_version": catalog["version"],
@@ -109,7 +113,11 @@ def build(root: Path) -> dict:
         "summary": {"total": len(rows), "mapped": mapped, "unmeasured": len(rows) - mapped},
         "owners": OWNERS,
         "workflows": rows,
-        "source_inputs": {name: hashlib.sha256(data).hexdigest() for name, data in raw.items()},
+        "action_coverage": actions,
+        "source_inputs": {
+            **{name: hashlib.sha256(data).hexdigest() for name, data in raw.items()},
+            **action_inputs,
+        },
     }
 
 

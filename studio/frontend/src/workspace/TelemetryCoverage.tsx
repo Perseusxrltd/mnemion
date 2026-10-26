@@ -1,14 +1,19 @@
 import { useState } from 'react'
 import type { TelemetryWorkflowCoverage } from '../../../shared/product-telemetry'
+import TelemetryActions from './TelemetryActions'
 
 /** Fixed product metadata only; neither the filters nor rows inspect activity. */
 export default function TelemetryCoverage({ coverage }: { coverage: TelemetryWorkflowCoverage }) {
+  const [view, setView] = useState('categories')
   const [family, setFamily] = useState('all')
   const [state, setState] = useState('all')
   const families = [...new Set(coverage.workflows.map(row => row.workflow.split('.')[0]))]
   const rows = coverage.workflows.filter(row =>
     (family === 'all' || row.workflow.startsWith(family + '.')) && (state === 'all' || row.state === state))
   return <>
+    {coverage.action_coverage && <label className="ws-field"><span>Telemetry coverage view</span><select value={view}
+      onChange={event => setView(event.target.value)}><option value="categories">Categories</option><option value="actions">Individual actions</option></select></label>}
+    {view === 'actions' && coverage.action_coverage ? <TelemetryActions coverage={coverage.action_coverage} owners={coverage.owners} /> : <>
     <p><strong>{coverage.summary.mapped} of {coverage.summary.total}</strong> categories have mapped measurement sources.
       {' '}<strong>{coverage.summary.unmeasured}</strong> have no mapped source and remain unmeasured.</p>
     <p>A mapped category is not measured on every screen or client. Your privacy choice and the collection status above still apply.</p>
@@ -31,5 +36,6 @@ export default function TelemetryCoverage({ coverage }: { coverage: TelemetryWor
       </tr>)}</tbody>
     </table></div>
     {!rows.length && <p>No categories match these filters.</p>}
+    </>}
   </>
 }
