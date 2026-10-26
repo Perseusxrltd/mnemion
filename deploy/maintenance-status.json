@@ -135,12 +135,6 @@
       "updated_at": "2026-10-26T02:24:56Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40254768233",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 34,
-        "completed": 34,
-        "succeeded": 30,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-2022 / x64",
@@ -152,7 +146,13 @@
             "Installed app creates, searches and reopens a real local workspace"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 34,
+        "completed": 34,
+        "succeeded": 30,
+        "active": []
+      }
     },
     {
       "id": 40258369359,
@@ -160,32 +160,23 @@
       "workflow": "release.yml",
       "branch": "release/4.46.12",
       "source_commit": "bd3b212567d878c8b28c1d4c3eb8c86c47bb5311",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T02:25:30Z",
+      "updated_at": "2026-10-26T02:26:05Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258369359",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 19,
-        "completed": 4,
-        "succeeded": 3,
+        "total": 24,
+        "completed": 11,
+        "succeeded": 10,
         "active": [
-          {
-            "id": 121367031772,
-            "name": "checks / lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
           {
             "id": 121367031912,
             "name": "checks / studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Check the lightweight native client before six-platform packaging"
+              "Verify wheel and source package include the matching web Studio"
             ]
           },
           {
@@ -194,34 +185,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 121367067766,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install pytest cryptography==50.0.2"
-            ]
-          },
-          {
-            "id": 121367068180,
-            "name": "native / native_database / Private state / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 121367068233,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install small private-state test dependencies"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
@@ -239,16 +203,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 121367072846,
-            "name": "checks / dependency-audit",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv sync --locked --no-dev --extra supervision"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -257,7 +212,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Compile and exercise the native network admission probe in Python and Node"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -266,7 +221,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Matching PostgreSQL recovery tools"
             ]
           },
           {
@@ -275,7 +230,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
@@ -284,26 +239,47 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
-            "id": 121367072917,
-            "name": "checks / container (ubuntu-22.04)",
+            "id": 121367255154,
+            "name": "native / native_database / Database / windows / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the actual deployment image with its documentation"
+              "Set up job"
             ]
           },
           {
-            "id": 121367072945,
-            "name": "checks / container (ubuntu-22.04-arm)",
+            "id": 121367255166,
+            "name": "native / native_database / Database / linux / arm64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 121367255206,
+            "name": "native / native_database / Database / macos / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the actual deployment image with its documentation"
+              "Set up job"
             ]
+          },
+          {
+            "id": 121367255222,
+            "name": "native / native_database / Database / macos / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 121367255286,
+            "name": "native / native_database / Database / linux / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
           }
         ]
       },
@@ -365,5 +341,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258080932"
     }
   ],
-  "observed_at": "2026-10-26T02:25:35+00:00"
+  "observed_at": "2026-10-26T02:26:11+00:00"
 }
