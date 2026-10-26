@@ -49,12 +49,71 @@ test('the installed privacy helper is executable outside the ASAR archive', asyn
   assert.ok(build.asarUnpack.includes('dist/telemetry-private-store.exe'))
 })
 
-test('source resume reads only its fixed boolean and never labels a host receipt as new work', () => {
+test('source resume and host selection read only the reviewed primitive selectors', () => {
   const input = new Proxy({ enabled: true }, { get(_target, key) { if (key === 'enabled') return true; throw new Error('PRIVATE_SENTINEL') } })
   const selected = desktopIpcSelection('sources:control', ['pause', input])
   assert.equal(desktopTelemetrySelection(selected.action, selected.input).workflow, 'sources.resume')
   assert.equal(desktopTelemetrySelection('source.pause', { enabled: 'PRIVATE_SENTINEL' }), null)
   assert.equal(desktopIpcSelection('hosts:action', ['host.request', { request: 'PRIVATE_SENTINEL' }]), null)
+  const request = new Proxy({ action: 'backup.verify' }, { get(_target, key) { if (key === 'action') return 'backup.verify'; throw new Error('PRIVATE_HOST_FIELD_READ') } })
+  assert.deepEqual(desktopIpcSelection('hosts:action', ['host.request', { request }]), {
+    action: 'host.request', input: { request: { action: 'backup.verify' } },
+  })
+  for (const action of ['host.status', 'operations.get', 'operations.list', 'operators.list', 'PRIVATE_ACTION']) {
+    assert.equal(desktopIpcSelection('hosts:action', ['host.request', { request: { action } }]), null)
+  }
+})
+
+test('fresh independent host mutations record one fixed accepted workflow at each owned surface', async () => {
+  const selected = desktopTelemetryOrigins.operations['host.request'].variants
+  assert.equal(Object.keys(selected).length, 9)
+  for (const surface of ['desktop', 'native_agent']) {
+    for (const [action, workflow] of Object.entries(selected)) {
+      const f = fixture(), response = { ok: true, host_id: 'PRIVATE_HOST', operator_id: 'PRIVATE_OPERATOR',
+        request_id: 'PRIVATE_REQUEST', result: { request_disposition: 'new', phase: 'queued', content: 'PRIVATE_RESULT' } }
+      const input = { request: { action, private_key: 'PRIVATE_KEY', path: 'PRIVATE_PATH' } }
+      assert.equal(await measureDesktop(f.store, 'host.request', input, surface, () => response), response)
+      assert.equal(f.values.filter(row => row.metric === 'submissions').length, 1)
+      assert.equal(f.values.filter(row => row.metric === 'outcomes').length, 1)
+      assert.ok(f.values.every(row => row.workflow === workflow && row.surface === surface))
+      assert.ok(f.values.some(row => row.metric === 'outcomes' && row.bucket === 'accepted'))
+      assert.equal(JSON.stringify(f.values).includes('PRIVATE'), false)
+    }
+  }
+})
+
+test('legacy hosts, replays, unknown dispositions and refused replies never add host usage', async () => {
+  const f = fixture(), input = { request: { action: 'backup.verify' } }
+  for (const disposition of ['replayed', undefined, null, true, 1, 'PRIVATE_DISPOSITION']) {
+    const response = { ok: true, result: { request_disposition: disposition } }
+    assert.equal(await measureDesktop(f.store, 'host.request', input, 'desktop', () => response), response)
+  }
+  for (const response of [
+    { ok: false, result: { request_disposition: 'new' } },
+    { ok: true, result: Object.create({ request_disposition: 'new' }) },
+    { ok: true, result: null },
+  ]) assert.equal(await measureDesktop(f.store, 'host.request', input, 'native_agent', () => response), response)
+  const original = new Error('PRIVATE_LOST_REPLY')
+  await assert.rejects(measureDesktop(f.store, 'host.request', input, 'native_agent', () => { throw original }), error => error === original)
+  assert.deepEqual(f.values, [])
+})
+
+test('host readbacks, disabled choices and late privacy reads preserve the original action without counts', async () => {
+  const f = fixture(), result = { ok: true, result: { request_disposition: 'new' } }
+  for (const action of ['host.status', 'operations.get', 'operations.list', 'operators.list']) {
+    assert.equal(await measureDesktop(f.store, 'host.request', { request: { action } }, 'desktop', () => result), result)
+  }
+  assert.deepEqual(f.reads, [])
+  f.store.available = false
+  assert.equal(await measureDesktop(f.store, 'host.request', { request: { action: 'upgrade.apply' } }, 'desktop', () => result), result)
+  assert.deepEqual(f.reads, [])
+  f.store.available = true
+  let release
+  f.store.snapshot = () => new Promise(resolve => { release = resolve })
+  assert.equal(await measureDesktop(f.store, 'host.request', { request: { action: 'upgrade.apply' } }, 'desktop', () => result), result)
+  release({ revision: 1, store_generation: 'a'.repeat(32) })
+  await Promise.resolve()
+  assert.deepEqual(f.values, [])
 })
 
 test('privacy controls, status and a disabled build touch no measurement store', async () => {

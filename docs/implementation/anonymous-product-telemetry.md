@@ -236,6 +236,16 @@ privacy refresh now uses one coherent control response. These source checks
 do not attribute the earlier RSS excess or qualify resources, and this work
 is excluded from frozen 4.46.14.
 
+The [fixed storage follow-up](../validation/2026-10-26-telemetry-storage-followup.md)
+completed on 26 October at 08:18 UTC: all six journeys matched **1,998 source files
+each**, with **2,322 successful API requests**, no model calls and verified cleanup.
+Enabled main-process matched maxima were **3,121,152 / 3,235,840 bytes**, with
+endings **2,125,824 / 2,207,744 bytes**; both remain above 2 MiB. Profiled CPU
+differences of **0.228418% / 0.317356%** are descriptive. All opted-out, renderer
+and GPU outcomes remain retained. This current-source comparison does not
+isolate a causal improvement. The next step is an explicit architecture review,
+without another benchmark or revision of the **2 MiB / 0.5%** gates.
+
 The earlier [CPU admission change](../validation/2026-10-26-telemetry-cpu-admission.md)
 removes the per-core allocation path on Linux and macOS by reading fixed
 aggregate counters through the existing native helper. The upstream Linux

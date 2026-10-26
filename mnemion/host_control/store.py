@@ -107,6 +107,18 @@ def _audit(conn, actor, event, subject=None):
     )
 
 
+class RequestResult(dict):
+    """This intake's disposition, kept outside the durable operation body."""
+
+    __slots__ = ("disposition",)
+
+    def __init__(self, result: dict, disposition: str):
+        if disposition not in {"new", "replayed"}:
+            raise ValueError("Use a known host request disposition")
+        super().__init__(result)
+        self.disposition = disposition
+
+
 class Store:
     def __init__(self, root: Path):
         self.root = Path(root).absolute()
@@ -310,7 +322,7 @@ class Store:
                 raise HostControlError(
                     "operation_conflict", "This operation identity already names different work."
                 )
-            return json.loads(row["result"])
+            return RequestResult(json.loads(row["result"]), "replayed")
         request.current(datetime.fromisoformat(timestamp()))
         Store._space(conn, MAX_OPERATIONS)
         return None
@@ -337,7 +349,7 @@ class Store:
                 canonical(result).decode(),
             ),
         )
-        return result
+        return RequestResult(result, "new")
 
     def grant(self, actor, request):
         with self.transaction() as conn:
@@ -483,7 +495,7 @@ class Store:
                         "operation_conflict",
                         "This operation identity already names different work.",
                     )
-                return self._operation(row)
+                return RequestResult(self._operation(row), "replayed")
             request.current(datetime.fromisoformat(timestamp()))
             self._space(conn, MAX_OPERATIONS - RESERVED_AUTHORITY_OPERATIONS)
             at = timestamp()
@@ -502,8 +514,11 @@ class Store:
                 ),
             )
             _audit(conn, str(actor), "operation_queued", operation_id)
-            return self._operation(
-                conn.execute("SELECT * FROM operations WHERE id=?", (operation_id,)).fetchone()
+            return RequestResult(
+                self._operation(
+                    conn.execute("SELECT * FROM operations WHERE id=?", (operation_id,)).fetchone()
+                ),
+                "new",
             )
 
     def operation(self, actor, host_id, operation_id):

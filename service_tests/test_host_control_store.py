@@ -11,7 +11,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import pytest
 
 from mnemion.host_control import HostControlError
-from mnemion.host_control.protocol import Operator, parse
+from mnemion.host_control.protocol import ROLES, Operator, canonical, parse
+from mnemion.host_control.receiver import dispatch
 from mnemion.host_control.store import Store
 from mnemion.host_control import store as store_module
 
@@ -105,6 +106,130 @@ def test_same_job_survives_lost_reply_and_conflicting_reuse_is_refused(adopted):
     reopened.finish(queued["operation_id"], result={"stopped": True})
     assert reopened.enqueue(actor, original)["phase"] == "succeeded"
     assert reopened.claim() is None
+
+
+def test_host_reply_disposition_describes_this_intake_without_changing_durable_work(adopted):
+    store, identity = adopted
+    actor = identity["operator_id"]
+    original = request(identity, "service.stop", approve_service_interruption=True)
+    raw = canonical(original.model_dump(mode="json"))
+    first = json.loads(dispatch(store, actor, raw))
+    assert first["result"]["request_disposition"] == "new"
+    repeated = json.loads(dispatch(Store(store.root), actor, raw))
+    assert repeated["result"]["request_disposition"] == "replayed"
+    first["result"].pop("request_disposition")
+    repeated["result"].pop("request_disposition")
+    assert repeated == first
+    assert set(first) == {
+        "protocol",
+        "host_id",
+        "operator_id",
+        "request_id",
+        "ok",
+        "result",
+        "error",
+    }
+    lookup = request(identity, "operations.get", operation_id=str(original.request_id))
+    observed = json.loads(dispatch(store, actor, canonical(lookup.model_dump(mode="json"))))
+    assert "request_disposition" not in observed["result"]
+    with store.transaction() as connection:
+        assert connection.execute("SELECT count(*) FROM operations").fetchone()[0] == 1
+        saved = connection.execute("SELECT request,result FROM operations").fetchone()
+        assert "request_disposition" not in saved["request"]
+        assert saved["result"] is None
+
+
+def test_concurrent_identical_host_intake_has_exactly_one_new_reply(adopted):
+    store, identity = adopted
+    actor = identity["operator_id"]
+    original = request(identity, "service.stop", approve_service_interruption=True)
+    raw = canonical(original.model_dump(mode="json"))
+
+    def invoke(_):
+        return json.loads(dispatch(Store(store.root), actor, raw))
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(invoke, range(2)))
+    assert sorted(item["result"]["request_disposition"] for item in results) == ["new", "replayed"]
+    with store.transaction() as connection:
+        assert connection.execute("SELECT count(*) FROM operations").fetchone()[0] == 1
+        assert (
+            connection.execute(
+                "SELECT count(*) FROM audit WHERE event='operation_queued'"
+            ).fetchone()[0]
+            == 1
+        )
+
+
+def test_grant_and_revoke_disposition_never_enters_saved_authority_receipts(adopted):
+    store, identity = adopted
+    actor = identity["operator_id"]
+    enroll = request(
+        identity,
+        "operators.grant",
+        expected_revision=1,
+        operator=operator("Secondary operator", "operator").model_dump(mode="json"),
+    )
+    raw = canonical(enroll.model_dump(mode="json"))
+    first = json.loads(dispatch(store, actor, raw))
+    assert first["result"]["request_disposition"] == "new"
+    assert (
+        json.loads(dispatch(Store(store.root), actor, raw))["result"]["request_disposition"]
+        == "replayed"
+    )
+    retire = request(
+        identity,
+        "operators.revoke",
+        expected_revision=2,
+        operator_id=first["result"]["operator_id"],
+    )
+    raw = canonical(retire.model_dump(mode="json"))
+    assert json.loads(dispatch(store, actor, raw))["result"]["request_disposition"] == "new"
+    assert (
+        json.loads(dispatch(Store(store.root), actor, raw))["result"]["request_disposition"]
+        == "replayed"
+    )
+    assert store.authority(actor, identity["host_id"])["revision"] == 3
+    with store.transaction() as connection:
+        records = connection.execute("SELECT request,result FROM operations").fetchall()
+    assert len(records) == 2
+    assert all("request_disposition" not in row["request"] + row["result"] for row in records)
+
+
+def test_refused_and_conflicting_host_intake_never_grant_a_fresh_reply(adopted):
+    store, identity = adopted
+    actor = identity["operator_id"]
+    original = request(identity, "service.stop", approve_service_interruption=True)
+    raw = canonical(original.model_dump(mode="json"))
+    refused = json.loads(dispatch(store, str(uuid4()), raw))
+    assert refused["ok"] is False and refused["result"] is None
+    assert json.loads(dispatch(store, actor, raw))["result"]["request_disposition"] == "new"
+    changed = original.model_copy(update={"action": "service.start"})
+    conflict = json.loads(dispatch(store, actor, canonical(changed.model_dump(mode="json"))))
+    assert conflict["ok"] is False and conflict["result"] is None
+    assert conflict["error"]["code"] == "operation_conflict"
+    for action in ("host.status", "operations.list", "operators.list"):
+        lookup = request(identity, action)
+        result = json.loads(dispatch(store, actor, canonical(lookup.model_dump(mode="json"))))
+        assert result["ok"] and "request_disposition" not in result["result"]
+
+
+def test_each_typed_host_command_has_owned_selection_or_an_explicit_read_exclusion():
+    from pathlib import Path
+
+    origins = json.loads(Path("mnemion/product_telemetry/desktop-origins.json").read_text())
+    selected = origins["operations"]["host.request"]
+    assert selected["selector"] == "request.action" and selected["fresh_receipt"] is True
+    assert selected["completion"] == "accepted"
+    assert set(selected["variants"]) | set(selected["variant_exclusions"]) == ROLES["custodian"]
+    assert not set(selected["variants"]) & set(selected["variant_exclusions"])
+    assert set(selected["variant_exclusions"]) == {
+        "host.status",
+        "operations.get",
+        "operations.list",
+        "operators.list",
+    }
+    assert all(value in origins["exclusions"] for value in selected["variant_exclusions"].values())
 
 
 def test_lost_grant_and_revocation_replies_do_not_repeat_authority_changes(adopted):

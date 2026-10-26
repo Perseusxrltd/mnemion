@@ -2,19 +2,24 @@
 import { readFileSync } from 'node:fs'
 import { TelemetryWorkflow, type WorkflowStore } from './telemetry-workflow.js'
 
-type Spec = { workflow?: string; completion?: string; selector?: string; variants?: Record<string, string>; local_status?: boolean; exclusion?: string }
+type Spec = { workflow?: string; completion?: string; selector?: string; variants?: Record<string, string>; variant_exclusions?: Record<string, string>; local_status?: boolean; fresh_receipt?: boolean; exclusion?: string }
 export const desktopTelemetryOrigins: { version: number; ownership: string; exclusions: Record<string, string>; operations: Record<string, Spec> } = (() => {
   try { return JSON.parse(readFileSync(new URL('./telemetry-desktop-origins.json', import.meta.url), 'utf8')) }
   catch { return { version: 1, ownership: '', exclusions: {}, operations: {} } }
 })()
 
-export function desktopTelemetrySelection(action: string, input: Record<string, unknown>): { workflow: string; completion: string; localStatus: boolean } | null {
+export function desktopTelemetrySelection(action: string, input: Record<string, unknown>): { workflow: string; completion: string; localStatus: boolean; freshReceipt: boolean } | null {
   const spec = Object.hasOwn(desktopTelemetryOrigins.operations, action) ? desktopTelemetryOrigins.operations[action] : undefined
   if (!spec || spec.exclusion) return null
-  // The sole selector is a reviewed boolean. It cannot export arbitrary fields.
-  const variant = spec.selector === 'enabled' && typeof input.enabled === 'boolean' ? String(input.enabled) : null
+  // Only a reviewed boolean or the fixed host-action enum may select a row.
+  // Keys, host identity, command arguments and receipt contents are not inputs.
+  let variant = spec.selector === 'enabled' && typeof input.enabled === 'boolean' ? String(input.enabled) : null
+  if (spec.selector === 'request.action') {
+    const request = input.request
+    if (request && typeof request === 'object' && !Array.isArray(request) && 'action' in request && typeof request.action === 'string') variant = request.action
+  }
   const workflow = spec.variants ? (variant && Object.hasOwn(spec.variants, variant) ? spec.variants[variant] : null) : spec.workflow
-  return workflow && spec.completion ? { workflow, completion: spec.completion, localStatus: spec.local_status === true } : null
+  return workflow && spec.completion ? { workflow, completion: spec.completion, localStatus: spec.local_status === true, freshReceipt: spec.fresh_receipt === true } : null
 }
 
 /** Only these explicit UI controls own a local action. Polling and the generic
@@ -43,6 +48,12 @@ export function desktopIpcSelection(channel: string, arguments_: unknown[]): { a
   if (Object.hasOwn(desktopIpcOrigins, channel)) return { action: desktopIpcOrigins[channel], input: {} }
   const action = arguments_[0]
   if (channel === 'hosts:action' && typeof action === 'string' && ['host.create', 'host.enroll', 'host.forget'].includes(action)) return { action, input: {} }
+  if (channel === 'hosts:action' && action === 'host.request') {
+    const value = arguments_[1], request = value && typeof value === 'object' && 'request' in value ? value.request : undefined
+    if (!request || typeof request !== 'object' || Array.isArray(request) || !('action' in request) || typeof request.action !== 'string') return null
+    const input = { request: { action: request.action } }
+    return desktopTelemetrySelection(action, input) ? { action, input } : null
+  }
   if (channel !== 'sources:control' || typeof action !== 'string' || !['pause', 'sync', 'remove', 'repair'].includes(action)) return null
   const value = arguments_[1]
   const enabled = value && typeof value === 'object' && 'enabled' in value ? value.enabled : undefined
@@ -71,10 +82,20 @@ export async function measureDesktop<T>(store: WorkflowStore, action: string, in
   catch (error) {
     // An exception message can contain a path or provider response. It is
     // deliberately not classified or passed to the measurement boundary.
-    void measurement?.finish('failed', 'other_failure')
+    if (selection?.freshReceipt) measurement?.discard()
+    else void measurement?.finish('failed', 'other_failure')
     throw error
   }
   try {
+    if (selection?.freshReceipt) {
+      // Only an authenticated fresh intake can contribute. A lost response,
+      // legacy host, lookup or replay cannot authorize a second observation.
+      const reply = result && typeof result === 'object' && !Array.isArray(result) && Object.hasOwn(result, 'ok') && 'ok' in result && result.ok === true && Object.hasOwn(result, 'result') && 'result' in result ? result.result : null
+      if (!reply || typeof reply !== 'object' || Array.isArray(reply) || !Object.hasOwn(reply, 'request_disposition') || !('request_disposition' in reply) || reply.request_disposition !== 'new') {
+        measurement?.discard()
+        return result
+      }
+    }
     let outcome = selection?.completion ?? 'accepted', reason = 'none'
     if (selection?.localStatus && result && typeof result === 'object' && 'state' in result && result.state === 'error') {
       outcome = 'failed'; reason = 'other_failure'

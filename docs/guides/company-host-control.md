@@ -535,6 +535,15 @@ The response binds `protocol`, `host_id`, `operator_id` and `request_id` and
 contains `ok`, `result` and `error`. Inspect **`ok` as well as the process exit
 status**: receiving a valid remote rejection can still complete the CLI call.
 
+The [26 October source follow-up](../validation/2026-10-26-telemetry-host-requests.md)
+adds optional `result.request_disposition` to successful mutation replies:
+`new` means this intake first recorded the request, while `replayed` means it
+returned previously recorded work. Neither value replaces the operation's
+`phase` or final receipt. Readbacks and refusals omit the field; older replies
+remain compatible, and a missing field must not be treated as fresh intake.
+This addition is excluded from frozen 4.46.15. Its optional desktop/native
+measurement uses only a verified `new` intake; production telemetry remains disabled.
+
 `host.status` returns current host authority in `result.revision`,
 `result.operator` and `result.actions`. Its `result.service` includes readiness,
 active version, recovery requirement, operation counts, backup observations and

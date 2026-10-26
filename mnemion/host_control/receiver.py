@@ -2,6 +2,7 @@
 
 from . import HostControlError
 from .protocol import MAX_RESPONSE, canonical, parse
+from .store import RequestResult
 
 
 def dispatch(store, actor, raw, host_status=None):
@@ -32,6 +33,10 @@ def dispatch(store, actor, raw, host_status=None):
             result = store.enqueue(actor, request)
     except HostControlError as problem:
         error = {"code": problem.code, "message": str(problem)}
+    if isinstance(result, RequestResult):
+        # Preserve the v1 envelope and stored receipt. Old clients accept this
+        # additive result field; lookups never present old work as a new intake.
+        result = {**result, "request_disposition": result.disposition}
     response = {
         "protocol": 1,
         "host_id": str(request.host_id),

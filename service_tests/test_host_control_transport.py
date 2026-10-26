@@ -149,6 +149,7 @@ def test_pinned_ssh_uses_only_the_registered_command_and_key(tmp_path, monkeypat
             result = await call(connection, key, request(connection))
             assert result["ok"]
             assert result["result"]["operator"]["role"] == "custodian"
+            assert "request_disposition" not in result["result"]
             assert observed["commands"] == [COMMAND]
 
     asyncio.run(exercise())
@@ -191,8 +192,33 @@ def test_lost_ssh_reply_reconnects_to_the_same_durable_job(tmp_path):
             result = await call(connection, key, action)
             assert result["ok"] and result["result"]["operation_id"] == str(action.request_id)
             assert result["result"]["phase"] == "queued"
+            assert result["result"]["request_disposition"] == "replayed"
             with store.transaction() as conn:
                 assert conn.execute("SELECT count(*) FROM operations").fetchone()[0] == 1
+
+    asyncio.run(exercise())
+
+
+def test_existing_protocol_envelope_carries_only_this_request_disposition(tmp_path):
+    async def exercise():
+        async with server(tmp_path) as (store, connection, key, _):
+            action = request(connection, "service.stop", approve_service_interruption=True)
+            first = await call(connection, key, action)
+            repeated = await call(connection, key, action)
+            assert first["result"].pop("request_disposition") == "new"
+            assert repeated["result"].pop("request_disposition") == "replayed"
+            assert first == repeated
+            assert set(first) == {
+                "protocol",
+                "host_id",
+                "operator_id",
+                "request_id",
+                "ok",
+                "result",
+                "error",
+            }
+            with store.transaction() as connection:
+                assert connection.execute("SELECT count(*) FROM operations").fetchone()[0] == 1
 
     asyncio.run(exercise())
 

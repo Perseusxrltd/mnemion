@@ -1,25 +1,47 @@
 # Anonymous product telemetry catalog — V08
 
-**Building/source implementation, 25 October 2026.** This supplements the
-[V08 contract](anonymous-product-telemetry.md). Version 1 now defines **94
+**Building/source implementation, 26 October 2026.** This supplements the
+[V08 contract](anonymous-product-telemetry.md). Catalog version 1 defines **94
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
-and browser queues, revision/generation checks and local preview are implemented
-in source, along with owned `mnemion-control call`, selected desktop/native-operator
-actions, Studio client hooks, browser connection/legacy UI actions and explicitly
-configured local stdio hooks. Fresh local source/capture work and automatic desktop
-updater cycles now have source owners; remaining workflow and resource/platform
-qualification are unfinished. **No active product sender or deployed collector exists.** Collection remains
-unavailable and the destination is null; no product measurements are collected.
-Native release, resource and anonymity acceptance remain open. All 66 requirement
-texts and the other 65 states remain unchanged; V08 stays Building.
+and browser queues, revision/generation fencing, local controls and exact manual
+report review are implemented. Source owners cover `mnemion-control call`, selected
+desktop/native-operator actions, Studio clients, browser connection/legacy UI,
+explicitly configured local stdio, fresh local source/capture work and automatic
+desktop updater cycles. Shared budgets, opportunistic delivery owners, senders,
+collector and publisher components also exist; their scoped evidence does not
+establish production qualification. **Collection remains unavailable; destination
+and release route address are null.** No production product analytics is active.
+All 66 requirement texts and the other 65 states remain unchanged; V08 stays Building.
 
-Separate [delivery components](anonymous-product-telemetry-delivery.md) now define
-23 weighted permitted views, a four-byte randomized body, weekly aggregation and
-a bounded private publisher. Their [source validation](../validation/2026-10-24-telemetry-delivery.md)
-now includes publisher checks and a 12-check actual plain-loopback HTTP journey.
-It does not qualify delivery integration, shared budgets, TLS/provider logging,
-deployed ingress or useful fine-grained statistics in small populations.
+Current [wire v2 and report v3](../validation/2026-10-26-telemetry-review-selection.md)
+retain a four-byte body and 23 permitted views. Automatic packets use the
+randomized encoder. Manually reviewed packets use a constant body for the first
+permitted view, coordinate zero and flags `2`, with no category data or random
+draw. They contribute only to the coarse closed-week global volume range;
+categorical estimates, counts and precision use automatic reports exclusively.
+The thresholds remain 64 total reports per window and 4,096 automatic reports per
+view. No separate manual count is published. Legacy wire v1 is rejected; immutable
+aggregate reports v1/v2 remain readable. Manual review has no general categorical
+privacy-loss claim, and neither mode establishes participation or network anonymity.
+
+The [published 4.46.13 control qualification](../validation/2026-10-26-44613-native-acceptance.md)
+passed all six native targets. It does not qualify these later review, storage or
+wire changes. At this 26 October checkpoint, frozen 4.46.15 source
+`de53ba4609f848f7e91fdc9a8383ded9fb70884f` still awaits its native/public acceptance;
+the failed 4.46.14 Windows ARM fixture and local correction remain recorded in the
+selection report. Full ownership coverage, installed production delivery,
+resource/wire limits, utility and anonymity acceptance remain open.
+
+## Earlier component checkpoints — 24–25 October 2026
+
+The original [delivery components](anonymous-product-telemetry-delivery.md)
+defined the earlier four-byte randomized wire format, weekly aggregation and a
+bounded private publisher. Their [24 October validation](../validation/2026-10-24-telemetry-delivery.md)
+included publisher checks and a 12-check actual plain-loopback HTTP journey.
+Those receipts preceded shared delivery budgets and application-owner integration;
+they did not qualify TLS/provider logging, deployed ingress or useful fine-grained
+statistics in small populations.
 The later [Python TLS component](../validation/2026-10-24-telemetry-transport.md)
 has passing source and isolated loopback checks for transport and handoff ownership.
 That checkpoint preceded application-owner wiring and selected no endpoint. Its
@@ -36,15 +58,16 @@ inherit the native static-header, no-DNS/proxy or charged-TLS-byte controls.
 Its listeners are armed before Fetch while lock polling waits for handoff
 release; it requires status 204 and `Content-Length: 0` without reading the body.
 
-The [application-owner source batch](../validation/2026-10-24-telemetry-app-owners.md)
-now connects committed local observations to opportunistic desktop/browser
+The [24 October application-owner batch](../validation/2026-10-24-telemetry-app-owners.md)
+connected committed local observations to opportunistic desktop/browser
 delivery and a registered Python service or maintained local stdio loop. Its
 source checks and **19-assertion Chromium owner fixture** passed; CPU admission
 was synthetic, with real heap readings and normal browser networking.
 Connection mode and resource gauges gate an attempt; they add no catalog metric,
-network identity or server recounting. SQLite storage version 5/browser choice
-version 4 retain the spent allowance, and a stale opt-out preserves a newer
-connection choice. Production collection and the release route remain disabled.
+network identity or server recounting. That checkpoint used SQLite storage
+version 5/browser choice version 4; both retained the spent allowance, and a stale
+opt-out preserved a newer connection choice. Production collection and the
+release route remain disabled.
 
 The later [browser company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
 checks fresh restrictions before an already-reserved report, then intersects
@@ -83,11 +106,14 @@ The following browser/legacy UI and local stdio batch passed **20 Python MCP and
 fixture journey** and a **22-check real stdio journey**. The initial 19-test run
 and failed build remain recorded. These isolated fixtures do not activate source
 collection or establish release/resource acceptance.
-The following maintenance batch records separate **41- and 49-test Python
+The 24 October maintenance checkpoint records separate **41- and 49-test Python
 passes**, **104 source-controller and 20 updater Node passes**, and **nine
 Electron store passes with two Windows skips**. Its original runner failures are
-retained. The corrected isolated app-main probe completed; final builds/input
-inventory, integration and CI remain pending.
+retained. Its corrected isolated app-main probe completed; final builds/input
+inventory, integration and CI were pending at that checkpoint. Those historical
+limits do not mean maintenance owners are absent from current source. Later
+[source checks and builds](../validation/2026-10-26-telemetry-review-selection.md)
+also passed, without establishing installed production delivery or full resource acceptance.
 
 The scope remains all app, agent and headless workflows. An unresolved row is
 unfinished V08 coverage, not permission to collect without choice or an assertion
@@ -112,6 +138,9 @@ Electron's [NativeTelemetryStore](../../studio/electron/telemetry-store.ts) use
 the same private [SQLite policy store](../../mnemion/product_telemetry/policy.py).
 The [browser aggregate store](../../studio/frontend/src/workspace/telemetry-aggregate.ts)
 uses bounded local storage under the [browser privacy policy](../../studio/frontend/src/workspace/telemetry-policy.ts).
+Current state formats are native/Python SQLite version 6, browser choice version 5
+and browser budget version 2; their fences prevent older senders from bypassing
+manual review. These are separate from catalog version 1 and wire version 2.
 Both reject recording before storage access while collection is unavailable.
 When permitted, they recheck current choice, disclosure, company groups and the
 `revision`/`store_generation` pair captured by the originating work. Recreating
@@ -139,6 +168,14 @@ one-second deadline and no settings-repair behavior. Both runtimes reject
 publicly readable, linked or otherwise unsafe stores. POSIX uses owner/mode
 checks. These are source implementations, not cross-platform release acceptance.
 
+The later [storage-ownership correction](../validation/2026-10-26-telemetry-storage-slot.md)
+takes one process-wide, nonwaiting slot before asynchronous native permission or
+SQLite work and releases it only after the database actually closes. Competing
+optional samples are dropped; cross-process SQLite and current-policy fences
+remain in force. The Windows helper wrapper retains its one child until actual
+exit, including after a deadline or live-process error, and never borrows another
+path's approval. This limits concurrent ownership; it is not a measured RSS bound.
+
 `store_generation` is a private random token for local compare-and-set control.
 It appears in private status and is supplied as `expected_generation`; it is
 never an analytics identity, measurement cell or outbound field. Reading a
@@ -164,7 +201,7 @@ RAM, wire, sampling and collector requirements still need acceptance evidence.
 An exploratory Electron component run grew RSS by **3,784,704 bytes (3.61 MiB)**
 after 32 workflows, exceeding the contract's unchanged **2 MiB** added-RAM target.
 This is an unresolved optimization/qualification result, not a resource pass;
-whole-app and all-platform measurements remain open.
+whole-app and all-platform resource qualification remain open.
 A later phase diagnostic measured **3,424,256 bytes (3.27 MiB)** total added RSS,
 including a 1,802,240-byte rise around the first SQLite snapshot/load. It is a
 separate component observation, not a replacement for the earlier result or
@@ -176,6 +213,17 @@ A corrected headless main-process probe after actual app `client-ready` bootstra
 recorded **1,249,280 bytes (1.19 MiB)** added RSS over 32 paired workflows. This
 narrow activation diagnostic does not replace the cold 3.61/3.27/3.09 MiB results
 or establish whole-app, all-platform or CPU acceptance against the unchanged target.
+The later [fixed six-case compiled-app attribution](../validation/2026-10-26-telemetry-attribution.md)
+observed enabled matched main-process maxima of **3,608,576 and 3,391,488 bytes**
+above their unavailable baselines, still above 2 MiB. All outcomes remain retained;
+overlapping initialization windows do not attribute the whole difference to SQLite.
+The [storage follow-up](../validation/2026-10-26-telemetry-storage-followup.md)
+subsequently completed all six journeys on 26 October, matching **1,998 source
+files per variant**. Enabled matched main-process maxima of **3,121,152 and
+3,235,840 bytes** and endings of **2,125,824 and 2,207,744 bytes** remain above
+2 MiB. All opted-out, renderer and GPU variation is retained. The result does not
+establish a causal improvement or resource acceptance; the next step is an
+explicit architecture review, without another benchmark or budget revision.
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The full product delivery path must still prove
@@ -188,8 +236,13 @@ Preview can describe valid local cells without raw inputs or local day numbers;
 it is not an event history or a serialized outbound report. In the current
 unavailable state, `local_aggregates` is empty, `outbound_body` is null,
 `outbound_bytes` is zero and `transport_available` is false.
-Local `schema` also exposes the source `transport_catalog`; it does not connect
-the delivery encoder to these queues or make transport available.
+The read-only format preview separately shows a fixed synthetic wire-v2 example
+(`AgAHAA==`), explicitly marked `synthetic_example` and `not_inspected`. It is not
+the next packet. Explicit manual inspection stages exact bytes only after
+authorized observations exist; see the [review controls](../guides/product-telemetry-controls.md).
+Local `schema` also exposes `transport_catalog`. Source delivery owners already
+connect eligible queues to encoding and shared reservations; reading schema or
+preview neither reserves a packet nor enables transport.
 
 ## Owned headless control coverage
 
@@ -250,13 +303,26 @@ collection contract. Their maps describe eligible boundaries, not proof that all
 
 | Boundary | Current source ownership |
 | --- | --- |
-| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **72 operations: 43 eligible and 29 excluded**. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
+| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 44 eligible and 33 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
 | Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **64 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. |
 | Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
 
-The desktop exclusions are 15 state inspections, six configuration previews,
-four privacy controls, three recovery transports and one secondary receipt owner.
-In particular, generic `host.request` cannot safely claim a fresh remote effect.
+The top-level desktop exclusions are 15 state inspections, six configuration
+previews, nine privacy controls and three recovery transports. Typed
+[`host.request` ownership](../validation/2026-10-26-telemetry-host-requests.md)
+now requires a successful authenticated reply whose request-scoped
+`result.request_disposition` is `new`. The receiver derives `new`/`replayed`
+inside the authority transaction, without changing the protocol-v1 outer
+envelope or stored operation. Legacy/missing, replayed, refused, lost and
+unrecognized replies contribute nothing. The four typed reads (`host.status`,
+`operations.get`, `operations.list`, `operators.list`) are excluded.
+All nine selected mutations record an **accepted intake**, with no inference of
+queued work's terminal success or later server recounting. Only the fixed action
+selects the workflow; host identities, request bodies and result objects never
+enter the numeric encoder. These mappings are not nine newly qualified workflows.
+The source follow-up passed 47 Python and 17 Node checks plus its Electron build;
+it is excluded from frozen 4.46.15 and does not establish installed/platform,
+resource or privacy acceptance. Collection remains unavailable.
 The [operator's cached reply](../../studio/electron/desktop-operator.ts) returns
 before execution and adds no new measurement. Studio excludes 55 automatic
 queries, four transport helpers, three configuration previews, three continuation
@@ -319,8 +385,9 @@ cached or unknown receipts add nothing. SDK callbacks observe only the bounded
 `new`/`replayed` disposition for that tool's client and are removed afterward.
 They do not turn the reusable SDK or server into another measurement owner.
 
-The local `mnemion_telemetry` tool exposes offline `status`, `schema`, `preview`
-and `configure`, using the existing private policy and schema version. It is
+The local `mnemion_telemetry` tool exposes offline `status`, `schema`, `preview`,
+`configure` and the explicit `review_status`, `review_mode`, `inspect_report`,
+`approve_report` and `discard_report` controls under the same private policy. It is
 absent from the ordinary HTTP gateway, and HTTP calls are refused even on a
 server configured with a stdio key. Privacy controls themselves never produce
 measurements. See the [local-tool guide](../guides/product-telemetry-controls.md#from-local-stdio-mcp).
@@ -329,17 +396,22 @@ Local `schema` now also returns `owned_origin_coverage` with the `desktop`,
 `owned_control_coverage`.
 An optional observer import failure falls back to exactly one original action;
 the fallback does not retry an action that already ran.
-The collection gate remains false and the destination null. Passing source and
-isolated stdio/browser checks do not establish anonymous ingress,
-remaining ownership, resource limits or native release. Final source
-inventory and integration are not established by these receipts.
+The collection gate remains false and the destination null. The earlier isolated
+stdio/browser receipts covered their recorded source boundaries; they did not
+establish later integration. Current source includes these owners, but anonymous
+ingress, complete ownership coverage, resource limits and installed production
+delivery still require acceptance.
 
 ## Fresh local maintenance coverage
 
 The [maintenance-origin map](../../mnemion/product_telemetry/maintenance-origins.json)
 adds the fifth schema map: **six origins, five sensor descriptions and nine
 exclusions**. These are selected local owners under the same disclosure,
-generation/revision and company policy; collection is still unavailable.
+generation/revision and company policy; collection is still unavailable. Existing
+[desktop](../../studio/electron/telemetry-activity.ts) and
+[Python service/stdio](../../mnemion/product_telemetry/activity.py) lifetimes can
+offer eligible committed observations to delivery. They add no telemetry daemon,
+CLI keepalive or new measurement owner for nested work.
 
 | Fresh owner | Observed boundary and limits |
 | --- | --- |
@@ -372,10 +444,10 @@ how it was invoked; it is not a user, installation or request identifier.
 
 | Surface | Owner and source implementation boundary | Remote and nested work |
 | --- | --- | --- |
-| Desktop workspace UI | Selected [local IPC actions](../../studio/electron/desktop-measurement.ts) and the [Studio client wrapper](../../studio/frontend/src/workspace/measured-client.ts), under the shared installation policy. Both are source-only inactive hooks. | [Native fetch](../../studio/frontend/src/workspace/native.ts), transport retries and the remote API add no second usage count. |
-| Browser workspace UI | The Studio wrapper plus explicit [connection actions](../../studio/frontend/src/workspace/measurement-action.ts), under browser-local disclosure, choice, GPC and company restrictions. | Desktop connections skip the browser owner because IPC already owns them. Authentication is not product telemetry consent; a future sender still needs a credential/referrer-free boundary. |
+| Desktop workspace UI | Selected [local IPC actions](../../studio/electron/desktop-measurement.ts) and the [Studio client wrapper](../../studio/frontend/src/workspace/measured-client.ts), under the shared installation policy. Collection is inactive under the current release gate. | [Native fetch](../../studio/frontend/src/workspace/native.ts), transport retries and the remote API add no second usage count. |
+| Browser workspace UI | The Studio wrapper plus explicit [connection actions](../../studio/frontend/src/workspace/measurement-action.ts), under browser-local disclosure, choice, GPC and company restrictions. | Desktop connections skip the browser owner because IPC already owns them. Authentication is not product telemetry consent. The source sender omits credentials and referrer; production ingress and browser transport metadata still need qualification. |
 | Legacy Studio UI | Selected methods of the [legacy client](../../studio/frontend/src/api/client.ts), using the same app/browser policy and explicit UI-origin map. | Automatic queries and external-app handoffs are excluded; callbacks retain private inputs/results. |
-| Native agent controlling the desktop | Fresh mapped execution at the [desktop dispatcher](../../studio/electron/service-bridge.ts), with the fixed `native_agent` surface and the same private OS-account store. | The agent pipe, cached reply and renderer do not add another measurement. No operation UUID enters telemetry; generic remote host requests remain excluded. |
+| Native agent controlling the desktop | Fresh mapped execution at the [desktop dispatcher](../../studio/electron/service-bridge.ts), with the fixed `native_agent` surface and the same private OS-account store. | The agent pipe, cached reply and renderer do not add another measurement. No operation UUID enters telemetry. Typed host mutations require a verified new intake; replayed, readback and legacy replies remain unmeasured. |
 | Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
 | Local stdio-MCP | Explicit source owner at the [maintained gateway](../../mnemion/service/mcp.py) or [legacy stdio loop](../../mnemion/mcp_server.py), under local OS-account policy. | HTTP context, imported handlers and JSON arguments cannot acquire this owner. Aliases and nested SDK calls do not add another count. Other headless entrypoints still need review. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
@@ -527,34 +599,37 @@ The following implementation and acceptance work remains open:
   totals remain excluded. Instrument only outcomes observed by the disclosed
   origin; define ownership before measuring autonomous librarian/source work.
   Preserve the broader connector/host requirements and visible coverage gaps.
-- **Metrics and budgets:** finite buckets and local contribution caps are now
-  implemented. The delivery component selects fixed views, closed-week windows
-  and eight-window private output retention. The later
-  [native/Python budget](anonymous-product-telemetry-budget.md) implements shared
-  private attempt and byte reservations in source. The separate
-  [browser coordinator](../validation/2026-10-24-telemetry-browser-delivery.md)
-  now has component evidence. Canonical owner wiring exists in the new source
-  batch; its qualification, installed sampling and complete sender integration
-  remain unfinished;
-  actual transport upper bounds are unqualified. Verify useful
+- **Metrics and budgets:** finite buckets, local contribution caps, delivery
+  owners, shared reservations, cancellation fences and manual review are
+  implemented in source. The [budget design](anonymous-product-telemetry-budget.md)
+  distinguishes native/Python SQLite from browser-origin coordination. Installed
+  sampling and complete application-owner/delivery qualification across platforms
+  remain unfinished; actual transport upper bounds are unqualified. Verify useful
   measurements and the existing queue/RAM/CPU/batch/wire ceilings under load;
   local numeric limits alone are not a privacy mechanism. Evaluation-quality
-  views, cross-restart completion, end-to-end recovery boundaries and final
-  sender cancellation still need review and acceptance. Local store-generation
+  views, cross-restart completion, end-to-end recovery boundaries and all-platform
+  final-send cancellation still need review and acceptance. Local store-generation
   checks do not establish whole-machine snapshot rollback protection.
 - **Anonymity and output:** substantiate ingress/provider log behavior, transient
   source-IP handling, metadata stripping and absence of retained raw events.
-  The source delivery mechanism has a conditional per-report `ln(3)` local
-  privacy bound, a 4,096-report per-view gate and rare-cell suppression.
+  Wire v2 automatic randomization has a conditional per-report `ln(3)` bound;
+  report v3 categorical estimates assume conforming automatic reports and
+  packet-independent inclusion, with a 4,096-automatic-report per-view gate and
+  rare-cell suppression. The constant manual body carries no category and
+  contributes only to the coarse global range after 64 total reports; its preview
+  makes no per-report privacy-loss claim. Eight-window output retention is
+  implemented, but deployment and backup-retention qualification remain open.
   Participation, composition and lifetime privacy, attack resistance, publisher
-  and backup-retention qualification, and useful statistics remain open.
+  qualification and useful statistics remain open.
   Its 4,096-report threshold cannot prove distinct contributors; a clean payload
   cannot prove network anonymity. No stable IDs may be introduced to fill these gaps.
 
 Before launch, the contract requires actual sentinel/outbound and ingress-log
 evidence, opt-out races and queue clearing across all producers, no nested SDK
 or server recounting, unknown-client and deferred-job cases, resource/wire
-measurements and cohort/linkage attacks. All six native targets and web need
-their own policy journeys. The source checks qualify only their recorded local
-boundaries; they do not establish full V08, anonymous ingress or release
-acceptance. No collector or paid tooling is configured by this catalog.
+measurements and cohort/linkage attacks. Published 4.46.13 has six-target installed
+control evidence; all six targets and web still need qualification for the newer
+review and full production delivery path. Source checks qualify only their
+recorded boundaries; they do not establish full V08 or anonymous ingress. The
+collector implementation and isolated staging evidence do not configure a
+production collector or paid tooling through this catalog.

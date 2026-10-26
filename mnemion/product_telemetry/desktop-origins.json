@@ -5,7 +5,7 @@
     "state_inspection": "Status, discovery and polling do not identify a new user workflow.",
     "configuration_preview": "Internal setup validation and secret previews are not product usage observations.",
     "privacy_control": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
-    "secondary_receipt_owner": "A host request can return an older remote receipt without a fresh-operation marker.",
+    "secondary_receipt_owner": "A host request is observed only when its authenticated reply marks this intake new; old, missing or unrecognized dispositions remain unmeasured.",
     "recovery_transport": "Inspecting or archiving a recovery receipt does not repeat the original operation."
   },
   "operations": {
@@ -27,7 +27,28 @@
     "host.recoveries": { "exclusion": "state_inspection" },
     "host.recovery": { "exclusion": "recovery_transport" },
     "host.request.archive": { "exclusion": "recovery_transport" },
-    "host.request": { "exclusion": "secondary_receipt_owner" },
+    "host.request": {
+      "selector": "request.action",
+      "variants": {
+        "service.start": "host.start",
+        "service.stop": "host.stop",
+        "backup.create": "backup.create",
+        "backup.verify": "backup.verify",
+        "upgrade.plan": "host.plan_upgrade",
+        "upgrade.apply": "update.apply",
+        "operators.grant": "host.enroll",
+        "operators.revoke": "host.revoke",
+        "operations.resolve": "host.resolve"
+      },
+      "variant_exclusions": {
+        "host.status": "state_inspection",
+        "operations.get": "state_inspection",
+        "operations.list": "state_inspection",
+        "operators.list": "state_inspection"
+      },
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
     "status": { "exclusion": "state_inspection" },
     "catalog": { "exclusion": "state_inspection" },
     "app.status": { "exclusion": "state_inspection" },
