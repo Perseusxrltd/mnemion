@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T22:11:27+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T22:18:10+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.46.27](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.27). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -17,32 +17,36 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 40408566855](https://github.com/Perseusxrltd/mnemion/actions/runs/40408566855) |
-| public-updates\.yml | v4\.46\.27 | success | [Run 40403841976](https://github.com/Perseusxrltd/mnemion/actions/runs/40403841976) |
-| release\.yml | release/4\.46\.27 | success | [Run 40391018946](https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946) |
+| public-updates\.yml | v4\.46\.28 | in\_progress | [Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731) |
 | release\.yml | release/4\.46\.28 | success | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
 | release\.yml | release/4\.46\.29 | in\_progress | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
-| verify-artifacts\.yml | main | in\_progress | [Run 40410428285](https://github.com/Perseusxrltd/mnemion/actions/runs/40410428285) |
-| website-release\.yml | main | success | [Run 40408566878](https://github.com/Perseusxrltd/mnemion/actions/runs/40408566878) |
-| website-release\.yml | v4\.46\.27 | success | [Run 40403837950](https://github.com/Perseusxrltd/mnemion/actions/runs/40403837950) |
+| verify-artifacts\.yml | main | success | [Run 40410428285](https://github.com/Perseusxrltd/mnemion/actions/runs/40410428285) |
+| website-release\.yml | main | success | [Run 40393765519](https://github.com/Perseusxrltd/mnemion/actions/runs/40393765519) |
+| website-release\.yml | v4\.46\.28 | success | [Run 40411254189](https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189) |
 
 ## Active jobs
 
-[Run 40408566855](https://github.com/Perseusxrltd/mnemion/actions/runs/40408566855): 8/12 jobs completed; 8 succeeded.
+[Run 40408566855](https://github.com/Perseusxrltd/mnemion/actions/runs/40408566855): 9/12 jobs completed; 9 succeeded.
 
-- supervision \(macos-15-intel\): in\_progress — Verify both pinned local models on the actual Mac runtime.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 3/8 jobs completed; 2 succeeded.
+[Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731): 1/7 jobs completed; 1 succeeded.
 
-- Reuse verified Product checks: in\_progress — Restore the exact verified runtime artifact.
-- native / Encrypted files / Windows / arm64: queued.
-- native / Encrypted files / Windows / x64: queued.
-- native / native\_database / Private state / Windows / x64: queued.
-- native / native\_database / Private state / Windows / arm64: queued.
+- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
-[Run 40410428285](https://github.com/Perseusxrltd/mnemion/actions/runs/40410428285): 0/1 jobs completed; 0 succeeded.
+[Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 15/21 jobs completed; 14 succeeded.
 
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+- native / macos-15-intel / x64: in\_progress — Locked native service build dependencies.
+- native / windows-11-arm / arm64: in\_progress — Select the service interpreter independently of the desktop client.
+- native / ubuntu-22\.04 / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / windows-2022 / x64: in\_progress — Run npm --prefix studio/electron test.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-15 / arm64: in\_progress — Run npm --prefix studio/electron test.
 
