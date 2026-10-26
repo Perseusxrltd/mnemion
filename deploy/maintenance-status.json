@@ -18,15 +18,105 @@
   ],
   "runs": [
     {
-      "id": 40255161956,
+      "id": 40258081039,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "2d43b1940da913f8a315b7c9bbfe99d470b2038c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-26T02:09:28Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40255161956"
+      "source_commit": "bd3b212567d878c8b28c1d4c3eb8c86c47bb5311",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-26T02:14:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258081039",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 121364170362,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend run test:telemetry"
+            ]
+          },
+          {
+            "id": 121364215089,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 121364215098,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 121364215100,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121364215113,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 121364215128,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 121364215174,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121364215176,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121364215211,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify the non-root image includes Studio, guides and notices offline"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40251151874,
@@ -92,8 +182,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 32,
-        "completed": 30,
-        "succeeded": 28,
+        "completed": 31,
+        "succeeded": 29,
         "active": [
           {
             "id": 121355505646,
@@ -102,15 +192,6 @@
             "runner_assigned": true,
             "steps": [
               "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121355505734,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Packaged window, sandboxed bridge, and local client"
             ]
           }
         ]
@@ -173,16 +254,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40249478892"
     },
     {
-      "id": 40255161926,
+      "id": 40258080932,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "2d43b1940da913f8a315b7c9bbfe99d470b2038c",
+      "source_commit": "bd3b212567d878c8b28c1d4c3eb8c86c47bb5311",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T01:38:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40255161926"
+      "updated_at": "2026-10-26T02:14:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40258080932"
     }
   ],
-  "observed_at": "2026-10-26T02:10:09+00:00"
+  "observed_at": "2026-10-26T02:14:59+00:00"
 }
