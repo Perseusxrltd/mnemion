@@ -23,8 +23,8 @@ type State = { clock_ms: number; next_ms: number; lease_token: string | null; le
 type Spent = { slot: number; at_ms: number; reserved_bytes: number }
 type Network = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
 
-function state(database: DatabaseSync): { current: State; spent: Spent[] } {
-  if (database.prepare('PRAGMA user_version').get()?.user_version !== 6) throw invalid()
+function state(database: DatabaseSync, version = database.prepare('PRAGMA user_version').get()?.user_version): { current: State; spent: Spent[] } {
+  if (version !== 6) throw invalid()
   const row = database.prepare('SELECT clock_ms, next_ms, lease_token, lease_deadline_ms FROM delivery_state WHERE singleton=1').get()
   if (!row || !integer(row.clock_ms) || !integer(row.next_ms) || !integer(row.lease_deadline_ms) ||
       (row.lease_token !== null && !token(row.lease_token)) ||
@@ -135,7 +135,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       database = await this.open()
       database.exec('BEGIN')
       const preference = this.preferences(database), company = this.company(), now = this.now()
-      const { current, spent } = state(database)
+      const { current, spent } = state(database, preference.schema_version)
       const permitted = integer(now, MAX_CLOCK - DAY - JITTER) && preference.enabled === 1 &&
         preference.disclosure_version === this.disclosure.version && preference.connection_mode !== 'metered' &&
         preference.revision === stamp.revision && preference.store_generation === stamp.store_generation &&
@@ -167,7 +167,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
           (observed.network === 'unknown' && preference.connection_mode !== 'unmetered')) return null
       if (preference.revision !== expected.revision || preference.store_generation !== expected.store_generation ||
           preference.enabled !== 1 || preference.disclosure_version !== this.disclosure.version || !company.enabled || !company.groups.length) return null
-      const { current, spent } = state(database)
+      const { current, spent } = state(database, preference.schema_version)
       if (now < current.clock_ms || now < current.next_ms || (current.lease_token && now < current.lease_deadline_ms)) return null
       const recent = spent.filter(item => item.at_ms > now - WEEK)
       if (recent.length >= 7 || recent.filter(item => item.at_ms > now - DAY).reduce((sum, item) => sum + item.reserved_bytes, 0) + COST > DAILY_BYTES) return null
@@ -214,8 +214,8 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
 
   private permitted(database: DatabaseSync, report: PreparedTelemetryReport): boolean {
     if (!(report instanceof PreparedTelemetryReport) || report.closed || !this.available) return false
-    const now = this.now(), { current } = state(database)
-    const preference = this.preferences(database), company = this.company()
+    const now = this.now(), preference = this.preferences(database), company = this.company()
+    const { current } = state(database, preference.schema_version)
     if (report.reviewed && !report.reviewCurrent(this.reviewContext({ revision: preference.revision,
       store_generation: preference.store_generation }, company.groups), now, readReviewClock())) return false
     if (this.environment) {

@@ -11,7 +11,7 @@ import { checkReviewLifetime } from './telemetry-review-lifetime.js'
 import { readReviewClock } from './telemetry-review-clock.js'
 
 export type NativeTelemetryDisclosure = TelemetryDisclosure & { metric_groups: string[] }
-type Preference = { revision: number; enabled: number; disclosure_version: number; store_generation: string; connection_mode: TelemetryConnectionMode }
+type Preference = { revision: number; enabled: number; disclosure_version: number; store_generation: string; connection_mode: TelemetryConnectionMode; schema_version: number }
 type Company = { enabled: boolean; groups: string[] }
 const failure = () => new Error('telemetry_storage_unavailable')
 const integer = (value: unknown, maximum: number, minimum = 0): value is number =>
@@ -177,19 +177,26 @@ export class NativeTelemetryStore {
 
   protected preferences(database: DatabaseSync): Preference {
     const version = Number(database.prepare('PRAGMA user_version').get()?.user_version)
-    if (database.prepare('PRAGMA application_id').get()?.application_id !== 0x4D4E5450 ||
-        ![3, 4, 5, 6].includes(version) ||
-        database.prepare('PRAGMA journal_mode').get()?.journal_mode !== 'delete') throw failure()
-    const row = database.prepare('SELECT revision, enabled, disclosure_version, store_generation FROM preferences WHERE singleton=1').get()
-    if (!row || !integer(row.revision, 2147483647) || ![0, 1].includes(row.enabled as number) ||
+    if (![3, 4, 5, 6].includes(version)) throw failure()
+    // This transaction owns one coherent authority read. Schema 3/4 predates
+    // connection_mode, so choose only between these two fixed expressions.
+    // No statement, row or positive permission survives the caller's close.
+    const mode = version >= 5 ? 'connection_mode' : "'auto'"
+    const row = database.prepare(`SELECT revision, enabled, disclosure_version, store_generation,
+      ${mode} AS connection_mode,
+      (SELECT application_id FROM pragma_application_id()) AS application_id,
+      (SELECT journal_mode FROM pragma_journal_mode()) AS journal_mode
+      FROM preferences WHERE singleton=1`).get()
+    if (!row || row.application_id !== 0x4D4E5450 || row.journal_mode !== 'delete' ||
+        !integer(row.revision, 2147483647) || ![0, 1].includes(row.enabled as number) ||
         !integer(row.disclosure_version, this.disclosure.version) || !generation(row.store_generation) || row.revision === 2147483647) throw failure()
-    const mode = version >= 5 ? database.prepare('SELECT connection_mode FROM preferences WHERE singleton=1').get()?.connection_mode : 'auto'
-    if (!['auto', 'unmetered', 'metered'].includes(mode as string)) throw failure()
-    return { ...row, connection_mode: mode } as Preference
+    if (!['auto', 'unmetered', 'metered'].includes(row.connection_mode as string)) throw failure()
+    return { revision: row.revision, enabled: row.enabled, disclosure_version: row.disclosure_version,
+      store_generation: row.store_generation, connection_mode: row.connection_mode, schema_version: version } as Preference
   }
 
   private maintainReview(database: DatabaseSync, preference: Preference, company: Company): void {
-    if (database.prepare('PRAGMA user_version').get()?.user_version !== 6) return
+    if (preference.schema_version !== 6) return
     const state = parseReview(database.prepare('SELECT state FROM report_review WHERE singleton=1').get()?.state)
     const report = state.report
     if (!report) return

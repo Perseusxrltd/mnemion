@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { DatabaseSync } from 'node:sqlite'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
 import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
@@ -81,6 +82,53 @@ test('inactive native collection reads no choice and creates no store', async t 
   assert.equal(await store.snapshot(), null)
   assert.equal(await store.record({ private: 'PRIVATE_SENTINEL' }, { revision: 0, store_generation: null }), false)
   await assert.rejects(access(root))
+})
+
+test('native transactions preserve every supported schema without migrating a producer store', async t => {
+  for (const version of [3, 4, 5, 6]) await t.test(`schema ${version}`, async t => {
+    const { root, store, initial } = await fixture(t)
+    const path = join(root, 'product-telemetry.sqlite3'), database = new DatabaseSync(path)
+    try {
+      if (version < 6) database.exec('DROP TABLE report_review')
+      if (version < 5) database.exec('ALTER TABLE preferences DROP COLUMN connection_mode')
+      else database.exec("UPDATE preferences SET connection_mode='unmetered'")
+      if (version < 4) database.exec('DROP TABLE delivery_state; DROP TABLE delivery_attempts')
+      database.exec(`PRAGMA user_version=${version}`)
+    } finally { database.close() }
+    const stamp = await store.snapshot()
+    assert.deepEqual(stamp, stampOf(initial))
+    assert.equal(await store.record(observation(), stamp, 20000), true)
+    const connection = await store.open()
+    try {
+      connection.exec('BEGIN')
+      const preference = store.preferences(connection)
+      assert.equal(preference.connection_mode, version < 5 ? 'auto' : 'unmetered')
+      assert.equal(connection.prepare('PRAGMA user_version').get().user_version, version)
+      assert.equal(connection.prepare('SELECT count(*) AS count FROM pending').get().count, 1)
+    } finally { store.closeDatabase(connection) }
+  })
+})
+
+test('native authority checks reject damaged metadata and lookalike pragma tables', async t => {
+  const cases = [
+    ['foreign application', 'PRAGMA application_id=1'],
+    ['unknown format', 'PRAGMA user_version=7'],
+    ['unsafe journal', 'PRAGMA journal_mode=WAL'],
+    ['invalid connection choice', "PRAGMA ignore_check_constraints=ON; UPDATE preferences SET connection_mode='unknown'"],
+    ['missing current connection choice', 'ALTER TABLE preferences DROP COLUMN connection_mode'],
+    ['application pragma impostor', 'PRAGMA application_id=1; CREATE TABLE pragma_application_id(application_id); INSERT INTO pragma_application_id VALUES(1296979024)'],
+    ['journal pragma impostor', "PRAGMA journal_mode=WAL; CREATE TABLE pragma_journal_mode(journal_mode); INSERT INTO pragma_journal_mode VALUES('delete')"],
+  ]
+  for (const [name, damage] of cases) await t.test(name, async t => {
+    const { root, store, initial } = await fixture(t)
+    const path = join(root, 'product-telemetry.sqlite3'), database = new DatabaseSync(path)
+    try { database.exec(damage) } finally { database.close() }
+    assert.equal(await store.snapshot(), null)
+    assert.equal(await store.record(observation(), stampOf(initial), 20000), false)
+    const inspect = new DatabaseSync(path, { readOnly: true })
+    try { assert.equal(inspect.prepare('SELECT count(*) AS count FROM pending').get().count, 0) }
+    finally { inspect.close() }
+  })
 })
 
 test('native app and Python commit to one private bounded SQLite aggregate', async t => {

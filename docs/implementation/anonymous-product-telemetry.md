@@ -152,6 +152,14 @@ One process-wide storage slot is claimed before asynchronous checks and released
 only after actual closure. Windows permission helpers remain owned until actual
 process exit, including after a refusal deadline.
 
+The [transaction metadata follow-up](../validation/2026-10-26-telemetry-query-ownership.md)
+consolidates fresh native authority reads and reuses the checked format only
+inside one transaction. A fixed 32-workflow comparison reduced statement wrappers
+from 608 to 384 with identical queue and contribution state; 67 focused checks
+passed with two Windows-only skips. This source follows frozen 4.46.22 and is
+queued for the next batch. It establishes no RSS/CPU saving or installed acceptance.
+The dependency review did not justify splitting common imports as the resource fix.
+
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
 observations can be reused for **250 ms**, so a recent re-enable may lose optional
