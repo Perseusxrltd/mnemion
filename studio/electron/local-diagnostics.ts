@@ -22,10 +22,12 @@ export function localDiagnostic(input: unknown): LocalDiagnostic | undefined {
   if (input === undefined) return undefined
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid setup diagnostic')
   const value = input as LocalDiagnostic
-  if (Object.keys(value).some(key => !['category', 'locations', 'errno', 'winerror', 'sqlstate', 'exit'].includes(key)) ||
+  if (Object.keys(value).some(key => !['category', 'locations', 'errno', 'winerror', 'sqlstate', 'database_reason', 'exit'].includes(key)) ||
       !['unexpected', 'memory', 'dependency', 'operating_system', 'timeout', 'database', 'process_exit'].includes(value.category) ||
       [value.errno, value.winerror].some(code => code !== undefined && (!Number.isInteger(code) || code < 0 || code > 4294967295)) ||
       (value.sqlstate !== undefined && (typeof value.sqlstate !== 'string' || !/^[A-Z0-9]{5}$/.test(value.sqlstate))) ||
+      (value.database_reason !== undefined && (value.category !== 'database' ||
+        !['authentication', 'timeout', 'connection_refused', 'connection_closed', 'tls', 'other'].includes(value.database_reason))) ||
       (value.exit !== undefined && !validExit(value.exit)) || (value.category === 'process_exit' && !value.exit) ||
       !Array.isArray(value.locations) || value.locations.length > 8 || value.locations.some(location =>
         !location || typeof location !== 'object' || Array.isArray(location) || Object.keys(location).sort().join(',') !== 'function,line,module' ||

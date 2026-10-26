@@ -66,3 +66,11 @@ All 66 requirement texts/states remain unchanged. V08 remains Building and
 product collection remains disabled, with no production destination or route.
 This failed native checkpoint is not release, installed-update or full
 telemetry acceptance.
+
+## Source diagnostic follow-up — 26 October
+
+The [native model diagnostic follow-up](2026-10-26-native-model-diagnostics.md)
+preserves the first classified setup error, avoids further fixture changes after
+failure, and retains fixed database reasons without raw driver text. Its source
+checks passed; Windows x64 native diagnostics remain planned. This does not
+assign a cause or a fix to the original failure, whose evidence above is unchanged.

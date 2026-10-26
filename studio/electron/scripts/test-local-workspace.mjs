@@ -124,7 +124,12 @@ test('setup diagnostics admit bounded code locations and refuse private provider
   const diagnostic = { category: 'database', sqlstate: '08001', locations: [{ module: 'mnemion.local_database', function: 'start', line: 1 }] }
   assert.deepEqual(localDiagnostic(diagnostic), diagnostic)
   assert.notEqual(localDiagnostic(diagnostic), diagnostic)
+  for (const database_reason of ['authentication', 'timeout', 'connection_refused', 'connection_closed', 'tls', 'other']) {
+    assert.equal(localDiagnostic({ ...diagnostic, database_reason }).database_reason, database_reason)
+  }
   for (const input of [null, [], { ...diagnostic, message: 'private provider error' }, { ...diagnostic, sqlstate: 'private' },
+    { ...diagnostic, database_reason: 'private provider detail' }, { ...diagnostic, database_reason: {} },
+    { ...diagnostic, category: 'memory', database_reason: 'timeout' },
     { ...diagnostic, errno: -1 }, { ...diagnostic, locations: Array(9).fill(diagnostic.locations[0]) },
     { ...diagnostic, locations: [{ ...diagnostic.locations[0], module: '/private/path' }] },
     { ...diagnostic, locations: [{ ...diagnostic.locations[0], source: 'private memory' }] },

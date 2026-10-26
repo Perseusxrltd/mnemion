@@ -167,6 +167,7 @@ export type LocalProcessExit = { code: number | null; signal: string | null };
 export type LocalDiagnostic = {
   category: 'unexpected' | 'memory' | 'dependency' | 'operating_system' | 'timeout' | 'database' | 'process_exit';
   errno?: number; winerror?: number; sqlstate?: string;
+  database_reason?: 'authentication' | 'timeout' | 'connection_refused' | 'connection_closed' | 'tls' | 'other';
   exit?: LocalProcessExit;
   locations: Array<{ module: string; function: string; line: number }>;
 }
