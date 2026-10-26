@@ -199,6 +199,7 @@ async def run(source, output, *, memory_workload=False):
                                 json.dumps(
                                     {
                                         "destination": destination,
+                                        "certificate_authorities": [certificate.read_text()],
                                         "enabled": enabled,
                                         "available": available,
                                         "variant": label,
@@ -243,7 +244,6 @@ async def run(source, output, *, memory_workload=False):
                                     "MNEMION_LOCAL_ENGINE": str(root / "absent-engine"),
                                     "MNEMION_LOCAL_DATABASE": str(root / "absent-database"),
                                     "MNEMION_COST_RESULT": str(output / f"{label}.json"),
-                                    "NODE_EXTRA_CA_CERTS": str(certificate),
                                 }
                             )
                             with (output / f"{label}.log").open("x") as log:

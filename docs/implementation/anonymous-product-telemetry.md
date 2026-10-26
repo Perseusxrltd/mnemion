@@ -6,7 +6,8 @@ all requirement texts and the other 65 states are unchanged. The
 [shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
 `collection_available: false` with `destination: null`, and the
 [release route](../../mnemion/product_telemetry/transport-route.json) has a null
-address. Source controls, owners, senders and collector components exist.
+address and an empty certificate-authority list. Source controls, owners,
+senders and collector components exist.
 **No production product collection or qualified anonymous ingress is active.**
 
 The [4.46.13 installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
@@ -206,6 +207,18 @@ opted-out comparisons and every sampled process role remain retained. Combined
 Electron CPU differences are descriptive, not stable per-process overhead.
 Resource acceptance still fails; no causal improvement, budget change or replay
 of this workload is selected.
+
+The subsequent [release-owned TLS trust change](../validation/2026-10-26-telemetry-scoped-trust.md)
+uses one or two bounded public CA certificates for native/Python telemetry,
+without ambient-root fallback. Route version 2 keeps the unavailable address
+null and authorities empty. Minimum TLS 1.3, certificate/hostname verification,
+literal routing, existing review binding and privacy/budget fences remain
+mandatory; browser TLS is unchanged. Source checks passed 78 distinct Python
+cases and 54 cases in the actual local Electron binary running Node mode, with
+Ruff and the Electron build passing. Original fixture failures and corrections
+are retained. The allocation rationale establishes no RSS saving; one fixed
+six-case follow-up is planned after integrating this changed source. Resource,
+provider/privacy and installed-platform acceptance remain open.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file

@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.26**.
+Reviewed source distribution: **4.46.27**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,18 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, release-owned telemetry TLS trust source:**
+[The scoped trust follow-up](validation/2026-10-26-telemetry-scoped-trust.md)
+limits native/Python trust to at most two bounded release CA certificates while
+retaining certificate/hostname verification and existing privacy, review and
+budget fences. Browser TLS is unchanged. 78 distinct Python cases, 54 checks in
+the actual local Electron binary running Node mode, Ruff and the Electron build
+passed; original fixture failures and corrections are retained. No RSS saving
+or resource acceptance is claimed; one fixed changed-source follow-up is planned
+after integration. All 66 states remain unchanged, V08 stays Building, collection
+is off, destination/address are null and authorities are empty. Resource,
+whole-wire, provider/privacy and installed-platform gates remain open.
 
 **26 October 2026, scanner recovery and fixed resource follow-up:**
 [Scanner initialization](validation/2026-10-26-linux-package-recovery.md) now has

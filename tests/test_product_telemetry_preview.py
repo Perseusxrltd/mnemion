@@ -8,6 +8,21 @@ import socket
 import pytest
 
 from mnemion.product_telemetry import aggregate, cli, delivery, endpoint, policy, wire
+from tests import test_product_telemetry_transport as tls_fixtures
+
+
+@pytest.fixture(scope="module")
+def certificates(tmp_path_factory):
+    return tls_fixtures.certificates.__wrapped__(tmp_path_factory)
+
+
+@pytest.fixture(autouse=True)
+def released_trust(monkeypatch, certificates):
+    monkeypatch.setattr(
+        endpoint,
+        "release_certificate_authorities",
+        lambda: certificates[1].telemetry_test_authorities,
+    )
 
 
 @pytest.mark.parametrize(

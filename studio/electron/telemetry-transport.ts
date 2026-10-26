@@ -1,10 +1,11 @@
 /** One bounded HTTPS attempt. The existing app owner supplies its lifetime. */
-import { constants } from 'node:crypto'
+import { constants, X509Certificate } from 'node:crypto'
 import { once } from 'node:events'
 import { isIP, Socket, type SocketConstructorOpts } from 'node:net'
 import { Duplex } from 'node:stream'
-import { connect, type TLSSocket } from 'node:tls'
+import { connect, createSecureContext, type TLSSocket } from 'node:tls'
 import { NativeTelemetryDelivery, PreparedTelemetryReport } from './telemetry-delivery.js'
+import { validCertificateAuthorities } from './telemetry-route.js'
 
 const MAX_TLS_BYTES = 32768, MAX_HEADERS = 2048, DEADLINE = 5000
 type Outcome = 'delivered' | 'suppressed' | 'failed' | 'deadline' | 'wire_limit'
@@ -12,12 +13,17 @@ export type TelemetryAttemptResult = { outcome: Outcome; encrypted_bytes_charged
 
 /** Release-owned address; no resolver, proxy, alternate host or redirect. */
 export class TelemetryEndpoint {
-  constructor(readonly host: string, readonly address: string, readonly port = 443) { Object.freeze(this) }
+  readonly certificateAuthorities: readonly string[]
+  constructor(readonly host: string, readonly address: string, readonly port = 443, certificateAuthorities: readonly string[] = []) {
+    this.certificateAuthorities = Object.freeze(Array.isArray(certificateAuthorities) ? [...certificateAuthorities] : [])
+    Object.freeze(this)
+  }
   valid(destination: unknown): boolean {
     return typeof this.host === 'string' && this.host.length <= 253 &&
       /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(this.host) && !this.host.includes('..') &&
       typeof this.address === 'string' && !this.address.includes('%') && isIP(this.address) !== 0 &&
       Number.isInteger(this.port) && this.port >= 1 && this.port <= 65535 &&
+      validCertificateAuthorities(this.certificateAuthorities) &&
       destination === `https://${this.authority()}/v1/report`
   }
   authority(): string { return this.port === 443 ? this.host : `${this.host}:${this.port}` }
@@ -114,6 +120,13 @@ class Channel {
 
   async handshake(): Promise<void> {
     if (this.stopped.signal.aborted) return
+    // Validate the bounded public roots before any connection. An explicit CA
+    // set avoids loading the general root store and never weakens TLS checks.
+    for (const certificate of this.endpoint.certificateAuthorities) {
+      if (!new X509Certificate(certificate).ca) throw new Error('telemetry_trust_unavailable')
+    }
+    const secureContext = createSecureContext({ ca: [...this.endpoint.certificateAuthorities],
+      minVersion: 'TLSv1.3', secureOptions: constants.SSL_OP_NO_TICKET })
     const connected = once(this.raw, 'connect', { signal: this.stopped.signal })
     this.raw.setNoDelay(true)
     this.raw.connect({ host: this.endpoint.address, port: this.endpoint.port,
@@ -121,7 +134,7 @@ class Channel {
     this.raw.unref()
     await connected
     if (this.stopped.signal.aborted) return
-    this.secure = connect({ socket: this.bridge, servername: this.endpoint.host,
+    this.secure = connect({ socket: this.bridge, servername: this.endpoint.host, secureContext,
       rejectUnauthorized: true, minVersion: 'TLSv1.3', secureOptions: constants.SSL_OP_NO_TICKET,
       ALPNProtocols: ['http/1.1'] })
     this.secure.on('error', () => this.close('failed'))

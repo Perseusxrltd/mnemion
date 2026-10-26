@@ -8,7 +8,8 @@ corrections, cleanup and qualification limits. A pass qualifies only its recorde
 source and fixture; a dated “pending” statement remains historical. No failed
 evidence is deleted or reclassified by this reorganization.
 
-V08 remains Building with collection/destination/route false/null/null.
+V08 remains Building with collection/destination/route false/null/null and an
+empty release certificate-authority list.
 The 4.46.13 basic controls and 4.46.22 review-mode/opt-out controls have scoped
 installed evidence; the 4.46.17 candidate passed all
 12 [source CI jobs](https://github.com/Perseusxrltd/mnemion/actions/runs/40299183411)
@@ -53,6 +54,7 @@ Their operation/path counts are not counts of fully qualified workflows.
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
+| 26 October | [Release-owned TLS trust](2026-10-26-telemetry-scoped-trust.md) | Source follow-up based on `d2e55fbf`: route v2 permits at most two public CA certificates of at most 4 KiB each; native/Python trust has no ambient-root fallback, browser TLS unchanged. 78 distinct Python cases, 54 checks in the actual local Electron binary running Node mode, Ruff and Electron build passed. Python one-authority store: x509=1/crl=0/x509_ca=1, with certificate/hostname verification retained. Initial three lint collisions, the synthetic issuer-collision failure and fixture-only corrections remain retained; the independent repeated negative case is not counted twice. Existing approval/budget binding unchanged, no CA digest in reports. No RSS saving, resource pass, installed or production qualification; one fixed source resource follow-up is planned after integration. |
 | 24 October | [Original delivery components](2026-10-24-telemetry-delivery.md) | Earlier codec/collector/publisher checks, 47 Python checks, six Node and six Electron codec checks, and 12-check plain-loopback HTTP journey. Not a product-sender or TLS/provider qualification. |
 | 24 October | [Shared native/Python and browser budgets](../implementation/anonymous-product-telemetry-budget.md) | Original accounting, monotonic deadline, cleanup and browser-coordination receipts are retained in the design. Early 54-Python/18-Electron results preceded subsequent corrections. |
 | 25 October | [Dedicated collector service](2026-10-25-telemetry-collector-service.md) | Actual TLS, minimal runtime and isolated VPS socket/sandbox checks. Initial staging failures remain; no production-provider privacy or client resource acceptance. |

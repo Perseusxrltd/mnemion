@@ -22,6 +22,15 @@ acceptance remains open. **Production collection remains disabled** with
 `collection_available: false`, `destination: null` and a null route. Installed
 production-delivery qualification remains open.
 
+The later [release-owned TLS trust follow-up](../validation/2026-10-26-telemetry-scoped-trust.md)
+uses route version 2 with at most two public CA certificates, each at most
+4 KiB. Native/Python senders require this explicit trust before connecting;
+browser TLS is unchanged. The current unavailable route has a null address and
+empty authority list. This changes no reservation, allowance, approved packet,
+destination/address binding, deadline or consent/generation fence, and adds no
+CA digest to reports. Passing local source checks do not qualify whole-wire
+cost, installed delivery or the unchanged 2 MiB / 0.5% resource gates.
+
 The later [five-target installed-control qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
 verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
 fields each**, including fixed format preview, app/native choice parity and

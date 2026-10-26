@@ -1,4 +1,5 @@
 {
-  "version": 1,
-  "address": null
+  "version": 2,
+  "address": null,
+  "certificate_authorities": []
 }

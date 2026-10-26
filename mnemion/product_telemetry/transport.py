@@ -105,7 +105,18 @@ class _Channel:
         self.raw = socket.socket(family, socket.SOCK_STREAM)
         self.raw.setblocking(False)
         self.raw.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        context = ssl.create_default_context()
+        # Explicit release roots replace the ambient/system/extra trust store.
+        # create_default_context keeps Python's certificate/hostname safeguards;
+        # cadata prevents it from loading every unrelated system CA.
+        context = ssl.create_default_context(
+            cadata="\n".join(self.endpoint.certificate_authorities)
+        )
+        trusted = context.cert_store_stats()
+        if (
+            trusted["x509"] != len(self.endpoint.certificate_authorities)
+            or trusted["x509_ca"] != trusted["x509"]
+        ):
+            raise _Stopped
         context.minimum_version = ssl.TLSVersion.TLSv1_3
         context.options |= ssl.OP_NO_TICKET
         context.set_alpn_protocols(["http/1.1"])

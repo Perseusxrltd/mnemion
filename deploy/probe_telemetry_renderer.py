@@ -260,9 +260,20 @@ async def run(source, output, playwright, *, attribution=False):
                             write_json(
                                 copy / "studio/electron/dist/telemetry-disclosure.json", contract
                             )
+                            fixture_route = {
+                                "version": 2,
+                                "address": "127.0.0.1" if available else None,
+                                "certificate_authorities": [certificate.read_text()]
+                                if available
+                                else [],
+                            }
                             write_json(
                                 copy / "studio/electron/dist/telemetry-transport-route.json",
-                                {"version": 1, "address": "127.0.0.1" if available else None},
+                                fixture_route,
+                            )
+                            write_json(
+                                copy / "mnemion/product_telemetry/transport-route.json",
+                                fixture_route,
                             )
                             app = copy / "studio/electron"
                             manifest = json.loads((app / "package.json").read_text())
@@ -309,7 +320,6 @@ async def run(source, output, playwright, *, attribution=False):
                                     MNEMION_PROBE_PLAYWRIGHT=str(playwright),
                                     MNEMION_PROBE_ELECTRON=str(electron),
                                     VITE_DEV_PORT=str(port),
-                                    NODE_EXTRA_CA_CERTS=str(certificate),
                                 )
                                 builder = frontend = process = None
                                 done = asyncio.Event()

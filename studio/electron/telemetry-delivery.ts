@@ -12,6 +12,7 @@ import { checkReview, checkReviewMetadata, clearReview, parseReview, reviewConte
   type ReviewContext, type ReviewMetadata, type ReviewReport, type ReviewState } from './telemetry-review.js'
 import { readReviewClock } from './telemetry-review-clock.js'
 import type { ReviewClock } from './telemetry-review-lifetime.js'
+import { nativeTelemetryRoute } from './telemetry-route.js'
 
 const DAY = 86400000, WEEK = 7 * DAY, DEADLINE = 5000, JITTER = 3600000
 const MAX_CLOCK = 86400000000000, COST = 65536, DAILY_BYTES = 256 * 1024
@@ -104,9 +105,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
   private reviewContext(stamp: TelemetryStamp, groups: string[]): ReviewContext {
     if (this.routeAddress === undefined) {
       // This is immutable release input, shared by every inspection/lease check.
-      const route = JSON.parse(readFileSync(new URL('./telemetry-transport-route.json', import.meta.url), 'utf8'))
-      this.routeAddress = route?.version === 1 && Object.keys(route).sort().join() === 'address,version'
-        && (route.address === null || typeof route.address === 'string') ? route.address : null
+      this.routeAddress = nativeTelemetryRoute()?.address ?? null
     }
     return reviewContext({ stamp, groups, binding: { disclosure_version: this.disclosure.version,
       wire_version: this.wire().specification.version, catalog_version: this.catalog.specification.version,

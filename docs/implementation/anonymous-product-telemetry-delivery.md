@@ -25,7 +25,13 @@ service or maintained local stdio loop, with persistent connection controls and
 active environment checks. Source checks and the actual Chromium owner fixture
 passed; the fixture used synthetic CPU admission, so actual sensor qualification
 remains open. The release-owned route address remains
-null; these earlier transport passes do not qualify the new owner paths.
+null, with an empty authority list; these earlier transport passes do not
+qualify the new owner paths. The later
+[release-owned trust qualification](../validation/2026-10-26-telemetry-scoped-trust.md)
+records 78 distinct Python cases and 54 cases in the actual local Electron
+binary running Node mode, plus passing Ruff and Electron build checks.
+Original fixture failures and corrections remain retained; these are source
+and local TLS checks, not installed, resource or production acceptance.
 
 ## Automatic categories and fixed reviewed reports
 
@@ -167,6 +173,35 @@ no application owner was wired. The later owner source now has its own scoped ch
 no endpoint is selected, and TCP/IP overhead, sensors, resources, ingress and
 all-platform acceptance remain open.
 
+## Release-owned native and Python trust
+
+[Route version 2](../../mnemion/product_telemetry/transport-route.json) adds
+`certificate_authorities`. A usable native/Python route requires one or two
+public PEM CA certificates, each at most 4,096 bytes. The release-owned readers
+bound metadata to 16 KiB and check exact fields, single-certificate envelopes
+and duplicates without loading TLS. Senders parse/check the authorities before
+connecting and use only that explicit trust, with no ambient/system/extra-root
+fallback. Missing or invalid trust prevents a connection. Minimum TLS 1.3,
+chain and hostname verification remain mandatory, with the literal IP used for
+routing and the disclosed hostname used for certificate identity.
+
+The [source qualification](../validation/2026-10-26-telemetry-scoped-trust.md)
+includes real TLS, issuer overlap, ambient-only trust refusal and existing
+cancellation/privacy fences. The Python one-authority delivery context reports
+exactly `x509=1`, `crl=0`, `x509_ca=1`, while retaining certificate and hostname
+verification. The existing deadline, charged-byte/header bounds and spending
+limits are unchanged; neither this count nor the upstream allocation mechanism
+establishes an RSS saving or whole-wire bound.
+
+The two-authority limit permits releases to distribute an issuer overlap before
+a server changes issuer. Older installations retain their bundled authorities;
+the production rollout must preserve compatible chains for supported clients.
+Authorities are not workspace/user settings. Existing approved-packet binding
+to destination and route address remains unchanged, with no CA digest in the
+packet or telemetry. Ordinary browser TLS remains unchanged and needs its own
+compatible public trust. Production authorities and destination remain
+unselected; collection stays unavailable with null address and empty roots.
+
 ## Native and browser transport follow-up
 
 The [native sender](../../studio/electron/telemetry-transport.ts) uses a raw socket
@@ -180,6 +215,7 @@ source offers attempts only from already active work; it adds no idle scheduler.
 | Boundary | Native source | Browser source |
 | --- | --- | --- |
 | Destination and connection | Release-owned literal IP; certificate verification, minimum TLS 1.3 and disclosed hostname/port. No DNS or proxy. | Exact disclosed HTTPS URL at `/v1/report`, without credentials, query or fragment. The browser manages DNS, proxies, TLS and connection reuse. |
+| Certificate authorities | One or two bounded release-owned CA certificates; no ambient/system/extra-root fallback. | The browser's ordinary certificate trust; no application-supplied CA set. |
 | Request | Four bytes and fixed HTTP/1.1 headers; one nonblocking raw-socket handoff under the SQLite privacy fence. | Four copied bytes passed to Fetch under the Web Lock fence; credentials omitted, no referrer, cache disabled, redirects refused and keepalive disabled. |
 | Transport bounds | 32,768 combined charged TLS stream bytes and a 2,048-byte response-header cap; neither includes TCP/IP overhead. | Fetch exposes neither an enforceable TLS/TCP/IP byte cap nor a response-header cap. The fixed reservation is not a measured whole-wire bound. |
 | Success observation | Exact empty HTTP 204 parsed from the bounded response. | Fetch exposes status 204, the exact destination, no redirect and `Content-Length: 0` before the active deadline. The body is never read; a null stream is not required. This is not a raw-wire parser. |

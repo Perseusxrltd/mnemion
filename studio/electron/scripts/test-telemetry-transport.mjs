@@ -14,12 +14,12 @@ import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { DesktopTelemetryActivity } from '../dist/telemetry-activity.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { sendNativeTelemetry, TelemetryEndpoint } from '../dist/telemetry-transport.js'
+import { parseTelemetryRoute, validCertificateAuthorities } from '../dist/telemetry-route.js'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
 const environment = { ...process.env, PYTHONPATH: repository, PYTHONNOUSERSITE: '1' }
-const originalRoots = getCACertificates('default')
-let certificates, cert, key
+let certificates, cert, key, otherCert
 const run = (program, input) => {
   const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', input: JSON.stringify(input), timeout: 20000 })
   assert.equal(child.status, 0, child.stderr)
@@ -59,12 +59,18 @@ cert=(x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(
 (folder/'cert.pem').write_bytes(cert.public_bytes(serialization.Encoding.PEM))
 (folder/'key.pem').write_bytes(key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()))
 (folder/'key.pem').chmod(0o600)
+other_key=ec.generate_private_key(ec.SECP256R1())
+other_name=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'other-test-authority')])
+other_cert=(x509.CertificateBuilder().subject_name(other_name).issuer_name(other_name).public_key(other_key.public_key())
+ .serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(minutes=1)).not_valid_after(now+timedelta(days=1))
+ .add_extension(x509.BasicConstraints(ca=True,path_length=None),critical=True).sign(other_key,hashes.SHA256()))
+(folder/'other-cert.pem').write_bytes(other_cert.public_bytes(serialization.Encoding.PEM))
 `, certificates)
   cert = await readFile(join(certificates, 'cert.pem'), 'utf8')
   key = await readFile(join(certificates, 'key.pem'))
-  setDefaultCACertificates([...originalRoots, cert])
+  otherCert = await readFile(join(certificates, 'other-cert.pem'), 'utf8')
 })
-after(async () => { setDefaultCACertificates(originalRoots); await rm(certificates, { recursive: true, force: true }) })
+after(async () => { await rm(certificates, { recursive: true, force: true }) })
 
 async function peer(t, mode = 'success') {
   const sockets = new Set(), requests = []
@@ -98,7 +104,7 @@ async function peer(t, mode = 'success') {
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   t.after(async () => { for (const socket of sockets) socket.destroy(); await new Promise(resolve => server.close(resolve)) })
-  return { endpoint: new TelemetryEndpoint('localhost', '127.0.0.1', server.address().port), requests, entered, closed,
+  return { endpoint: new TelemetryEndpoint('localhost', '127.0.0.1', server.address().port, [cert]), requests, entered, closed,
     release: () => release(), connections: () => connections }
 }
 
@@ -129,7 +135,7 @@ print(json.dumps(result))
   assert.equal(disclosure.collection_available, false)
   const active = { ...disclosure, collection_available: true, destination }
   const store = options.activity
-    ? new DesktopTelemetryActivity(root, active, catalog, options.conditions ?? (() => ({ network: 'unmetered', constrained: false })), company, endpoint.address, options.gauges)
+    ? new DesktopTelemetryActivity(root, active, catalog, options.conditions ?? (() => ({ network: 'unmetered', constrained: false })), company, endpoint.address, options.gauges, endpoint.certificateAuthorities)
     : new NativeTelemetryDelivery(root, active, catalog, company)
   const stamp = invoke('init')
   if (options.activity) { t.after(() => store.closeDelivery()); return { store, stamp, invoke } }
@@ -157,6 +163,71 @@ test('native TLS sends one fixed four-byte request without DNS or ambient creden
     `Host: ${server.endpoint.authority()}`, 'Content-Type: application/octet-stream', 'Content-Length: 4', 'Connection: close'])
   f.cleaned()
 })
+
+test('native TLS ignores ambient trust in an unselected certificate authority', async t => {
+  const server = await peer(t), selected = new TelemetryEndpoint('localhost', '127.0.0.1', server.endpoint.port, [otherCert])
+  const f = await installation(t, selected), previous = getCACertificates('default')
+  setDefaultCACertificates([cert])
+  let result
+  try { result = await sendNativeTelemetry(f.store, f.report, selected) }
+  finally { setDefaultCACertificates(previous) }
+  assert.equal(result.outcome, 'failed')
+  assert.equal(server.connections(), 1); assert.equal(server.requests.length, 0)
+  f.cleaned()
+})
+
+test('native TLS accepts a second release authority without retaining the caller list', async t => {
+  const server = await peer(t), roots = [otherCert, cert]
+  const selected = new TelemetryEndpoint('localhost', '127.0.0.1', server.endpoint.port, roots)
+  roots.splice(0)
+  const f = await installation(t, selected)
+  const result = await sendNativeTelemetry(f.store, f.report, selected)
+  assert.equal(result.outcome, 'delivered'); assert.equal(server.requests.length, 1)
+  assert.deepEqual(selected.certificateAuthorities, [otherCert, cert])
+  f.cleaned()
+})
+
+for (const [kind, authorities] of [
+  ['missing', () => []],
+  ['invalid envelope', () => ['not-a-certificate']],
+  ['invalid certificate', () => ['-----BEGIN CERTIFICATE-----\nMAMCAQE=\n-----END CERTIFICATE-----\n']],
+]) test(`native ${kind} trust refuses before a connection`, async t => {
+  const server = await peer(t), target = new TelemetryEndpoint('localhost', '127.0.0.1', server.endpoint.port, authorities())
+  const f = await installation(t, target)
+  const result = await sendNativeTelemetry(f.store, f.report, target)
+  assert.ok(['suppressed', 'failed'].includes(result.outcome))
+  assert.equal(server.connections(), 0); assert.equal(server.requests.length, 0)
+  f.cleaned()
+})
+
+test('release trust permits one or two distinct public certificates and freezes its inputs', () => {
+  const input = { version: 2, address: '127.0.0.1', certificate_authorities: [cert, otherCert] }
+  const selected = parseTelemetryRoute(input)
+  assert.ok(selected)
+  input.address = '127.0.0.2'; input.certificate_authorities.splice(0)
+  assert.equal(selected.address, '127.0.0.1')
+  assert.deepEqual(selected.certificate_authorities, [cert, otherCert])
+  assert.ok(Object.isFrozen(selected) && Object.isFrozen(selected.certificate_authorities))
+  assert.equal(validCertificateAuthorities([cert.replace(/\n/g, '\r\n')]), true)
+})
+
+for (const kind of ['legacy', 'missing', 'empty', 'duplicate', 'excessive', 'extra', 'wrong_version', 'oversized', 'bundled', 'invalid_base64', 'unicode']) {
+  test(`release trust rejects ${kind} inputs without ambient fallback`, () => {
+    const value = { version: 2, address: '127.0.0.1', certificate_authorities: [cert] }
+    if (kind === 'legacy') { value.version = 1; delete value.certificate_authorities }
+    else if (kind === 'missing') delete value.certificate_authorities
+    else if (kind === 'empty') value.certificate_authorities = []
+    else if (kind === 'duplicate') value.certificate_authorities = [cert, cert.replace(/\n/g, '\r\n')]
+    else if (kind === 'excessive') value.certificate_authorities = [cert, otherCert, cert]
+    else if (kind === 'extra') value.ambient_fallback = true
+    else if (kind === 'wrong_version') value.version = true
+    else if (kind === 'oversized') value.certificate_authorities = ['x'.repeat(16385)]
+    else if (kind === 'bundled') value.certificate_authorities = [cert + otherCert]
+    else if (kind === 'invalid_base64') value.certificate_authorities = ['-----BEGIN CERTIFICATE-----\nA===\n-----END CERTIFICATE-----\n']
+    else value.certificate_authorities = [cert.replace(/\n/g, '\u2028')]
+    assert.equal(parseTelemetryRoute(value), null)
+  })
+}
 
 test('a slow active privacy read cannot compete with its own final TLS handoff', async t => {
   const server = await peer(t), f = await installation(t, server.endpoint)
@@ -302,7 +373,7 @@ for (const mode of ['redirect', 'large_headers']) test(`native ${mode} responses
 })
 
 test('certificate name mismatch never exposes the report', async t => {
-  const server = await peer(t), endpoint = new TelemetryEndpoint('wrong.invalid', '127.0.0.1', server.endpoint.port)
+  const server = await peer(t), endpoint = new TelemetryEndpoint('wrong.invalid', '127.0.0.1', server.endpoint.port, [cert])
   const f = await installation(t, endpoint)
   assert.equal((await sendNativeTelemetry(f.store, f.report, endpoint)).outcome, 'failed')
   assert.equal(server.requests.length, 0)

@@ -154,7 +154,21 @@ test('workspace restoration cannot reuse a result after a real cross-runtime opt
   const { invoke, store, initial } = await fixture(t)
   const recordMany = store.recordMany.bind(store), pending = [], result = { private: 'PRIVATE_WORKSPACE' }
   store.recordMany = (...args) => { const work = recordMany(...args); pending.push(work); return work }
-  await measureDesktop(store, 'workspace.restore', {}, 'desktop', () => {
+  const measure = async run => {
+    // Read actual current SQLite authority and Windows ACLs before each action.
+    // This test isolates generation/result ownership from optional 25 ms
+    // admission; the existing late-selection test owns that deadline behavior.
+    const stamp = await store.snapshot()
+    assert.ok(stamp, 'the real private store must authorize each fresh start')
+    let snapshots = 0
+    const admitted = { available: store.available, catalog: store.catalog,
+      snapshot: () => { snapshots++; return Promise.resolve(stamp) },
+      recordMany: (...args) => store.recordMany(...args) }
+    const value = await measureDesktop(admitted, 'workspace.restore', {}, 'desktop', run)
+    assert.equal(snapshots, 1)
+    return value
+  }
+  await measure(() => {
     const off = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
     invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
       expected_generation: off.store_generation, disclosure_version: 1 } })
@@ -163,11 +177,11 @@ test('workspace restoration cannot reuse a result after a real cross-runtime opt
   await Promise.all(pending)
   const day = Math.floor(Date.now() / 86400000)
   assert.deepEqual(invoke('preview', { day }), [])
-  await measureDesktop(store, 'workspace.restore', {}, 'desktop', () => result)
+  await measure(() => result)
   await Promise.all(pending)
   assert.deepEqual(invoke('preview', { day }), [], 'renewed consent cannot re-own the retained result')
   const fresh = { private: 'ANOTHER_PRIVATE_WORKSPACE' }
-  await measureDesktop(store, 'workspace.restore', {}, 'desktop', () => markWorkspaceSelection(fresh, 'switched'))
+  await measure(() => markWorkspaceSelection(fresh, 'switched'))
   await Promise.all(pending)
   const rows = invoke('preview', { day })
   assert.equal(rows.filter(row => row.metric === 'submissions').reduce((n, row) => n + row.count, 0), 1)

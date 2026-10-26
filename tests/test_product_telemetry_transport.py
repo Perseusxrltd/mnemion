@@ -15,14 +15,13 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 import pytest
 
-from mnemion.product_telemetry import aggregate, delivery, policy, transport
+from mnemion.product_telemetry import aggregate, delivery, endpoint, policy, transport
 
 
-@pytest.fixture(scope="module")
-def certificates(tmp_path_factory):
+def _certificates(tmp_path_factory, common_name):
     folder = tmp_path_factory.mktemp("telemetry-tls")
     key = ec.generate_private_key(ec.SECP256R1())
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")])
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
     now = datetime.now(timezone.utc)
     cert = (
         x509.CertificateBuilder()
@@ -50,7 +49,13 @@ def certificates(tmp_path_factory):
     context.minimum_version = ssl.TLSVersion.TLSv1_3
     context.num_tickets = 0
     context.load_cert_chain(certificate, private_key)
+    context.telemetry_test_authorities = (certificate.read_text(),)
     return certificate, context
+
+
+@pytest.fixture(scope="module")
+def certificates(tmp_path_factory):
+    return _certificates(tmp_path_factory, "localhost")
 
 
 @pytest.fixture
@@ -59,14 +64,11 @@ def installation(tmp_path, monkeypatch, certificates):
     root = tmp_path / "private"
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
     monkeypatch.setattr(policy, "company_policy_file", lambda: tmp_path / "company.json")
-    original_context = ssl.create_default_context
-
-    def trusted_context():
-        context = original_context()
-        context.load_verify_locations(cafile=certificates[0])
-        return context
-
-    monkeypatch.setattr(ssl, "create_default_context", trusted_context)
+    monkeypatch.setattr(
+        endpoint,
+        "release_certificate_authorities",
+        lambda: certificates[1].telemetry_test_authorities,
+    )
     budget = delivery.DeliveryBudget(root)
 
     def prepare(endpoint, *, reserve=True):
@@ -103,6 +105,106 @@ def installation(tmp_path, monkeypatch, certificates):
     return SimpleNamespace(
         root=root, budget=budget, prepare=prepare, cleaned=cleaned, context=certificates[1]
     )
+
+
+@pytest.fixture(scope="module")
+def other_authority(tmp_path_factory):
+    # A distinct issuer/key avoids a synthetic same-subject/no-key-identifier
+    # collision. Ambient trust in the peer must not authorize this other root.
+    return _certificates(tmp_path_factory, "other-test-authority")[0].read_text()
+
+
+def test_scoped_tls_context_loads_one_authority_and_preserves_verification(
+    installation, monkeypatch
+):
+    f = installation
+    create = ssl.create_default_context
+    contexts = []
+
+    def observe(*args, **kwargs):
+        context = create(*args, **kwargs)
+        contexts.append(context.cert_store_stats())
+        assert context.verify_mode == ssl.CERT_REQUIRED and context.check_hostname
+        return context
+
+    monkeypatch.setattr(ssl, "create_default_context", observe)
+
+    async def scenario():
+        async with peer(f.context) as server:
+            report = f.prepare(server.endpoint)
+            result = await transport.send(f.budget, report, server.endpoint)
+            assert result.outcome == "delivered" and len(server.requests) == 1
+            f.cleaned(report)
+
+    asyncio.run(scenario())
+    assert contexts == [{"x509": 1, "crl": 0, "x509_ca": 1}]
+
+
+def test_scoped_tls_rejects_a_peer_trusted_only_by_ambient_certificates(
+    installation, monkeypatch, certificates, other_authority, tmp_path
+):
+    f = installation
+    monkeypatch.setenv("SSL_CERT_FILE", str(certificates[0]))
+    monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path / "absent-certificates"))
+
+    async def scenario():
+        async with peer(f.context) as server:
+            target = transport.Endpoint(
+                "localhost", "127.0.0.1", server.endpoint.port, (other_authority,)
+            )
+            report = f.prepare(target)
+            result = await transport.send(f.budget, report, target)
+            assert result.outcome == "failed" and server.requests == []
+            f.cleaned(report)
+
+    asyncio.run(scenario())
+
+
+def test_scoped_tls_accepts_the_second_reviewed_rotation_authority(installation, other_authority):
+    f = installation
+
+    async def scenario():
+        async with peer(f.context) as server:
+            target = transport.Endpoint(
+                "localhost",
+                "127.0.0.1",
+                server.endpoint.port,
+                (other_authority, *server.endpoint.certificate_authorities),
+            )
+            report = f.prepare(target)
+            result = await transport.send(f.budget, report, target)
+            assert result.outcome == "delivered" and len(server.requests) == 1
+            f.cleaned(report)
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "authorities",
+    [
+        (),
+        ("not-a-certificate",),
+        ("-----BEGIN CERTIFICATE-----\nMAMCAQE=\n-----END CERTIFICATE-----\n",),
+    ],
+)
+def test_absent_or_malformed_trust_never_connects(installation, monkeypatch, authorities):
+    f = installation
+
+    async def scenario():
+        target = transport.Endpoint("localhost", "127.0.0.1", 443, authorities)
+        report = f.prepare(target)
+        connections = []
+
+        async def forbidden_connect(*args):
+            connections.append(True)
+            raise AssertionError("unqualified trust connected")
+
+        monkeypatch.setattr(asyncio.get_running_loop(), "sock_connect", forbidden_connect)
+        result = await transport.send(f.budget, report, target)
+        assert result.outcome in {"suppressed", "failed"} and connections == []
+        f.cleaned(report)
+
+    asyncio.run(scenario())
 
 
 @pytest.mark.parametrize("ending", ["success", "shutdown", "pressure"])
@@ -388,7 +490,12 @@ async def peer(context, mode="success"):
     server = await asyncio.start_server(
         handle, "127.0.0.1", 0, ssl=None if mode == "stall_handshake" else context
     )
-    endpoint = transport.Endpoint("localhost", "127.0.0.1", server.sockets[0].getsockname()[1])
+    endpoint = transport.Endpoint(
+        "localhost",
+        "127.0.0.1",
+        server.sockets[0].getsockname()[1],
+        context.telemetry_test_authorities,
+    )
     try:
         yield SimpleNamespace(
             endpoint=endpoint, entered=entered, release=release, requests=requests
@@ -523,7 +630,12 @@ def test_wrong_certificate_name_prevents_the_report_body_from_being_sent(install
 
     async def run():
         async with peer(f.context) as server:
-            endpoint = transport.Endpoint("wrong.invalid", "127.0.0.1", server.endpoint.port)
+            endpoint = transport.Endpoint(
+                "wrong.invalid",
+                "127.0.0.1",
+                server.endpoint.port,
+                server.endpoint.certificate_authorities,
+            )
             report = f.prepare(endpoint)
             result = await transport.send(f.budget, report, endpoint)
             assert result.outcome == "failed" and not server.requests

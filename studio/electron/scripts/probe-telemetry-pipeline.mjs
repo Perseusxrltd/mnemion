@@ -67,7 +67,7 @@ async function measure() {
       return value
     }, join(fixture, 'company-absent.json'), '127.0.0.1', {
       prepare: stop => gauges.prepare(stop), close: () => gauges.close(),
-    })
+    }, input.certificate_authorities)
   sample('owner_created')
   const latencies = []
   let memoryCycles = 0, memoryResultsVerified = false
