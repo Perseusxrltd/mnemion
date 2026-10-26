@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T23:23:28+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T23:26:47+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,8 +21,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.28 | success | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
 | release\.yml | release/4\.46\.29 | success | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
 | release\.yml | release/4\.46\.30 | in\_progress | [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100) |
-| release\.yml | release/4\.46\.31 | pending | [Run 40417437026](https://github.com/Perseusxrltd/mnemion/actions/runs/40417437026) |
-| verify-artifacts\.yml | main | failure | [Run 40417189624](https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624) |
+| release\.yml | release/4\.46\.31 | cancelled | [Run 40417437026](https://github.com/Perseusxrltd/mnemion/actions/runs/40417437026) |
+| verify-artifacts\.yml | main | skipped | [Run 40419752860](https://github.com/Perseusxrltd/mnemion/actions/runs/40419752860) |
 | website-release\.yml | main | success | [Run 40416515248](https://github.com/Perseusxrltd/mnemion/actions/runs/40416515248) |
 | website-release\.yml | v4\.46\.28 | success | [Run 40411254189](https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189) |
 
@@ -30,14 +30,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100): 17/21 jobs completed; 14 succeeded.
 
-- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Packaged Mac update, restart guards and relaunch.
 - native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 - native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
 ## Unsuccessful jobs
 
 - [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100): native / windows-11-arm / arm64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
 - [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100): native / windows-2022 / x64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
-- [Run 40417189624](https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624): verify (failure). Steps: Scan the exact downloaded distributions before publication.

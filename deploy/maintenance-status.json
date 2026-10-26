@@ -83,7 +83,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Packaged Mac update, restart guards and relaunch"
             ]
           },
           {
@@ -110,7 +110,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -146,48 +146,21 @@
       "workflow": "release.yml",
       "branch": "release/4.46.31",
       "source_commit": "8aadccf3026420465b4c3974342b77f628739f0d",
-      "status": "pending",
-      "conclusion": null,
-      "updated_at": "2026-10-26T23:06:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40417437026",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 0,
-        "completed": 0,
-        "succeeded": 0,
-        "active": []
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-26T23:26:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40417437026"
     },
     {
-      "id": 40417189624,
+      "id": 40419752860,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "acfaa768d8fac9409d08a65bd705fc9e32a1ea9a",
+      "source_commit": "e5299ac0a62b00a515c4905261a0639d64b83732",
       "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-26T23:09:54Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624",
-      "job_details_schema": 2,
-      "failed_jobs": [
-        {
-          "name": "verify",
-          "id": 121902361551,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 16,
-          "steps": [
-            "Scan the exact downloaded distributions before publication"
-          ]
-        }
-      ],
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      }
+      "conclusion": "skipped",
+      "updated_at": "2026-10-26T23:26:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40419752860"
     },
     {
       "id": 40416515248,
@@ -212,5 +185,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189"
     }
   ],
-  "observed_at": "2026-10-26T23:23:28+00:00"
+  "observed_at": "2026-10-26T23:26:47+00:00"
 }
