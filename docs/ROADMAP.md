@@ -25,6 +25,14 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+At **26 October 2026, 03:55 UTC**, the [one six-case attribution run](validation/2026-10-26-telemetry-attribution.md)
+has completed with all functional journeys and reviewed source matches. Both
+enabled matched main-process RSS maxima exceed 2 MiB. Cold initialization and
+storage-runtime ownership review is next; no benchmark repeat or budget revision
+is selected. V08 remains Building, with the 2 MiB / 0.5% gates unaccepted and
+production collection disabled. Frozen 4.46.13 remains a separate native/public
+acceptance gate at this checkpoint.
+
 - **V08 renderer and IPC — 26 October 2026; source evidence.** The
   [development-app journey](validation/2026-10-26-telemetry-renderer.md) passed
   all three variants, each with 387 real fixture API requests through onboarding

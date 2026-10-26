@@ -13,9 +13,9 @@ has passing source and isolated loopback component checks. The later
 [native and browser senders](../validation/2026-10-24-telemetry-client-transports.md)
 are source components; **32 Electron checks passed with two Windows-only skips**,
 and **65 browser source checks passed**. Actual loopback TLS/collector journeys
-passed **22 browser checks and 18 native checks**. **There is no active
-product sender, installed owner integration, qualified ingress or production
-activation.** The disclosure remains `collection_available: false` with
+passed **22 browser checks and 18 native checks**. **Production collection
+remains disabled; installed production delivery and ingress qualification remain
+open.** The disclosure remains `collection_available: false` with
 `destination: null`. Source and synthetic utility evidence is recorded in the
 [delivery validation](../validation/2026-10-24-telemetry-delivery.md).
 
@@ -69,11 +69,16 @@ acknowledges disclosure or sends a request. Local aggregate inspection remains a
 separately labeled snapshot; the app clears it on choice changes, status refresh
 or window focus and rejects late preview responses. The
 [exact-packet acceptance requirement](anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview)
-remains open. The new
-[component checks](../validation/2026-10-26-telemetry-preview.md) passed; the added
-installed-app journey has not yet run. Earlier codec and sender receipts retain
-their original scope. HTTP headers, framing, TLS and other transport traffic are
-additional bytes and remain unqualified.
+remains open. The original source checkpoint left installed checks pending;
+later [five-target qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
+verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
+fields each**, including the format preview, app/native choice parity and opt-out
+persistence across restart. Windows ARM64 used x64 engine/database components
+under emulation. The overall 4.46.12 run failed on Intel Mac, whose installed
+journey was skipped; the candidate remains unpublished. These control checks
+do not qualify installed production delivery. Earlier codec and sender receipts
+retain their original scope. HTTP headers, framing, TLS and other transport
+traffic are additional bytes and remain unqualified.
 
 `prepare` accepts only bounded `(cell, count)` pairs and reviewed cohort enums.
 It does **not** itself read policy or enforce an attempt budget. The later
@@ -110,7 +115,8 @@ authenticated-contributor or poisoning-resistance guarantee.
 
 At the codec-only checkpoint, the JSON's budget entries were proposals. The later
 native/Python source wrapper implements reservation accounting as follows. Its
-preceding source checks passed; application-owner integration remains pending:
+preceding source checks passed before the later application-owner source wiring;
+installed production delivery remains unqualified:
 
 | Bound | Current source status |
 | --- | --- |
@@ -219,7 +225,7 @@ The helper makes no Internet probe and changes no network settings.
 | OS source | Admission behavior |
 | --- | --- |
 | Windows | [`GetNetworkConnectivityHint`](https://learn.microsoft.com/en-us/windows/win32/api/netioapi/nf-netioapi-getnetworkconnectivityhint) on Windows 10 version 2004 or later. Fixed/variable cost, roaming and approaching/exceeded limits are metered; insufficient connectivity is constrained. Older or unavailable support stays unknown. The rejected COM path is not used. |
-| macOS | Network framework path `expensive`, `constrained` and satisfaction state. This implementation is source-only and has not yet been compiled or qualified on macOS. |
+| macOS | Network framework path `expensive`, `constrained` and satisfaction state. Later Intel/ARM Python/Node component builds and probes passed; installed network-admission qualification remains open. |
 | Linux | Private local D-Bus reads of NetworkManager's [`Metered` and `State`](https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.html), without service auto-start. Remote `DBUS_*` overrides are ignored. Explicit `NO` can allow automatic admission; guessed `NO` stays unknown, and guessed `YES` is metered. Missing support stays unknown. |
 
 The Linux core now uses nonblocking pending calls and bounded dispatch, with a
@@ -258,9 +264,11 @@ The Node tests are not Electron app acceptance. Final actual component probes
 recorded **2.11 MiB added RSS on Windows Node and 2.23 MiB on Linux Electron**,
 both above the full-feature 2 MiB target. The
 [reusable probe](../../deploy/probe_telemetry_network.py) checks the actual binary
-through Python and Node; new Intel/ARM macOS CI steps have not yet run.
-macOS, all-six-installed and whole-app resource/wire/collector qualification
-remain pending; production stays false/null/null.
+through Python and Node. The later
+[macOS component follow-up](../validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
+records passing Intel/ARM builds and Python/Node probes. Those component results
+and the five installed control targets do not qualify all-six installed delivery
+or whole-app resource/wire/collector limits; production stays false/null/null.
 
 ## Browser company-policy refresh
 

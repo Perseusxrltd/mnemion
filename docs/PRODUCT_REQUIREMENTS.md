@@ -1,6 +1,6 @@
 # Complete product requirements
 
-Updated **2026-10-24**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-26**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 
@@ -32,20 +32,39 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
-**24 October 2026 active feature — V08, Building/source implementation:** the
+**26 October 2026, 03:55 UTC, current V08 — Building/source implementation:** bounded
+sender components, owned workflow hooks and a dedicated collector now exist in
+[source](implementation/anonymous-product-telemetry.md).
+[Isolated TLS and collector-service checks](validation/2026-10-25-telemetry-collector-service.md)
+passed; production collection remains unavailable (`false`, destination and
+route `null`). [Five installed privacy-control targets](validation/2026-10-26-telemetry-preview.md)
+from frozen 4.46.12 passed all 64 required fields. The overall release run failed
+in Intel Mac packaging and supervision; it does not establish publication or
+complete V08 acceptance. As of this checkpoint, frozen 4.46.13 still awaits
+native/public acceptance. The [one six-case attribution run](validation/2026-10-26-telemetry-attribution.md)
+completed with all six functional journeys and reviewed source matches;
+enabled matched main-process RSS maxima of **3,608,576 / 3,391,488 bytes** remain
+above 2 MiB. The decision selects cold initialization/storage-runtime ownership
+review, with no repeat benchmark or budget revision. Exact-next-packet inspection
+remains unimplemented; the **2 MiB / 0.5%** resource gates stay unchanged and
+unaccepted. No requirement text or state changes in this checkpoint.
+
+**24 October 2026 historical source checkpoint — V08, Building:** the
 [fresh backup and independent restore](validation/2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45** and **00:15:23 UTC**. V08 now has source-only
+passed at **00:01:45** and **00:15:23 UTC**. V08 then had source-only
 [app/native privacy controls](guides/product-telemetry-controls.md) and a
 **19-check core browser journey** accepted at **00:51:17 UTC**, followed by
 **eight browser policy/fault checks**. The later [source-input qualification](validation/2026-10-24-telemetry-controls.md)
 passed at **01:12:30 UTC**.
-No sender, collector, production analytics,
-qualified anonymous ingress or all-six-native acceptance exists. This work is
-excluded from the isolated 4.46.6 dependency-security release. Only V08's state
-changes; all 66 requirement texts and the other 65 states are preserved.
+At that checkpoint, no sender or collector existed and production analytics
+were unavailable. Anonymous ingress and all-six-native acceptance remained
+unqualified.
+That work was excluded from the isolated 4.46.6 dependency-security release.
+That checkpoint changed only V08's state; all 66 requirement texts and the other
+65 states were preserved.
 The dated entries below retain earlier states and delivery decisions.
 
-**23 October 2026 scope addition — V08:** retain the new
+**23 October 2026 historical scope addition — V08:** retain the new
 [anonymous product telemetry request](implementation/anonymous-product-telemetry.md)
 as a separate planned requirement. It covers aggregate app/agent usage,
 performance, resources, bandwidth and fixed error codes, with disclosed default

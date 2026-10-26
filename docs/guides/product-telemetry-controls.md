@@ -10,9 +10,18 @@ The source includes local choice, disclosure, a fixed measurement catalog,
 bounded queues and senders, and selected app, agent and maintenance hooks.
 A [dedicated collector](../implementation/anonymous-product-telemetry-collector.md)
 also has passing isolated TLS checks; it has not been deployed or qualified as
-a production destination. Resource, transport/privacy and installed-platform
+a production destination. Full resource, transport/privacy and installed-platform
 acceptance remain unfinished. The [implementation contract](../implementation/anonymous-product-telemetry.md)
 preserves the detailed source evidence and remaining scope.
+
+At the 26 October checkpoint, [five installed privacy-control targets](../validation/2026-10-26-telemetry-preview.md)
+qualified from frozen 4.46.12: Linux x64/ARM64, Windows x64/ARM64 and macOS ARM64,
+with 64 required fields each. Windows ARM used an ARM desktop with emulated x64
+engine/database components. Intel Mac packaging failed before its installed
+journey, and the separate supervision job failed; the overall candidate remained
+unpublished. This is control acceptance, not active telemetry or full V08
+acceptance. As of **26 October, 03:55 UTC**, frozen 4.46.13 still awaits its
+native/public gates.
 
 ## In the app
 
@@ -51,7 +60,8 @@ opt-out and does not acknowledge an unseen disclosure.
 The new [native network-admission source](../validation/2026-10-25-telemetry-native-conditions.md)
 can read OS cost flags on supported Windows, Linux and macOS systems. Later
 [macOS Python/Node component probes](../validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
-passed; macOS Electron and installed-client qualification remain open.
+passed; complete network-admission/resource qualification under installed
+Electron remains open.
 A source/pip installation without the
 compiled helper remains unknown, so automatic mode keeps delivery paused.
 Declaring an unmetered connection cannot override an OS-reported metered or
@@ -70,16 +80,18 @@ Its desktop/TLS diagnostic still exceeded the 2 MiB full-feature RSS target when
 opted out and when enabled; collection remains unavailable.
 The subsequent [real-memory diagnostic](../validation/2026-10-25-telemetry-memory-profile.md)
 completed fixed save/fetch/search transactions in all three variants. Its
-resource measurements and the repeated synthetic diagnostic still do not qualify
-the unchanged limits; renderer/IPC and full platform acceptance remain open.
+resource measurements and the repeated synthetic diagnostic do not qualify the
+unchanged limits. Later [compiled renderer journeys](../validation/2026-10-26-telemetry-sqlite-cleanup.md)
+completed the actual renderer/IPC flow; full resource/platform acceptance remains
+open.
 
-The latest [source optimization](../validation/2026-10-25-telemetry-denial-io.md)
+The [25 October denial-I/O follow-up](../validation/2026-10-25-telemetry-denial-io.md)
 can reuse an already observed denial for up to **250 ms**. In a collection-capable
 build, newly re-enabled work may still lose optional samples during that interval;
 your saved choice and status use fresh checks. It cannot enable collection or bypass
 the checks on accepted work. Collection remains unavailable in this source build.
-The latest source checks and isolated burst completed; enabled RSS still exceeds
-the 2 MiB full-feature target, and installed-platform qualification remains open.
+Its source checks and isolated burst completed; that enabled RSS observation
+exceeded the 2 MiB target. Full resource/platform qualification remains open.
 
 The exclusions cover unowned remote clients, client-derived server jobs,
 mixed-user host totals, private operational records, polling/replay, privacy
@@ -132,8 +144,9 @@ actual-body fields are not a traffic counter or proof that another owner has
 no active attempt. The catalog is included; `local_aggregates` stays empty while
 collection is unavailable. When present, local counts are a private snapshot,
 not a serialized outbound report or event history. The
-[format-preview component checks](../validation/2026-10-26-telemetry-preview.md)
-passed; the added installed-app journey has not yet run. The
+[format-preview evidence](../validation/2026-10-26-telemetry-preview.md)
+now includes component checks and the five installed-control targets described
+above. Intel Mac and the complete release/telemetry acceptance remain open. The
 [actual-packet inspection requirement](../implementation/anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview)
 remains open. Success returns
 `{"event":"result","ok":true,"result":...}`; refusal returns a fixed error code
@@ -246,8 +259,9 @@ metadata lets the Studio wrapper exclude replayed or uncertain keyed writes;
 generic SDK/API requests, polling, privacy controls and unowned continuation
 transports remain unmeasured. Async acknowledgement is not completion. See the
 [explicit ownership maps](../implementation/anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
-for the selected actions and exclusions. These hooks remain inactive: no sender
-is active, and no deployed collector or production collection is available. The new UI map adds five
+for the selected actions and exclusions. Hooks and sender components exist in
+source, while production collection remains inactive and no production collector
+is qualified or enabled. The UI map adds five
 browser connection actions and 11 selected legacy Studio methods, with 18 legacy
 exclusions. Browser hooks skip desktop connections already owned by IPC, respect
 company sign-in cancellation and inspect only reviewed boolean result flags.
@@ -315,8 +329,9 @@ store to other accounts. The app's small owner/DACL helper only inspects existin
 permissions; it does not repair them. On POSIX systems the store uses owner/mode
 checks. A missing, linked or unsafe database is never replaced by the measurement
 path. The [source validation report](../validation/2026-10-24-telemetry-aggregates.md)
-retains preliminary failures and the later passing native-store/Studio checks;
-Electron packaging and all-six-native acceptance remain open.
+retains preliminary failures and the later passing native-store/Studio checks.
+The later five-target control qualification is linked above; full installed
+delivery and resource acceptance remain open.
 
 Optional product telemetry is separate from private workspace operational and
 security records. These controls do not change memory access or disable those
@@ -324,13 +339,13 @@ records. The [full V08 contract](../implementation/anonymous-product-telemetry.m
 and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
 retain app, agent, headless and remote-workflow coverage. Remaining workflow
 qualification, other autonomous-work ownership, installed sender integration,
-deployed collector and anonymity
+production collector deployment and anonymity
 proof remain unfinished. Expiry
 prunes on activity. Local generation checks cannot detect a whole-machine
 snapshot rollback that restores both the old token and choice; final sender
 cancellation still needs full-feature acceptance. See the
 [privacy policy](../service/privacy.md) for existing service and model traffic.
-An exploratory Electron component measurement exceeded the existing **2 MiB**
+An earlier exploratory Electron component measurement exceeded the existing **2 MiB**
 added-RAM target; optimization and whole-app/all-platform resource qualification
 remain unfinished. No target has been relaxed by these source checks.
 A later 3.27 MiB phase diagnostic is not resource acceptance and does not replace
@@ -339,3 +354,12 @@ The subsequent 3.09 MiB component observation and corrected **1.19 MiB** headles
 app-main activation probe remain diagnostic. The latter does not replace the
 cold measurements; whole-app, all-platform and CPU qualification remain open
 against the same resource contract.
+
+The [completed attribution checkpoint](../validation/2026-10-26-telemetry-attribution.md)
+retains all six original journeys, each with 387 successful API requests.
+Both enabled matched main-process maxima exceeded 2 MiB; profiled CPU results
+do not establish resource acceptance. The next investigation is cold
+initialization and storage-runtime ownership, with no repeated benchmark or
+budget revision selected. The **2 MiB RSS / 0.5% CPU** gates remain unchanged
+and unaccepted; exact-next-packet inspection, production privacy and complete
+native/web acceptance are still open.

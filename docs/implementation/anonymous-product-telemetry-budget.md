@@ -1,6 +1,6 @@
 # Shared telemetry delivery budget — V08
 
-**Unreleased source checkpoint, 25 October 2026; V08 remains Building.** The
+**Unreleased source checkpoint, 26 October 2026; V08 remains Building.** The
 [full contract](anonymous-product-telemetry.md) retains its scope. The
 [Python delivery component](../../mnemion/product_telemetry/delivery.py) and
 [native TypeScript component](../../studio/electron/telemetry-delivery.ts) now
@@ -18,9 +18,19 @@ The subsequent [application-owner batch](../validation/2026-10-24-telemetry-app-
 adds connection controls, live environment checks and opportunistic delivery
 wiring in source. Its source checks and actual Chromium owner fixture passed;
 CPU admission in that fixture was synthetic, and full sensor/resource/platform
-acceptance remains open. There is **no active product sender,
-installed owner integration or production activation**; `collection_available: false`, `destination: null`
-and the empty outbound preview remain unchanged.
+acceptance remains open. **Production collection remains disabled** with
+`collection_available: false`, `destination: null` and a null route. Installed
+production-delivery qualification remains open.
+
+The later [five-target installed-control qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
+verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
+fields each**, including fixed format preview, app/native choice parity and
+opt-out persistence across restart. Windows ARM64 used x64 engine/database
+components under emulation. The overall 4.46.12 run failed on Intel Mac and
+remains unpublished. Controls now show the fixed synthetic example `AQAHAA==`;
+actual-body fields remain null/zero with `outbound_state: "not_inspected"`.
+[Exact-next-packet inspection](anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview)
+and installed production delivery remain unqualified.
 
 This follows the [codec/collector/publisher checkpoint](anonymous-product-telemetry-delivery.md).
 Its earlier passing checks do not qualify these new budget components, actual
@@ -188,7 +198,7 @@ The optional watcher checks the current report at a nominal 25 ms interval only
 during an already active attempt. It can request abortion when permission or the
 lease is lost. It is not an idle task, a scheduler, a shutdown flush or a substitute
 for the final handoff check. Transport components own watcher cleanup on
-success and cancellation; installed owner/shutdown integration remains unqualified.
+success and cancellation; installed delivery during owner shutdown remains unqualified.
 The interval alone is not a measured
 cancellation-latency guarantee. A throwing synchronous abort callback is
 suppressed without a retry or second invocation; report cleanup still runs.

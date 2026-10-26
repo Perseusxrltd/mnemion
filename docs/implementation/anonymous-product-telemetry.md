@@ -190,16 +190,19 @@ allocation diagnostics do not establish a causal improvement or stable
 resource/platform acceptance. Changed source `b9a29886830b63fac75c863e57d55287cc9bd321`
 remains separate from already-frozen 4.46.12; production collection is unavailable.
 
-The subsequent [optional attribution diagnostic](../validation/2026-10-26-telemetry-attribution.md)
-adds two fixed counterbalanced triplets, bounded first-call observations and
-comparisons at matched workload phases. Five report tests and qualification of
-legacy artifacts passed; the six-launch mode has **not yet run**. Offline
-reanalysis of the earlier compiled receipt retains the enabled main-process
-maximum of **3,440,640 bytes** and changes the opted-out matched maximum to
-**1,318,912 bytes**. These are sampled differences, not causal or universal peak
-bounds. The declared stop rule chooses one allocation mechanism or a documented
-design-budget decision, with no additional runs selected to obtain a pass. The
-**2 MiB / 0.5%** gates remain unchanged; frozen 4.46.13 is separate.
+The [one six-case attribution run](../validation/2026-10-26-telemetry-attribution.md)
+completed on 26 October; qualification matched all **1,966 reviewed files per
+variant**, with **2,322 successful API requests** and no model calls. All six
+original outcomes remain retained. Enabled main-process matched maxima were
+**3,608,576 / 3,391,488 bytes**; endings were **3,125,248 / 1,933,312 bytes**.
+The profiled CPU differences of **0.295167% / 0.307298%** are descriptive,
+not acceptance. Earlier report checks and offline findings remain preserved.
+The stop-rule decision selects a cold initialization and storage-runtime
+ownership review: overlapping first-call windows suggest file-backed residency,
+without proving SQLite alone caused the difference. No repeat benchmark or
+budget revision is selected. The **2 MiB / 0.5%** gates remain unchanged and
+unaccepted. As of **26 October, 03:55 UTC**, frozen 4.46.13 remains separate and
+pending native/public acceptance; collection stays false/null/null.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
