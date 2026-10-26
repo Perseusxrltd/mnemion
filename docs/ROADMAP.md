@@ -25,6 +25,14 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **V08 renderer and IPC — 26 October 2026; source evidence.** The
+  [development-app journey](validation/2026-10-26-telemetry-renderer.md) passed
+  all three variants, each with 387 real fixture API requests through onboarding
+  and the sandboxed renderer/IPC path. Opt-out collected nothing; enabled sent
+  one four-byte TLS report. The descriptive CPU difference was 1.143% of one
+  core; the unchanged 2 MiB RSS / 0.5% CPU targets remain unaccepted. V08 stays
+  Building, production collection disabled, and installed acceptance open.
+
 - **Native telemetry deadline check — 25 October 2026; source validation.**
   The [Windows release assertion](validation/2026-10-25-native-telemetry-deadline.md)
   mixed the transport lifetime with later cleanup. The corrected check observes

@@ -1,6 +1,6 @@
 # Anonymous product telemetry — V08
 
-**V08 is Building/source implementation; checkpoint 25 October 2026.** The full scope
+**V08 is Building/source implementation; checkpoint 26 October 2026.** The full scope
 recorded on 23 October remains the acceptance contract in the
 [66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls,
 the fixed catalog, bounded aggregate queues, selected owned workflow hooks,
@@ -130,7 +130,8 @@ the Studio wrapper in the main process. Focused source checks passed; measured
 workload results verified **384 requests per variant**. Enabled ending RSS growth
 exceeded unavailable collection by **4.41 MiB**; negative CPU differences remain
 run variation. The default synthetic mode still measured **6.59 MiB** enabled
-RSS growth. Renderer/IPC and full resource acceptance remain open.
+RSS growth. At that checkpoint, renderer/IPC and full resource acceptance
+remained open.
 
 The subsequent [bounded denial-observation reuse](../validation/2026-10-25-telemetry-denial-io.md)
 can skip repeated file-stat/SQLite work for up to **250 ms**. File changes need
@@ -144,6 +145,17 @@ their extra Promise/await work; eligible reads retain fresh asynchronous policy
 checks. Its final source checks and second burst completed, measuring
 **1.89/4.43 MiB** opted-out/enabled RSS. The single opted-out observation does not
 qualify the full resource target; enabled RSS and platform acceptance remain open.
+
+The subsequent [real renderer/IPC source journey](../validation/2026-10-26-telemetry-renderer.md)
+passed all three variants through the development app's onboarding, sandboxed
+preload, native session handle and default measured renderer client. Each
+completed **387 real fixture API requests**; unavailable/opted-out variants
+collected nothing, while enabled recorded 66 writes and one four-byte TLS report.
+The memory cycles were scripted renderer SDK calls. The descriptive enabled
+Electron CPU difference was **1.143% of one core** over the baseline interval;
+ending and sampled-peak RSS observations differ and are not stable overhead
+estimates. The **2 MiB RSS / 0.5% CPU** targets remain unchanged and unaccepted,
+as do installed-platform, whole-wire and production privacy qualification.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
