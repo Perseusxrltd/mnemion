@@ -449,8 +449,20 @@ five-second report lease remain unchanged. Nine unit tests and the separately
 completed frontend build passed. The final-source real browser refused at
 3,002.1 ms without a usable signal; its cause is unknown, cleanup passed and no
 report or model call occurred. The earlier 2,089.3 ms pass is historical for the
-startup-only source. No further pressure trial is selected; final nominal-browser,
-full-app/delivery and 2 MiB / 0.5% acceptance remain open.
+startup-only source. That checkpoint selected no further pressure trial and left
+nominal-browser, full-app/delivery and 2 MiB / 0.5% acceptance open.
+
+The later [browser admission and review follow-up](../validation/2026-10-26-telemetry-browser-admission.md)
+received a real nominal sample at 2,414.2 ms with age 0.6 ms; the earlier timeout
+remains unexplained. Browser ownership now propagates cancellation through
+eligibility, sensor startup and cleanup without changing admission or spending
+bounds. All 134 browser-source tests and the frontend build passed. The compiled
+Chromium app then passed ten review checks across two launches and nine memory
+operations, with one approved four-byte TLS report matching inspection and a
+real nominal sample aged approximately 0.7 ms. Final fixture cleanup passed;
+the original missing Python cleanup receipt remains unqualified. Its disposable
+certificate SPKI exception does not qualify production browser trust. Prior
+resource failures, 2 MiB / 0.5% limits and other platform/privacy gates remain open.
 
 ## Source validation
 

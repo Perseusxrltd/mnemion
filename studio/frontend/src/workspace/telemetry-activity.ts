@@ -14,10 +14,13 @@ export class BrowserTelemetryActivity {
   constructor(private readonly client: BrowserTelemetry) {
     this.activity = new TelemetryActivity({
       available: () => !this.hidden && this.client.status().effective_enabled && document.visibilityState === 'visible',
-      reserve: async stamp => {
+      reserve: async (stamp, ownerStop) => {
+        if (ownerStop.aborted) return null
         const status = this.client.status()
         if (status.connection_mode === 'metered' || status.delivery_budget?.state !== 'ready') return null
-        if (!await this.client.delivery.eligible(stamp)) return null
+        // Eligibility can wait on origin-wide coordination. A choice change
+        // or page exit during that wait must not start new sensor work.
+        if (!await this.client.delivery.eligible(stamp) || ownerStop.aborted) return null
         const network = this.conditions.read().network
         if (network === 'metered' || (network === 'unknown' && status.connection_mode !== 'unmetered')) return null
         const stop = this.stop = new AbortController()
@@ -29,13 +32,16 @@ export class BrowserTelemetryActivity {
         document.addEventListener('visibilitychange', hidden)
         connection?.addEventListener('change', paused)
         this.cleanup = () => {
+          ownerStop.removeEventListener('abort', paused)
           window.removeEventListener('pagehide', paused); window.removeEventListener('offline', paused)
           document.removeEventListener('visibilitychange', hidden); connection?.removeEventListener('change', paused)
           this.conditions.close(); stop.abort(); this.stop = undefined
         }
+        ownerStop.addEventListener('abort', paused, { once: true })
+        if (ownerStop.aborted) paused()
         let report: PreparedBrowserTelemetryReport | null = null
         try {
-          if (!await this.conditions.start(stop.signal) || stop.signal.aborted) return null
+          if (stop.signal.aborted || !await this.conditions.start(stop.signal) || stop.signal.aborted) return null
           report = await this.client.delivery.reserve(stamp, this.conditions.read())
           return report
         } finally {

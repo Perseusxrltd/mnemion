@@ -86,9 +86,20 @@ HTTP requests. Exactly one accepted four-byte TLS report matched the inspected
 body; opt-out, manual mode and spent allowance survived restart. All **2,172
 source and compiled inputs** matched, and cleanup passed. Separately, **24 actual
 Electron-runtime tests and 14 browser-source tests** passed without skips.
-Original probe errors and approval failures are retained. Actual web-browser
-delivery, six installed targets, privacy and resource acceptance remain open;
-no new resource run or saving is claimed.
+Original probe errors and approval failures are retained; no new resource run or
+saving is claimed.
+
+The later [compiled browser-app follow-up](../validation/2026-10-26-telemetry-browser-admission.md)
+passed **ten review checks** across two launches and nine memory operations,
+with **161 successful fixture HTTP requests including assets** and 2,185 matched
+source/existing compiled inputs. One approved four-byte TLS report matched
+inspection using real nominal pressure; cross-tab opt-out and restart persistence
+passed. Browser ownership now carries cancellation through eligibility and sensor
+startup; **134 browser-source tests** and the frontend build passed. Original
+fixture failures and missing first Python cleanup receipt remain retained;
+second/final cleanup passed. A disposable certificate SPKI exception leaves
+production browser trust unqualified. Six installed delivery targets, whole-wire,
+privacy and resource acceptance remain open.
 
 ### Owned observations and storage
 
