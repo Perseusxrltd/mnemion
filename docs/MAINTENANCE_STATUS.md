@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T03:02:03+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T03:07:20+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40261897311](https://github.com/Perseusxrltd/mnemion/actions/runs/40261897311) |
+| ci\.yml | main | in\_progress | [Run 40262403640](https://github.com/Perseusxrltd/mnemion/actions/runs/40262403640) |
 | desktop\.yml | main | success | [Run 40251151874](https://github.com/Perseusxrltd/mnemion/actions/runs/40251151874) |
 | release\.yml | release/4\.46\.10 | failure | [Run 40245659798](https://github.com/Perseusxrltd/mnemion/actions/runs/40245659798) |
 | release\.yml | release/4\.46\.11 | failure | [Run 40254768233](https://github.com/Perseusxrltd/mnemion/actions/runs/40254768233) |
@@ -25,19 +25,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.8 | cancelled | [Run 40236329055](https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055) |
 | release\.yml | release/4\.46\.9 | cancelled | [Run 40243385008](https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008) |
 | verify-artifacts\.yml | main | skipped | [Run 40258978127](https://github.com/Perseusxrltd/mnemion/actions/runs/40258978127) |
-| website-release\.yml | main | success | [Run 40261897369](https://github.com/Perseusxrltd/mnemion/actions/runs/40261897369) |
+| website-release\.yml | main | success | [Run 40262403475](https://github.com/Perseusxrltd/mnemion/actions/runs/40262403475) |
 
 ## Active jobs
 
-[Run 40261897311](https://github.com/Perseusxrltd/mnemion/actions/runs/40261897311): 5/12 jobs completed; 5 succeeded.
+[Run 40262403640](https://github.com/Perseusxrltd/mnemion/actions/runs/40262403640): 2/12 jobs completed; 2 succeeded.
 
-- studio: in\_progress — Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.13\): in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- supervision \(macos-15-intel\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
+- service \(3\.12\): in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- dependency-audit: in\_progress — Run uvx pip-audit --path \.venv/lib/python3\.12/site-packages.
 
 [Run 40258369359](https://github.com/Perseusxrltd/mnemion/actions/runs/40258369359): 31/32 jobs completed; 28 succeeded.
 
