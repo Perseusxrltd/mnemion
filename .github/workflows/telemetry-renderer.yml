@@ -8,6 +8,10 @@ on:
         description: Exact reviewed source commit (40 hex characters)
         required: true
         type: string
+      attribution:
+        description: Six fixed counterbalanced attribution journeys; never resource acceptance
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -19,7 +23,7 @@ concurrency:
 jobs:
   renderer:
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.attribution && 30 || 20 }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -39,6 +43,7 @@ jobs:
       - name: Record the reviewed source
         env:
           REVIEWED_SOURCE: ${{ inputs.source }}
+          TELEMETRY_ATTRIBUTION: ${{ inputs.attribution }}
         run: |
           python - <<'PY'
           import json, os, re, subprocess
@@ -47,7 +52,9 @@ jobs:
           assert re.fullmatch('[0-9a-f]{40}', source)
           assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == source
           Path('output/telemetry-renderer').mkdir(parents=True)
-          Path('output/telemetry-renderer/source.json').write_text(json.dumps({'source': source}) + '\n')
+          Path('output/telemetry-renderer/source.json').write_text(json.dumps({
+              'source': source, 'attribution': os.environ['TELEMETRY_ATTRIBUTION'] == 'true',
+          }) + '\n')
           PY
       - name: Install Linux desktop dependencies
         run: |
@@ -69,11 +76,15 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: npm install --prefix "$RUNNER_TEMP/telemetry-controller" --no-audit --no-fund --ignore-scripts playwright@1.64.0-alpha-1790635538000
-      - name: Measure three real compiled app journeys
+      - name: Measure the declared compiled app journeys
+        env:
+          TELEMETRY_ATTRIBUTION: ${{ inputs.attribution }}
         run: |
+          args=()
+          if [ "$TELEMETRY_ATTRIBUTION" = "true" ]; then args+=(--attribution); fi
           xvfb-run -a uv run --no-sync python -m deploy.probe_telemetry_renderer \
             --source "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/output/telemetry-renderer/workload" \
-            --playwright-module "$RUNNER_TEMP/telemetry-controller/node_modules/playwright/index.mjs"
+            --playwright-module "$RUNNER_TEMP/telemetry-controller/node_modules/playwright/index.mjs" "${args[@]}"
       - name: Summarize retained measurements
         run: uv run --no-sync python -m deploy.report_telemetry_renderer output/telemetry-renderer/workload --output output/telemetry-renderer/summary.json
       - name: Preserve original observations and cleanup

@@ -64,7 +64,30 @@ def copy_source(source, destination):
     return hashes
 
 
-async def observe_tree(root, done):
+def linux_residency(pid):
+    """Bounded numeric OS counters; never retain process names or mappings."""
+    if sys.platform != "linux":
+        return None
+    fields = {"VmRSS", "VmHWM", "RssAnon", "RssFile", "RssShmem"}
+    try:
+        with (Path("/proc") / str(pid) / "status").open() as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            return None
+        result = {}
+        for line in raw.splitlines():
+            key, _, value = line.partition(":")
+            if key in fields:
+                parts = value.split()
+                if len(parts) != 2 or parts[1] != "kB" or not parts[0].isdigit():
+                    return None
+                result[key] = int(parts[0]) * 1024
+        return result if set(result) == fields else None
+    except OSError:
+        return None
+
+
+async def observe_tree(root, done, *, attribution=False):
     samples = []
     while not done.is_set():
         try:
@@ -75,14 +98,21 @@ async def observe_tree(root, done):
                 try:
                     with child.oneshot():
                         cpu = child.cpu_times()
-                        processes.append(
-                            {
-                                "pid": child.pid,
-                                "created": child.create_time(),
-                                "rss": child.memory_info().rss,
-                                "cpu_ms": 1000 * (cpu.user + cpu.system),
-                            }
-                        )
+                        row = {
+                            "pid": child.pid,
+                            "created": child.create_time(),
+                            "rss": child.memory_info().rss,
+                            "cpu_ms": 1000 * (cpu.user + cpu.system),
+                        }
+                        if attribution:
+                            row["linux_residency"] = linux_residency(child.pid)
+                            # Do not add this to observed descendant CPU: doing
+                            # that would count reaped children twice.
+                            row["reaped_children_cpu_ms"] = 1000 * (
+                                getattr(cpu, "children_user", 0)
+                                + getattr(cpu, "children_system", 0)
+                            )
+                        processes.append(row)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
             samples.append(
@@ -119,7 +149,7 @@ async def stop(process):
             pass
 
 
-async def run(source, output, playwright):
+async def run(source, output, playwright, *, attribution=False):
     output.mkdir(mode=0o700)
     executable = {
         "win32": "electron.exe",
@@ -194,11 +224,24 @@ async def run(source, output, playwright):
                                 await task
                                 raise RuntimeError("Owned TLS collector did not start")
                             await asyncio.sleep(0.01)
-                    for label, available, enabled in [
+                    triplet = [
                         ("unavailable", False, False),
                         ("opted_out", True, False),
                         ("enabled", True, True),
-                    ]:
+                    ]
+                    cases = [
+                        (label, label, available, enabled, 1)
+                        for label, available, enabled in triplet
+                    ]
+                    if attribution:
+                        # Fixed before measurement. Never add another launch to
+                        # select a favorable outcome from unchanged source.
+                        cases = [
+                            (f"r{replicate}-{label}", label, available, enabled, replicate)
+                            for replicate, order in [(1, triplet), (2, list(reversed(triplet)))]
+                            for label, available, enabled in order
+                        ]
+                    for label, condition, available, enabled, replicate in cases:
                         before = dict(counts)
                         with tempfile.TemporaryDirectory(
                             prefix="mnemion-owned-renderer-"
@@ -270,7 +313,9 @@ async def run(source, output, playwright):
                                 )
                                 builder = frontend = process = None
                                 done = asyncio.Event()
-                                observer = asyncio.create_task(observe_tree(root, done))
+                                observer = asyncio.create_task(
+                                    observe_tree(root, done, attribution=attribution)
+                                )
                                 try:
                                     build_receipt = output / f"{label}-frontend-build.json"
                                     with (output / f"{label}-frontend-build.log").open("x") as log:
@@ -296,6 +341,9 @@ async def run(source, output, playwright):
                                         root / "probe-input.json",
                                         {
                                             "variant": label,
+                                            "condition": condition,
+                                            "replicate": replicate,
+                                            "attribution": attribution,
                                             "memory": memory,
                                             "destination": destination,
                                             "probe_entry": compiled["probe_entry"],
@@ -380,6 +428,9 @@ async def run(source, output, playwright):
                                             "SELECT count(*) FROM pending"
                                         ).fetchone()[0],
                                         "database_bytes": database_file.stat().st_size,
+                                        "maximum_producer_count": database.execute(
+                                            "SELECT coalesce(max(count),0) FROM producer_budget"
+                                        ).fetchone()[0],
                                     }
                                 raw = database_file.read_bytes()
                                 result["fixture_content_absent_from_queue"] = (
@@ -401,6 +452,7 @@ async def run(source, output, playwright):
                                     == (int(enabled), 65536 * int(enabled))
                                     and result["durable"]["lease_cleared"]
                                     and not result["page_errors"]
+                                    and not result.get("allocation", {}).get("errors")
                                 )
                         result["isolated_profile_removed"] = not root.exists()
                         results.append(result)
@@ -443,7 +495,9 @@ async def run(source, output, playwright):
             "published_aggregate_count": len(published),
             "sampling_interval_ms": 100,
             "resource_acceptance": False,
-            "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. Three sequential runs are descriptive, not stable overhead or installed-target acceptance.",
+            "attribution": attribution,
+            "declared_case_order": [row[0] for row in cases],
+            "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification.",
         },
     )
     if not all(row["journey_completed"] for row in results):
@@ -455,5 +509,17 @@ if __name__ == "__main__":
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--playwright-module", required=True, type=Path)
+    parser.add_argument(
+        "--attribution",
+        action="store_true",
+        help="Six fixed counterbalanced launches with bounded first-activation and OS counters",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source.resolve(), args.output.resolve(), args.playwright_module.resolve()))
+    asyncio.run(
+        run(
+            args.source.resolve(),
+            args.output.resolve(),
+            args.playwright_module.resolve(),
+            attribution=args.attribution,
+        )
+    )

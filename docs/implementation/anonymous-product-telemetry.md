@@ -75,8 +75,15 @@ example; queue contents, spent allowance and consent remain unchanged, and no
 network request is made. The app clears previews on choice changes, status
 refresh or window focus and discards late responses. Any displayed local counts
 are separately labeled snapshots. The
-[preview component checks](../validation/2026-10-26-telemetry-preview.md) passed;
-the added installed-app journey remains unexecuted.
+[preview evidence](../validation/2026-10-26-telemetry-preview.md) now includes
+five qualified installed targets from frozen 4.46.12: Linux x64/ARM64, Windows
+x64/ARM64 and macOS ARM64. Each passed all 64 required fields, including actual
+privacy controls, app/native choice visibility, inspection without spending,
+preview clearing and opt-out persistence through restart. Windows ARM used an
+ARM desktop with emulated x64 engine/database components. The overall run failed
+in Intel Mac packaging and supervision; the Intel installed journey was skipped.
+This is five-target control acceptance, with no public-release, full V08 or
+4.46.13 acceptance inferred.
 `transport_available` describes valid configured release-route capability,
 separate from consent and a live send; it remains false here.
 Owned CLI, desktop/native-operator, Studio/browser and
@@ -182,6 +189,17 @@ was **180 ms / 0.2171447873% of one core**. These results and the retained small
 allocation diagnostics do not establish a causal improvement or stable
 resource/platform acceptance. Changed source `b9a29886830b63fac75c863e57d55287cc9bd321`
 remains separate from already-frozen 4.46.12; production collection is unavailable.
+
+The subsequent [optional attribution diagnostic](../validation/2026-10-26-telemetry-attribution.md)
+adds two fixed counterbalanced triplets, bounded first-call observations and
+comparisons at matched workload phases. Five report tests and qualification of
+legacy artifacts passed; the six-launch mode has **not yet run**. Offline
+reanalysis of the earlier compiled receipt retains the enabled main-process
+maximum of **3,440,640 bytes** and changes the opted-out matched maximum to
+**1,318,912 bytes**. These are sampled differences, not causal or universal peak
+bounds. The declared stop rule chooses one allocation mechanism or a documented
+design-budget decision, with no additional runs selected to obtain a pass. The
+**2 MiB / 0.5%** gates remain unchanged; frozen 4.46.13 is separate.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a

@@ -19,7 +19,72 @@ const marker = value => {
 
 async function bootstrap() {
   const { app } = await import('electron')
+  const allocation = { samples: [], calls: {}, errors: [], enabled: input.attribution === true }
+  const heapStatistics = allocation.enabled ? (await import('node:v8')).getHeapStatistics : null
+  const capture = name => {
+    if (!allocation.enabled || allocation.samples.length >= 32) return
+    try {
+      // Only fixed numeric fields: no mappings, paths, network identifiers or
+      // application data. This instrumentation is diagnostic overhead, not a
+      // resource qualification or a replacement for RSS accounting.
+      const linux = {}
+      if (process.platform === 'linux') {
+        const status = readFileSync('/proc/self/status', 'utf8')
+        for (const field of ['VmRSS', 'VmHWM', 'RssAnon', 'RssFile', 'RssShmem']) {
+          const match = status.match(new RegExp(`^${field}:\\s+(\\d+) kB$`, 'm'))
+          linux[field] = match ? Number(match[1]) * 1024 : null
+        }
+      }
+      allocation.samples.push({ name, at_ms: Date.now(), monotonic_ms: performance.now(),
+        main: process.memoryUsage(), heap: heapStatistics(), os_usage: process.resourceUsage(), linux })
+    } catch (error) { allocation.errors.push({ name, error: error.name }) }
+  }
+  const observeFirst = (prototype, method, name) => {
+    const original = prototype[method]
+    if (typeof original !== 'function') throw new Error(`Missing owned attribution method: ${name}`)
+    prototype[method] = function (...args) {
+      const first = !allocation.calls[name]
+      allocation.calls[name] = (allocation.calls[name] ?? 0) + 1
+      if (!first) return original.apply(this, args)
+      capture(`${name}.before`)
+      let value
+      try { value = original.apply(this, args) }
+      catch (error) { capture(`${name}.error`); throw error }
+      if (value && typeof value.then === 'function') return value.then(
+        result => { capture(`${name}.after`); return result },
+        error => { capture(`${name}.error`); throw error })
+      capture(`${name}.after`)
+      return value
+    }
+  }
+  capture('bootstrap.before_telemetry_imports')
   const { DesktopTelemetryActivity } = await import('./dist/telemetry-activity.js')
+  if (allocation.enabled) {
+    const { NativeTelemetryStore } = await import('./dist/telemetry-store.js')
+    const { NativeTelemetryDelivery } = await import('./dist/telemetry-delivery.js')
+    const { NativeNetworkConditions } = await import('./dist/telemetry-network.js')
+    const { DesktopTelemetryConditions } = await import('./dist/telemetry-conditions.js')
+    capture('bootstrap.after_telemetry_imports')
+    observeFirst(NativeTelemetryStore.prototype, 'open', 'sqlite.open')
+    observeFirst(NativeTelemetryStore.prototype, 'closeDatabase', 'sqlite.close')
+    observeFirst(NativeNetworkConditions.prototype, 'start', 'network_cost.start')
+    observeFirst(DesktopTelemetryConditions.prototype, 'prepare', 'conditions.prepare')
+    observeFirst(NativeTelemetryDelivery.prototype, 'reserve', 'delivery.reserve')
+    // The transport uses one literal-address socket. Observe only that owned
+    // loopback destination, leaving connection arguments and behavior intact.
+    const { Socket } = await import('node:net')
+    const connect = Socket.prototype.connect, destination = new URL(input.destination)
+    Socket.prototype.connect = function (...args) {
+      if (args[0]?.host === '127.0.0.1' && args[0]?.port === Number(destination.port)) {
+        allocation.calls['transport.socket'] = (allocation.calls['transport.socket'] ?? 0) + 1
+        if (allocation.calls['transport.socket'] === 1) {
+          capture('transport.before_connect')
+          this.once('close', () => capture('transport.after_close'))
+        }
+      }
+      return connect.apply(this, args)
+    }
+  }
   const stores = new Set(), writes = new Set()
   const counts = { snapshots: 0, accepted_writes: 0, reserved_attempts: 0 }
   const prototype = DesktopTelemetryActivity.prototype
@@ -42,6 +107,7 @@ async function bootstrap() {
   }
   globalThis.__mnemionOwnedProbe = {
     counts,
+    allocation,
     sample: name => ({ name, at_ms: Date.now(), main: process.memoryUsage(),
       processes: app.getAppMetrics().map(value => ({ pid: value.pid, type: value.type,
         name: value.name, cpu_ms: Number.isFinite(value.cpu.cumulativeCPUUsage) ? value.cpu.cumulativeCPUUsage * 1000 : null,
@@ -94,6 +160,7 @@ async function controller() {
     const sample = async name => {
       const value = await electron.evaluate((_electron, name) => globalThis.__mnemionOwnedProbe.sample(name), name)
       samples.push(value)
+      marker({ phase: name, pid })
     }
     // The interval includes first connection and cold telemetry work. No forced
     // GC, synthetic idle interval or resource-admission replacement is used.
@@ -138,12 +205,12 @@ async function controller() {
     await cycles(1)
     await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
     await sample('first_memory_cycle_and_delivery')
-    await cycles(31)
-    await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
-    await sample('32_memory_cycles')
-    await cycles(96)
-    await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
-    await sample('128_memory_cycles')
+    const remaining = input.attribution ? [[7, 8], [8, 16], [16, 32], [32, 64], [32, 96], [32, 128]] : [[31, 32], [96, 128]]
+    for (const [number, completed] of remaining) {
+      await cycles(number)
+      await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
+      await sample(`${completed}_memory_cycles`)
+    }
     marker({ phase: 'finished', pid })
     const result = await page.evaluate(() => {
       const { latencies, cycles } = window.__mnemionMemoryProbe
@@ -152,10 +219,12 @@ async function controller() {
         latency_p50_ms: sorted[Math.floor(sorted.length / 2)], latency_p99_ms: sorted[Math.floor(sorted.length * .99)] }
     })
     const counts = await electron.evaluate(() => ({ ...globalThis.__mnemionOwnedProbe.counts }))
+    const allocation = await electron.evaluate(() => globalThis.__mnemionOwnedProbe.allocation)
     const first = samples[0], last = samples.at(-1)
     const total = sample => sample.processes.reduce((sum, row) => sum + row.working_set_bytes, 0)
     writeFileSync(process.env.MNEMION_COST_RESULT, JSON.stringify({ schema_version: 1, variant: input.variant,
       ...result, ...counts, samples, bridge, connection, page_errors: pageErrors,
+      condition: input.condition ?? input.variant, replicate: input.replicate ?? 1, allocation,
       runtime: await electron.evaluate(() => ({ electron: process.versions.electron, node: process.versions.node,
         platform: process.platform, arch: process.arch, packaged: false })),
       elapsed_ms: last.at_ms - first.at_ms, rss_delta_bytes: total(last) - total(first),
