@@ -102,7 +102,7 @@ telemetry overhead limits.
 
 **22 distinct Python, 16 Electron/bridge and 42 browser-source/client checks
 passed**, with no failures or skips. The Electron/bridge total comprises the
-14 native-measurement cases and two real Electron-to-Python bridge cases. The
+14 native-measurement cases and two Node-to-Python bridge cases using compiled desktop controllers. The
 seven updated generator cases are part of the 22 Python cases, not seven
 additional cases. The earlier 22/14/42 results and build logs remain retained.
 Electron and frontend source builds and the final 4.46.20 preparation passed.
