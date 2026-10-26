@@ -18,15 +18,33 @@
   ],
   "runs": [
     {
-      "id": 40398877032,
+      "id": 40403218324,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "39ed946a58b8a4dd10da2dd8f4b88bc71582df12",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-26T21:17:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40398877032"
+      "source_commit": "2666615d9803dead4aa53fdf93358d20a11ce331",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-26T21:18:22Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40403218324",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 121854218021,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python deploy/bundle_studio.py"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40366545289,
@@ -171,13 +189,13 @@
       "source_commit": "f40a4bbc9cbca435c0b06292dd808fcd45ffe5ae",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T21:17:28Z",
+      "updated_at": "2026-10-26T21:18:50Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 8,
-        "completed": 6,
-        "succeeded": 5,
+        "total": 13,
+        "completed": 11,
+        "succeeded": 10,
         "active": [
           {
             "id": 121853623426,
@@ -189,12 +207,12 @@
             ]
           },
           {
-            "id": 121853624063,
-            "name": "native / native_database / Private state / Windows / x64",
+            "id": 121854030943,
+            "name": "native / native_database / Database / macos / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Complete job"
             ]
           }
         ]
@@ -223,7 +241,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
+              "Scan the exact downloaded distributions before publication"
             ]
           }
         ]
@@ -231,15 +249,15 @@
       "failed_jobs": []
     },
     {
-      "id": 40398877004,
+      "id": 40403218446,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "39ed946a58b8a4dd10da2dd8f4b88bc71582df12",
+      "source_commit": "2666615d9803dead4aa53fdf93358d20a11ce331",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T20:48:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40398877004"
+      "updated_at": "2026-10-26T21:18:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40403218446"
     },
     {
       "id": 40366540445,
@@ -253,5 +271,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T21:17:55+00:00"
+  "observed_at": "2026-10-26T21:19:09+00:00"
 }
