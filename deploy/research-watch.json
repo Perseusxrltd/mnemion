@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-20T12:10:17+00:00",
+  "checked_at": "2026-10-26T14:15:12+00:00",
   "model_calls": 0,
   "dependency_changes": 0,
   "maximum_retained_per_source": 50,
@@ -10,11 +10,143 @@
       "name": "arXiv agent-memory papers",
       "kind": "arxiv",
       "url": "https://export.arxiv.org/api/query?search_query=%28ti%3A%22agent+memory%22+OR+ti%3A%22long-term+memory%22+OR+ti%3A%22memory+consolidation%22%29+AND+%28cat%3Acs.AI+OR+cat%3Acs.CL+OR+cat%3Acs.LG%29&start=0&max_results=25&sortBy=submittedDate&sortOrder=descending",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "9f69f5b294a4bf7fdc49da14c153427d1a02ce5d890bf7b177b5339150cc4926",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "8886305836874981fe72419b825872c2a2226a63975d026c7fc28f7dc6f07e33",
       "items": [
+        {
+          "id": "arxiv:2610.32752",
+          "title": "ActionRAG: Evidence-Refining Graph Diffusion for Long-Term Memory in LLM Agents",
+          "url": "https://arxiv.org/abs/2610.32752",
+          "published": "2026-10-23T14:59:37+00:00",
+          "updated": "2026-10-23T14:59:37+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.30755",
+          "title": "Is Complex Agentic Memory Always Needed? Naive RAG Is Stronger Than We Thought",
+          "url": "https://arxiv.org/abs/2610.30755",
+          "published": "2026-10-22T05:23:16+00:00",
+          "updated": "2026-10-22T05:23:16+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.30698",
+          "title": "Governance-State Corruption in Long-Term Memory for LLM Agents: A Cross-Model Stress Test",
+          "url": "https://arxiv.org/abs/2610.30698",
+          "published": "2026-10-22T04:13:09+00:00",
+          "updated": "2026-10-22T04:13:09+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.30485",
+          "title": "Why Bother Me Again? Benchmarking Personal Agent Memory for Interaction Preferences",
+          "url": "https://arxiv.org/abs/2610.30485",
+          "published": "2026-10-21T22:08:49+00:00",
+          "updated": "2026-10-21T22:08:49+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.29823",
+          "title": "MemoryTax: The Bitter Lesson of Agent Memory",
+          "url": "https://arxiv.org/abs/2610.29823",
+          "published": "2026-10-21T14:46:27+00:00",
+          "updated": "2026-10-21T14:46:27+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.29671",
+          "title": "Uni-Mem: Learning a Long-Horizon Agentic Memory Manager with Unified Online Policy Optimization",
+          "url": "https://arxiv.org/abs/2610.29671",
+          "published": "2026-10-21T12:48:10+00:00",
+          "updated": "2026-10-21T12:48:10+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.29249",
+          "title": "MOSAIC: An Omni-Modal Benchmark for Long-Term Memory and Cross-Modal Reasoning in Conversational Agents",
+          "url": "https://arxiv.org/abs/2610.29249",
+          "published": "2026-10-21T05:55:20+00:00",
+          "updated": "2026-10-21T05:55:20+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.28810",
+          "title": "Combining Long-Term Memory and LLMs Comes at a High Cost: From Prompt Injection to Persistent Compromise",
+          "url": "https://arxiv.org/abs/2610.28810",
+          "published": "2026-10-20T18:33:05+00:00",
+          "updated": "2026-10-20T18:33:05+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.22959",
+          "title": "SAFE-Mem: Secure Agentic Memory with Fine-Grained Authority and Governance-Aware Retrieval",
+          "url": "https://arxiv.org/abs/2610.22959",
+          "published": "2026-10-16T05:29:55+00:00",
+          "updated": "2026-10-20T06:30:00+00:00",
+          "revision": "v2",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-20T12:10:17+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.27700",
+          "title": "Memory as Code: Declarative Retrieval over Codified Long-Term Memory",
+          "url": "https://arxiv.org/abs/2610.27700",
+          "published": "2026-10-20T06:17:51+00:00",
+          "updated": "2026-10-20T06:17:51+00:00",
+          "revision": "v1",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "arxiv:2610.24520",
+          "title": "HABIT-Bench: Evaluating Habit Induction from Longitudinal Weak Evidence in Agent Memory",
+          "url": "https://arxiv.org/abs/2610.24520",
+          "published": "2026-10-17T07:30:09+00:00",
+          "updated": "2026-10-20T03:24:12+00:00",
+          "revision": "v2",
+          "kind": "paper",
+          "reviewed": false,
+          "discovered_at": "2026-10-20T12:10:17+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
         {
           "id": "arxiv:2610.26433",
           "title": "The Geometry of Agent Memory: Forecasting Retrieval-Bound Memory Failures, and Characterizing Its Limits",
@@ -25,7 +157,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.25373",
@@ -37,7 +169,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.25127",
@@ -49,7 +181,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.19474",
@@ -61,19 +193,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
-        },
-        {
-          "id": "arxiv:2610.24520",
-          "title": "HABIT-Bench: Evaluating Habit Induction from Longitudinal Weak Evidence in Agent Memory",
-          "url": "https://arxiv.org/abs/2610.24520",
-          "published": "2026-10-17T07:30:09+00:00",
-          "updated": "2026-10-17T07:30:09+00:00",
-          "revision": "v1",
-          "kind": "paper",
-          "reviewed": false,
-          "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.23709",
@@ -85,7 +205,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.23598",
@@ -97,7 +217,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.23313",
@@ -109,7 +229,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.20191",
@@ -121,19 +241,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
-        },
-        {
-          "id": "arxiv:2610.22959",
-          "title": "SAFE-Mem: Secure Agentic Memory with Fine-Grained Authority and Governance-Aware Retrieval",
-          "url": "https://arxiv.org/abs/2610.22959",
-          "published": "2026-10-16T05:29:55+00:00",
-          "updated": "2026-10-16T05:29:55+00:00",
-          "revision": "v1",
-          "kind": "paper",
-          "reviewed": false,
-          "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.22209",
@@ -145,7 +253,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.22196",
@@ -157,7 +265,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.21405",
@@ -169,7 +277,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.21170",
@@ -181,7 +289,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.19836",
@@ -193,7 +301,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.19472",
@@ -205,7 +313,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T12:10:17+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "arxiv:2610.19366",
@@ -321,11 +429,11 @@
       "id": "crossref",
       "name": "Crossref recent memory research",
       "kind": "crossref",
-      "url": "https://api.crossref.org/works?query=large+language+model+agent+memory&filter=from-pub-date%3A2026-08-21%2Cuntil-pub-date%3A2026-10-20&rows=25&sort=relevance&order=desc",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "url": "https://api.crossref.org/works?query=large+language+model+agent+memory&filter=from-pub-date%3A2026-08-27%2Cuntil-pub-date%3A2026-10-26&rows=25&sort=relevance&order=desc",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "81185a03fb2afdf6c1bb7911f73d773368ef419ef1bb40062dd68855b4a42e6e",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "d1cb50043f76b07b5153b62907b9e6c8220c0036bdeb94eb7775cbffcdcdb3f4",
       "items": [
         {
           "id": "doi:10.20944/preprints202609.2725.v1",
@@ -337,7 +445,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:55:48+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         }
       ]
     },
@@ -347,10 +455,10 @@
       "kind": "github",
       "repository": "MemPalace/mempalace",
       "url": "https://api.github.com/repos/MemPalace/mempalace/releases?per_page=5",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "d6ac0d63484f4c0bc6d7902eced650796a471f3a0e4ceaef47430ac5248d3f89",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "5c32c4f4d6e0fca32858aa4521e54e4148213b12e22b5d99a586ea51aca419bc",
       "items": [
         {
           "id": "github:MemPalace/mempalace:412364916",
@@ -362,7 +470,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:389558132",
@@ -374,7 +482,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:379667687",
@@ -386,7 +494,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:375326073",
@@ -398,7 +506,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:370734887",
@@ -410,7 +518,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         }
       ]
     },
@@ -420,9 +528,9 @@
       "kind": "github",
       "repository": "mem0ai/mem0",
       "url": "https://api.github.com/repos/mem0ai/mem0/releases?per_page=5",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
       "content_sha256": "f0e0fd3db034c2d409be437e2af6ed7e34a809e84104aeb40a04a0e1d14d1677",
       "items": [
         {
@@ -435,7 +543,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:mem0ai/mem0:396803659",
@@ -447,7 +555,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:mem0ai/mem0:394978108",
@@ -459,7 +567,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:mem0ai/mem0:394973234",
@@ -471,7 +579,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:mem0ai/mem0:394971771",
@@ -483,7 +591,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         }
       ]
     },
@@ -493,11 +601,23 @@
       "kind": "github",
       "repository": "vectorize-io/hindsight",
       "url": "https://api.github.com/repos/vectorize-io/hindsight/releases?per_page=5",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "5d6356b13919339ebf6e90a5f2346baf0863d92f83e899dab64d51d67f6478af",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "ddee6a88978c953ae91d00f7b842f4a40d6de40535f8da1262f6b9838792b82f",
       "items": [
+        {
+          "id": "github:vectorize-io/hindsight:419804036",
+          "title": "v1.1.0",
+          "url": "https://github.com/vectorize-io/hindsight/releases/tag/v1.1.0",
+          "published": "2026-10-21T16:41:42+00:00",
+          "updated": "2026-10-21T16:41:42+00:00",
+          "revision": "v1.1.0",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
         {
           "id": "github:vectorize-io/hindsight:411746691",
           "title": "v1.0.0",
@@ -508,7 +628,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:407003318",
@@ -520,7 +640,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:399022223",
@@ -532,7 +652,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:393073047",
@@ -544,7 +664,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:388333858",
@@ -566,11 +686,23 @@
       "kind": "github",
       "repository": "getzep/graphiti",
       "url": "https://api.github.com/repos/getzep/graphiti/releases?per_page=5",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "b3488a91f2b97112e6e5b9dabce65c6bf131b4b45848fb9e2d8ea1d11a9fc316",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "b37c7760eabe8ac849e4ab7305bddb0adfccb2fa18ca3a0a1fd710719d4d7c6c",
       "items": [
+        {
+          "id": "github:getzep/graphiti:418673171",
+          "title": "v0.31.2 - update certifi to mitigate eMudhra compromise",
+          "url": "https://github.com/getzep/graphiti/releases/tag/v0.31.2",
+          "published": "2026-10-20T17:25:21+00:00",
+          "updated": "2026-10-20T17:25:21+00:00",
+          "revision": "v0.31.2",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
         {
           "id": "github:getzep/graphiti:413946034",
           "title": "v0.31.1",
@@ -581,7 +713,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:getzep/graphiti:413284809",
@@ -593,7 +725,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:getzep/graphiti:385047630",
@@ -605,7 +737,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:getzep/graphiti:380880393",
@@ -629,7 +761,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         }
       ]
     },
@@ -639,11 +771,47 @@
       "kind": "github",
       "repository": "letta-ai/letta-code",
       "url": "https://api.github.com/repos/letta-ai/letta-code/releases?per_page=5",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "6db358c54c64beef38a55e7dec2880eecb3cc7bb76d0d323b2a29bf34ff956ec",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "30b47fb7bad2cf06964fadc83544abec76d0b0e17467cbf6be694ef4667e1acc",
       "items": [
+        {
+          "id": "github:letta-ai/letta-code:423171114",
+          "title": "Release v0.34.24",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.24",
+          "published": "2026-10-25T05:39:26+00:00",
+          "updated": "2026-10-25T05:39:26+00:00",
+          "revision": "v0.34.24",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "github:letta-ai/letta-code:421092446",
+          "title": "Release v0.34.21",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.21",
+          "published": "2026-10-22T19:02:59+00:00",
+          "updated": "2026-10-22T19:02:59+00:00",
+          "revision": "v0.34.21",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
+        {
+          "id": "github:letta-ai/letta-code:418983530",
+          "title": "Release v0.34.19",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.19",
+          "published": "2026-10-20T23:32:42+00:00",
+          "updated": "2026-10-20T23:32:42+00:00",
+          "revision": "v0.34.19",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-10-26T14:15:12+00:00",
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
+        },
         {
           "id": "github:letta-ai/letta-code:417750844",
           "title": "Release v0.34.18",
@@ -654,7 +822,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:letta-ai/letta-code:416760178",
@@ -666,7 +834,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "github:letta-ai/letta-code:415405554",
@@ -711,10 +879,10 @@
       "name": "TypeSafe AI Jev model documentation",
       "kind": "jev",
       "url": "https://docs.typesafe.ai/models.md",
-      "attempted_at": "2026-10-20T12:10:17+00:00",
+      "attempted_at": "2026-10-26T14:15:12+00:00",
       "status": "ok",
-      "last_success_at": "2026-10-20T12:10:17+00:00",
-      "content_sha256": "b643bc957614bbefaaf49c7a08deed930264b8c1bb1eaba8310ba0b980271d61",
+      "last_success_at": "2026-10-26T14:15:12+00:00",
+      "content_sha256": "bed299c24098aaf2223f2244127041fcc5d0c3a77a2cbaa4daf7eb14bd755343",
       "items": [
         {
           "id": "typesafe:jev-1.13.0",
@@ -726,7 +894,7 @@
           "kind": "model documentation",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         },
         {
           "id": "typesafe:jev-1.14.0",
@@ -738,7 +906,7 @@
           "kind": "model documentation",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-10-20T12:10:17+00:00"
+          "last_seen_at": "2026-10-26T14:15:12+00:00"
         }
       ]
     }
