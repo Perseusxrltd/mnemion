@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T17:34:20+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T17:50:29+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,19 +16,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40367482620](https://github.com/Perseusxrltd/mnemion/actions/runs/40367482620) |
+| ci\.yml | main | success | [Run 40367482620](https://github.com/Perseusxrltd/mnemion/actions/runs/40367482620) |
 | public-updates\.yml | v4\.46\.22 | success | [Run 40366545289](https://github.com/Perseusxrltd/mnemion/actions/runs/40366545289) |
 | release\.yml | release/4\.46\.22 | success | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
 | verify-artifacts\.yml | main | success | [Run 40365617692](https://github.com/Perseusxrltd/mnemion/actions/runs/40365617692) |
 | website-release\.yml | main | success | [Run 40367482691](https://github.com/Perseusxrltd/mnemion/actions/runs/40367482691) |
 | website-release\.yml | v4\.46\.22 | success | [Run 40366540445](https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445) |
-
-## Active jobs
-
-[Run 40367482620](https://github.com/Perseusxrltd/mnemion/actions/runs/40367482620): 8/12 jobs completed; 8 succeeded.
-
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
