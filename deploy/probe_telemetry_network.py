@@ -22,7 +22,11 @@ class CpuTotals(ctypes.Structure):
     _fields_ = [("idle", ctypes.c_uint64), ("total", ctypes.c_uint64), ("count", ctypes.c_uint32)]
 
 
-def probe(artifact: Path, *, node: str | None = None) -> dict:
+class ReviewClock(ctypes.Structure):
+    _fields_ = [("elapsed_ms", ctypes.c_uint64), ("epoch", ctypes.c_ubyte * 16)]
+
+
+def probe(artifact: Path, *, node: str | None = None, initialize_review_clock=False) -> dict:
     artifact = artifact.resolve(strict=True)
     target = binary_target(artifact)
     operating_system = {"win32": "windows", "darwin": "macos", "linux": "linux"}[sys.platform]
@@ -58,17 +62,30 @@ def probe(artifact: Path, *, node: str | None = None) -> dict:
         or (not available and (cpu.idle or cpu.total or cpu.count))
     ):
         raise ValueError("The actual aggregate CPU probe returned invalid counters")
+    clock = ReviewClock()
+    read_clock = library.mnemion_review_clock_v1
+    read_clock.argtypes = [ctypes.c_int, ctypes.POINTER(ReviewClock)]
+    read_clock.restype = ctypes.c_int
+    clock_available = read_clock(int(initialize_review_clock), ctypes.byref(clock))
+    if (
+        clock_available not in (0, 1)
+        or (clock_available and (clock.elapsed_ms > 9007199254740991 or not any(clock.epoch)))
+        or (not clock_available and (clock.elapsed_ms or any(clock.epoch)))
+    ):
+        raise ValueError("The actual review clock returned invalid control state")
     result = {
         "schema_version": 1,
         "platform": operating_system,
         "architecture": sorted(target[1]),
         "artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
-        "probe_scope": "network_and_aggregate_cpu",
+        "probe_scope": "network_cpu_and_review_clock",
+        "review_clock_initialization_requested": initialize_review_clock,
         "python": {
             "version": platform.python_version(),
             "flags": value,
             "seconds": elapsed,
             "aggregate_cpu_available": bool(available),
+            "review_clock_available": bool(clock_available),
         },
         "qualification": "component only; not installed or whole-feature resource acceptance",
     }
@@ -79,7 +96,7 @@ def probe(artifact: Path, *, node: str | None = None) -> dict:
         program = """
 const before=process.memoryUsage().rss, started=performance.now();
 const binding=require(process.argv[1]);
-if(Object.keys(binding).sort().join()!=='readCpuTotals,readState') throw new Error('Unexpected native ABI');
+if(Object.keys(binding).sort().join()!=='initializeReviewClock,readCpuTotals,readReviewClock,readState') throw new Error('Unexpected native ABI');
 binding.readState().then(flags=>{
   const seconds=(performance.now()-started)/1000;
   if(![0,8,9,10,12,13,14].includes(flags)||seconds>=1) throw new Error('Native probe failed');
@@ -87,13 +104,26 @@ binding.readState().then(flags=>{
   if(!Array.isArray(cpu)||(cpu.length!==0&&(cpu.length!==3||
     cpu.some(value=>!Number.isSafeInteger(value)||value<0)||cpu[0]>cpu[1]||cpu[1]===0||cpu[2]===0||cpu[2]>1048576)))
     throw new Error('Aggregate CPU probe failed');
+  const clock=binding.readReviewClock();
+  if(!Array.isArray(clock)||(clock.length!==0&&(clock.length!==2||
+    !Number.isSafeInteger(clock[0])||clock[0]<0||typeof clock[1]!=='string'||
+    !/^[0-9a-f]{32}$/.test(clock[1])||/^0+$/.test(clock[1])))) throw new Error('Review clock failed');
+  const previous=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
+  if(previous&&(clock.length!==2||clock[1]!==previous.epoch||clock[0]<previous.elapsed_ms))
+    throw new Error('Review clocks are not comparable across runtimes');
   console.log(JSON.stringify({version:process.versions.node,electron:process.versions.electron??null,
-    flags,seconds,aggregate_cpu_available:cpu.length===3,added_rss_bytes:process.memoryUsage().rss-before}));
+    flags,seconds,aggregate_cpu_available:cpu.length===3,review_clock_available:clock.length===2,
+    review_clock_shared_across_runtimes:Boolean(previous),added_rss_bytes:process.memoryUsage().rss-before}));
 });
 """
         child = subprocess.run(
             [command, "-e", program, str(artifact)],
             capture_output=True,
+            input=json.dumps(
+                {"epoch": bytes(clock.epoch).hex(), "elapsed_ms": clock.elapsed_ms}
+                if clock_available
+                else None
+            ),
             text=True,
             check=True,
             timeout=5,
@@ -106,9 +136,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--node")
+    parser.add_argument(
+        "--initialize-review-clock",
+        action="store_true",
+        help="Initialize the Windows volatile review marker for this component check",
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    result = probe(args.artifact, node=args.node)
+    result = probe(
+        args.artifact, node=args.node, initialize_review_clock=args.initialize_review_clock
+    )
     body = json.dumps(result, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

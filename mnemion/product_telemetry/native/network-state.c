@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT
  * Read OS cost policy and aggregate CPU counters. Never enumerate names,
- * addresses or CPU models, make an Internet request, change settings or log. */
+ * addresses or CPU models, make an Internet request or log. Review clocks are
+ * separate local control state; Windows uses a volatile per-user epoch marker. */
 #if defined(__linux__) && !defined(_POSIX_C_SOURCE)
 #define _POSIX_C_SOURCE 200809L
 #endif
@@ -65,11 +66,40 @@ int mnm_linux_cpu_totals(const char *line, size_t length, uint32_t count, MnmCpu
     return mnm_cpu_totals(values[3], values[0], values[1], values[2], values[5], count, output);
 }
 
+int mnm_review_clock(const char *epoch, size_t length, uint64_t elapsed_ms, MnmReviewClock *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    if (!epoch || length != 36 || elapsed_ms > UINT64_C(9007199254740991)) return 0;
+    unsigned char decoded[16] = {0};
+    size_t digits = 0;
+    unsigned any = 0;
+    for (size_t at = 0; at < length; ++at) {
+        if (at == 8 || at == 13 || at == 18 || at == 23) {
+            if (epoch[at] != '-') return 0;
+            continue;
+        }
+        const unsigned char character = (unsigned char)epoch[at];
+        unsigned digit;
+        if (character >= '0' && character <= '9') digit = character - '0';
+        else if (character >= 'a' && character <= 'f') digit = character - 'a' + 10u;
+        else if (character >= 'A' && character <= 'F') digit = character - 'A' + 10u;
+        else return 0;
+        if (digits >= 32) return 0;
+        decoded[digits / 2] = (unsigned char)((decoded[digits / 2] << 4) | digit);
+        ++digits; any |= digit;
+    }
+    if (digits != 32 || !any) return 0;
+    output->elapsed_ms = elapsed_ms;
+    memcpy(output->epoch, decoded, sizeof(decoded));
+    return 1;
+}
+
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <windows.h>
 #include <iphlpapi.h>
+#include <bcrypt.h>
 
 typedef DWORD (WINAPI *MnmConnectivityHint)(NL_NETWORK_CONNECTIVITY_HINT *);
 static INIT_ONCE hint_once = INIT_ONCE_STATIC_INIT;
@@ -109,11 +139,52 @@ MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
     return 0;
 }
 
+MNM_EXPORT int mnemion_review_clock_v1(int initialize, MnmReviewClock *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    if (initialize != 0 && initialize != 1) return 0;
+    /* Documented volatile registry lifetime, not an inferred boot wall time
+     * or an undocumented machine/boot identifier. Read-only calls never create
+     * a key/value. Explicit initialization can recover an interrupted empty
+     * key; a completed valid value is never replaced. Initializer races can
+     * only invalidate an older epoch, never renew a report's original age. */
+    const wchar_t *path = L"Software\\PerseusXR\\Mnemion\\ReviewClockV1";
+    HKEY key = NULL;
+    DWORD disposition = 0;
+    const LSTATUS opened = initialize
+        ? RegCreateKeyExW(HKEY_CURRENT_USER, path, 0, NULL, REG_OPTION_VOLATILE,
+            KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY, NULL, &key, &disposition)
+        : RegOpenKeyExW(HKEY_CURRENT_USER, path, 0, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &key);
+    if (opened != ERROR_SUCCESS) return 0;
+    unsigned char epoch[16] = {0};
+    DWORD kind = 0, size = sizeof(epoch);
+    const LSTATUS found = RegQueryValueExW(key, L"Epoch", NULL, &kind, epoch, &size);
+    int ready = found == ERROR_SUCCESS && kind == REG_BINARY && size == sizeof(epoch);
+    if (initialize && found == ERROR_FILE_NOT_FOUND) {
+        if (BCryptGenRandom(NULL, epoch, sizeof(epoch), BCRYPT_USE_SYSTEM_PREFERRED_RNG) >= 0 &&
+            RegSetValueExW(key, L"Epoch", 0, REG_BINARY, epoch, sizeof(epoch)) == ERROR_SUCCESS) ready = 1;
+        else if (disposition == REG_CREATED_NEW_KEY) (void)RegDeleteKeyW(HKEY_CURRENT_USER, path);
+    }
+    (void)RegCloseKey(key);
+    unsigned any = 0;
+    for (size_t at = 0; at < sizeof(epoch); ++at) any |= epoch[at];
+    if (!ready || !any) return 0;
+    ULONGLONG elapsed = 0;
+    /* Interrupt time includes sleep/hibernation; unbiased time does not. */
+    QueryInterruptTime(&elapsed);
+    if (elapsed / 10000u > UINT64_C(9007199254740991)) return 0;
+    output->elapsed_ms = elapsed / 10000u;
+    memcpy(output->epoch, epoch, sizeof(epoch));
+    return 1;
+}
+
 #elif defined(__APPLE__)
 #include <Network/Network.h>
 #include <dispatch/dispatch.h>
 #include <stdatomic.h>
 #include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <sys/sysctl.h>
 #include <unistd.h>
 
 MNM_EXPORT uint32_t mnemion_network_state_v1(void) {
@@ -156,6 +227,20 @@ MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
                           0, (uint32_t)count, output);
 }
 
+MNM_EXPORT int mnemion_review_clock_v1(int initialize, MnmReviewClock *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    if (initialize != 0 && initialize != 1) return 0;
+    char epoch[64] = {0};
+    size_t length = sizeof(epoch);
+    mach_timebase_info_data_t scale = {0};
+    if (sysctlbyname("kern.bootsessionuuid", epoch, &length, NULL, 0) != 0 ||
+        length != 37 || epoch[36] != '\0' || mach_timebase_info(&scale) != KERN_SUCCESS || !scale.numer || !scale.denom) return 0;
+    const __uint128_t millis = (__uint128_t)mach_continuous_time() * scale.numer / scale.denom / 1000000u;
+    if (millis > UINT64_C(9007199254740991)) return 0;
+    return mnm_review_clock(epoch, 36, (uint64_t)millis, output);
+}
+
 #elif defined(__linux__)
 #include <dlfcn.h>
 #include <pthread.h>
@@ -177,6 +262,23 @@ MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
     const char *end = memchr(line, '\n', (size_t)length);
     if (!end) return 0;
     return mnm_linux_cpu_totals(line, (size_t)(end - line) + 1, (uint32_t)count, output);
+}
+
+MNM_EXPORT int mnemion_review_clock_v1(int initialize, MnmReviewClock *output) {
+    if (!output) return 0;
+    memset(output, 0, sizeof(*output));
+    if (initialize != 0 && initialize != 1) return 0;
+    char epoch[64];
+    const int descriptor = open("/proc/sys/kernel/random/boot_id", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (descriptor < 0) return 0;
+    const ssize_t length = read(descriptor, epoch, sizeof(epoch));
+    (void)close(descriptor);
+    struct timespec elapsed;
+    if (length != 37 || epoch[36] != '\n' || clock_gettime(CLOCK_BOOTTIME, &elapsed) != 0 ||
+        elapsed.tv_sec < 0 || (uint64_t)elapsed.tv_sec > UINT64_C(9007199254740) ||
+        elapsed.tv_nsec < 0 || elapsed.tv_nsec >= 1000000000L) return 0;
+    return mnm_review_clock(epoch, 36,
+        (uint64_t)elapsed.tv_sec * 1000u + (uint64_t)elapsed.tv_nsec / 1000000u, output);
 }
 
 /* D-Bus's published stable C ABI. Opaque iterator storage is deliberately
@@ -345,6 +447,11 @@ MNM_EXPORT uint32_t mnemion_network_state_v1(void) {
 #else
 MNM_EXPORT uint32_t mnemion_network_state_v1(void) { return MNM_UNKNOWN; }
 MNM_EXPORT int mnemion_cpu_totals_v1(MnmCpuTotals *output) {
+    if (output) memset(output, 0, sizeof(*output));
+    return 0;
+}
+MNM_EXPORT int mnemion_review_clock_v1(int initialize, MnmReviewClock *output) {
+    (void)initialize;
     if (output) memset(output, 0, sizeof(*output));
     return 0;
 }

@@ -10,7 +10,8 @@ product collection is unavailable. V08 is the
 active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
 passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
 texts and the other 65 states remain unchanged. Local privacy controls ship in
-4.46.13; the later CPU admission change documented below remains source-only.
+4.46.13; the later CPU admission and report-review clock changes documented
+below remain source-only.
 
 The [dedicated collector source](anonymous-product-telemetry-collector.md) now
 provides a bounded TLS entrypoint, metadata removal, private report access and
@@ -83,7 +84,8 @@ ARM64. Each passed all 64 required fields, including actual
 privacy controls, app/native choice visibility, inspection without spending,
 preview clearing and opt-out persistence through restart. Windows ARM used an
 ARM desktop with emulated x64 engine/database components. Version 4.46.13 is
-published after artifact verification; its public update checks are separate.
+published after artifact verification, and all six public automatic-update
+targets passed. Those release checks do not qualify the newer clock source.
 This qualifies the privacy controls, not active collection or full V08.
 `transport_available` describes valid configured release-route capability,
 separate from consent and a live send; it remains false here.
@@ -526,6 +528,17 @@ and the actual outbound state remains `not_inspected`. The exact-packet
 inspection requirement above remains an **open acceptance gate**. Showing fixed
 example bytes and their schema before enabling does not establish inspection of
 the actual next outgoing packet or close that gate.
+
+The subsequent [review-clock foundation](../validation/2026-10-26-telemetry-preview.md#review-clock-foundation)
+adds private native clock readers and a portable lifetime validator, capped at
+15 minutes or the supplied observation expiry, whichever comes first. Wall-time
+and elapsed-time checks reject rollback, epoch loss/change and expiry without
+renewing the original age. Browser coordination keeps its epoch only among
+live same-origin pages; ordinary reads never initialize it. Epochs are local
+control values, not analytics identifiers or outbound fields. **Actual packet
+staging, review UI and approval remain unimplemented.** This source foundation
+is excluded from released 4.46.13; it changes neither the current synthetic
+preview nor production collection's false/null/null gates.
 
 ## Collector and release conditions
 

@@ -23,6 +23,10 @@ class CpuTotals(ctypes.Structure):
     _fields_ = [("idle", ctypes.c_uint64), ("total", ctypes.c_uint64), ("count", ctypes.c_uint32)]
 
 
+class ReviewClock(ctypes.Structure):
+    _fields_ = [("elapsed_ms", ctypes.c_uint64), ("epoch", ctypes.c_ubyte * 16)]
+
+
 @pytest.mark.parametrize(
     "value", [True, False, None, "9", float("nan"), 1, 2, 3, 7, 11, 15, 256, -1]
 )
@@ -283,7 +287,57 @@ def compiled(tmp_path_factory):
         ctypes.POINTER(CpuTotals),
     ]
     library.mnm_linux_cpu_totals.restype = ctypes.c_int
+    library.mnemion_review_clock_v1.argtypes = [ctypes.c_int, ctypes.POINTER(ReviewClock)]
+    library.mnemion_review_clock_v1.restype = ctypes.c_int
+    library.mnm_review_clock.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+        ctypes.c_uint64,
+        ctypes.POINTER(ReviewClock),
+    ]
+    library.mnm_review_clock.restype = ctypes.c_int
     return library, output
+
+
+def test_review_clock_uses_the_actual_shared_native_clock_without_new_state(compiled, monkeypatch):
+    from mnemion.product_telemetry import review_clock
+
+    library, artifact = compiled
+    monkeypatch.setattr(review_clock, "__file__", str(artifact.with_name("review_clock.py")))
+    monkeypatch.setattr(review_clock, "_native", None)
+    first = review_clock.read_review_clock()
+    second = review_clock.read_review_clock()
+    comparable = (
+        first is not None
+        and second is not None
+        and first["epoch"] == second["epoch"]
+        and first["elapsed_ms"] <= second["elapsed_ms"]
+    )
+    assert comparable
+    assert review_clock.read_review_clock(initialize="yes") is None
+    value = ReviewClock()
+    assert library.mnemion_review_clock_v1(2, ctypes.byref(value)) == 0
+    assert value.elapsed_ms == 0 and not any(value.epoch)
+    assert library.mnemion_review_clock_v1(0, None) == 0
+
+
+def test_review_epoch_parser_is_bounded_and_clears_failed_output(compiled):
+    library, _ = compiled
+    value = ReviewClock()
+    epoch = b"00112233-4455-6677-8899-aabbccddeeff"
+    assert library.mnm_review_clock(epoch, len(epoch), 1234, ctypes.byref(value)) == 1
+    assert value.elapsed_ms == 1234 and bytes(value.epoch).hex() == epoch.decode().replace("-", "")
+    for raw, length, elapsed in [
+        (None, 36, 0),
+        (epoch, 35, 0),
+        (epoch + b"x", 37, 0),
+        (epoch.replace(b"-", b"0"), 36, 0),
+        (epoch.replace(b"a", b"z"), 36, 0),
+        (b"00000000-0000-0000-0000-000000000000", 36, 0),
+        (epoch, 36, 2**53),
+    ]:
+        assert library.mnm_review_clock(raw, length, elapsed, ctypes.byref(value)) == 0
+        assert value.elapsed_ms == 0 and not any(value.epoch)
 
 
 def test_linux_cpu_aggregate_preserves_node_busy_time_without_per_core_metadata(compiled):

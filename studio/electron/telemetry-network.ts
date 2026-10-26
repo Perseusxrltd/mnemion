@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url'
 import type { TelemetryConditions } from './telemetry-activity.js'
 
 type Probe = () => Promise<number>
-let binding: { readState: Probe; readCpuTotals?: () => unknown } | false | undefined
+let binding: { readState: Probe; readCpuTotals?: () => unknown; readReviewClock?: () => unknown;
+  initializeReviewClock?: () => unknown } | false | undefined
 function nativeBinding() {
   if (binding === undefined) {
     try {
@@ -26,6 +27,14 @@ async function nativeState(): Promise<number> {
 export function nativeCpuTotals(): unknown {
   const loaded = nativeBinding()
   return loaded && typeof loaded.readCpuTotals === 'function' ? loaded.readCpuTotals() : null
+}
+
+/** Only an explicit inspection action may initialize a local epoch marker. */
+export function nativeReviewClock(initialize = false): unknown {
+  const loaded = nativeBinding()
+  if (!loaded) return null
+  const read = initialize ? loaded.initializeReviewClock : loaded.readReviewClock
+  return typeof read === 'function' ? read() : null
 }
 
 export function networkFlags(value: unknown): TelemetryConditions & { observed: boolean } {

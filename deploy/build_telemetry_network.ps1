@@ -12,6 +12,6 @@ $work = Join-Path ([IO.Path]::GetTempPath()) ('mnemion-network-build-' + [Guid]:
 try {
     & cl.exe /nologo /O1 /W4 /WX /MT /guard:cf /std:c17 /LD "/Fo$work/" "/Fe$Destination" `
         (Join-Path $source 'network-state.c') (Join-Path $source 'network-node.c') `
-        /link /DYNAMICBASE /NXCOMPAT "/IMPLIB:$work/network-state.lib"
+        /link /DYNAMICBASE /NXCOMPAT bcrypt.lib advapi32.lib OneCore.lib "/IMPLIB:$work/network-state.lib"
     if ($LASTEXITCODE -ne 0) { throw 'The native network-policy probe did not compile.' }
 } finally { Remove-Item -LiteralPath $work -Recurse -Force }

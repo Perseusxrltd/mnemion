@@ -18,8 +18,9 @@ The [4.46.13 privacy-control qualification](../validation/2026-10-26-44613-nativ
 passed all six installed targets: Linux, Windows and macOS, each on x64 and
 ARM64, with 64 required fields per target. Windows ARM used an ARM desktop with
 emulated x64 engine/database components. The version is published after artifact
-verification. This qualifies the controls, not active telemetry or full V08;
-public automatic-update checks and actual user installation checks are separate.
+verification, and all six public automatic-update targets passed. This qualifies
+the controls, not active telemetry or full V08; actual user installation checks
+remain separate.
 The earlier [five-target 4.46.12 evidence](../validation/2026-10-26-telemetry-preview.md)
 remains retained with that candidate's original failures.
 
@@ -49,6 +50,12 @@ workflow and resource/platform qualification are still unfinished.
 A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
+
+New source adds a [clock foundation for bounded report review](../validation/2026-10-26-telemetry-preview.md#review-clock-foundation),
+but **exact-packet staging, review UI and approval are not implemented**. There
+is no new app or agent review action to use. The published format example stays
+unchanged; these clock changes are excluded from 4.46.13 and do not enable
+collection.
 
 **Telemetry connection settings** offers `auto`, `unmetered` and `metered`.
 Automatic mode pauses delivery when metering is unknown; an unmetered declaration

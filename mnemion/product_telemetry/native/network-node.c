@@ -98,6 +98,34 @@ static NValue read_cpu_totals(NEnv env, NInfo info) {
     return result;
 }
 
+static NValue review_clock(NEnv env, int initialize) {
+    MnmReviewClock clock = {0};
+    const int available = mnemion_review_clock_v1(initialize, &clock);
+    NValue result = NULL, elapsed = NULL, epoch = NULL;
+    if (api.array(env, available ? 2 : 0, &result) != 0) return NULL;
+    if (!available) return result;
+    static const char hex[] = "0123456789abcdef";
+    char encoded[33] = {0};
+    for (size_t at = 0; at < sizeof(clock.epoch); ++at) {
+        encoded[at * 2] = hex[clock.epoch[at] >> 4];
+        encoded[at * 2 + 1] = hex[clock.epoch[at] & 15];
+    }
+    if (api.number(env, (double)clock.elapsed_ms, &elapsed) != 0 ||
+        api.string(env, encoded, 32, &epoch) != 0 ||
+        api.element(env, result, 0, elapsed) != 0 || api.element(env, result, 1, epoch) != 0) return NULL;
+    return result;
+}
+
+static NValue read_review_clock(NEnv env, NInfo info) {
+    (void)info;
+    return review_clock(env, 0);
+}
+
+static NValue initialize_review_clock(NEnv env, NInfo info) {
+    (void)info;
+    return review_clock(env, 1);
+}
+
 MNM_EXPORT int32_t node_api_module_get_api_version_v1(void) { return 8; }
 MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
 #define LOAD(field, name) if (!host_symbol(&api.field, sizeof(api.field), name)) return NULL
@@ -119,5 +147,9 @@ MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
         api.property(env, exports, "readState", function) != 0) return NULL;
     if (api.function(env, "readCpuTotals", 13, read_cpu_totals, NULL, &function) != 0 ||
         api.property(env, exports, "readCpuTotals", function) != 0) return NULL;
+    if (api.function(env, "readReviewClock", 15, read_review_clock, NULL, &function) != 0 ||
+        api.property(env, exports, "readReviewClock", function) != 0) return NULL;
+    if (api.function(env, "initializeReviewClock", 21, initialize_review_clock, NULL, &function) != 0 ||
+        api.property(env, exports, "initializeReviewClock", function) != 0) return NULL;
     return exports;
 }

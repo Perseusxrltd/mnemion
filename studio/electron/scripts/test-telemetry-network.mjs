@@ -5,6 +5,8 @@ import { createRequire } from 'node:module'
 import { NativeNetworkConditions, networkFlags } from '../dist/telemetry-network.js'
 import { DesktopTelemetryConditions } from '../dist/telemetry-conditions.js'
 import { readCpuTotals } from '../dist/telemetry-cpu.js'
+import { readReviewClock } from '../dist/telemetry-review-clock.js'
+import { startReviewLifetime, checkReviewLifetime, REVIEW_LIFETIME_MS } from '../dist/telemetry-review-lifetime.js'
 
 const tick = () => new Promise(resolve => setImmediate(resolve))
 const plain = value => { const { observed, ...conditions } = networkFlags(value); return conditions }
@@ -101,9 +103,9 @@ test('a missing native reply stops preparation after its one-second deadline', a
   await awake
 })
 
-test('the compiled Node ABI exposes only policy flags and aggregate CPU counters', async () => {
+test('the compiled Node ABI exposes fixed admission and private review controls', async () => {
   const binding = createRequire(import.meta.url)('../dist/telemetry-network.node')
-  assert.deepEqual(Object.keys(binding).sort(), ['readCpuTotals', 'readState'])
+  assert.deepEqual(Object.keys(binding).sort(), ['initializeReviewClock', 'readCpuTotals', 'readReviewClock', 'readState'])
   const value = await binding.readState()
   assert.ok([0, 8, 9, 10, 12, 13, 14].includes(value))
   const cpu = binding.readCpuTotals()
@@ -117,6 +119,33 @@ test('the compiled Node ABI exposes only policy flags and aggregate CPU counters
 test('valid aggregate CPU counters avoid the per-core OS allocation path', () => {
   const result = readCpuTotals(() => [300, 1000, 2], () => { throw new Error('Per-core path must remain unused') })
   assert.deepEqual(result, { idle: 300, total: 1000, count: 2, source: 'native' })
+})
+
+test('native review clocks are shared without exposing an epoch in the receipt', () => {
+  const first = readReviewClock(true), second = readReviewClock()
+  const comparable = first !== null && second !== null && first.epoch === second.epoch && first.elapsed_ms <= second.elapsed_ms
+  assert.equal(comparable, true)
+  assert.equal(readReviewClock(false, () => null), null)
+  assert.equal(readReviewClock(false, () => [123, '0'.repeat(32)]), null)
+  assert.equal(readReviewClock(false, () => [2 ** 53, 'a'.repeat(32)]), null)
+  assert.equal(readReviewClock('yes', () => { throw new Error('Invalid initialization must not call the OS') }), null)
+})
+
+test('review expiry survives restart, input expiry, clock stalls and rollback', () => {
+  const clock = { epoch: '1234567890abcdef1234567890abcdef', elapsed_ms: 50000 }, now = 10000000
+  const lifetime = startReviewLifetime(now, clock, now + 86400000)
+  assert.equal(lifetime.expires_ms, now + REVIEW_LIFETIME_MS)
+  const checked = checkReviewLifetime(lifetime, now + 800000, { ...clock, elapsed_ms: 850000 })
+  assert.ok(checked)
+  assert.equal(checked.expires_ms, lifetime.expires_ms)
+  assert.equal(checkReviewLifetime(checked, now + 800000, { ...clock, elapsed_ms: 950000 }), null)
+  assert.equal(checkReviewLifetime(checked, now + 799999, { ...clock, elapsed_ms: 850001 }), null)
+  assert.equal(checkReviewLifetime(checked, now + 800001, { ...clock, elapsed_ms: 849999 }), null)
+  assert.equal(checkReviewLifetime(checked, now + 800001, { ...clock, epoch: 'f'.repeat(32), elapsed_ms: 850001 }), null)
+  assert.equal(checkReviewLifetime(checked, now + 800001, null), null)
+  const short = startReviewLifetime(now, clock, now + 100)
+  assert.equal(checkReviewLifetime(short, now + 100, clock), null)
+  assert.equal(checkReviewLifetime(short, now, { ...clock, elapsed_ms: 50100 }), null)
 })
 
 test('older, missing or invalid aggregate CPU support retains the current Node fallback', () => {

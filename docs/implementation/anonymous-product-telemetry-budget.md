@@ -160,6 +160,36 @@ Those values and the local generation never enter the report body or analytics
 identity. Counters describe reservations, not successful uploads; `ready` is an
 accounting state and does not enable collection.
 
+## Review-clock foundation
+
+The later [source checkpoint](../validation/2026-10-26-telemetry-preview.md#review-clock-foundation)
+adds [Python](../../mnemion/product_telemetry/review_clock.py) and
+[portable TypeScript](../../studio/electron/telemetry-review-lifetime.ts) review
+lifetime validation. The maximum is **15 minutes**, shortened by the supplied
+observation expiry. Checks retain the original creation/expiry values and reject
+missing or changed epochs, backward clocks and either elapsed or wall-time
+expiry. This is separate from the existing **five-second delivery lease**;
+it neither reserves an attempt nor changes spending or queued observations.
+
+The [native reader](../../studio/electron/telemetry-review-clock.ts) uses the
+shared C clock through Node-API or Python. Linux/macOS source reads an OS boot
+epoch and suspend-inclusive elapsed time; Windows source uses an explicitly
+initialized volatile per-user epoch and interrupt time. Ordinary native reads
+cannot initialize or repair the Windows marker. These epochs are private local
+control only and must never enter telemetry or its wire body. Linux and Windows
+x64 runtime component checks passed; Windows ARM64, macOS and installed
+review-clock acceptance remain open.
+
+[BrowserReviewClock](../../studio/frontend/src/workspace/telemetry-review-clock.ts)
+uses only live same-origin pages, a short Web Lock and bounded BroadcastChannel
+discovery. It creates no worker or persistent storage. `read()` opens no channel,
+waits for nothing and cannot initialize an epoch. Explicit `ensure()` can create
+one or join a still-live matching epoch; losing all peers prevents revival of
+an old lifetime. The clock components are not wired to packet storage or user
+controls: **staging, review UI and approval remain unimplemented**. They are not
+in released 4.46.13 and do not establish full rollback, resource or platform
+acceptance. V08 stays Building and collection remains unavailable.
+
 ## Cancellation and the final handoff
 
 A prepared report is a process-local, one-use body with a private lease and the
