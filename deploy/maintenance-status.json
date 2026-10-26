@@ -23,37 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "ab19e5e072935d7251dd0e64d0129e207cc8366b",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T08:35:36Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293301106",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 10,
-        "succeeded": 10,
-        "active": [
-          {
-            "id": 121473282516,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121473282770,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T09:11:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293301106"
     },
     {
       "id": 40268195296,
@@ -119,12 +92,6 @@
       "updated_at": "2026-10-26T08:58:27Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40293480655",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 14,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / ubuntu-22.04 / x64",
@@ -192,7 +159,13 @@
             "Retain generated desktop-content secret scan receipt"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 14,
+        "active": []
+      }
     },
     {
       "id": 40296033009,
@@ -228,5 +201,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T08:59:03+00:00"
+  "observed_at": "2026-10-26T09:11:52+00:00"
 }
