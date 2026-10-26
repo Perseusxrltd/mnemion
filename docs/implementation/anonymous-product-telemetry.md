@@ -1,464 +1,201 @@
 # Anonymous product telemetry — V08
 
-**V08 is Building/source implementation; checkpoint 26 October 2026.** The full scope
-recorded on 23 October remains the acceptance contract in the
-[66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls,
-the fixed catalog, bounded aggregate queues, selected owned workflow hooks,
-bounded transport components and opportunistic application-owner wiring are
-implemented in source;
-product collection is unavailable. V08 is the
-active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
-texts and the other 65 states remain unchanged. Local privacy controls ship in
-4.46.13; the later CPU admission and exact-report review changes documented
-below remain source-only and under validation.
+**Building/source implementation; current checkpoint 26 October 2026.** V08
+retains the full scope in the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md);
+all requirement texts and the other 65 states are unchanged. The
+[shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
+`collection_available: false` with `destination: null`, and the
+[release route](../../mnemion/product_telemetry/transport-route.json) has a null
+address. Source controls, owners, senders and collector components exist.
+**No production product collection or qualified anonymous ingress is active.**
 
-The [dedicated collector source](anonymous-product-telemetry-collector.md) now
-provides a bounded TLS entrypoint, metadata removal, private report access and
-a minimal locked runtime. Its [actual TLS, clean-runtime and isolated VPS checks](../validation/2026-10-25-telemetry-collector-service.md)
-passed. The service manager supplies its sole listener, and the collector cannot
-make outbound connections or bind another port. The finite VPS check confirmed
-these restrictions, resource limits, request-data exclusion and clean shutdown.
-No production collector is deployed; provider/ingress privacy, client
-resources, useful reporting and full installed acceptance still gate release.
+The [six-target installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
+and public auto-update gates qualify their recorded release. They do not
+qualify later review/delivery changes or full V08. Consult the automatically
+maintained [release status](../RELEASE_STATUS.md) for current availability;
+source implementation and full telemetry acceptance remain separate.
 
-The earlier [closed-week volume follow-up](../validation/2026-10-25-telemetry-weekly-volume.md)
-added one global power-of-two report range after 64 accepted contributions, with
-the existing 4,096-per-view precision threshold unchanged. Report schema v2
-preserved immutable v1 reading and the original four-byte wire format. The
-67 focused source checks passed. Volume is not a count of people or installations
-and is not authenticated; detailed statistics can remain unavailable. This
-source follow-up does not activate collection or close the remaining privacy,
-resource, deployment and installed-platform requirements.
+Use the [app/native control guide](../guides/product-telemetry-controls.md),
+[catalog and ownership map](anonymous-product-telemetry-catalog.md),
+[delivery/budget design](anonymous-product-telemetry-budget.md) and
+[collector design](anonymous-product-telemetry-collector.md) for implementation
+detail. The [evidence index](../validation/telemetry-evidence-index.md) preserves
+dated qualifications, original failures, source boundaries and resource results.
+The requirements below remain the acceptance contract.
 
-The [review-selection correction](../validation/2026-10-26-telemetry-review-selection.md)
-now uses **wire v2/report v3**. Manual packets are fixed before inspection for
-the permitted groups: first permitted view, coordinate zero and flags two,
-with no categorical measurement or random draw. They count only toward the
-coarse global volume range, never categorical sums,
-per-view counts or precision. Automatic randomization, four-byte size, thresholds
-and budgets are unchanged. Legacy wire v1 is rejected; immutable aggregate v1/v2
-reports remain readable. Final fixed-body checks passed **149 Python, 113
-browser-source and 41 native Node checks**, with both builds passed. The
-intermediate marker-only results and two obsolete TLS-fixture failures remain
-preserved. This newer work is excluded from frozen
-4.46.14 and does not activate collection or qualify installed telemetry.
+## Current implementation
 
-The [app and native usage guide](../guides/product-telemetry-controls.md)
-describes the pre-login/offline `/privacy` page and private-stdin
-`mnemion-service telemetry` actions: `schema`, `status`, `preview` and
-`configure`. App and native processes share a persistent default-enabled
-preference under the same OS account and application data configuration.
-Browser choice is local to that browser and site, honors Global Privacy Control
-and uses the served company restriction. Company policy can restrict collection
-but cannot override a user opt-out. Damaged or unreadable settings fail closed;
-there is no automatic repair or repair action in this source checkpoint.
-Each successful opt-out advances the local revision, including when already off,
-so an earlier enable request cannot override that newer choice.
-Native and browser controls also compare the private `store_generation` token,
-preventing old work from matching a recreated store whose revision repeats.
-This token belongs only to local control state; it is never an analytics identity
-or outbound measurement. Supported legacy opt-outs remain off, and a missing
-generation requires fresh disclosure before collection can become effective.
+### Choice and private state
 
-The current [app-owner source batch](../validation/2026-10-24-telemetry-app-owners.md)
-adds a persistent `connection_mode` through app, native/private-stdin and browser
-controls. `auto` refuses unknown metering; `unmetered` declares an unlimited
-connection only where metering is unknown; `metered` pauses delivery. Detected
-limits, resource pressure, disclosure and company/user restrictions still win.
-The setting stores no network name or address and persists until changed.
-SQLite storage version **5** and browser choice version **4** preserve spent
-delivery accounting when migrating. A stale opt-out still disables collection
-without replacing a newer connection choice; omitting the field preserves it.
-Changing this setting does not acknowledge an unseen disclosure.
-Explicit native `configure` now permits up to **250 ms per busy SQLite lock**
-to accommodate a brief reader; this is not a single 250 ms action deadline.
-Producers and delivery retain zero lock waiting. The maintained local stdio
-`mnemion_telemetry` choice also accepts `connection_mode` and disclosure version
-`0`, without treating that value as acknowledgement of an unseen disclosure.
+The pre-login/offline `/privacy` page and private-stdin
+`mnemion-service telemetry` controls expose schema, status, synthetic preview,
+configuration and explicit report review. App and native processes share the
+persistent default-enabled preference under the same OS account and application
+data configuration. Browser choice is local to its site/browser, honors GPC and
+served company restrictions. An enabled preference is not completed disclosure;
+company policy cannot override opt-out. Damaged or unreadable settings fail
+closed, with no automatic repair or repair command.
 
-The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
-`collection_available: false` and `destination: null`. Saving an enabled
-preference does not complete disclosure or activate collection. The current
-source preview returns the measurement catalog, an empty local aggregate list
-while unavailable, and a fixed synthetic four-byte
-[report-format example](anonymous-product-telemetry-delivery.md#automatic-categories-and-fixed-reviewed-reports).
-It reports `outbound_state: "not_inspected"`, with a null actual body and zero
-inspected outgoing bytes. No report is randomized or reserved by viewing the
-example; queue contents, spent allowance and consent remain unchanged, and no
-network request is made. The app clears previews on choice changes, status
-refresh or window focus and discards late responses. Any displayed local counts
-are separately labeled snapshots. The
-[preview evidence](../validation/2026-10-26-telemetry-preview.md) preserves the
-five-target 4.46.12 result. The later
-[4.46.13 qualification](../validation/2026-10-26-44613-native-acceptance.md)
-passed all six installed targets: Linux, Windows and macOS, each on x64 and
-ARM64. Each passed all 64 required fields, including actual
-privacy controls, app/native choice visibility, inspection without spending,
-preview clearing and opt-out persistence through restart. Windows ARM used an
-ARM desktop with emulated x64 engine/database components. Version 4.46.13 is
-published after artifact verification, and all six public automatic-update
-targets passed. Those release checks do not qualify the newer clock source.
-This qualifies the privacy controls, not active collection or full V08.
-`transport_available` describes valid configured release-route capability,
-separate from consent and a live send; it remains false here.
-Owned CLI, desktop/native-operator, Studio/browser and
-explicit local stdio and selected fresh-maintenance hooks exist in source.
-Python, native and browser senders and application-owner wiring remain inactive;
-the release-owned [transport route](../../mnemion/product_telemetry/transport-route.json)
-also has a null address. No collector, production analytics or qualified anonymous
-ingress is deployed.
+Read-only schema/status/format preview does not randomize or reserve reports,
+change queues, spending or consent, or make network requests. While unavailable,
+local aggregates are empty, the actual outbound body is null and inspected bytes
+are zero; the synthetic example is separate. Local counts are labeled snapshots.
+Choice changes, status refresh and window focus clear previews; late replies are
+discarded. `transport_available` describes a valid configured release route,
+not consent or a live send, and remains false here.
 
-The new owners offer delivery after an owned observation is committed, within an
-already awake desktop, browser page or registered Python service/local stdio loop. They do
-not add an idle scheduler, one-shot CLI keepalive or shutdown flush. Active
-owner/lifecycle source checks and a **19-assertion actual Chromium journey**
-passed in the [current report](../validation/2026-10-24-telemetry-app-owners.md).
-That journey used synthetic CPU admission, real heap readings and normal browser
-networking; it does not qualify actual pressure sensors. Unknown native metering requires
-an explicit unmetered declaration, and unsupported browser pressure/heap sensors
-refuse delivery. Full workflow/owner coverage, whole-wire/resource measurements
-and native/web release acceptance remain open.
+Every successful opt-out advances revision even when already off. The private
+`store_generation` fence rejects old work after store recreation, including a
+repeated revision; it is never an analytics identity or outbound value. Legacy
+opt-outs remain off; missing generation requires fresh disclosure before
+collection. Explicit choices clear measurement/contribution counters, while
+spent delivery allowance remains. Expiry prunes on activity, not an idle timer.
+Generation checks do not detect an unobservable whole-machine snapshot rollback
+restoring the old token and choice.
 
-The later [headless Windows network reader](../validation/2026-10-26-telemetry-headless-network.md)
-uses the documented local OS cost hint only when the packaged helper is absent.
-Its 82 focused checks and Windows x64 Python/helper comparison passed at component
-scope. Linux/macOS without the helper still report unknown cost; automatic mode
-refuses that uncertainty. This new source is excluded from 4.46.13 and does not
-qualify installed delivery, resources or production collection.
+Persistent `connection_mode` is `auto`, `unmetered` or `metered`. Automatic
+mode refuses unknown metering; an unmetered declaration resolves only unknown
+cost, never detected limits or another veto. Metered mode pauses delivery.
+Omitting the field preserves it; stale opt-out retains a newer connection choice.
+Changing it, or supplying disclosure version `0` through local stdio, does not
+acknowledge unseen disclosure. No network name or address is stored.
+Explicit native configuration may wait **250 ms per busy SQLite lock**, not
+250 ms for the whole action. Producers/delivery remain nonwaiting; selected
+desktop actions allow at most **25 ms** for an optional snapshot before the
+original action.
 
-The subsequent [browser company-policy refresh](../validation/2026-10-24-telemetry-company-refresh.md)
-adds one bounded, credential-free read of the Studio page's own
-`/studio/telemetry-policy` before an already-reserved report can be sent. It
-rechecks local choice and pressure before that read and the final report handoff;
-observed restrictions can only narrow permission until the page reloads. Reading
-privacy status does not fetch policy or enable collection. The **90 browser and
-25 Python source checks** passed; on **25 October**, the actual Chromium journey
-passed **20 assertions** with seven policy reads, one four-byte TLS report and
-one real preflight. CPU admission was synthetic. The final frontend build and
-fixture cleanup passed. Neither endpoint's production ingress/log privacy nor
-full resource/platform acceptance is qualified.
+### Owned observations and storage
 
-The subsequent [native network-admission source batch](../validation/2026-10-25-telemetry-native-conditions.md)
-adds a shared OS-cost helper and read-only eligibility checks before desktop or
-Python owners start gauges. It reads fixed cost/constraint flags without an
-Internet probe or network identifiers. A user declaration can resolve unknown
-metering, never observed metering or constraints. Missing compiled support stays
-unknown. Preparation and refresh occur only inside an already-awake opportunity;
-late cancelled results are rejected, with freshness measured from query start.
-Focused network and packaging checks passed. Final component observations were
-**2.11 MiB added RSS on Windows Node and 2.23 MiB on Linux Electron**, both above
-the unchanged 2 MiB full-feature target. Later
-[macOS ARM64/x64 component probes](../validation/2026-10-25-telemetry-native-conditions.md#macos-component-follow-up)
-compiled and passed under Python 3.12.10 and Node 22.23.2; they are not Electron
-or installed-client acceptance. All-six-native and full resource/wire/collector
-acceptance remain open.
+The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
+matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
+event/input/result objects, free text and identifying values do not.
+The generated [coverage inventory](../validation/2026-10-26-telemetry-coverage.md)
+marks 86 categories with declared source mappings and eight unmeasured. It is
+available in app/browser format inspection and native schema/preview, with no
+new collection owner. Release checks reject stale inventories. A source mapping
+does not qualify every screen, sensor or installed client.
+Payload-byte observations are not whole-wire traffic measurements.
+Owners cover the control CLI, desktop/native operator, Studio/browser, explicit
+local stdio and selected fresh maintenance. The control CLI classifies all
+**161 operations: 82 eligible and 79 excluded across five reasons**. The catalog
+records the detailed maps and remaining action-by-action coverage.
 
-The [producer-overhead source follow-up](../validation/2026-10-25-telemetry-producer-overhead.md)
-adds denial-only hints for explicit opt-out and exhausted contribution scopes.
-They expire lazily within 60 seconds and cannot authorize collection; accepted
-work retains the current-policy and storage fences. Focused checks passed. A real
-headless desktop/TLS diagnostic measured **3.27 MiB added RSS when opted out and
-6.40 MiB when enabled**, both above the unchanged 2 MiB full-feature target.
-Its synthetic burst and after-bootstrap baseline do not qualify representative
-app performance or installed platforms.
+Keyed API writes require `X-Mnemion-Idempotency: new`; typed
+[host mutations](../validation/2026-10-26-telemetry-host-requests.md) require the
+request-scoped `result.request_disposition: new`. Cached, replayed, legacy,
+unknown or lost replies add no use. Async queueing is `accepted`, not completed
+work. SDK response metadata adds no owner, identifier or server recounting;
+its request-local metadata needs no database migration. Aliases and nested calls
+have one owner, and optional observer failure preserves exactly one original
+action. Generic SDK/remote MCP requests, derived server jobs, mixed-host totals,
+private operational rows, polling/replay, privacy controls and unavailable
+sensors are excluded. These privacy exclusions do not abandon product scope.
+The local stdio `mnemion_telemetry` tool works offline and refuses HTTP use.
 
-The next [denial-allocation and real-memory diagnostic follow-up](../validation/2026-10-25-telemetry-memory-profile.md)
-reduces native snapshot allocations and carries the fixed UI workflow through
-the desktop snapshot bridge. Merged exhausted scopes retain their original
-bounded expiry; accepted work still requires fresh policy. The new fixed
-save/fetch/lexical-search fixture uses real SDK/API/PostgreSQL transactions with
-the Studio wrapper in the main process. Focused source checks passed; measured
-workload results verified **384 requests per variant**. Enabled ending RSS growth
-exceeded unavailable collection by **4.41 MiB**; negative CPU differences remain
-run variation. The default synthetic mode still measured **6.59 MiB** enabled
-RSS growth. At that checkpoint, renderer/IPC and full resource acceptance
-remained open.
+Native Python and Electron share private SQLite; the browser uses origin-local
+storage/Web Locks. **SQLite schema 6 / browser choice 5 / budget 2** fence older
+senders; migrations preserve spent delivery accounting. Unsafe stores fail closed
+under fresh ownership/permission checks. Measurements cannot initialize or repair
+settings. Unavailable collection returns from producers before policy/queue
+access. Workflow pairs use one current-policy transaction with per-observation
+limits; batching does not guarantee both contributions fit. Native writes use
+`node:sqlite`, without
+spawning Python per observation or retaining a connection/positive policy cache.
+One process-wide storage slot is claimed before asynchronous checks and released
+only after actual closure. Windows permission helpers remain owned until actual
+process exit, including after a refusal deadline.
 
-The subsequent [bounded denial-observation reuse](../validation/2026-10-25-telemetry-denial-io.md)
-can skip repeated file-stat/SQLite work for up to **250 ms**. File changes need
-not invalidate the negative hint immediately; newly re-enabled work may lose
-optional samples during that interval. Choice/status and admitted work retain
-fresh checks, with no positive consent cache. The original 60-second expiry and
-day invalidation remain. Focused checks and the first burst diagnostic passed;
-opted-out/enabled RSS remained **2.41/4.83 MiB**, above the 2 MiB target.
-Later source returns immediate native snapshot refusals synchronously to avoid
-their extra Promise/await work; eligible reads retain fresh asynchronous policy
-checks. Its final source checks and second burst completed, measuring
-**1.89/4.43 MiB** opted-out/enabled RSS. The single opted-out observation does not
-qualify the full resource target; enabled RSS and platform acceptance remain open.
+Denial-only hints for opt-out/exhausted scopes retain the original file/day and
+at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
+observations can be reused for **250 ms**, so a recent re-enable may lose optional
+samples during that interval. Synchronous denials avoid Promise/SQLite work.
+Actual choice/status and admitted observations, reservations and handoffs still
+use fresh checks; negative hints never grant permission.
 
-The subsequent [real renderer/IPC source journey](../validation/2026-10-26-telemetry-renderer.md)
-passed all three variants through the development app's onboarding, sandboxed
-preload, native session handle and default measured renderer client. Each
-completed **387 real fixture API requests**; unavailable/opted-out variants
-collected nothing, while enabled recorded 66 writes and one four-byte TLS report.
-The memory cycles were scripted renderer SDK calls. The descriptive enabled
-Electron CPU difference was **1.143% of one core** over the baseline interval;
-ending and sampled-peak RSS observations differ and are not stable overhead
-estimates. The **2 MiB RSS / 0.5% CPU** targets remain unchanged and unaccepted,
-as do installed-platform, whole-wire and production privacy qualification.
+Fresh automatic desktop scans/capture and standalone connector execution have
+owners. Empty/paused scans, explicit Sync continuations, remote-requested or
+host-managed scans, reusable helpers and server-worker activity do not acquire
+another owner. Native resource samples require a real child callback; headless
+RSS is an ending observation, with its own CPU delta and configured capture
+limit. No source history or mixed-host totals are exported. Updater download,
+verification and retries form one cycle; polls add no use, unfinished cycles
+are discarded on quit, and installer handoff is only accepted. Native request
+acknowledgements remain separate categories, not extra completed uses.
 
-The 26 October [SQLite cleanup source follow-up](../validation/2026-10-26-telemetry-sqlite-cleanup.md)
-requests `PRAGMA shrink_memory` before closing native telemetry connections,
-without retaining a connection or positive policy cache. The Electron build and
-44 focused checks passed, with two Windows-only skips. Later compiled renderer
-run **40260081248** matched all **1,961 reviewed source hashes** across three
-successful journeys and **1,161 real fixture API requests**. Enabled main-process
-ending RSS growth exceeded unavailable collection by **1,875,968 bytes**, below
-2 MiB in that observation, while sampled-peak growth exceeded it by
-**3,440,640 bytes**, above the target. The descriptive Electron CPU difference
-was **180 ms / 0.2171447873% of one core**. These results and the retained small
-allocation diagnostics do not establish a causal improvement or stable
-resource/platform acceptance. Changed source `b9a29886830b63fac75c863e57d55287cc9bd321`
-remains separate from already-frozen 4.46.12; production collection is unavailable.
+### Admission, delivery and reporting
 
-The [one six-case attribution run](../validation/2026-10-26-telemetry-attribution.md)
-completed on 26 October; qualification matched all **1,966 reviewed files per
-variant**, with **2,322 successful API requests** and no model calls. All six
-original outcomes remain retained. Enabled main-process matched maxima were
-**3,608,576 / 3,391,488 bytes**; endings were **3,125,248 / 1,933,312 bytes**.
-The profiled CPU differences of **0.295167% / 0.307298%** are descriptive,
-not acceptance. Earlier report checks and offline findings remain preserved.
-The stop-rule decision selects a [cold initialization and storage-runtime
-ownership review](../validation/2026-10-26-telemetry-storage-ownership.md): overlapping first-call windows suggest file-backed residency,
-without proving SQLite alone caused the difference. No repeat benchmark or
-budget revision is selected. The **2 MiB / 0.5%** gates remain unchanged and
-unaccepted. That diagnostic remains separate from the now-published 4.46.13
-native-control qualification; collection stays false/null/null.
+Owners offer delivery after a committed observation within an already-awake
+desktop, page or registered Python service/local stdio loop. There is no new idle
+sampler, telemetry daemon, one-shot CLI keepalive or shutdown flush. OS cost
+checks precede gauges, use fixed flags without an Internet probe or network
+identifiers, and reject late cancelled results with freshness measured from
+query start. Linux/macOS aggregate CPU admission avoids per-core enumeration;
+changed/reset counters require comparable readings and preserve the **20% CPU
+admission threshold**. Windows retains the existing fallback.
 
-The later [storage-slot source follow-up](../validation/2026-10-26-telemetry-storage-slot.md)
-reproduced 32 simultaneous SQLite handles in a 32-call burst. A nonwaiting slot
-claimed before asynchronous work reduced that diagnostic to one admitted
-snapshot and one live handle, releasing ownership only after actual close.
-Windows permission checks likewise retain their helper until actual exit;
-privacy refresh now uses one coherent control response. These source checks
-do not attribute the earlier RSS excess or qualify resources, and this work
-is excluded from frozen 4.46.14.
+Without a packaged network helper, source Windows can use its documented local
+OS hint; Linux/macOS cost stays unknown. A present broken helper is not bypassed.
+Unsupported browser pressure/heap sensors refuse delivery. Browser attempts also
+read bounded, credential-free same-origin `/studio/telemetry-policy`, recheck
+local choice/pressure and only narrow permission until reload. Reading privacy
+status neither fetches policy nor enables collection. Component fixtures with
+synthetic CPU admission do not qualify actual sensors or pressure behavior.
 
-The [fixed storage follow-up](../validation/2026-10-26-telemetry-storage-followup.md)
-completed on 26 October at 08:18 UTC: all six journeys matched **1,998 source files
-each**, with **2,322 successful API requests**, no model calls and verified cleanup.
-Enabled main-process matched maxima were **3,121,152 / 3,235,840 bytes**, with
-endings **2,125,824 / 2,207,744 bytes**; both remain above 2 MiB. Profiled CPU
-differences of **0.228418% / 0.317356%** are descriptive. All opted-out, renderer
-and GPU outcomes remain retained. This current-source comparison does not
-isolate a causal improvement. The next step is an explicit architecture review,
-without another benchmark or revision of the **2 MiB / 0.5%** gates.
+Shared native/Python accounting and browser-origin coordination enforce **seven
+attempts per rolling week**, at least **24 hours plus jitter** between attempts,
+**64 KiB reserved per attempt** and a **256 KiB rolling-day guard**. Reservation
+consumes the queue; opt-out clears measurements/lease but does not refund spending.
+These reservations do not establish actual whole-wire cost. The native sender
+drains its own watcher before the mandatory fresh handoff check, then resumes
+watching; the five-second deadline, opt-out, one storage handle and final cleanup
+remain enforced. Full installed cancellation/resource qualification is still open.
 
-The subsequent [private storage-adapter prototype](../validation/2026-10-26-telemetry-storage-adapter.md)
-tests operation-scoped SQLite library ownership while retaining current compiled
-store/delivery privacy code. Linux component checks observed library unmapping
-after closure; this is not an RSS saving, renderer result or product runtime
-change. Functional scope now comprises **39 passes and two Windows-only skips**
-across the original selection and one isolated corrected fixture case. The
-original failure and shutdown lifecycle review remain retained. A shipping
-choice still requires a pinned, exclusively owned SQLite
-runtime for all six targets and complete API/worker/lifecycle and supply-chain
-review. The existing resource, platform and privacy gates remain open.
+Current **wire v2/report v3** retains four-byte packets. Automatic reports use
+the randomized encoder; manual reports use the first permitted view, coordinate
+zero and flags two, without category data or a random draw. Reviewed reports
+contribute only to a coarse global power-of-two volume range after **64 total
+reports**. Categorical sums, per-view counts and precision use automatic reports
+exclusively, retaining the **4,096-report per-view threshold**. No separate manual
+count is published. Wire v1 is rejected; immutable aggregate reports v1/v2 remain
+readable. Volume is unauthenticated and is not a count of people/installations;
+fine-grained statistics can remain unavailable. Exact review and its privacy
+limits are specified below.
 
-The separate [native handoff and release-resource correction](../validation/2026-10-26-telemetry-release-guards.md)
-drains the sender's own watcher before its fresh write check, preserving opt-out,
-the five-second deadline and one storage handle. Builder and verifier now use
-the sender's active wire definition. Source checks passed on Linux (37) and
-actual Windows x64 (17), with cleanup verified. These component checks do not
-qualify the six-target release, adopt the private adapter or resolve resource
-and production-privacy acceptance; collection remains unavailable.
+The dedicated collector implements bounded TLS intake, metadata removal,
+private immutable closed-week publication and **eight-window retention** in a
+minimal locked runtime. Systemd supplies its sole listener; the service cannot
+connect outbound or bind another port. Isolated TLS/VPS checks establish those
+recorded boundaries, not provider/ingress privacy or a production deployment.
 
-The earlier [CPU admission change](../validation/2026-10-26-telemetry-cpu-admission.md)
-removes the per-core allocation path on Linux and macOS by reading fixed
-aggregate counters through the existing native helper. The upstream Linux
-`os.cpus()` implementation allocates a 458,752-byte scratch array per call;
-the new reader uses a 512-byte stack buffer for `/proc/stat`. Windows and
-unavailable helpers retain the existing Node fallback. Provider/count changes,
-unknown samples, counter resets and clock rollback require two new comparable
-readings, preserving the 20% idle threshold and other admission restrictions.
-The build, focused admission/transport checks and actual Linux Electron ABI
-probe passed. Its **2,883,584-byte component RSS observation** still exceeds
-2 MiB and does not qualify the full resource limit. This source change is
-excluded from published 4.46.13; no renderer benchmark was repeated.
+## Remaining acceptance gates
 
-The later [delivery components](anonymous-product-telemetry-delivery.md) implement
-a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
-bounded private publisher in source. Their conditional per-report privacy bound
-does not establish participation or network anonymity. Sender integration and
-deployed qualification remain open; the
-[delivery validation](../validation/2026-10-24-telemetry-delivery.md) records
-47 Python checks, six Node and six actual Electron codec checks, and a
-12-check isolated plain-loopback HTTP journey. The final Python selection and
-frontend build passed; full resource/platform acceptance remains pending. These
-checks do not qualify a product sender or TLS/provider logging. Material limits
-on small-population statistics remain.
-
-The subsequent [shared native/Python budget](anonymous-product-telemetry-budget.md)
-adds persistent private attempt accounting and cancellation fences in source:
-seven attempts per rolling week, at least 24 hours plus jitter between attempts,
-64 KiB reserved per attempt and a 256 KiB rolling-day guard. Reservation consumes
-the queue; opt-out retains spent allowance while clearing measurements and the
-lease. Its final source checks passed **54 Python cases and 18 actual Electron
-cases, with two Windows-only ACL skips**, including the monotonic deadline. It
-adds no sender or network activation and does not prove installed cancellation,
-actual wire usage or full resource/platform acceptance.
-
-The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
-now encode **94 workflows in 15 families** with fixed numeric buckets and
-matching Python/TypeScript coordinates. Native SQLite and browser queues enforce
-bounded cells, local scope/day contribution caps, company-group restrictions
-and the originating revision/generation pair. Measurement/contribution counters
-clear on explicit choice; spent delivery accounting is retained. Queue expiry
-prunes on activity. Generation fencing covers store deletion/recreation;
-it cannot detect an unobservable whole-machine snapshot rollback restoring the
-old token and choice. Final sender cancellation remains a full-feature check.
-Declared exclusions cover unowned remote clients, derived server work, mixed-host
-totals, private operational rows, polling/replay, privacy controls and unavailable
-sensors. These privacy boundaries do not abandon connector or roadmap requirements.
-
-The later [aggregate source validation](../validation/2026-10-24-telemetry-aggregates.md)
-records **28 Python, 11 browser/codec and 12 bridge checks**, both builds and a
-**nine-check built-browser catalog journey**. No fresh package build qualifies
-this batch. Remaining workflow hooks, full coverage, measured resource ceilings,
-all-platform behavior and outbound/collector/privacy acceptance remain open.
-The following generation correction passed **29 Python and 12 browser/codec
-checks** and both builds. Its initial test-placement `NameError` remains failed
-and preserved separately from the corrected passing run.
-The actual built-Chromium generation journey then passed **11 checks** for
-stale UI state, legacy opt-out, damaged generation and narrow-screen behavior;
-the retained first runner attempt stopped before any UI action.
-
-The existing [owned control-CLI hook](anonymous-product-telemetry-catalog.md#owned-headless-control-coverage)
-is limited to `mnemion-control call`: all **161 API operations** have an explicit
-mapping, with **82 eligible actions and 79 exclusions across five reasons**.
-It snapshots local generation/revision and passes only fixed enums, duration and
-permitted numeric payload-byte counts to the encoder. Keyed writes require the
-server's `X-Mnemion-Idempotency: new`; cached, legacy or unknown receipts contribute
-nothing. Asynchronous work is acknowledged as `accepted`, without claiming
-completion. The request-local metadata change requires no database migration.
-Generic SDK and remote MCP calls never acquire a telemetry owner. The corrected
-focused contract check passed after the retained initial schema-reference test
-failure; the final focused Python selection then passed **51 tests**, and a
-fresh private wheel passed its isolated offline journey. These source checks
-do not qualify the published 4.46.6 artifact or native telemetry release.
-Collection remains off. The mapped hooks do not finish remaining autonomous-work
-ownership, workflow qualification, the sender/collector or full
-resource/privacy/platform acceptance.
-
-The current [desktop/Studio source batch](anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
-adds Electron's private SQLite writer, shared with native Python policy, and a
-read-only Windows owner/DACL check compiled with MSVC. Unsafe stores fail closed;
-measurement cannot initialize or repair settings. A shared TypeScript workflow
-captures generation/revision and submits only reviewed numeric primitives.
-Explicit native-operator/IPC actions and a Studio-only client wrapper own their
-mapped uses. The reusable SDK only weakly tags response-bound `new`/`replayed`
-metadata; it starts no analytics. Polling, generic requests, uncertain/replayed
-keyed writes, privacy controls and unowned continuation transports are excluded.
-
-Preliminary checks passed **32 Python tests with two Windows skips**, **ten local
-native-store/bridge tests with one Windows-only skip**, and **nine actual Windows
-store tests with zero skips**. The first Windows run compiled its helper but
-failed Node test discovery on a UNC path before tests; the inspected continuation
-used and cleaned local temporary fixtures. These results predate the latest
-batching and hook changes. Subsequent targeted checks passed **24 Studio/browser,
-six desktop source guards and 11 Windows tests with zero skips**. The final
-combined Electron 44.9.3 selection passed **27 tests with two Windows-only skips**
-and its build passed, superseding the earlier eight-pass/one-skip Electron store
-selection for current source coverage.
-
-A copied built-Chromium fixture passed **19 owned-workflow checks**, including
-search, private-input exclusion and cross-tab opt-out during an outstanding
-request. Only the copied fixture's disclosure enabled local counters with an
-`example.invalid` destination; source/build collection stays unavailable and no
-sender exists. The original browser runner's desktop-only control timeout is
-preserved. No production memory writes or outbound collection occurred. The
-[validation report](../validation/2026-10-24-telemetry-aggregates.md) records both
-the passing checks and an exploratory Electron component result of **3.61 MiB
-added RSS**, above the unchanged **2 MiB** target. Optimization, whole-app and
-all-platform resource qualification remain open. At that desktop/Studio
-checkpoint, browser sign-in/connect, legacy UI and stdio ownership were still
-unfinished. None of these results qualifies packaged telemetry or anonymous
-ingress. The accepted 4.46.6 security release excludes this work.
-
-The next [UI/local stdio source batch](anonymous-product-telemetry-catalog.md#browser-connection-legacy-ui-and-local-stdio-coverage)
-adds five browser connection actions and classifies all 29 legacy Studio methods
-(11 selected, 18 excluded). Desktop connection IPC retains its existing owner;
-the browser wrapper skips those calls. Company sign-in cancellation and reviewed
-boolean result flags produce only fixed outcomes, without private inputs/results.
-The MCP map classifies 29 maintained gateway paths, including two compatibility
-labels, and all 48 legacy stdio tools (33 selected). Only explicitly configured
-local stdio observes the disclosed OS-account choice. HTTP never becomes a
-server telemetry owner, even when the process holds a stdio key; aliases and
-nested SDK calls are not counted again.
-
-The local `mnemion_telemetry` tool provides offline `status`, `schema`, `preview`
-and `configure` through the existing policy. It is absent from the ordinary HTTP
-gateway and refuses HTTP calls. Local schema now exposes `owned_origin_coverage`
-for desktop, Studio, UI and MCP, retaining the existing CLI map. The final source
-selection passed **20 Python MCP and 30 UI tests**; the added import-failure check
-preserves exactly one original action. The corrected TypeScript/Vite build passed.
-A copied built-Chromium fixture passed **14 checks**, and a real stdio
-`ClientSession` with the maintained CLI passed **22**, including opt-out after
-the fake workspace was shut down. Only isolated fixtures enabled local counters;
-the schema version and unavailable source collection gate are unchanged.
-
-The [validation report](../validation/2026-10-24-telemetry-aggregates.md) retains
-the initial checks, original build failure and verified browser cleanup. A later
-**3.27 MiB** component phase diagnostic does not replace the original **3.61 MiB
-versus 2 MiB** resource gap or establish resource acceptance. At that checkpoint,
-background/updater owners were still unfinished. Optimization, sender/collector,
-final-send cancellation and all-platform
-release acceptance remain open. Source inventory and integration qualification
-are not established by these journey receipts.
-
-The next [maintenance source batch](anonymous-product-telemetry-catalog.md#fresh-local-maintenance-coverage)
-adds the fifth `owned_origin_coverage` map, `maintenance`. Fresh automatic desktop
-source/capture work and the standalone connector entrypoint own their observed
-work; empty successful scans, paused work, explicit Sync continuations,
-remote-requested/host-managed scans, reusable sync and server-worker activity are
-excluded. Numeric work/queue/store-size fields and coarse own-process resource
-samples do not export source history or mixed-host totals. Native RSS/budget
-requires a real child callback; headless RSS is an ending observation, with its
-own CPU-time delta and configured capture limit where available.
-
-Automatic updater download, verification and retries form one observed cycle.
-Current-version and safety polls add no use; unfinished cycles are discarded on
-quit. Installer handoff is only `accepted`, with no installed-version claim or
-shutdown flush/wait. Its optional snapshot can wait up to **25 ms** before the
-original guarded action. Existing native request acknowledgements retain separate
-workflow categories. Python now commits each workflow pair in one current-policy
-transaction, and the native writer reuses statements within that transaction;
-the generation fence and per-observation limits remain unchanged.
-
-The [validation report](../validation/2026-10-24-telemetry-aggregates.md) records
-separate **41- and 49-test Python passes**, **104 source-controller and 20 updater
-Node passes**, and **nine Electron store passes with two Windows skips**. The
-original runner failures remain preserved. A **3.09 MiB** component diagnostic
-after optimization still exceeds the unchanged **2 MiB** target and does not
-replace the prior 3.61/3.27 MiB observations. The corrected isolated app-main
-probe then recorded **1.19 MiB** added RSS across 32 paired workflows after
-`client-ready`. This headless activation diagnostic does not qualify whole-app,
-all-platform or CPU overhead, or replace the cold measurements. The background
-batch's final builds/input inventory, main integration and source CI passed;
-full resource/platform acceptance remains pending.
-Those earlier checks did not qualify the later senders or application-owner
-wiring. Collection is still unavailable, no collector is deployed, and V08
-remains Building.
-
-Saved source checks passed **10 policy tests** after the opt-out revision change,
-**12 native bridge/operator tests, 26 web/CSP tests and seven browser policy
-tests**; frontend and Electron TypeScript builds passed. The built
-browser's **19-check core privacy journey passed at 00:51:17 UTC on 24 October**:
-default/disclosure gating, persistent and cross-tab/offline opt-out, re-enable,
-preview, storage loss/damage, GPC and small-screen access, without external
-requests or a workspace API. The original driver's compact-JSON parsing failure
-remains preserved; acceptance inspected the completed journey without replaying it.
-Its receipt SHA-256 is
-`758778a6590ad1925f050def54c63df0eadefdd5bf7a77235cb07783eba8d93f`.
-Eight further actual-browser checks passed for served company restriction,
-opt-out precedence, unavailable tab coordination, denied storage reads and failed
-writes with fixed errors. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
-subsequently passed at **01:12:30 UTC**, including final browser journeys and
-actual wheel controls with matching disclosure resources. These source
-observations do not establish all-six-native, collector, anonymity or release
-acceptance.
+- **Coverage and installed behavior:** finish the action-by-action ownership and
+  exclusion review, including autonomous work and unknown remote clients. All
+  six native targets and web need the newer review/delivery, restart/update,
+  cancellation, storage-loss and pressure/sensor journeys. Published control
+  evidence does not transfer to those additions.
+- **Resources and architecture:** the fixed compiled-app comparisons still exceed
+  the unchanged **2 MiB / 0.5%** acceptance gates. Ending RSS, matched maxima,
+  other process roles and profiled CPU are retained in the evidence index; no
+  causal improvement or favorable-run selection is accepted. The subsequent
+  [pinned private SQLite experiment](../validation/2026-10-26-telemetry-private-sqlite.md)
+  has **60 functional passes / two platform skips**, but is **not adopted**:
+  its fixed component sequence showed higher CPU and sampled peak RSS, with an
+  incomplete counterbalanced design. Library unmapping and lower ending RSS
+  do not establish a resource pass. Keep the existing backend; a new optimization
+  needs an evidence-supported implementation hypothesis before new measurements.
+- **Whole transport and reliability:** substantiate total wire cost, native/web
+  resource ceilings and tail latency with real memory work, offline/metered and
+  saturation conditions. Prove opt-out at the final send boundary across owners
+  and processes; scoped loopback tests alone do not close these gates.
+- **Privacy and usefulness:** qualify the actual endpoint, ingress/provider logs,
+  monitoring and backup retention; test linkage, rare cohorts, repeated
+  contributions, suppression and attack resistance. Establish honest utility and
+  interactive-selection limits without unique-user claims or identifying
+  workarounds. No production collector or default-enabled launch is qualified.
+- **Release:** qualify the final implementation through the normal native/public
+  gates. Source components, historical control releases and private experiments
+  do not establish full V08 readiness.
 
 The user's request, verbatim:
 

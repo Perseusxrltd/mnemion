@@ -59,6 +59,11 @@ def origin_specification() -> dict:
     }
 
 
+def coverage_specification() -> dict:
+    """Build-verified source coverage, loaded only for explicit local inspection."""
+    return json.loads(files(__package__).joinpath("workflow-coverage.json").read_text())
+
+
 def _metric_slots() -> tuple:
     offset = 1 + len(OUTCOMES) + len(REASONS)
     slots = []

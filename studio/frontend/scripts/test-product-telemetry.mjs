@@ -7,6 +7,7 @@ import ts from 'typescript'
 
 const path = new URL('../src/workspace/telemetry-policy.ts', import.meta.url)
 const modules = new Map()
+const jsonImports = new Set()
 function load(url) {
   if (modules.has(url.href)) return modules.get(url.href)
   const exported = {}
@@ -15,8 +16,11 @@ function load(url) {
     target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
   } }).outputText
   const local = createRequire(url)
-  new Function('require', 'exports', code)(name => name.startsWith('.') && !name.endsWith('.json')
-    ? load(new URL(name.replace(/\.js$/, '') + '.ts', url)) : local(name), exported)
+  new Function('require', 'exports', code)(name => {
+    if (name.endsWith('.json')) jsonImports.add(name)
+    return name.startsWith('.') && !name.endsWith('.json')
+      ? load(new URL(name.replace(/\.js$/, '') + '.ts', url)) : local(name)
+  }, exported)
   return exported
 }
 const exported = load(path)
@@ -33,6 +37,32 @@ function installation() {
   const client = () => new BrowserTelemetry(() => storage, () => company, () => false, () => true)
   return { values, storage, client, company: value => { company = value } }
 }
+
+test('the app preview loads source coverage only on demand without changing privacy state', async () => {
+  const { storage, values } = installation()
+  assert.equal([...jsonImports].some(name => name.endsWith('/workflow-coverage.json')), false)
+  const previous = Object.fromEntries(['window', 'navigator', 'document'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { protocol: 'https:' }, localStorage: storage } })
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { locks: {} } })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { querySelector: () => null } })
+  try {
+    const preview = await exported.telemetryPreview()
+    assert.equal([...jsonImports].some(name => name.endsWith('/workflow-coverage.json')), true)
+    assert.deepEqual(preview.workflow_coverage.summary, { total: 94, mapped: 86, unmeasured: 8 })
+    assert.deepEqual(preview.workflow_coverage.workflows.find(row => row.workflow === 'update.verify'), {
+      workflow: 'update.verify', state: 'unmeasured', owners: [],
+    })
+    assert.equal(preview.outbound_body, null)
+    assert.equal(preview.outbound_bytes, 0)
+    assert.equal(preview.status.effective_enabled, false)
+    assert.equal(values.size, 0)
+  } finally {
+    for (const [key, descriptor] of Object.entries(previous)) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else delete globalThis[key]
+    }
+  }
+})
 
 test('reading the browser policy creates nothing and requires actual disclosure', () => {
   const { client, values } = installation()

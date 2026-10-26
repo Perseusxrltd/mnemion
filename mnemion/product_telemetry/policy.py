@@ -532,7 +532,7 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
 
 def preview(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
     from .aggregate import preview as aggregate_preview
-    from .catalog import specification
+    from .catalog import coverage_specification, specification
     from .wire import format_example
 
     current = status(root, policy_path=policy_path)
@@ -547,5 +547,6 @@ def preview(root: Path | None = None, *, policy_path: Path | None = None) -> dic
         "message": "Synthetic report-format example. No actual outgoing packet was inspected.",
         "illustrative_packet": format_example(),
         "measurement_catalog": specification(),
+        "workflow_coverage": coverage_specification(),
         "local_aggregates": aggregate_preview(root, policy_path=policy_path),
     }

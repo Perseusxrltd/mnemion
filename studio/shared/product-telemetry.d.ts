@@ -79,6 +79,16 @@ export type TelemetryFormatExample = TelemetryWirePreview & {
   kind: 'synthetic_example'
   body_encoding: 'base64'
 }
+export type TelemetryWorkflowCoverage = {
+  schema_version: number
+  catalog_version: number
+  scope: 'declared_source_boundaries'
+  qualification: string
+  summary: { total: number; mapped: number; unmeasured: number }
+  owners: Record<string, string>
+  workflows: { workflow: string; state: 'mapped' | 'unmeasured'; owners: string[] }[]
+  source_inputs: Record<string, string>
+}
 export type TelemetryPreview = {
   schema_version: number
   status: TelemetryStatus
@@ -88,6 +98,7 @@ export type TelemetryPreview = {
   illustrative_packet?: TelemetryFormatExample
   transport_available: boolean
   message: string
+  workflow_coverage?: TelemetryWorkflowCoverage
   measurement_catalog?: {
     version: number
     workflows: Record<string, string[]>

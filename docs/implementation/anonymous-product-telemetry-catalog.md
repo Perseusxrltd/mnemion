@@ -14,6 +14,14 @@ establish production qualification. **Collection remains unavailable; destinatio
 and release route address are null.** No production product analytics is active.
 All 66 requirement texts and the other 65 states remain unchanged; V08 stays Building.
 
+The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+now makes all 94 categories visible in app/browser and native format inspection:
+86 have mapped source boundaries and eight remain unmeasured. It is generated
+from these maps and verified by the release checker. This reconciles catalog
+references without claiming complete per-action, sensor or installed coverage;
+the [coverage report](../validation/2026-10-26-telemetry-coverage.md) records the
+scope and the remaining gaps.
+
 Current [wire v2 and report v3](../validation/2026-10-26-telemetry-review-selection.md)
 retain a four-byte body and 23 permitted views. Automatic packets use the
 randomized encoder. Manually reviewed packets use a constant body for the first
@@ -27,11 +35,12 @@ privacy-loss claim, and neither mode establishes participation or network anonym
 
 The [published 4.46.13 control qualification](../validation/2026-10-26-44613-native-acceptance.md)
 passed all six native targets. It does not qualify these later review, storage or
-wire changes. At this 26 October checkpoint, frozen 4.46.15 source
-`de53ba4609f848f7e91fdc9a8383ded9fb70884f` still awaits its native/public acceptance;
-the failed 4.46.14 Windows ARM fixture and local correction remain recorded in the
-selection report. Full ownership coverage, installed production delivery,
-resource/wire limits, utility and anonymity acceptance remain open.
+wire changes. The failed 4.46.14 Windows ARM fixture remains recorded in the
+selection report; the later 4.46.15 failures and 4.46.17 source corrections are
+retained in the [release-guard report](../validation/2026-10-26-telemetry-release-guards.md).
+Use [release status](../RELEASE_STATUS.md) for current availability. Full ownership
+coverage, installed production delivery, resource/wire limits, utility and
+anonymity acceptance remain open.
 
 ## Earlier component checkpoints — 24–25 October 2026
 

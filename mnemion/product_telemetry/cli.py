@@ -22,7 +22,12 @@ def execute(root: Path | None, request: object) -> dict:
         if set(request) != {"action"}:
             raise policy.PolicyError("telemetry_invalid_request")
         if action == "schema":
-            from .catalog import control_specification, origin_specification, specification
+            from .catalog import (
+                control_specification,
+                coverage_specification,
+                origin_specification,
+                specification,
+            )
             from .wire import specification as wire_specification
 
             return {
@@ -65,6 +70,7 @@ def execute(root: Path | None, request: object) -> dict:
                 "measurement_catalog": specification(),
                 "owned_control_coverage": control_specification(),
                 "owned_origin_coverage": origin_specification(),
+                "workflow_coverage": coverage_specification(),
                 "transport_available": policy.transport_available(),
                 "transport_catalog": wire_specification(),
                 "report_review": {

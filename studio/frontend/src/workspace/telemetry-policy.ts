@@ -1,6 +1,6 @@
 import contract from '../../../../mnemion/product_telemetry/disclosure.json'
 import measurementCatalog from '../../../../mnemion/product_telemetry/catalog.json'
-import type { TelemetryChoice, TelemetryCompanyPolicy, TelemetryConnectionMode, TelemetryPreview, TelemetryReview, TelemetryReviewAction, TelemetryReviewChoice, TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
+import type { TelemetryChoice, TelemetryCompanyPolicy, TelemetryConnectionMode, TelemetryPreview, TelemetryReview, TelemetryReviewAction, TelemetryReviewChoice, TelemetryStamp, TelemetryStatus, TelemetryWorkflowCoverage } from '../../../shared/product-telemetry'
 import { collect, pendingState, telemetryCatalog } from './telemetry-aggregate'
 import type { WorkflowStore } from '../../../electron/telemetry-workflow'
 import { budgetKey, budgetState, budgetView, freshBudget, serializeBudget, choiceKey, queueKey, DAY, COST, DAILY_BYTES, type BrowserBudget } from './telemetry-budget'
@@ -402,7 +402,10 @@ export async function telemetryConfigure(input: TelemetryChoice): Promise<Teleme
 export async function telemetryPreview(): Promise<TelemetryPreview> {
   if (window.mnemion?.productTelemetry) return window.mnemion.productTelemetry('telemetry.preview')
   if (window.location.protocol === 'file:') throw new Error('This desktop does not provide product telemetry controls.')
-  return browser.preview()
+  // Inspection-only metadata stays out of startup and producer imports. Read
+  // current policy after the asset resolves so this preview is not stale.
+  const { default: coverage } = await import('../../../../mnemion/product_telemetry/workflow-coverage.json')
+  return { ...browser.preview(), workflow_coverage: coverage as TelemetryWorkflowCoverage }
 }
 
 export async function telemetryReviewStatus(): Promise<TelemetryReview> {

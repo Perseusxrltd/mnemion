@@ -435,6 +435,7 @@ def main():
     if args.command == "prepare":
         changed = prepare(root, args.version)
         for arguments in (
+            ["-m", "deploy.telemetry_coverage", "--write"],
             ["-m", "mnemion.service.cli", "schema", "--output", "docs/service/openapi.json"],
             [
                 "-m",

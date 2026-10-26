@@ -1,0 +1,808 @@
+{
+  "schema_version": 1,
+  "catalog_version": 1,
+  "scope": "declared_source_boundaries",
+  "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
+  "summary": {
+    "total": 94,
+    "mapped": 86,
+    "unmeasured": 8
+  },
+  "owners": {
+    "control_cli": "Local command line",
+    "native_commands": "Native app and agent commands",
+    "studio_actions": "Studio app actions",
+    "browser_connections": "Browser connection controls",
+    "legacy_ui": "Legacy app actions",
+    "local_stdio": "Local stdio agents",
+    "local_maintenance": "Local source and updater work"
+  },
+  "workflows": [
+    {
+      "workflow": "setup.create",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "setup.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "setup.agent_install",
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "legacy_ui"
+      ]
+    },
+    {
+      "workflow": "setup.agent_remove",
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "legacy_ui"
+      ]
+    },
+    {
+      "workflow": "workspace.connect",
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "browser_connections"
+      ]
+    },
+    {
+      "workflow": "workspace.sign_in",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "browser_connections",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "workspace.open",
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "browser_connections"
+      ]
+    },
+    {
+      "workflow": "workspace.switch",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "workspace.disconnect",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "browser_connections",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "workspace.forget",
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "browser_connections"
+      ]
+    },
+    {
+      "workflow": "memory.list",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.read",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.recall",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.context",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.knowledge",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.core_read",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.save",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.revise",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.review",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.forget",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.core_write",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.import",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "memory.export",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "capture.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "capture.preview",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "capture.collect",
+      "state": "mapped",
+      "owners": [
+        "local_maintenance"
+      ]
+    },
+    {
+      "workflow": "capture.deliver",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "capture.pause",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "capture.drain",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "capture.remove",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "sources.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "sources.scan",
+      "state": "mapped",
+      "owners": [
+        "local_maintenance"
+      ]
+    },
+    {
+      "workflow": "sources.sync",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "sources.pause",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "sources.resume",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "sources.repair",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "sources.remove",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "librarian.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "librarian.run",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "librarian.cancel",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "librarian.accept",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "librarian.reject",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "librarian.undo",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "models.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "legacy_ui",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "models.prepare",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "models.reindex",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "models.pause",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "models.resume",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "models.cancel",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "backup.configure",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "backup.create",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "backup.list",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "backup.verify",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "backup.prune",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "recovery.inspect",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "recovery.restore",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "recovery.finish",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "recovery.discard",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "update.check",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "update.download",
+      "state": "mapped",
+      "owners": [
+        "local_maintenance"
+      ]
+    },
+    {
+      "workflow": "update.verify",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "update.apply",
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "local_maintenance"
+      ]
+    },
+    {
+      "workflow": "update.restart",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "update.rollback",
+      "state": "unmeasured",
+      "owners": []
+    },
+    {
+      "workflow": "host.adopt",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.enroll",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.inspect",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.start",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.stop",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.plan_upgrade",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.resolve",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "host.revoke",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "evaluation.create_dataset",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "evaluation.run",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "evaluation.cancel",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "evaluation.assess",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "evaluation.compare",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "evaluation.export",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "evaluation.remove_dataset",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "journal.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "journal.push",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "journal.organize",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "journal.backfill",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "journal.recover",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "access.configure",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "native_commands",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "access.invite",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "access.grant",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "access.revoke",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "vault.configure",
+      "state": "mapped",
+      "owners": [
+        "native_commands"
+      ]
+    },
+    {
+      "workflow": "vault.read",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "vault.write",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "vault.delete",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "vault.import",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    },
+    {
+      "workflow": "vault.export",
+      "state": "mapped",
+      "owners": [
+        "control_cli",
+        "studio_actions",
+        "local_stdio"
+      ]
+    }
+  ],
+  "source_inputs": {
+    "catalog.json": "cd9108b5c25fd0ab7f96490638340ebe873dd38e4fd6e636065103fa8f2e9141",
+    "control-origins.json": "5482267dab262234d00f7591fea63c3da9defe391250ccdb2d46110e4f9e40de",
+    "desktop-origins.json": "b3d1275bdf74396915079951996fb8de25fc8d6ea3aa406316c3cad7ec23607f",
+    "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
+    "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
+    "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
+    "maintenance-origins.json": "fd3866ff07c15b70c98704fb17c8f866b7a97c77d740c627be526b7af76421f9"
+  }
+}

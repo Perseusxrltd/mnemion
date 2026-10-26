@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
+import TelemetryCoverage from './TelemetryCoverage'
 import type { TelemetryConnectionMode, TelemetryPreview, TelemetryReview, TelemetryReviewAction, TelemetryStatus } from '../../../shared/product-telemetry'
 import { choiceKey, telemetryConfigure, telemetryPreview, telemetryReviewAction, telemetryReviewStatus, telemetryStatus } from './telemetry-policy'
 import { budgetKey } from './telemetry-budget'
@@ -162,9 +163,8 @@ export default function Privacy() {
           <p><small>{preview.transport_available ? 'A collector route is configured. Actual sending still depends on your choice, company policy and resource limits.' : 'This build has no configured collector route.'}</small></p>
           {preview.measurement_catalog && <details><summary>Workflow coverage and exclusions</summary>
             <p>{preview.measurement_catalog.ownership.measured}</p>
-            <p>These are the supported measurement categories. Collection remains subject to your choice and the availability shown above.</p>
-            <dl>{Object.entries(preview.measurement_catalog.workflows).map(([family, operations]) => <div key={family}>
-              <dt><strong>{family}</strong></dt><dd>{operations.join(', ')}</dd></div>)}</dl>
+            {preview.workflow_coverage ? <TelemetryCoverage coverage={preview.workflow_coverage} />
+              : <p>This app version does not provide a coverage inventory. The category catalog alone does not establish which measurements are implemented.</p>}
             <h3>Excluded from product collection</h3>
             <ul>{Object.entries(preview.measurement_catalog.ownership.exclusions).map(([key, description]) => <li key={key}>{description}</li>)}</ul>
           </details>}

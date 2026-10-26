@@ -39,9 +39,18 @@ pending local aggregates. **Refresh privacy status** reads the current choice.
 Published 4.46.13 uses `AQAHAA==` (`01 00 07 00`); the newer wire v2 source uses
 `AgAHAA==` (`02 00 07 00`), marked automatic. It is not sampled from your counts or
 presented as a queued or sent report. Opening it makes no reservation, consumes
-no queue or delivery allowance, acknowledges no disclosure and sends no request.
+no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
-to inspect supported workflows and their explicit privacy exclusions. Any
+to inspect the source coverage and explicit privacy exclusions. New source
+provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-coverage.md):
+86 of 94 categories have a declared measurement source; eight remain unmeasured.
+These counts describe catalog mappings, not complete screens, sensors or active
+collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
+inventory is generated from Git source maps and checked for staleness at release.
+Older versions that lack the inventory say so instead of implying full coverage.
+The native `schema` and `preview` responses expose the same `workflow_coverage`
+object for agents. Opening the browser view may load its bundled metadata asset;
+it does not transmit usage. Any
 **Private local aggregate preview** is a snapshot of permitted local counts at
 the time it was opened, separate from the report example. Choice changes, status
 refresh, window focus and cross-tab choice notifications clear the preview;

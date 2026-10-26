@@ -183,6 +183,9 @@ def main() -> None:
                         raise ValueError(
                             f"Locked package version mismatch: {name}/{filename} ({package})"
                         )
+    from deploy.telemetry_coverage import verify as verify_telemetry_coverage
+
+    verify_telemetry_coverage(root)
     if args.artifacts is None:
         print(f"Validated Mnemion {version}: package versions, release notes and roadmap")
         return

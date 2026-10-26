@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.17**.
+Reviewed source distribution: **4.46.18**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,15 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, source coverage checkpoint:** the
+[telemetry privacy inventory](validation/2026-10-26-telemetry-coverage.md)
+distinguishes 86 mapped categories from eight unmeasured categories in the app,
+browser and native agent controls. Its contents are generated and checked from
+Git source maps. The [pinned SQLite allocator experiment](validation/2026-10-26-telemetry-private-sqlite.md)
+was rejected after the fixed component results showed higher CPU and peak RSS.
+No backend or resource budget changed. V08 remains Building; these catalog
+counts do not change the full-roadmap percentage or establish active telemetry.
 
 **26 October 2026 publication checkpoint:** [4.46.13 is public](releases/4.46.13.md),
 with [all six installed targets, artifact verification and website sync passed](validation/2026-10-26-44613-native-acceptance.md).
