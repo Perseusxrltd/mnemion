@@ -108,7 +108,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Packaged window, sandboxed bridge, and local client"
             ]
           }
         ]
@@ -168,5 +168,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189"
     }
   ],
-  "observed_at": "2026-10-26T22:52:57+00:00"
+  "observed_at": "2026-10-26T22:54:32+00:00"
 }

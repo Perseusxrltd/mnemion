@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T22:52:57+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T22:54:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -35,5 +35,5 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 20/21 jobs completed; 19 succeeded.
 
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Packaged window, sandboxed bridge, and local client.
 
