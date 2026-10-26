@@ -91,6 +91,12 @@ class CaptureReport(Command):
     pending_events: int = Field(ge=0, le=10**12, strict=True)
     pending_bytes: int = Field(ge=0, le=10**12, strict=True)
     remote_committed_events: int = Field(ge=0, le=10**12, strict=True)
+    # Live completion metadata is consumed before status persistence. Keeping it
+    # out of saved history also preserves older status readers and prevents
+    # future callers from treating a saved count as a fresh delivery receipt.
+    newly_stored_events: int | None = Field(
+        default=None, ge=0, le=10**12, strict=True, exclude=True
+    )
     stored_events: int = Field(ge=0, le=10**12, strict=True)
     forgotten_events: int = Field(ge=0, le=10**12, strict=True)
     unknown_pages: int = Field(ge=0, le=10**12, strict=True)
@@ -107,6 +113,11 @@ class CaptureReport(Command):
 
     @model_validator(mode="after")
     def storage_matches(self):
+        if (
+            self.newly_stored_events is not None
+            and self.newly_stored_events > self.remote_committed_events
+        ):
+            raise ValueError("Freshly stored events must be acknowledged by this cycle")
         if self.storage is not None and self.storage.database_bytes != self.database_bytes:
             raise ValueError("Storage cleanup must describe the observed inbox")
         if self.history is not None and (

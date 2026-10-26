@@ -14,6 +14,7 @@ from .models import json_value
 from .repository import audit
 from .capture_progress import CaptureProgress
 from .capture_policies import CapturePolicies
+from .request_replay import capture_stored, observed
 
 
 def source_lock(conn, source_id):
@@ -441,9 +442,12 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                         "capture_page_conflict",
                         "A capture page ID must identify immutable bytes.",
                     )
+                observed(True)
                 return self._receipt(conn, grant, page_id, old["event_ids"])
+            observation = observed(False)
             source_id, space_id = UUID(grant["source_id"]), UUID(grant["space_id"])
             ids = []
+            newly_stored = set()
             for event in command.events:
                 data = selected_item(
                     event.item,
@@ -512,6 +516,8 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                     (source_id, lineage, grant["policy_version"]),
                 )
                 ids.append(event.event_id)
+                if not denied:
+                    newly_stored.add(event.event_id)
             conn.execute(
                 "INSERT INTO mnemion.capture_pages(tenant_id,grant_id,page_id,request_hash,event_ids) VALUES(%s,%s,%s,%s,%s)",
                 (identity.tenant_id, grant_id, page_id, digest, ids),
@@ -524,7 +530,15 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                 space_id=space_id,
                 details={"source_id": source_id, "grant_id": grant_id, "events": len(ids)},
             )
-            return self._receipt(conn, grant, page_id, ids)
+            result = self._receipt(conn, grant, page_id, ids)
+            capture_stored(
+                observation,
+                sum(
+                    item["event_id"] in newly_stored and item["outcome"] == "stored"
+                    for item in result["items"]
+                ),
+            )
+            return result
 
     def fences(self, identity, grant_id, *, after=None, limit=100):
         with self.db.transaction(identity) as conn:

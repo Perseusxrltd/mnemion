@@ -537,7 +537,19 @@ def scan(config, *, client_factory=None):
                 raise
             local_state.write(
                 paths(config)[1],
-                {**activity, "state": "finished", "finished_at": utc_now(), "report": report},
+                {
+                    **activity,
+                    "state": "finished",
+                    "finished_at": utc_now(),
+                    "report": {
+                        **report,
+                        "capture": {
+                            key: value
+                            for key, value in report["capture"].items()
+                            if key != "newly_stored_events"
+                        },
+                    },
+                },
             )
             return {
                 **report,

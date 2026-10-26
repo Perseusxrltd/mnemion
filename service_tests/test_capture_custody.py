@@ -138,6 +138,53 @@ def test_selected_events_survive_producer_disappearance_without_mirror_scopes(
     assert UUID(source["space_id"]) != env.space
 
 
+def test_page_headers_identify_only_fresh_stored_events_without_changing_receipts(
+    env, conversation_source, custody
+):
+    _, source_id, grant_id, _, _ = custody
+    _, _, _, reader, secret, config = conversation_source
+    scope, items = selected(config)
+    original = page(source_id, scope, items[0])
+    endpoint = f"/v1/capture-grants/{grant_id}/pages"
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        auth = {"Authorization": "Bearer " + secret}
+
+        def send(command):
+            value = client.post(endpoint, headers=auth, json=command.model_dump(mode="json"))
+            assert value.status_code == 200, value.text
+            return value
+
+        fresh = send(original)
+        assert fresh.headers["X-Mnemion-Idempotency"] == "new"
+        assert fresh.headers["X-Mnemion-Capture-Stored"] == "1"
+        replay = send(original)
+        assert replay.json() == fresh.json()
+        assert replay.headers["X-Mnemion-Idempotency"] == "replayed"
+        assert "X-Mnemion-Capture-Stored" not in replay.headers
+        readback = client.get(endpoint + f"/{original.page_id}", headers=auth)
+        assert readback.json() == fresh.json()
+        assert "X-Mnemion-Idempotency" not in readback.headers
+        assert "X-Mnemion-Capture-Stored" not in readback.headers
+
+        # A new page can contain previously accepted events. Only the new event
+        # is the effect of this transaction, even when both receipts are stored.
+        mixed = send(page(source_id, scope, items[0], changed_revision(items[0])))
+        assert mixed.headers["X-Mnemion-Idempotency"] == "new"
+        assert mixed.headers["X-Mnemion-Capture-Stored"] == "1"
+        assert len(mixed.json()["items"]) == 2
+        duplicate = send(page(source_id, scope, items[0]))
+        assert duplicate.headers["X-Mnemion-Capture-Stored"] == "0"
+        env.memory.forget(
+            reader,
+            UUID(fresh.json()["items"][0]["memory_id"]),
+            expected_version=1,
+            key="capture-count-fence",
+        )
+        fenced = send(page(source_id, scope, changed_revision(items[0], text="Fenced revision")))
+        assert fenced.headers["X-Mnemion-Capture-Stored"] == "0"
+        assert fenced.json()["items"][0]["outcome"] == "forgotten"
+
+
 def test_every_accepted_revision_is_immutable_and_replay_does_not_create_more_memories(
     env, conversation_source, custody
 ):

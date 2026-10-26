@@ -92,11 +92,15 @@ class SourceMeasurement:
             return
         capture = report.get("capture")
         if type(capture) is dict:
-            worked = capture["locally_accepted"] + capture["remote_committed_events"]
+            fresh = capture.get("newly_stored_events")
+            if type(fresh) is not int or not 0 <= fresh <= capture["remote_committed_events"]:
+                fresh = None
+            worked = capture["locally_accepted"] + (fresh or 0)
             metrics = {
                 "work_items": capture["locally_accepted"],
                 "queue_items": capture["pending_events"],
                 "stored_bytes": capture["database_bytes"],
+                **({"result_items": fresh} if fresh is not None else {}),
             }
         else:
             worked = report["changed"] + report["removed"] + report["conflicts"]

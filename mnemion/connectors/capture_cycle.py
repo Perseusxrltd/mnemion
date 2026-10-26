@@ -8,7 +8,7 @@ import time
 import httpx
 
 from ..sdk import MnemionError
-from .capture_delivery import deliver
+from .capture_delivery import DeliveryProgress, deliver
 from .capture_scheduling import (
     BACKFILL_POLL_SECONDS as BACKFILL_POLL_SECONDS,
     BACKFILL_REASONS as BACKFILL_REASONS,
@@ -32,11 +32,11 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
             local = collect()
         except InboxError as error:
             local["errors"] = [error.code]
-    delivered, remote_error, fence_pending = 0, None, False
+    progress = DeliveryProgress()
+    remote_error, fence_pending = None, False
     try:
         with client() as remote_client:
-            remote = deliver(inbox, remote_client)
-            delivered = remote["remote_committed_events"]
+            remote = deliver(inbox, remote_client, progress=progress)
             fence_pending = remote["fence_sweep_pending"]
     except (MnemionError, httpx.HTTPError, InboxError, ValueError) as error:
         remote_error = (
@@ -53,7 +53,8 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
         "locally_accepted": sum(item["locally_accepted"] for item in local["scopes"]),
         "pending_events": status["pending_events"],
         "pending_bytes": status["pending_bytes"],
-        "remote_committed_events": delivered,
+        "remote_committed_events": progress.remote_committed_events,
+        "newly_stored_events": progress.newly_stored_events,
         "stored_events": status["stored_events"],
         "forgotten_events": status["forgotten_events"],
         "unknown_pages": status["unknown_pages"],
@@ -79,7 +80,7 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
         "completed": capture["capture_complete"] and capture["delivery_complete"],
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "duration_seconds": time.monotonic() - began,
-        "changed": delivered,
+        "changed": progress.remote_committed_events,
         "removed": 0,
         "unchanged": 0,
         "conflicts": 0,

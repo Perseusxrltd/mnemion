@@ -120,9 +120,9 @@ The command receipts and logs are retained under
 `python-checks.json` and `python-checks.log` record the 22-pass Python selection;
 `build-checks.json`, `native-checks.log` and `browser-source-checks.log` record
 the original 14/42 selections and successful source builds. `final-checks.json`
-records the updated seven-case generator pass, two actual Electron-to-Python
-bridge checks and successful 4.46.20 preparation. Overlapping cases are not
-counted twice, and no count from the earlier ownership batch is reused as
+records the updated seven-case generator pass, two Node-to-Python bridge checks
+using compiled desktop controllers and successful 4.46.20 preparation.
+Overlapping cases are not counted twice, and no count from the earlier ownership batch is reused as
 qualification of this new preview.
 
 ## Actual Chrome verification

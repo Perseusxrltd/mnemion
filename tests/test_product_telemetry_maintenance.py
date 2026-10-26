@@ -97,6 +97,74 @@ def test_sensor_failure_preserves_the_real_source_outcome(installation):
     assert not any(row["metric"] in {"rss_bytes", "cpu_millicores"} for row in rows)
 
 
+@pytest.mark.parametrize("fresh", [12, 0, None])
+def test_capture_counts_only_fresh_receipts_and_keeps_work_and_results_separate(
+    installation, fresh
+):
+    active = measured.begin_source(capture=True, owned=True)
+    active.process = None
+    active.finish(
+        report(
+            capture={
+                "locally_accepted": 3,
+                "remote_committed_events": 12,
+                "newly_stored_events": fresh,
+                "pending_events": 0,
+                "database_bytes": 65536,
+                "PRIVATE_RECEIPT": "PRIVATE_ITEMS",
+            }
+        )
+    )
+    rows = aggregate.preview(installation)
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert next(row for row in rows if row["metric"] == "work_items")["bucket"] == 2
+    results = [row for row in rows if row["metric"] == "result_items"]
+    assert len(results) == int(fresh is not None)
+    if results:
+        assert results[0]["bucket"] == (3 if fresh == 12 else 0)
+    assert "PRIVATE" not in json.dumps(rows)
+
+
+@pytest.mark.parametrize("fresh", [0, None])
+def test_reconciled_or_unknown_receipts_alone_do_not_invent_a_fresh_capture_use(
+    installation, fresh
+):
+    active = measured.begin_source(capture=True, owned=True)
+    active.finish(
+        report(
+            capture={
+                "locally_accepted": 0,
+                "remote_committed_events": 12,
+                "newly_stored_events": fresh,
+                "pending_events": 0,
+                "database_bytes": 65536,
+            }
+        )
+    )
+    assert aggregate.preview(installation) == []
+
+
+def test_new_delivery_without_local_capture_finishes_once(installation):
+    active = measured.begin_source(capture=True, owned=True)
+    active.process = None
+    active.finish(
+        report(
+            capture={
+                "locally_accepted": 0,
+                "remote_committed_events": 12,
+                "newly_stored_events": 12,
+                "pending_events": 0,
+                "database_bytes": 65536,
+            }
+        )
+    )
+    active.finish(report())
+    rows = aggregate.preview(installation)
+    assert {row.get("workflow") for row in rows} == {"capture.collect"}
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert next(row for row in rows if row["metric"] == "result_items")["bucket"] == 3
+
+
 @pytest.mark.parametrize("mode", ["owned", "inspect", "managed", "remote"])
 def test_actual_connector_entrypoint_owns_only_its_local_work(
     installation, monkeypatch, capsys, mode

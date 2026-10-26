@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import time
 import re
+from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID, uuid4
@@ -80,6 +81,7 @@ if TYPE_CHECKING:
 __all__ = [
     "Client",
     "MnemionError",
+    "RequestReceipt",
     "Receipt",
     "Evidence",
     "Memory",
@@ -90,6 +92,26 @@ __all__ = [
     "Source",
     "AuditEvent",
 ]
+
+
+@dataclass(slots=True)
+class RequestReceipt:
+    """Fixed metadata for one reply; no response object or identifying fields."""
+
+    disposition: Literal["new", "replayed"] | None = None
+    capture_stored_events: int | None = None
+
+    def _read(self, response: httpx.Response):
+        value = response.headers.get("X-Mnemion-Idempotency")
+        self.disposition = value if value in {"new", "replayed"} else None
+        raw = response.headers.get("X-Mnemion-Capture-Stored", "")
+        self.capture_stored_events = (
+            int(raw)
+            if self.disposition == "new"
+            and re.fullmatch(r"(?:0|[1-9][0-9]?)", raw)
+            and int(raw) <= 50
+            else None
+        )
 
 
 def _ranking_compatibility(body: dict, options: dict) -> dict:
@@ -640,6 +662,16 @@ class Client(JournalUploadClient):
     def __exit__(self, *args):
         self.close()
 
+    def request_with_receipt(self, method: str, path: str, **options):
+        """Return the unchanged response body and optional per-call metadata.
+
+        Unsupported servers leave metadata unavailable. This adds no retry,
+        history lookup, telemetry owner or shared last-response state.
+        """
+        receipt = RequestReceipt()
+        result = self.request(method, path, receipt=receipt, **options)
+        return result, receipt
+
     def request(
         self,
         method: str,
@@ -649,7 +681,11 @@ class Client(JournalUploadClient):
         key: str | None = None,
         params: dict | None = None,
         binary: bool = False,
+        receipt: RequestReceipt | None = None,
     ):
+        if receipt is not None:
+            receipt.disposition = None
+            receipt.capture_stored_events = None
         safe_retry = (
             method == "GET"
             or key is not None
@@ -677,9 +713,16 @@ class Client(JournalUploadClient):
                         None,
                     )
                 if response.is_success:
-                    if response.status_code == 204:
-                        return None
-                    return response.content if binary else response.json()
+                    result = (
+                        None
+                        if response.status_code == 204
+                        else response.content
+                        if binary
+                        else response.json()
+                    )
+                    if receipt is not None:
+                        receipt._read(response)
+                    return result
                 if not (
                     safe_retry
                     and response.status_code in (429, 502, 503, 504)

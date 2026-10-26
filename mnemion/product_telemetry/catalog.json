@@ -22,7 +22,7 @@
   "reasons": ["none", "invalid_input", "authorization", "conflict", "host_busy", "resource_pressure", "offline", "network_timeout", "readiness_timeout", "integrity_check", "recovery_required", "other_failure"],
   "metrics": {
     "latency_ms": {"group": "performance", "unit": "monotonic_milliseconds", "upper_bounds": [9, 49, 199, 999, 4999, 29999, 119999, 900000], "families": "all"},
-    "result_items": {"group": "usage", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["memory", "sources", "librarian", "backup", "evaluation", "journal"]},
+    "result_items": {"group": "usage", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["memory", "capture", "sources", "librarian", "backup", "evaluation", "journal"]},
     "work_items": {"group": "usage", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["memory", "capture", "sources", "librarian", "models", "backup", "recovery", "evaluation", "journal"]},
     "queue_items": {"group": "resources", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["capture", "sources", "librarian", "models", "backup", "journal"]},
     "payload_bytes_sent": {"group": "performance", "unit": "application_bytes", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["memory", "capture", "sources", "models", "backup", "recovery", "evaluation", "journal"]},

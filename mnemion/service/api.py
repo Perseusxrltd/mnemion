@@ -313,7 +313,7 @@ def create_app(
             allow_origins=origins,
             allow_methods=["GET", "POST", "PUT", "DELETE"],
             allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
-            expose_headers=["X-Request-ID", "X-Mnemion-Idempotency"],
+            expose_headers=["X-Request-ID", "X-Mnemion-Idempotency", "X-Mnemion-Capture-Stored"],
         )
     app.state.database = database
     app.state.oauth_settings = oauth_settings
@@ -328,7 +328,7 @@ def create_app(
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
-        from .request_replay import HEADER, request_replay
+        from .request_replay import CAPTURE_STORED_HEADER, HEADER, request_replay
         from .studio_policy import PRODUCT_TELEMETRY_POLICY_PATH
 
         if request.method == "GET" and request.url.path == PRODUCT_TELEMETRY_POLICY_PATH:
@@ -341,6 +341,8 @@ def create_app(
             response = await call_next(request)
         if replay.value is not None:
             response.headers[HEADER] = replay.value
+        if replay.capture_stored_events is not None and 200 <= response.status_code < 300:
+            response.headers[CAPTURE_STORED_HEADER] = str(replay.capture_stored_events)
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"

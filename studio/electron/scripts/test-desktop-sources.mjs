@@ -239,6 +239,27 @@ const backfillReport = (delivered = false, deliveryOnly = false) => ({ ...report
     device_pending_bytes: delivered ? 0 : 1024, device_database_bytes: 65536,
     reason_code: deliveryOnly ? 'capture_delivery_pending' : 'capture_scan_pending' } })
 
+for (const fresh of [2, 0, null, undefined]) test(`scheduled capture uses fresh receipt count ${fresh} without recounting readbacks`, async t => {
+  const f = await fixture(t), measured = measurements()
+  f.options.telemetry = () => measured.store
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const result = backfillReport(true, true)
+  result.completed = true
+  Object.assign(result.capture, { locally_accepted: 0, reason_code: null,
+    ...(fresh !== undefined ? { newly_stored_events: fresh } : {}) })
+  f.state.scans[0].finish(result); await f.flush()
+  const submissions = measured.rows.filter(row => row.kind === 'submission')
+  if (fresh === 2) {
+    assert.deepEqual(submissions, [{ kind: 'submission', workflow: 'capture.collect', surface: 'desktop' }])
+    const outcome = measured.rows.find(row => row.kind === 'outcome')
+    assert.equal(outcome.work_items, 0)
+    assert.equal(outcome.result_items, 2)
+  } else assert.deepEqual(measured.rows, [])
+  const before = structuredClone(measured.rows)
+  await f.manager.status(); await f.manager.status()
+  assert.deepEqual(measured.rows, before, 'Reading saved activity must not replay a product observation')
+})
+
 const archiveReport = source => ({ format: 'mnemion-capture-archive-v1', created_at: '2026-10-21T04:00:00Z', name: source.name,
   binding: { tenant_id: source.tenant_id, connector_id: source.connector_id, source_id: source.custody.source_id,
     grant_id: source.custody.grant_id, namespace: 'selected-source', capture_mode: 'messages' },

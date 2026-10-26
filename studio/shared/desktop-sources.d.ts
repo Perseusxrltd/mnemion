@@ -27,6 +27,7 @@ export type CaptureReason = 'capture_authorization_revoked' | 'capture_binding_m
 export type CaptureReport = {
   locally_accepted: number; pending_events: number; pending_bytes: number;
   remote_committed_events: number; stored_events: number; forgotten_events: number;
+  newly_stored_events?: number | null;
   unknown_pages: number; database_bytes: number; over_limit: boolean;
   capture_complete: boolean; delivery_complete: boolean;
   device_pending_bytes: number; device_database_bytes: number; reason_code?: CaptureReason | null;

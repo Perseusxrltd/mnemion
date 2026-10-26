@@ -19,6 +19,7 @@ export async function beginMaintenance(store: MaintenanceStore | undefined, work
 type SourceResult = {
   completed: boolean; changed: number; removed: number; conflicts: number; remote_sync_available: boolean
   capture?: { locally_accepted: number; pending_events: number; remote_committed_events: number;
+    newly_stored_events?: number | null;
     database_bytes: number; capture_complete: boolean; delivery_complete: boolean; reason_code?: string | null }
 }
 
@@ -26,12 +27,16 @@ export function finishSource(measurement: TelemetryWorkflow | null, report: Sour
   if (!measurement) return
   try {
     const capture = report.capture
-    const worked = capture ? capture.locally_accepted + capture.remote_committed_events
+    const fresh = capture && Number.isSafeInteger(capture.newly_stored_events) &&
+      capture.newly_stored_events! >= 0 && capture.newly_stored_events! <= capture.remote_committed_events
+      ? capture.newly_stored_events! : undefined
+    const worked = capture ? capture.locally_accepted + (fresh ?? 0)
       : report.changed + report.removed + report.conflicts
     // A timer finding nothing new is not a user action or a completed work item.
     if (report.completed && worked === 0) { measurement.discard(); return }
     const metrics: Record<string, number> = capture
-      ? { work_items: capture.locally_accepted, queue_items: capture.pending_events, stored_bytes: capture.database_bytes }
+      ? { work_items: capture.locally_accepted, queue_items: capture.pending_events, stored_bytes: capture.database_bytes,
+        ...(fresh !== undefined ? { result_items: fresh } : {}) }
       : { work_items: report.changed + report.removed, result_items: report.changed }
     const denied = capture?.reason_code === 'capture_authorization_revoked'
     const outcome = report.completed ? 'success' : denied ? 'denied' : 'deferred'

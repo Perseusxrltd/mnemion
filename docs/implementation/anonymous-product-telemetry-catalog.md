@@ -470,6 +470,27 @@ history, source identifiers, paths, content or raw errors. Existing native
 request acknowledgements remain separate workflow categories; they cannot be
 summed with observed maintenance outcomes as independent uses.
 
+The [4.46.21 capture-delivery follow-up](../validation/2026-10-26-capture-delivery-telemetry.md)
+adds `capture` to the existing `result_items` allowed families, retaining its
+bucket coordinates and wire views. Native/headless adapters use only verified
+fresh stored-event counts from the current delivery call, excluding duplicate
+and fenced events. `remote_committed_events` can include receipt reconciliation
+and repeated items, so it is not the fresh metric. This adds no metric, packet,
+sampled view or second `capture.deliver` owner. Earlier reports retain their
+then-current exclusion of capture from `result_items`.
+
+The shared cycle preserves acknowledged partial progress after later failures;
+uncertain POSTs leave the fresh total unknown. Replay/readback-only completed
+cycles add no fresh use. Receipt bodies stay separate from the existing
+`X-Mnemion-Idempotency` header and new `X-Mnemion-Capture-Stored` header, whose
+fresh count is bounded to 50 events per page. Optional SDK `RequestReceipt`
+metadata is per call and adds no owner. Live `newly_stored_events` is excluded
+from `CaptureReport` serialization and saved source history. The scoped source
+validation passed 172 distinct Python and 111 Node controller/wire cases and
+both source builds; original fixture failures remain recorded. Category coverage
+stays 94 total, 87 mapped and seven unmeasured; installed and full V08 acceptance
+remain separate.
+
 Resource cells describe only the owned process. Native source work can use the
 maximum RSS supplied by its actual child callback and that worker's configured
 limit; no callback sample means unavailable. Headless work uses its own ending

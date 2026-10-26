@@ -285,6 +285,23 @@ def test_saved_capture_keeps_nullable_wire_fields_across_finish_reopen_and_next_
             )
 
 
+def test_fresh_capture_receipt_counts_are_not_saved_or_replayed_from_status(saved):
+    original = backfill_report(delivered=True, delivery_only=True)
+    original["completed"] = True
+    original["capture"]["reason_code"] = None
+    original["capture"]["newly_stored_events"] = 2
+    owner, run, _ = begin(saved)
+    finished = finish(saved, owner, run, report=original)["activity"]
+    for activity in (finished, observe(saved)[0]["activity"]):
+        for name in ("report", "last_success_report"):
+            assert "newly_stored_events" not in activity[name]["capture"]
+            assert activity[name]["capture"]["remote_committed_events"] == 2
+    assert "newly_stored_events" not in (saved[0] / "source-status.json").read_text()
+    original["capture"]["newly_stored_events"] = 3
+    with pytest.raises(ValidationError):
+        CaptureReport.model_validate(original["capture"])
+
+
 def test_ambiguous_writes_are_not_replayed_and_original_observations_remain(saved, monkeypatch):
     write = local_state.write
     calls = []

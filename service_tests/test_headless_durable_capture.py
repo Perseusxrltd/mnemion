@@ -143,6 +143,22 @@ def prepared(fixture, *, child=False):
     return control({"action": "resume", "expected_revision": enrolled["revision"], "confirm": True})
 
 
+def test_fresh_delivery_metadata_is_live_only_and_not_replayed_by_headless_status(headless):
+    prepared(headless)
+    config = headless["config"]
+    (config.provider.path / "chat.jsonl").write_bytes(encoded("A fresh retained message"))
+    report = device.scan(config)
+    assert report["capture"]["newly_stored_events"] == 1
+    assert report["capture"]["remote_committed_events"] == 1
+    saved = device.status(config)["activity"]["report"]["capture"]
+    assert saved["remote_committed_events"] == 1
+    assert "newly_stored_events" not in saved
+    assert "newly_stored_events" not in device.paths(config)[1].read_text()
+    next_report = device.scan(config)
+    assert next_report["capture"]["newly_stored_events"] == 0
+    assert next_report["capture"]["remote_committed_events"] == 0
+
+
 def pause(config):
     return perform(
         config, {"action": "pause", "expected_revision": device.status(config)["revision"]}

@@ -13306,7 +13306,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.46.20"
+    "version": "4.46.21"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -14530,7 +14530,27 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Mnemion-Capture-Stored": {
+                "description": "Present only for a new page: events newly stored by this transaction, excluding earlier events and negative fences. Receipt readbacks do not contain this header.",
+                "schema": {
+                  "maximum": 50,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "X-Mnemion-Idempotency": {
+                "description": "Whether this request committed a new page or replayed its immutable receipt.",
+                "schema": {
+                  "enum": [
+                    "new",
+                    "replayed"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "content": {

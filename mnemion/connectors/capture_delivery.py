@@ -1,12 +1,42 @@
 """Bounded delivery of already committed selected evidence to current custody."""
 
 import time
+from dataclasses import dataclass
 
 import httpx
 
-from ..sdk import MnemionError
+from ..sdk import MnemionError, RequestReceipt
 from ..service.capture_models import CaptureGrant, CapturePageReceipt
 from .conversation_inbox import InboxError
+
+
+@dataclass(slots=True)
+class DeliveryProgress:
+    """Only this call's acknowledged pages; never reconstructed from history."""
+
+    remote_committed_events: int = 0
+    newly_stored_events: int | None = 0
+
+    def acknowledged(self, count: int, newly_stored: int | None):
+        self.remote_committed_events += count
+        if newly_stored is None:
+            self.newly_stored_events = None
+        elif self.newly_stored_events is not None:
+            self.newly_stored_events += newly_stored
+
+
+def _newly_stored(receipt, metadata):
+    if type(metadata) is not RequestReceipt:
+        return None
+    if metadata.disposition == "replayed":
+        return 0
+    count = metadata.capture_stored_events
+    stored = sum(item["outcome"] == "stored" for item in receipt["items"])
+    return (
+        count
+        if metadata.disposition == "new" and type(count) is int and 0 <= count <= stored
+        else None
+    )
 
 
 def verify_grant(inbox, client):
@@ -55,7 +85,9 @@ def retire_grant(binding, client):
         raise
 
 
-def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
+def deliver(
+    inbox, client, *, maximum_pages=4, maximum_seconds=20, progress: DeliveryProgress | None = None
+):
     """Use exact saved pages; unknown replies never reset or rename evidence.
 
     The caller has already completed local capture. No SQLite transaction spans
@@ -64,6 +96,7 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
     """
     if not 1 <= maximum_pages <= 100 or not 1 <= maximum_seconds <= 600:
         raise ValueError("Choose bounded capture delivery limits")
+    progress = DeliveryProgress() if progress is None else progress
     deadline = time.monotonic() + maximum_seconds
     grant = verify_grant(inbox, client)
     inbox.observations.contacted()
@@ -81,7 +114,6 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
         retained = inbox.apply_fences(value)
         if not retained or value["next_cursor"] is None:
             break
-    delivered = 0
     for _ in range(maximum_pages):
         if time.monotonic() >= deadline:
             break
@@ -98,13 +130,26 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
                     raise
                 # An absent receipt permits the SAME idempotent page only.
                 # POST still enforces the current grant and source permissions.
-        if receipt is None:
-            receipt = client.request(
-                "POST", base + "/pages", body=page, key="capture:" + page["page_id"]
-            )
-        value = CapturePageReceipt.model_validate(receipt).model_dump(mode="json")
-        inbox.acknowledge(value)
-        delivered += len(value["items"])
+        posted = receipt is None
+        metadata = None
+        try:
+            if posted:
+                request = getattr(client, "request_with_receipt", None)
+                options = {"body": page, "key": "capture:" + page["page_id"]}
+                if callable(request):
+                    receipt, metadata = request("POST", base + "/pages", **options)
+                else:
+                    # Older/custom clients keep their original delivery path.
+                    # Their unverified fresh-effect count stays unavailable.
+                    receipt = client.request("POST", base + "/pages", **options)
+            value = CapturePageReceipt.model_validate(receipt).model_dump(mode="json")
+            inbox.acknowledge(value)
+        except BaseException:
+            if posted:
+                progress.newly_stored_events = None
+            raise
+        fresh = _newly_stored(value, metadata) if posted else 0
+        progress.acknowledged(len(value["items"]), fresh)
     # A successful write is not evidence of indexing. Observe bounded source
     # pages after delivery; a transient statistics outage must not erase the
     # confirmed receipts or turn them into unconfirmed delivery.
@@ -128,7 +173,8 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
             )
             break
     return {
-        "remote_committed_events": delivered,
+        "remote_committed_events": progress.remote_committed_events,
+        "newly_stored_events": progress.newly_stored_events,
         "fence_sweep_pending": inbox.fence_cursor() is not None or inbox.fence_history_blocked(),
         **inbox.status(),
     }

@@ -4934,7 +4934,7 @@
     ]
   },
   "source_inputs": {
-    "catalog.json": "cd9108b5c25fd0ab7f96490638340ebe873dd38e4fd6e636065103fa8f2e9141",
+    "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
     "control-origins.json": "5482267dab262234d00f7591fea63c3da9defe391250ccdb2d46110e4f9e40de",
     "desktop-origins.json": "b3d1275bdf74396915079951996fb8de25fc8d6ea3aa406316c3cad7ec23607f",
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",

@@ -136,6 +136,20 @@ def install_routes(app, authenticated, service):
         "/v1/capture-grants/{grant_id}/pages",
         tags=["Connectors"],
         response_model=c.CapturePageReceipt,
+        responses={
+            200: {
+                "headers": {
+                    "X-Mnemion-Idempotency": {
+                        "description": "Whether this request committed a new page or replayed its immutable receipt.",
+                        "schema": {"type": "string", "enum": ["new", "replayed"]},
+                    },
+                    "X-Mnemion-Capture-Stored": {
+                        "description": "Present only for a new page: events newly stored by this transaction, excluding earlier events and negative fences. Receipt readbacks do not contain this header.",
+                        "schema": {"type": "integer", "minimum": 0, "maximum": 50},
+                    },
+                }
+            }
+        },
     )
     def accept_page(grant_id: UUID, command: c.CapturePageInput, identity: Auth):
         return service.page(identity, grant_id, command)

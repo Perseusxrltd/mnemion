@@ -103,8 +103,8 @@ and `librarian-models --prepare` commands now own `models.prepare`. The observer
 receives only the fixed preparation kind; model/profile identifiers and normal
 command output stay outside telemetry. Listing, registry helpers and nested
 deployment/startup preparation acquire no owner. Model resource/sensor
-qualification, rollback completion, delivered-item measurements, switch
-ownership and complete interface/call-site coverage remain open, alongside the
+qualification, rollback completion, switch ownership and complete
+interface/call-site coverage remain open, alongside the
 installed and resource acceptance gates. The action report preserves the
 earlier 86-mapped/eight-unmeasured audit separately from this source follow-up.
 
@@ -149,6 +149,19 @@ limit. No source history or mixed-host totals are exported. Updater download,
 verification and retries form one cycle; polls add no use, unfinished cycles
 are discarded on quit, and installer handoff is only accepted. Native request
 acknowledgements remain separate categories, not extra completed uses.
+
+The [4.46.21 capture-delivery source follow-up](../validation/2026-10-26-capture-delivery-telemetry.md)
+preserves receipt bodies and separates request-local fresh/replayed metadata
+from a verified fresh stored-event count. A later delivery failure retains this
+call's earlier acknowledgements; an uncertain POST leaves the fresh total
+unavailable. Native/headless owners now use existing `result_items` for verified
+fresh capture counts, excluding duplicates and fenced events. Replay/readback-only
+completed cycles add no fresh use. The live count is excluded from saved source
+status; SDK metadata remains per call without ownership. There is no second
+`capture.deliver` owner or change to metric coordinates or wire views.
+The follow-up passed 172 distinct Python and 111 Node controller/wire cases
+and both source builds, with the original frontend-fixture failures retained.
+These checks do not qualify an installed 4.46.21 release or full V08.
 
 ### Admission, delivery and reporting
 

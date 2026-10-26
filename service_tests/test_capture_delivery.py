@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from mnemion.connectors.capture_delivery import deliver
+from mnemion.connectors.capture_cycle import cycle
 from mnemion.connectors.conversation_capture import capture_available
 from mnemion.connectors.conversation_inbox import InboxError, Limits, open_inbox
 from mnemion.connectors.live_conversations import ConversationProvider
@@ -96,6 +97,7 @@ def test_local_capture_then_lost_http_reply_restart_and_current_forgetting(
         client.request = observed
         result = deliver(inbox, client)
         assert result["pending_events"] == result["unknown_pages"] == 0
+        assert result["newly_stored_events"] == 0, "Readback must not become a fresh commit"
         assert result["forgotten_events"] == int(forget_while_offline)
         observed = result["coverage"]["index"]
         assert observed["status"] == "available"
@@ -137,6 +139,79 @@ def test_revoked_device_retains_local_evidence_without_attempting_delivery(
             deliver(inbox, client)
         assert inbox.status()["pending_events"] == 1
         assert inbox.status()["unknown_pages"] == 0
+
+
+@pytest.mark.parametrize("failure", ["second_page_reply", "index_authorization"])
+def test_cycle_preserves_acknowledged_progress_when_later_delivery_work_fails(
+    env, custody, conversation_source, tmp_path, failure
+):
+    private = settings(env, custody, conversation_source, tmp_path)
+    _, _, _, _, secret, config = conversation_source
+    count = 51 if failure == "second_page_reply" else 2
+    for index in range(count):
+        (config.provider.path / f"part-{index:03d}.jsonl").write_bytes(encoded(f"Selected {index}"))
+    provider = ConversationProvider(config.provider)
+    requests, revocations = [], []
+    with (
+        running(create_app(env.db, env.embedder)) as url,
+        open_inbox(*private, create=True) as inbox,
+    ):
+
+        def remote():
+            client = Client(url, secret, retries=0)
+            original = client.request
+
+            def observed(method, route, **options):
+                if failure == "index_authorization" and route.endswith("/index-progress"):
+                    raise MnemionError(403, "capture_authorization_revoked", "Synthetic revocation")
+                value = original(method, route, **options)
+                if method == "POST" and route.endswith("/pages"):
+                    requests.append(value)
+                    if failure == "second_page_reply" and len(requests) == 2:
+                        raise httpx.ReadTimeout("Synthetic lost second-page reply after commit")
+                return value
+
+            client.request = observed
+            return client
+
+        result = cycle(
+            inbox,
+            collect=lambda: capture_available(inbox, provider),
+            client=remote,
+            revoked=lambda: revocations.append(True),
+            usage=lambda: inbox.status(),
+        )
+        capture = result["capture"]
+        assert not result["completed"]
+        assert capture["locally_accepted"] == count
+        assert result["changed"] == capture["remote_committed_events"] == (50 if count == 51 else 2)
+        assert capture["newly_stored_events"] == (None if count == 51 else 2)
+        assert len(requests) == (2 if count == 51 else 1)
+        assert bool(revocations) == (failure == "index_authorization")
+        if failure == "second_page_reply":
+            assert capture["pending_events"] == capture["unknown_pages"] == 1
+            with Client(url, secret, retries=0) as recovered:
+                settled = deliver(inbox, recovered)
+            assert settled["remote_committed_events"] == 1
+            assert settled["newly_stored_events"] == settled["pending_events"] == 0
+
+
+def test_older_client_delivers_without_claiming_fresh_effect_metadata(
+    env, custody, conversation_source, tmp_path
+):
+    private = settings(env, custody, conversation_source, tmp_path)
+    _, _, _, _, secret, config = conversation_source
+    (config.provider.path / "chat.jsonl").write_bytes(encoded("Legacy delivery"))
+    with (
+        running(create_app(env.db, env.embedder)) as url,
+        Client(url, secret, retries=0) as client,
+        open_inbox(*private, create=True) as inbox,
+    ):
+        client.request_with_receipt = None
+        capture_available(inbox, ConversationProvider(config.provider))
+        result = deliver(inbox, client)
+        assert result["remote_committed_events"] == 1 and result["pending_events"] == 0
+        assert result["newly_stored_events"] is None
 
 
 def test_real_service_fence_overflow_preserves_delivery_and_all_held_deletions(
