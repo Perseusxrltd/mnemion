@@ -246,6 +246,25 @@ and GPU outcomes remain retained. This current-source comparison does not
 isolate a causal improvement. The next step is an explicit architecture review,
 without another benchmark or revision of the **2 MiB / 0.5%** gates.
 
+The subsequent [private storage-adapter prototype](../validation/2026-10-26-telemetry-storage-adapter.md)
+tests operation-scoped SQLite library ownership while retaining current compiled
+store/delivery privacy code. Linux component checks observed library unmapping
+after closure; this is not an RSS saving, renderer result or product runtime
+change. Functional scope now comprises **39 passes and two Windows-only skips**
+across the original selection and one isolated corrected fixture case. The
+original failure and shutdown lifecycle review remain retained. A shipping
+choice still requires a pinned, exclusively owned SQLite
+runtime for all six targets and complete API/worker/lifecycle and supply-chain
+review. The existing resource, platform and privacy gates remain open.
+
+The separate [native handoff and release-resource correction](../validation/2026-10-26-telemetry-release-guards.md)
+drains the sender's own watcher before its fresh write check, preserving opt-out,
+the five-second deadline and one storage handle. Builder and verifier now use
+the sender's active wire definition. Source checks passed on Linux (37) and
+actual Windows x64 (17), with cleanup verified. These component checks do not
+qualify the six-target release, adopt the private adapter or resolve resource
+and production-privacy acceptance; collection remains unavailable.
+
 The earlier [CPU admission change](../validation/2026-10-26-telemetry-cpu-admission.md)
 removes the per-core allocation path on Linux and macOS by reading fixed
 aggregate counters through the existing native helper. The upstream Linux

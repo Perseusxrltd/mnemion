@@ -18,9 +18,9 @@ if (process.platform === 'win32') {
   if (privacy.status !== 0) process.exit(privacy.status || 1)
 }
 copyFileSync(resolve(root, 'native/windows-updates.json'), resolve(root, 'dist/windows-updates.json'))
-for (const name of ['disclosure', 'catalog', 'desktop-origins', 'wire-v2', 'transport-route']) {
-  copyFileSync(resolve(root, `../../mnemion/product_telemetry/${name}.json`), resolve(root, `dist/telemetry-${name}.json`))
-}
+// Import only after tsc has produced the shared release-resource definition.
+const { copyTelemetryResources } = await import('./telemetry-resources.mjs')
+copyTelemetryResources(resolve(root, '../../mnemion/product_telemetry'), resolve(root, 'dist'))
 // Sandboxed Electron preloads use CommonJS even though the main process is ESM.
 const preload = ts.transpileModule(readFileSync(resolve(root, 'preload.ts'), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },

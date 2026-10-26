@@ -5,6 +5,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { setTimeout as delay } from 'node:timers/promises'
 import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import { TelemetryWire } from './telemetry-wire.js'
+import { telemetryWireResource } from './telemetry-resources.js'
 import { NativeTelemetryStore, nativeCompanyPolicyPath, type NativeTelemetryDisclosure } from './telemetry-store.js'
 import type { MeasurementCatalog } from './telemetry-catalog.js'
 import { checkReview, checkReviewMetadata, clearReview, parseReview, reviewContext, serializeReview,
@@ -96,7 +97,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
   }
 
   private wire(): TelemetryWire {
-    this.encoder ??= new TelemetryWire(JSON.parse(readFileSync(new URL('./telemetry-wire-v2.json', import.meta.url), 'utf8')), this.catalog)
+    this.encoder ??= new TelemetryWire(JSON.parse(readFileSync(new URL(`./${telemetryWireResource}`, import.meta.url), 'utf8')), this.catalog)
     return this.encoder
   }
 
@@ -287,13 +288,15 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     return result
   }
 
-  /** Caller owns an existing attempt and abort signal; this never wakes an idle app. */
-  async watch(report: PreparedTelemetryReport, abort: () => void, stop: AbortSignal): Promise<void> {
+  /** Caller owns an existing attempt and abort signal; this never wakes an idle app.
+   * A transport may drain observation before its fresh handoff fence, retaining
+   * the lease only on that deliberate stop and owning final cancellation itself. */
+  async watch(report: PreparedTelemetryReport, abort: () => void, stop: AbortSignal, cancelOnStop = true): Promise<void> {
     const cancelTransport = () => { try { abort() } catch { /* No retry or exception forwarding. */ } }
     try {
       while (!stop.aborted && await this.current(report)) await delay(25, undefined, { signal: stop, ref: false })
       if (!stop.aborted) cancelTransport()
     } catch { if (!stop.aborted) cancelTransport() }
-    finally { await this.cancel(report) }
+    finally { if (cancelOnStop || !stop.aborted) await this.cancel(report) }
   }
 }

@@ -9,6 +9,7 @@ import { createServer as tcpServer } from 'node:net'
 import { createServer, getCACertificates, setDefaultCACertificates } from 'node:tls'
 import { constants } from 'node:crypto'
 import dns from 'node:dns'
+import { setTimeout as delay } from 'node:timers/promises'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { DesktopTelemetryActivity } from '../dist/telemetry-activity.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
@@ -24,6 +25,18 @@ const run = (program, input) => {
   assert.equal(child.status, 0, child.stderr)
   assert.equal(child.stderr, '')
   return child.stdout ? JSON.parse(child.stdout) : null
+}
+
+/** Refusal can finish without reaching a peer; report it instead of hanging CI. */
+async function reached(stage, operation, label) {
+  let timer
+  try {
+    await Promise.race([stage, operation.then(result => {
+      throw new Error(`${label} was not reached before delivery settled${result?.outcome ? ` (${result.outcome})` : ''}`)
+    }), new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} was not reached within the fixture deadline`)), 7500)
+    })])
+  } finally { clearTimeout(timer) }
 }
 before(async () => {
   certificates = await mkdtemp(join(tmpdir(), 'mnemion-native-telemetry-ca-'))
@@ -145,6 +158,52 @@ test('native TLS sends one fixed four-byte request without DNS or ambient creden
   f.cleaned()
 })
 
+test('a slow active privacy read cannot compete with its own final TLS handoff', async t => {
+  const server = await peer(t), f = await installation(t, server.endpoint)
+  const open = f.store.open.bind(f.store), close = f.store.closeDatabase.bind(f.store)
+  const handles = new Set()
+  let reads = 0, delayed = false, peak = 0
+  f.store.open = async (...args) => {
+    const database = await open(...args)
+    handles.add(database); peak = Math.max(peak, handles.size)
+    // Keep the actual single storage slot occupied while the TLS handshake
+    // finishes, as a Windows ACL read can do. No policy read is bypassed.
+    if (!args[0] && ++reads === 2) { delayed = true; await delay(150) }
+    return database
+  }
+  f.store.closeDatabase = database => {
+    close(database)
+    if (database && !database.isOpen) handles.delete(database)
+  }
+  const result = await sendNativeTelemetry(f.store, f.report, server.endpoint)
+  assert.equal(delayed, true)
+  assert.equal(result.outcome, 'delivered')
+  assert.equal(server.requests.length, 1)
+  assert.equal(peak, 1); assert.equal(handles.size, 0)
+  f.cleaned()
+})
+
+test('Python opt-out during a slow active privacy read still blocks the final TLS handoff', async t => {
+  const server = await peer(t), f = await installation(t, server.endpoint)
+  const open = f.store.open.bind(f.store)
+  let reads = 0, enter, release
+  const entered = new Promise(resolve => { enter = resolve }), held = new Promise(resolve => { release = resolve })
+  t.after(() => release())
+  f.store.open = async (...args) => {
+    const database = await open(...args)
+    if (!args[0] && ++reads === 2) { enter(); await held }
+    return database
+  }
+  const pending = sendNativeTelemetry(f.store, f.report, server.endpoint)
+  try {
+    await reached(entered, pending, 'Active privacy read')
+    f.invoke('off')
+  } finally { release() }
+  assert.equal((await pending).outcome, 'suppressed')
+  assert.equal(server.requests.length, 0)
+  f.cleaned()
+})
+
 test('ordinary desktop recording owns a real TLS send without a manual reserve or sender call', async t => {
   const server = await peer(t), f = await installation(t, server.endpoint, { activity: true })
   assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp), true)
@@ -175,10 +234,11 @@ test('desktop OS gauges never start during cooldown and close after the actual T
 test('an opt-out during OS preparation is rechecked before any budget or socket is used', async t => {
   let enter, finish, closes = 0
   const entered = new Promise(resolve => { enter = resolve }), pending = new Promise(resolve => { finish = resolve })
+  t.after(() => finish())
   const server = await peer(t), f = await installation(t, server.endpoint, { activity: true,
     gauges: { prepare: async () => { enter(); await pending; return true }, close: () => { closes++ } } })
   await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp)
-  await entered; f.invoke('off'); finish()
+  await reached(entered, f.store.deliverySettled(), 'OS preparation'); f.invoke('off'); finish()
   await f.store.deliverySettled()
   assert.equal(closes, 1); assert.equal(server.connections(), 0)
   assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 0 })
@@ -194,7 +254,7 @@ test('the desktop owner pauses before dispatch and cancels when actual admission
   assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 0 })
   f.store.resumeDelivery('update')
   assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.save', surface: 'desktop' }, f.stamp), true)
-  await server.entered
+  await reached(server.entered, f.store.deliverySettled(), 'TLS request')
   constrained = true
   await f.store.deliverySettled()
   assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 1 })
@@ -206,7 +266,7 @@ test('simultaneous and response-pending native sends cannot steal the winner or 
   const first = sendNativeTelemetry(f.store, f.report, server.endpoint)
   const duplicate = await sendNativeTelemetry(f.store, f.report, server.endpoint)
   assert.deepEqual(duplicate, { outcome: 'suppressed', encrypted_bytes_charged: 0 })
-  await server.entered
+  await reached(server.entered, first, 'TLS request')
   assert.deepEqual(await sendNativeTelemetry(f.store, f.report, server.endpoint), duplicate)
   server.release()
   assert.equal((await first).outcome, 'delivered'); assert.equal(server.connections(), 1)
@@ -216,7 +276,7 @@ test('simultaneous and response-pending native sends cannot steal the winner or 
 for (const mode of ['stall_handshake', 'hold']) test(`Python opt-out cancels a native ${mode} attempt`, async t => {
   const server = await peer(t, mode), f = await installation(t, server.endpoint)
   const pending = sendNativeTelemetry(f.store, f.report, server.endpoint)
-  await server.entered
+  await reached(server.entered, pending, 'TLS peer')
   const start = performance.now()
   f.invoke('off')
   assert.equal((await pending).outcome, 'suppressed')
@@ -228,7 +288,7 @@ for (const mode of ['stall_handshake', 'hold']) test(`Python opt-out cancels a n
 test('the owner aborts a native send without replay or refund', async t => {
   const server = await peer(t, 'hold'), f = await installation(t, server.endpoint), owner = new AbortController()
   const pending = sendNativeTelemetry(f.store, f.report, server.endpoint, owner.signal)
-  await server.entered
+  await reached(server.entered, pending, 'TLS request')
   owner.abort()
   assert.equal((await pending).outcome, 'suppressed'); assert.equal(server.connections(), 1)
   f.cleaned()
@@ -277,9 +337,10 @@ test('the five-second native deadline closes a silent TLS peer before cleanup fi
   const pending = sendNativeTelemetry(f.store, f.report, server.endpoint).then(result => { settled = true; return result })
   let closedAt, closedBeforeCleanup, erasedBeforeCleanup, result
   try {
-    await server.entered
+    await reached(server.entered, pending, 'Silent TLS peer')
+    await reached(server.closed, pending, 'TCP close')
     closedAt = await server.closed
-    await cleanupEntered
+    await reached(cleanupEntered, pending, 'Post-expiry cleanup')
     closedBeforeCleanup = !settled
     erasedBeforeCleanup = f.report.closed
   } finally { finishCleanup(); result = await pending }

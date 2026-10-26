@@ -4,15 +4,14 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { verifyBranding } from '../../branding/verify.mjs'
 import { verifyNativeResources } from './native-resources.mjs'
+import { telemetryResourceEntries } from './telemetry-resources.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const root = resolve(__dirname, '..', '..', '..')
 
 const required = [
-  ...['disclosure', 'catalog', 'desktop-origins', 'wire-v1', 'transport-route'].map(name => ({
-    label: `product telemetry ${name}`, path: join(root, 'studio/electron/dist', `telemetry-${name}.json`),
-  })),
+  ...telemetryResourceEntries(join(root, 'studio/electron/dist')),
   { label: 'native OS telemetry admission probe', path: join(root, 'studio/electron/dist/telemetry-network.node') },
   ...(process.platform === 'win32' ? [{
     label: 'native Windows telemetry privacy guard', path: join(root, 'studio/electron/dist/telemetry-private-store.exe'),

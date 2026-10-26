@@ -188,9 +188,19 @@ export async function sendNativeTelemetry(budget: NativeTelemetryDelivery, repor
     await budget.cancel(report)
     return { outcome: 'suppressed', encrypted_bytes_charged: 0 }
   }
-  const channel = new Channel(endpoint), watching = new AbortController()
+  const channel = new Channel(endpoint)
   const aborted = () => channel.close('suppressed')
   let timer: ReturnType<typeof setTimeout> | undefined, watcher: Promise<void> | undefined
+  let watching: AbortController | undefined
+  const observe = () => {
+    watching = new AbortController()
+    watcher = budget.watch(report, aborted, watching.signal, false)
+  }
+  const drainObservation = async () => {
+    watching?.abort()
+    await watcher
+    watcher = undefined; watching = undefined
+  }
   let outcome: Outcome = 'failed'
   try {
     stop?.addEventListener('abort', aborted, { once: true })
@@ -198,22 +208,31 @@ export async function sendNativeTelemetry(budget: NativeTelemetryDelivery, repor
     const remaining = Math.min(DEADLINE, report.monotonicDeadline - performance.now())
     if (remaining <= 0) { outcome = 'deadline'; return { outcome, encrypted_bytes_charged: 0 } }
     timer = setTimeout(() => channel.close('deadline'), remaining).unref()
-    watcher = budget.watch(report, aborted, watching.signal)
+    observe()
     await channel.handshake()
     await channel.capture(report.body())
     if (channel.stopped.signal.aborted || !channel.secure) outcome = channel.outcome
     else {
       const response = channel.response()
-      if (!await budget.guardedWrite(report, body => channel.handoff(body))) outcome = 'suppressed'
-      else if (await response) outcome = 'delivered'
-      else outcome = channel.outcome
+      // A Windows privacy probe yields while holding the single storage slot.
+      // Finish that observation before the fresh, mandatory write fence. There
+      // is no second connection, queued measurement or cached consent; the
+      // original socket deadline and owner cancellation remain active.
+      await drainObservation()
+      if (channel.stopped.signal.aborted) outcome = channel.outcome
+      else if (!await budget.guardedWrite(report, body => channel.handoff(body))) outcome = 'suppressed'
+      else {
+        observe()
+        if (await response) outcome = 'delivered'
+        else outcome = channel.outcome
+      }
     }
   } catch { outcome = channel.outcome }
   finally {
     if (timer) clearTimeout(timer)
     stop?.removeEventListener('abort', aborted)
-    channel.close(); watching.abort()
-    await watcher
+    channel.close()
+    await drainObservation()
     await budget.cancel(report)
   }
   return { outcome, encrypted_bytes_charged: channel.charged }
