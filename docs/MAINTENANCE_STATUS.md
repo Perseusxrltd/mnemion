@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T19:45:42+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T19:46:27+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -28,13 +28,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40385484447](https://github.com/Perseusxrltd/mnemion/actions/runs/40385484447): 11/12 jobs completed; 11 succeeded.
+[Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169): 14/15 jobs completed; 13 succeeded.
 
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169): 13/14 jobs completed; 12 succeeded.
-
-- native / native\_database / Database / macos / arm64: in\_progress — Restore an exact database build from the repository cache.
+- native / native\_database / Database / Windows ARM host / x64 engine: in\_progress — Verify the actual x64 engine under Windows ARM emulation.
 
 
 ## Unsuccessful jobs

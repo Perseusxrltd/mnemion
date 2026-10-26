@@ -30,19 +30,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 121792586580,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 12,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -147,21 +137,21 @@
       "source_commit": "d2e55fbf12400004c8e931a8e53a492e46a279c5",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T19:45:34Z",
+      "updated_at": "2026-10-26T19:45:54Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 14,
-        "completed": 13,
-        "succeeded": 12,
+        "total": 15,
+        "completed": 14,
+        "succeeded": 13,
         "active": [
           {
-            "id": 121806663042,
-            "name": "native / native_database / Database / macos / arm64",
+            "id": 121806920293,
+            "name": "native / native_database / Database / Windows ARM host / x64 engine",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Restore an exact database build from the repository cache"
+              "Verify the actual x64 engine under Windows ARM emulation"
             ]
           }
         ]
@@ -202,5 +192,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T19:45:42+00:00"
+  "observed_at": "2026-10-26T19:46:27+00:00"
 }
