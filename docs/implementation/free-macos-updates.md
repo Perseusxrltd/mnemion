@@ -33,6 +33,11 @@ Sparkle, signature verification, the installer and relaunch are real. Production
 bundles are not modified by the fixture. These tests do not simulate a power loss
 during replacement or certify every managed-device first-install policy.
 
+A later [26 October release-reliability checkpoint](../validation/2026-10-26-macos-release-reliability.md)
+records two Intel Mac CI failures and scoped source corrections. Native
+confirmation of those corrections remains pending; the earlier evidence above
+retains its original scope.
+
 ## Boundaries and operation
 
 Production feeds and archive URLs are fixed to the official repository, immutable

@@ -10,6 +10,12 @@ for (const name of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'APPLE_ID', 'APPLE_APP_SPECI
 // Use the supported single-stream filter; otherwise installers can exit 0 while
 // silently omitting executable files. electron-builder upstream issue #9983.
 if (process.platform === 'win32') process.env.ELECTRON_BUILDER_7Z_FILTER = 'BCJ'
+// The pinned dmgbuild CLI defaults to only five detach attempts even though its
+// core defaults to twelve. Keep the same verified tool and allow its normal
+// detach backoff to finish when macOS still holds the temporary installer disk.
+if (process.platform === 'darwin' && !process.env.CUSTOM_DMGBUILD_PATH?.trim()) {
+  process.env.CUSTOM_DMGBUILD_PATH = join(__dirname, 'scripts/dmgbuild.mjs')
+}
 // Unique feeds prevent x64/ARM artifacts from overwriting each other's metadata.
 module.exports = {
   ...build,

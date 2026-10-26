@@ -40,9 +40,43 @@ source collection settings were unchanged. Neither run attempted network access.
 These are mechanism observations, with no representative app workload, memory
 operations, TLS or gauges and no forced garbage collection. The single-run
 difference is not a causal performance estimate or resource acceptance.
-There has been **no new full-resource run** for this source change. Earlier
-[renderer evidence and failed resource targets](2026-10-26-telemetry-renderer-refusals.md)
-remain intact; the **2 MiB RSS and 0.5% CPU** targets are unchanged and unaccepted.
+The original diagnostics and earlier
+[renderer evidence](2026-10-26-telemetry-renderer-refusals.md) remain preserved.
+The later workload observation below does not qualify the unchanged
+**2 MiB RSS and 0.5% CPU** targets.
+
+## Later compiled renderer journey
+
+[Run 40260081248](https://github.com/Perseusxrltd/mnemion/actions/runs/40260081248)
+completed successfully on 26 October, using changed source
+`b9a29886830b63fac75c863e57d55287cc9bd321`. The retained qualification receipt
+matched **all 1,961 reviewed source hashes in each of the three compiled
+journeys**. This is a later source checkpoint; frozen 4.46.12 source
+`bd3b212567d878c8b28c1d4c3eb8c86c47bb5311` remains unchanged.
+
+All three actual development-app journeys ran on Linux x64 with Electron
+44.9.3 / Node 24.22.0. Each completed **387 successful real fixture API requests**
+(**1,161 total**). The enabled variant recorded **66 writes**, sent one accepted
+**four-byte report**, retained nine queue cells and spent one **65,536-byte
+reservation**, with its lease cleared and a 24 KiB database. Unavailable and
+opted-out variants recorded zero writes and zero reports. Cleanup verified
+removal of isolated and certificate profiles, collector shutdown and unchanged
+production disclosure.
+
+| Enabled minus unavailable, one sequential comparison | Observation |
+| --- | ---: |
+| Main-process ending RSS growth | 1,875,968 bytes, below 2 MiB in this observation |
+| Main-process sampled-peak RSS growth | 3,440,640 bytes, above 2 MiB |
+| Electron CPU difference | 180 ms; 0.2171447873% of one core over the baseline interval |
+
+Ending and sampled-peak growth measure different quantities; the ending value
+alone does not pass the memory target. CPU covers Electron processes present at
+both boundaries, while external helpers are sampled separately. The 100 ms
+sampling interval can miss short-lived children, and RSS sums can count shared
+pages more than once. This single comparison does not attribute an improvement
+to `shrink_memory` or establish stable resource overhead. The receipt explicitly
+keeps **resource acceptance false**. Installed/native-platform, whole-wire and
+production privacy acceptance remain open.
 
 ## Windows fixture guard
 
@@ -72,3 +106,7 @@ Original evidence remains private; these hashes identify the inspected files.
 | Focused native exit receipt | `c557395f0688bd46b05020d4f76d3e574e3e2134ba64c5eb6c29c4735d9403f9` |
 | Electron build | `b419608b520d806349e9aac310e6d0bb2223824f22ed2d334b1655dc9cda940d` |
 | Read-only Windows guard observation | `1116fd8c16819c158652505e4e8cf68a851ecd3ff34474f7c558a1c5e17ec85e` |
+| Compiled renderer qualification receipt | `7e6d963d6a1e511dfaf0bb94d68aedecc02af8fda27bc979babb79e33c9a16f0` |
+| Original renderer resource summary | `6e6d2554499088549c69cce1699a9918955a6a2e9b08d71ecf7fe1c5c25858d2` |
+| Original renderer workload receipt | `2f9a099c118f3d826e46f6e21f64f875b4da1ed09fc3135799ffd1bcf5e8221a` |
+| Original renderer cleanup receipt | `1dfdad0691c70f0fcdaad9a0e56f94675038eaccb5de8e0393914569586d75a1` |

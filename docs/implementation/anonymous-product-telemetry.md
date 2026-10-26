@@ -172,11 +172,16 @@ as do installed-platform, whole-wire and production privacy qualification.
 The 26 October [SQLite cleanup source follow-up](../validation/2026-10-26-telemetry-sqlite-cleanup.md)
 requests `PRAGMA shrink_memory` before closing native telemetry connections,
 without retaining a connection or positive policy cache. The Electron build and
-44 focused checks passed, with two Windows-only skips. Two small synthetic
-subprocess observations explore the mechanism; they do not establish a causal
-RSS improvement or qualify the unchanged resource targets. No full-resource
-journey has been repeated for this change. It is excluded from the already-frozen
-4.46.12 candidate; production collection remains unavailable.
+44 focused checks passed, with two Windows-only skips. Later compiled renderer
+run **40260081248** matched all **1,961 reviewed source hashes** across three
+successful journeys and **1,161 real fixture API requests**. Enabled main-process
+ending RSS growth exceeded unavailable collection by **1,875,968 bytes**, below
+2 MiB in that observation, while sampled-peak growth exceeded it by
+**3,440,640 bytes**, above the target. The descriptive Electron CPU difference
+was **180 ms / 0.2171447873% of one core**. These results and the retained small
+allocation diagnostics do not establish a causal improvement or stable
+resource/platform acceptance. Changed source `b9a29886830b63fac75c863e57d55287cc9bd321`
+remains separate from already-frozen 4.46.12; production collection is unavailable.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a

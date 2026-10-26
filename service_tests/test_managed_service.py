@@ -436,7 +436,14 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
         assert supervision.start(state)["ready"]
         auth = {"Authorization": "Bearer " + owner["api_key"]}
         url = f"http://127.0.0.1:{port}"
-        with httpx.Client(base_url=url, trust_env=False, timeout=5) as client:
+        # These assertions span deliberate listener replacements and idle connector
+        # handoffs. Use fresh connections rather than reusing that fixture's pool.
+        with httpx.Client(
+            base_url=url,
+            trust_env=False,
+            timeout=5,
+            limits=httpx.Limits(max_keepalive_connections=0),
+        ) as client:
             source = connector_fixture(client, auth, owner, state, tmp_path)
             source_ids = connector_scan(source, state, __version__, client, auth)
             assert len(source_ids) == 2
