@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T05:16:06+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T05:19:45+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.13](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.13). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,9 +16,27 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40269653215](https://github.com/Perseusxrltd/mnemion/actions/runs/40269653215) |
+| ci\.yml | main | in\_progress | [Run 40273536081](https://github.com/Perseusxrltd/mnemion/actions/runs/40273536081) |
 | public-updates\.yml | v4\.46\.13 | success | [Run 40268195296](https://github.com/Perseusxrltd/mnemion/actions/runs/40268195296) |
 | release\.yml | release/4\.46\.13 | success | [Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121) |
 | verify-artifacts\.yml | main | success | [Run 40267817685](https://github.com/Perseusxrltd/mnemion/actions/runs/40267817685) |
-| website-release\.yml | main | success | [Run 40273209103](https://github.com/Perseusxrltd/mnemion/actions/runs/40273209103) |
+| website-release\.yml | main | success | [Run 40273536085](https://github.com/Perseusxrltd/mnemion/actions/runs/40273536085) |
 | website-release\.yml | v4\.46\.13 | success | [Run 40268192045](https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045) |
+
+## Active jobs
+
+[Run 40273536081](https://github.com/Perseusxrltd/mnemion/actions/runs/40273536081): 5/12 jobs completed; 3 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/electron test.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
+
+## Unsuccessful jobs
+
+- [Run 40273536081](https://github.com/Perseusxrltd/mnemion/actions/runs/40273536081): container \(ubuntu-22\.04-arm\) (failure). Steps: Build the actual deployment image with its documentation.
+- [Run 40273536081](https://github.com/Perseusxrltd/mnemion/actions/runs/40273536081): container \(ubuntu-22\.04\) (failure). Steps: Build the actual deployment image with its documentation.
