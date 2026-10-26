@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T10:35:08+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T10:35:58+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.13](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.13). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | pending | [Run 40308440212](https://github.com/Perseusxrltd/mnemion/actions/runs/40308440212) |
+| ci\.yml | main | in\_progress | [Run 40308440212](https://github.com/Perseusxrltd/mnemion/actions/runs/40308440212) |
 | database-cache\.yml | main | success | [Run 40304827056](https://github.com/Perseusxrltd/mnemion/actions/runs/40304827056) |
 | public-updates\.yml | v4\.46\.13 | success | [Run 40268195296](https://github.com/Perseusxrltd/mnemion/actions/runs/40268195296) |
 | release\.yml | release/4\.46\.13 | success | [Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121) |
@@ -28,6 +28,18 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | website-release\.yml | v4\.46\.13 | success | [Run 40268192045](https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045) |
 
 ## Active jobs
+
+[Run 40308440212](https://github.com/Perseusxrltd/mnemion/actions/runs/40308440212): 3/12 jobs completed; 3 succeeded.
+
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Initialize containers.
+- service \(3\.12\): in\_progress — Initialize containers.
+- service \(3\.13\): in\_progress — Initialize containers.
+- supervision \(macos-15-intel\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
 
 [Run 40303268742](https://github.com/Perseusxrltd/mnemion/actions/runs/40303268742): 20/21 jobs completed; 18 succeeded.
 
