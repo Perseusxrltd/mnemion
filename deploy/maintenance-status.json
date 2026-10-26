@@ -23,46 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "263161f7191b8dbbbf6d0d08a5937214b0b67614",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T10:35:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40308440212",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 9,
-        "succeeded": 9,
-        "active": [
-          {
-            "id": 121523854755,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121523854756,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121523854784,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T11:07:26Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40308440212"
     },
     {
       "id": 40304827056,
@@ -225,12 +189,6 @@
       "updated_at": "2026-10-26T10:48:32Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40303268742",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / macos-15 / arm64",
@@ -242,7 +200,13 @@
             "Installed app creates, searches and reopens a real local workspace"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
     },
     {
       "id": 40310282067,
@@ -278,5 +242,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40268192045"
     }
   ],
-  "observed_at": "2026-10-26T10:49:12+00:00"
+  "observed_at": "2026-10-26T11:08:02+00:00"
 }
