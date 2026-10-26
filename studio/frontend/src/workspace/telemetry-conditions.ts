@@ -1,9 +1,13 @@
 /** Bounded current browser capability checks; no guesses about a Wi-Fi tariff. */
 type Connection = EventTarget & { saveData?: boolean; type?: string; effectiveType?: string }
-type PressureRecord = { state: string }
+type PressureRecord = { state: string; time: number }
 type PressureObserverLike = { observe: (source: 'cpu', options: { sampleInterval: number }) => Promise<void>; disconnect: () => void }
 type PressureConstructor = new (callback: (records: PressureRecord[]) => void) => PressureObserverLike
 export type BrowserTelemetryConditions = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
+const freshPressure = (at: number): boolean => {
+  const age = performance.now() - at
+  return Number.isFinite(at) && at >= 0 && Number.isFinite(age) && age >= 0 && age <= 2000
+}
 
 export class BrowserConditions {
   private pressure: string | null = null
@@ -24,7 +28,7 @@ export class BrowserConditions {
       return { network: metered ? 'metered' : 'unknown', constrained:
         navigator.onLine !== true || document.visibilityState !== 'visible' || metered ||
         ['slow-2g', '2g'].includes(connection?.effectiveType ?? '') ||
-        this.pressure !== 'nominal' || performance.now() - this.observedAt > 2000 ||
+        this.pressure !== 'nominal' || !freshPressure(this.observedAt) ||
         !heap || !Number.isFinite(heap.usedJSHeapSize) || !Number.isFinite(heap.jsHeapSizeLimit) ||
         heap.usedJSHeapSize < 0 || heap.jsHeapSizeLimit <= 0 || heap.usedJSHeapSize / heap.jsHeapSizeLimit >= 0.8 }
     } catch { return { network: 'unknown', constrained: true } }
@@ -40,13 +44,20 @@ export class BrowserConditions {
     try {
       this.observer = new Constructor(records => {
         if (generation !== this.generation || stop.aborted || !records.length) return
-        this.pressure = records[records.length - 1].state
-        this.observedAt = performance.now()
+        const latest = records[records.length - 1]
+        // PressureRecord.time is when the OS was sampled, in this time origin.
+        // A delayed callback must not renew an old nominal reading.
+        const fresh = freshPressure(latest.time)
+        this.pressure = fresh ? latest.state : null
+        this.observedAt = fresh ? latest.time : -Infinity
         finish(this.pressure === 'nominal')
       })
       stop.addEventListener('abort', aborted, { once: true })
+      // Chromium's first OS reading can arrive after one second even when a
+      // shorter sample interval is requested. Allow bounded initialization
+      // before reservation; fresh nominal pressure and cancellation still apply.
       // Only during newly offered awake work, never a periodic/idle observer.
-      timer = setTimeout(() => { this.close(); finish(false) }, 1000)
+      timer = setTimeout(() => { this.close(); finish(false) }, 3000)
       void this.observer.observe('cpu', { sampleInterval: 250 }).catch(() => {
         if (generation === this.generation) this.close()
         finish(false)

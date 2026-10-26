@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.28**.
+Reviewed source distribution: **4.46.29**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,8 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, V08 browser pressure:** [Bounded startup and OS-sample freshness](validation/2026-10-26-telemetry-browser-pressure.md) passed nine unit tests and the frontend build, but the final-source browser refused at 3,002.1 ms without a usable signal, so nominal-browser/full-app/resource acceptance remains open with no further trial selected, all 66 states unchanged and V08 Building/inactive.
 
 **26 October 2026, source-app report review and approval handoff:**
 [The completed journey](validation/2026-10-26-telemetry-app-review.md) passed

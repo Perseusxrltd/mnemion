@@ -430,6 +430,18 @@ reads, one report and one preflight are component evidence, not whole-wire or
 platform acceptance. Fixture cleanup was verified. The older native/Python
 evidence below is unchanged.
 
+The later [browser pressure corrections](../validation/2026-10-26-telemetry-browser-pressure.md)
+allow up to three seconds for the first nominal signal **before reservation**
+and measure the unchanged two-second freshness ceiling from `PressureRecord.time`,
+not callback arrival. Invalid, future, negative and expired sample times refuse
+admission. Heap/network/visibility gates, cancellation, privacy, spending and the
+five-second report lease remain unchanged. Nine unit tests and the separately
+completed frontend build passed. The final-source real browser refused at
+3,002.1 ms without a usable signal; its cause is unknown, cleanup passed and no
+report or model call occurred. The earlier 2,089.3 ms pass is historical for the
+startup-only source. No further pressure trial is selected; final nominal-browser,
+full-app/delivery and 2 MiB / 0.5% acceptance remain open.
+
 ## Source validation
 
 These results cover the preceding **native/Python** batch, before the browser
