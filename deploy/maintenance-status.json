@@ -18,15 +18,103 @@
   ],
   "runs": [
     {
-      "id": 40328700855,
+      "id": 40345454839,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "93eb300170d0755bf6b8156281419126ef91a25b",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-26T13:46:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40328700855"
+      "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-26T15:03:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40345454839",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 121651055977,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/electron test"
+            ]
+          },
+          {
+            "id": 121651155306,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 121651155364,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 121651155375,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121651155393,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 121651155406,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 121651155413,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 121651155466,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 121651155548,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40344852373,
@@ -50,7 +138,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -59,7 +147,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -77,7 +165,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -123,15 +211,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40343874190"
     },
     {
-      "id": 40328701213,
+      "id": 40345454886,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "93eb300170d0755bf6b8156281419126ef91a25b",
+      "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T13:13:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40328701213"
+      "updated_at": "2026-10-26T15:03:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40345454886"
     },
     {
       "id": 40344847819,
@@ -145,5 +233,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819"
     }
   ],
-  "observed_at": "2026-10-26T15:00:00+00:00"
+  "observed_at": "2026-10-26T15:03:59+00:00"
 }
