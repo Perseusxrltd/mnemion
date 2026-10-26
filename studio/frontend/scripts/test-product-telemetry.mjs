@@ -22,6 +22,7 @@ function load(url) {
 const exported = load(path)
 const { BrowserTelemetry, choiceKey, queueKey } = exported
 const { telemetryCatalog, pendingState, collect } = load(new URL('../src/workspace/telemetry-aggregate.ts', import.meta.url))
+const { TelemetrySnapshotReader } = load(new URL('../src/workspace/telemetry-refusals.ts', import.meta.url))
 const contract = createRequire(path)('../../../../mnemion/product_telemetry/disclosure.json')
 
 function installation() {
@@ -267,6 +268,83 @@ test('desktop UI snapshots forward the fixed workflow and cannot choose another 
     assert.deepEqual(calls, ['memory.recall'])
   })
 })
+
+test('desktop refusal hints are scoped, expire within a second and never reuse permission', async () => {
+  let now = 1000, result = null, calls = 0
+  const reader = new TelemetrySnapshotReader(async () => { calls++; return result }, ['memory.recall', 'memory.save'], () => now)
+  assert.equal(await reader.read('memory.recall'), null)
+  now = 1999
+  assert.equal(reader.read('memory.recall'), null)
+  assert.equal(calls, 1)
+  await reader.read('memory.save')
+  assert.equal(calls, 2)
+  now = 2000
+  result = { revision: 1, store_generation: 'a'.repeat(32) }
+  assert.equal(await reader.read('memory.recall'), result)
+  result = { revision: 2, store_generation: 'b'.repeat(32) }
+  assert.equal(await reader.read('memory.recall'), result)
+  assert.equal(calls, 4)
+})
+
+test('explicit choice changes invalidate hints and prevent late responses from rebuilding them', async () => {
+  let resolve, calls = 0
+  const reader = new TelemetrySnapshotReader(() => { calls++; return new Promise(done => { resolve = done }) }, ['memory.recall'], () => 1000)
+  const pending = reader.read('memory.recall')
+  reader.clear()
+  resolve(null)
+  await pending
+  const fresh = reader.read('memory.recall')
+  assert.equal(calls, 2)
+  resolve(null)
+  await fresh
+  assert.equal(reader.read('memory.recall'), null)
+})
+
+test('slow refusals and clock reversals cannot extend an old denial window', async () => {
+  let now = 0, resolve, calls = 0
+  const reader = new TelemetrySnapshotReader(() => { calls++; return new Promise(done => { resolve = done }) }, ['memory.recall'], () => now)
+  const slow = reader.read('memory.recall')
+  now = 1001
+  resolve(null)
+  await slow
+  const fresh = reader.read('memory.recall')
+  assert.equal(calls, 2)
+  resolve(null)
+  await fresh
+  now = 1000
+  const reversed = reader.read('memory.recall')
+  assert.equal(calls, 3)
+  resolve(null)
+  await reversed
+})
+
+test('unknown and excess scopes receive fresh checks without expanding refusal storage', async () => {
+  let calls = 0
+  const scopes = Array.from({ length: 130 }, (_, index) => 'workflow.' + index)
+  const reader = new TelemetrySnapshotReader(async () => { calls++; return null }, scopes, () => 1000)
+  await reader.read(scopes[0])
+  for (const workflow of [scopes[128], 'PRIVATE_UNKNOWN_WORKFLOW', undefined]) {
+    await reader.read(workflow)
+    await reader.read(workflow)
+  }
+  assert.equal(reader.read(scopes[0]), null)
+  assert.equal(calls, 7)
+})
+
+test('the app choice control clears desktop refusal hints before the next action', async () => browserGlobals(async () => {
+  let enabled = false, calls = 0
+  const stamp = { revision: 2, store_generation: 'a'.repeat(32) }
+  window.mnemion = {
+    productTelemetrySnapshot: async () => { calls++; return enabled ? stamp : null },
+    productTelemetry: async action => { assert.equal(action, 'telemetry.configure'); enabled = true; return {} },
+  }
+  assert.equal(await exported.productWorkflowStore.snapshot('memory.recall', 'desktop'), null)
+  assert.equal(exported.productWorkflowStore.snapshot('memory.recall', 'desktop'), null)
+  assert.equal(calls, 1)
+  await exported.telemetryConfigure({ enabled: true, expected_revision: 1, expected_generation: 'a'.repeat(32) })
+  assert.equal(await exported.productWorkflowStore.snapshot('memory.recall', 'desktop'), stamp)
+  assert.equal(calls, 2)
+}))
 
 test('a browser lock wait retains the original validated primitives and privacy stamp', async () => browserGlobals(async instance => {
   const client = instance.client(), original = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })

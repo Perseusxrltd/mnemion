@@ -22,14 +22,13 @@ export class TelemetryWorkflow {
     private readonly clock: () => number,
   ) { this.started = clock() }
 
-  static async begin(store: WorkflowStore, workflow: string, surface: string, clock = monotonicNow): Promise<TelemetryWorkflow | null> {
+  static begin(store: WorkflowStore, workflow: string, surface: string, clock = monotonicNow): Promise<TelemetryWorkflow | null> | null {
     try {
       if (!store.available || !store.catalog.workflows.includes(workflow) || !store.catalog.specification.surfaces.includes(surface)) return null
       const pending = store.snapshot(workflow, surface)
       if (pending === null) return null
-      const stamp = await pending
-      return stamp && Number.isInteger(stamp.revision) && typeof stamp.store_generation === 'string' && /^[0-9a-f]{32}$/.test(stamp.store_generation)
-        ? new TelemetryWorkflow(store, { ...stamp }, workflow, surface, clock) : null
+      return pending.then(stamp => stamp && Number.isInteger(stamp.revision) && typeof stamp.store_generation === 'string' && /^[0-9a-f]{32}$/.test(stamp.store_generation)
+        ? new TelemetryWorkflow(store, { ...stamp }, workflow, surface, clock) : null).catch(() => null)
     } catch { return null }
   }
 

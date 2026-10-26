@@ -1,4 +1,4 @@
-"""Exercise telemetry in the real development renderer, bridge and memory API.
+"""Exercise telemetry in the compiled source renderer, bridge and memory API.
 
 Requires the built desktop/SDK, a GUI display, pgserver, psutil and an explicit
 Playwright module. All configuration changes live in an owned temporary copy;
@@ -201,11 +201,6 @@ async def run(source, output, playwright):
                             copy = root / "source"
                             hashes = copy_source(source, copy)
                             write_json(output / f"{label}-inputs.json", hashes)
-                            (copy / "studio/frontend/src/owned-memory-probe.ts").write_text(
-                                "export { MnemionClient } from '@mnemion/client';\n"
-                                "export { measuredStudioClient } from './workspace/measured-client';\n"
-                                "export { nativeFetch } from './workspace/native';\n"
-                            )
                             contract = json.loads(original)
                             contract.update(
                                 collection_available=available,
@@ -241,15 +236,6 @@ async def run(source, output, playwright):
                             assert configured["effective_enabled"] is enabled
                             policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = saved_policy
                             async with memory_workspace(root) as (memory, memory_counts):
-                                write_json(
-                                    root / "probe-input.json",
-                                    {
-                                        "variant": label,
-                                        "memory": memory,
-                                        "destination": destination,
-                                    },
-                                )
-                                (root / "probe-input.json").chmod(0o600)
                                 with socket.socket() as selection:
                                     selection.bind(("127.0.0.1", 0))
                                     port = selection.getsockname()[1]
@@ -283,22 +269,52 @@ async def run(source, output, playwright):
                                     VITE_DEV_PORT=str(port),
                                     NODE_EXTRA_CA_CERTS=str(certificate),
                                 )
-                                vite = process = None
+                                builder = frontend = process = None
                                 done = asyncio.Event()
                                 observer = asyncio.create_task(observe_tree(root, done))
                                 try:
-                                    with (output / f"{label}-vite.log").open("x") as log:
-                                        vite = await asyncio.create_subprocess_exec(
+                                    build_receipt = output / f"{label}-frontend-build.json"
+                                    with (output / f"{label}-frontend-build.log").open("x") as log:
+                                        builder = await asyncio.create_subprocess_exec(
                                             "node",
                                             str(
                                                 copy
-                                                / "studio/frontend/node_modules/vite/bin/vite.js"
+                                                / "studio/frontend/scripts/build-telemetry-probe.mjs"
                                             ),
-                                            "--host",
-                                            "127.0.0.1",
-                                            "--port",
+                                            str(build_receipt),
+                                            cwd=copy / "studio/frontend",
+                                            env=environment,
+                                            stdout=log,
+                                            stderr=asyncio.subprocess.STDOUT,
+                                        )
+                                        await asyncio.wait_for(builder.wait(), 90)
+                                        if builder.returncode:
+                                            raise RuntimeError(
+                                                f"Inspect retained {label}-frontend-build.log"
+                                            )
+                                    compiled = json.loads(build_receipt.read_text())
+                                    write_json(
+                                        root / "probe-input.json",
+                                        {
+                                            "variant": label,
+                                            "memory": memory,
+                                            "destination": destination,
+                                            "probe_entry": compiled["probe_entry"],
+                                        },
+                                    )
+                                    (root / "probe-input.json").chmod(0o600)
+                                    # No development compiler remains resident during the
+                                    # workload. Serve only the compiled disposable assets.
+                                    with (output / f"{label}-frontend.log").open("x") as log:
+                                        frontend = await asyncio.create_subprocess_exec(
+                                            sys.executable,
+                                            "-m",
+                                            "http.server",
                                             str(port),
-                                            "--strictPort",
+                                            "--bind",
+                                            "127.0.0.1",
+                                            "--directory",
+                                            str(copy / "studio/frontend/dist-probe"),
                                             cwd=copy / "studio/frontend",
                                             env=environment,
                                             stdout=log,
@@ -306,7 +322,7 @@ async def run(source, output, playwright):
                                         )
                                         async with asyncio.timeout(30):
                                             while True:
-                                                if vite.returncode is not None:
+                                                if frontend.returncode is not None:
                                                     raise RuntimeError(
                                                         "Owned frontend exited before readiness"
                                                     )
@@ -335,11 +351,16 @@ async def run(source, output, playwright):
                                                 )
                                 finally:
                                     await stop(process)
-                                    await stop(vite)
+                                    await stop(frontend)
+                                    await stop(builder)
                                     done.set()
                                     samples = await observer
                                     write_json(output / f"{label}-processes.json", samples)
                                 result = json.loads((output / f"{label}.json").read_text())
+                                result["frontend"] = compiled["frontend"]
+                                result["shared_app_policy_and_client_modules"] = compiled[
+                                    "shared_app_policy_and_client_modules"
+                                ]
                                 result["collector"] = {
                                     key: counts[key] - before[key] for key in counts
                                 }

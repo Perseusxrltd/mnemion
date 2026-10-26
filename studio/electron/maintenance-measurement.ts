@@ -8,7 +8,9 @@ export async function beginMaintenance(store: MaintenanceStore | undefined, work
   if (!store || !workflows.has(workflow)) return null
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    return await Promise.race([TelemetryWorkflow.begin(store(), workflow, 'desktop'),
+    const pending = TelemetryWorkflow.begin(store(), workflow, 'desktop')
+    if (pending === null) return null
+    return await Promise.race([pending,
       new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })])
   } catch { return null }
   finally { if (timer) clearTimeout(timer) }

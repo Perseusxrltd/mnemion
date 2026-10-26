@@ -5,6 +5,7 @@ import { desktopIpcOrigins, desktopIpcSelection, desktopTelemetryOrigins, deskto
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { windowsTelemetryPrivateExecutable } from '../dist/telemetry-private-store.js'
+import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
 
 const catalog = new TelemetryCatalog(nativeTelemetryDefinitions().catalog)
 function fixture() {
@@ -15,6 +16,18 @@ function fixture() {
   }
   return { store, values, reads }
 }
+
+test('a synchronous refusal starts the original action without a timer or an await boundary', async t => {
+  const f = fixture(), result = { private: 'PRIVATE_ACTION_RESULT' }
+  f.store.snapshot = () => null
+  assert.equal(TelemetryWorkflow.begin(f.store, 'memory.recall', 'desktop'), null)
+  t.mock.method(globalThis, 'setTimeout', () => { throw new Error('Refused telemetry created a timer') })
+  let called = false
+  const pending = measureDesktop(f.store, 'local.create', {}, 'desktop', () => { called = true; return result })
+  assert.equal(called, true)
+  assert.equal(await pending, result)
+  assert.equal(f.values.length, 0)
+})
 
 test('every native operator action and supported UI entry has a reviewed classification', () => {
   assert.deepEqual(Object.keys(desktopTelemetryOrigins.operations).sort(), Object.keys(desktopActions).sort())

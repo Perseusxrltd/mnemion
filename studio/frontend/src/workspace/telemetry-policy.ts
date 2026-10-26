@@ -7,6 +7,7 @@ import { budgetKey, budgetState, budgetView, freshBudget, serializeBudget, choic
 import { BrowserTelemetryDelivery, type BrowserDeliveryEnvironment } from './telemetry-delivery'
 import { BrowserTelemetryActivity } from './telemetry-activity'
 import { browserCompanyPolicy, parseCompanyPolicy, restrictCompanyPolicy } from './telemetry-company'
+import { TelemetrySnapshotReader } from './telemetry-refusals'
 
 export { choiceKey, queueKey } from './telemetry-budget'
 export { browserCompanyPolicy } from './telemetry-company'
@@ -226,6 +227,7 @@ export class BrowserTelemetry {
 const browser: BrowserTelemetry = new BrowserTelemetry(undefined, undefined, undefined, undefined,
   { conditions: () => browserActivity.conditions.read() })
 const browserActivity: BrowserTelemetryActivity = new BrowserTelemetryActivity(browser)
+let desktopSnapshots: TelemetrySnapshotReader | undefined
 
 export async function telemetryStatus(): Promise<TelemetryStatus> {
   if (window.mnemion?.productTelemetry) return window.mnemion.productTelemetry('telemetry.status')
@@ -234,7 +236,11 @@ export async function telemetryStatus(): Promise<TelemetryStatus> {
 }
 
 export async function telemetryConfigure(input: TelemetryChoice): Promise<TelemetryStatus> {
-  if (window.mnemion?.productTelemetry) return window.mnemion.productTelemetry('telemetry.configure', input)
+  if (window.mnemion?.productTelemetry) {
+    desktopSnapshots?.clear()
+    try { return await window.mnemion.productTelemetry('telemetry.configure', input) }
+    finally { desktopSnapshots?.clear() }
+  }
   if (window.location.protocol === 'file:') throw new Error('This desktop does not provide product telemetry controls.')
   if (!navigator.locks) throw new Error('This browser cannot coordinate privacy settings between tabs. Product telemetry remains unavailable.')
   browserActivity.invalidate()
@@ -277,15 +283,17 @@ export function telemetrySurface(): 'desktop' | 'browser' {
 export const productWorkflowStore: WorkflowStore = {
   get available() { return contract.collection_available && Boolean(contract.destination) },
   catalog: telemetryCatalog,
-  async snapshot(workflow, surface) {
+  snapshot(workflow, surface) {
     if (!this.available) return null
     if (window.mnemion?.productTelemetrySnapshot) {
       if (surface !== undefined && surface !== 'desktop') return null
-      return window.mnemion.productTelemetrySnapshot(workflow)
+      const invoke = window.mnemion.productTelemetrySnapshot
+      if (desktopSnapshots?.invoke !== invoke) desktopSnapshots = new TelemetrySnapshotReader(invoke, telemetryCatalog.workflows)
+      return desktopSnapshots.read(workflow)
     }
     if (window.location.protocol === 'file:') return null
     const status = browser.status()
-    return status.effective_enabled ? { revision: status.revision, store_generation: status.store_generation } : null
+    return status.effective_enabled ? Promise.resolve({ revision: status.revision, store_generation: status.store_generation }) : null
   },
   async recordMany(values, stamp) {
     if (!this.available) return false

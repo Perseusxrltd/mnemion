@@ -15,10 +15,13 @@ export async function measureUiAction<T>(
     const entries: Record<string, Spec> = origins[boundary]
     spec = Object.hasOwn(entries, action) ? entries[action] : undefined
     if (spec && store.available && (boundary !== 'browser' || surface === 'browser')) {
-      let timer: ReturnType<typeof setTimeout> | undefined
-      try { measurement = await Promise.race([TelemetryWorkflow.begin(store, spec.workflow, surface),
-        new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
-      finally { if (timer) clearTimeout(timer) }
+      const pending = TelemetryWorkflow.begin(store, spec.workflow, surface)
+      if (pending !== null) {
+        let timer: ReturnType<typeof setTimeout> | undefined
+        try { measurement = await Promise.race([pending,
+          new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
+        finally { if (timer) clearTimeout(timer) }
+      }
     }
   } catch { /* Optional collection cannot prevent the original action. */ }
   let result: T

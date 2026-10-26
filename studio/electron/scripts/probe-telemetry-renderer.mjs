@@ -1,4 +1,4 @@
-/** Owned development-app diagnostic. Never loads an installed user profile. */
+/** Owned compiled-source diagnostic. Never loads an installed user profile. */
 import { readFileSync, writeFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -8,7 +8,8 @@ const root = process.env.MNEMION_STUDIO_USER_DATA
 if (!root?.includes('mnemion-owned-renderer-')) throw new Error('Disposable renderer profile required')
 const input = JSON.parse(readFileSync(join(root, 'probe-input.json'), 'utf8'))
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(input.memory.base_url) ||
-    !/^https:\/\/localhost:\d+\/v1\/report$/.test(input.destination)) throw new Error('Owned loopback fixtures required')
+    !/^https:\/\/localhost:\d+\/v1\/report$/.test(input.destination) ||
+    !/^\/assets\/[A-Za-z0-9._-]+\.js$/.test(input.probe_entry)) throw new Error('Owned loopback fixtures required')
 const application = join(root, 'source/studio/electron')
 const marker = value => {
   const file = join(root, 'monitor.json')
@@ -107,15 +108,15 @@ async function controller() {
     await page.getByRole('form', { name: 'Connect a workspace' }).getByRole('button', { name: 'Open workspace', exact: true }).click()
     await page.getByRole('heading', { name: 'Welcome to Mnemion' }).waitFor({ state: 'hidden' })
     await sample('workspace_connected')
-    const connection = await page.evaluate(async () => {
+    const connection = await page.evaluate(async entry => {
       const session = await window.mnemion.workspaceResume()
       if (!session?.sessionToken || session.remembered) throw new Error('Session-only native connection required')
-      const { MnemionClient, measuredStudioClient, nativeFetch } = await import('/src/owned-memory-probe.ts')
+      const { MnemionClient, measuredStudioClient, nativeFetch } = await import(entry)
       window.__mnemionMemoryProbe = { client: measuredStudioClient(new MnemionClient({
         baseUrl: session.endpoint, apiKey: session.sessionToken, retries: 0, fetch: nativeFetch,
       })), latencies: [], cycles: 0 }
       return { native_handle_only: /^mnm_session_[A-Za-z0-9_-]{43}$/.test(session.sessionToken), remembered: session.remembered }
-    })
+    }, input.probe_entry)
     if (!connection.native_handle_only) throw new Error('Renderer received a workspace key instead of a handle')
     async function cycles(number) {
       await page.evaluate(async ({ number, space }) => {
@@ -160,7 +161,7 @@ async function controller() {
       elapsed_ms: last.at_ms - first.at_ms, rss_delta_bytes: total(last) - total(first),
       sampled_peak_rss_delta_bytes: Math.max(...samples.map(total)) - total(first),
       memory_api_operations: result.memory_cycles * 3, forced_gc: false, idle_padding: false,
-      qualification: 'Real development app onboarding, renderer SDK and sandboxed IPC; fixed synthetic memory work. Electron working-set sums double-count shared pages. External sampler also covers observed helper descendants. Not installed-platform, stable resource-ceiling, embedding-quality or whole-wire acceptance.',
+      qualification: 'Compiled source UI with real app onboarding, shared renderer SDK and sandboxed IPC; fixed synthetic memory work. Electron working-set sums double-count shared pages. External sampler also covers observed helper descendants. Not installed-platform, stable resource-ceiling, embedding-quality or whole-wire acceptance.',
       production_collection_available: false, model_calls: 0,
     }, null, 2) + '\n', { flag: 'wx' })
   } catch (error) {
@@ -177,7 +178,7 @@ async function controller() {
 
 if (process.versions.electron) await bootstrap()
 else {
-  // Match the SDK used by the copied app; the browser module is served by the
-  // same owned Vite instance. This value contains no credential or user path.
+  // The app and measurement entry share one compiled module graph, served as
+  // static files. No development compiler runs during the measured interval.
   await controller().catch(error => { console.error(error); process.exitCode = 1 })
 }

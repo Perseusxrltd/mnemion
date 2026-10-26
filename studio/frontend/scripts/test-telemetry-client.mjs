@@ -113,6 +113,17 @@ test('optional UI storage failure and fixed-name exclusions preserve the origina
   assert.equal(f.rows.length, 0)
 })
 
+test('an immediate refusal does not schedule a timer or defer the original UI action', async t => {
+  const f = fixture(() => Response.json({})), result = { private: 'PRIVATE_ACTION_RESULT' }
+  f.store.snapshot = () => null
+  t.mock.method(globalThis, 'setTimeout', () => { throw new Error('Refused telemetry created a timer') })
+  let called = false
+  const pending = measureUiAction('browser', 'connect', () => { called = true; return result }, undefined, f.store, 'browser')
+  assert.equal(called, true)
+  assert.equal(await pending, result)
+  assert.equal(f.rows.length, 0)
+})
+
 test('all current SDK methods have a reviewed Studio owner or explicit exclusion', () => {
   const names = Object.getOwnPropertyNames(sdk.MnemionClient.prototype).filter(name => name !== 'constructor')
   assert.deepEqual([...Object.keys(methods.methods), ...Object.keys(methods.excluded)].sort(), names.sort())

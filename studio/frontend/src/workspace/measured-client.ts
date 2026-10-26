@@ -25,10 +25,13 @@ async function observed<T>(client: MnemionClient, store: WorkflowStore, method: 
   try {
     selection = studioMeasurementSelection(method, arguments_)
     if (selection && store.available) {
-      let timer: ReturnType<typeof setTimeout> | undefined
-      try { measurement = await Promise.race([TelemetryWorkflow.begin(store, selection.workflow, surface),
-        new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
-      finally { if (timer) clearTimeout(timer) }
+      const pending = TelemetryWorkflow.begin(store, selection.workflow, surface)
+      if (pending !== null) {
+        let timer: ReturnType<typeof setTimeout> | undefined
+        try { measurement = await Promise.race([pending,
+          new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
+        finally { if (timer) clearTimeout(timer) }
+      }
     }
   } catch { /* Optional collection cannot prevent the user's action. */ }
   let result: T

@@ -57,10 +57,13 @@ export async function measureDesktop<T>(store: WorkflowStore, action: string, in
     if (selection && store.available) {
       // Slow, blocked or unavailable optional privacy I/O cannot hold an app
       // action for the helper's timeout. A late snapshot produces no sample.
-      let timer: ReturnType<typeof setTimeout> | undefined
-      try { measurement = await Promise.race([TelemetryWorkflow.begin(store, selection.workflow, surface),
-        new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
-      finally { if (timer) clearTimeout(timer) }
+      const pending = TelemetryWorkflow.begin(store, selection.workflow, surface)
+      if (pending !== null) {
+        let timer: ReturnType<typeof setTimeout> | undefined
+        try { measurement = await Promise.race([pending,
+          new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
+        finally { if (timer) clearTimeout(timer) }
+      }
     }
   } catch { /* Keep the original action available without telemetry. */ }
   let result: T

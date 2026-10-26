@@ -104,3 +104,13 @@ Earlier [memory-workload](2026-10-25-telemetry-memory-profile.md) and
 scope. Installed native/web journeys, stable whole-feature resources,
 whole-wire costs, production ingress/privacy and complete V08 acceptance remain
 open. All 66 requirement texts and states are preserved.
+
+## Refusal-hint source follow-up — 26 October
+
+The later [renderer refusal optimization](2026-10-26-telemetry-renderer-refusals.md)
+adds workflow-scoped negative hints lasting at most one second, with fresh
+positive policy reads and immediate app-configuration invalidation. Focused
+source checks passed, but its development attempt was deliberately stopped and
+its compiled attempt refused before launch for insufficient host memory. There
+is no new renderer/resource pass; the observations above retain their original
+source and scope, and the resource targets remain unaccepted.
