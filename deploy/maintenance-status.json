@@ -55,7 +55,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -184,12 +184,6 @@
       "updated_at": "2026-10-26T20:17:47Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-11-arm / arm64",
@@ -202,7 +196,13 @@
             "Retain generated desktop-content secret scan receipt"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
     },
     {
       "id": 40391018946,
@@ -210,50 +210,66 @@
       "workflow": "release.yml",
       "branch": "release/4.46.27",
       "source_commit": "4b8e8a3e407970c271600be803e387b0143a70c7",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-26T20:18:22Z",
+      "updated_at": "2026-10-26T20:19:02Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 8,
-        "completed": 4,
-        "succeeded": 3,
+        "total": 13,
+        "completed": 7,
+        "succeeded": 6,
         "active": [
-          {
-            "id": 121823598459,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install pytest cryptography==50.0.2"
-            ]
-          },
           {
             "id": 121823598507,
             "name": "native / Encrypted files / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+            ]
+          },
+          {
+            "id": 121823975047,
+            "name": "native / native_database / Database / linux / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
+            ]
+          },
+          {
+            "id": 121823975122,
+            "name": "native / native_database / Database / macos / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
               "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           },
           {
-            "id": 121823598885,
-            "name": "native / native_database / Private state / Windows / x64",
+            "id": 121823975141,
+            "name": "native / native_database / Database / macos / arm64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 121823975183,
+            "name": "native / native_database / Database / linux / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Install small private-state test dependencies"
+              "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
             ]
           },
           {
-            "id": 121823599129,
-            "name": "native / native_database / Private state / Windows / arm64",
+            "id": 121823975238,
+            "name": "native / native_database / Database / windows / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Retain the compiled Windows archive for probe diagnosis"
             ]
           }
         ]
@@ -294,5 +310,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T20:18:33+00:00"
+  "observed_at": "2026-10-26T20:19:20+00:00"
 }
