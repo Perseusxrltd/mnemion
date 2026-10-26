@@ -101,7 +101,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
         Boolean(database.prepare('SELECT 1 FROM pending WHERE window_day >= ? AND window_day <= ? LIMIT 1')
           .get(Math.floor(now / DAY) - 1, Math.floor(now / DAY)))
     } catch { return false }
-    finally { try { database?.close() } catch { /* No implicit repair or observation. */ } }
+    finally { this.closeDatabase(database) }
   }
 
   async reserve(stamp: TelemetryStamp, network: Network = { network: 'unknown', constrained: true }, cohorts: unknown = {}): Promise<PreparedTelemetryReport | null> {
@@ -149,7 +149,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       return new PreparedTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE,
         this.wire().specification.views[this.wire().decode(body).view].group)
     } catch { return null }
-    finally { try { database?.close() } catch { /* Optional delivery cannot fail memory work. */ } }
+    finally { this.closeDatabase(database) }
   }
 
   private permitted(database: DatabaseSync, report: PreparedTelemetryReport): boolean {
@@ -177,7 +177,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
         valid = this.permitted(database, report)
       }
     } catch { /* Fail closed on unreadable, busy or damaged settings. */ }
-    finally { try { database?.close() } catch { /* No retry or diagnostics. */ } }
+    finally { this.closeDatabase(database) }
     if (!valid && report instanceof PreparedTelemetryReport) await this.cancel(report)
     return valid
   }
@@ -195,7 +195,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       database.prepare('UPDATE delivery_state SET lease_token=NULL, lease_deadline_ms=0 WHERE singleton=1 AND lease_token=?').run(ticket)
       database.exec('COMMIT')
     } catch { /* Spending remains consumed; an orphaned lease expires. */ }
-    finally { try { database?.close() } catch { /* No retry or diagnostics. */ } }
+    finally { this.closeDatabase(database) }
   }
 
   /** Only a reviewed synchronous nonblocking socket handoff belongs here.
@@ -217,7 +217,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       database.exec('COMMIT')
     } catch { result = false }
     finally {
-      try { database?.close() } catch { /* No retry or diagnostics. */ }
+      this.closeDatabase(database)
       if (owned || !report.used) {
         report.eraseBody()
         if (!result) await this.cancel(report)

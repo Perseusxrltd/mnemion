@@ -63,6 +63,16 @@ still needs broader native, publication and installed backup/recovery
 acceptance. All **66 requirement texts and states** remain unchanged; V08 stays
 Building with production collection unavailable.
 
+## Later fixture guard, 26 October 2026
+
+A separate [source follow-up](2026-10-26-telemetry-sqlite-cleanup.md#windows-fixture-guard)
+changes the installed Windows probe's pre-install guard to recognize
+version-suffixed `Mnemion Studio` display names. A read-only registry observation
+confirmed the installed name `Mnemion Studio 4.46.6`; the app was not started or
+changed. This protects existing installations during future fixture execution.
+It does not diagnose the backup timeout, constitute a new installed acceptance,
+or change the already-frozen 4.46.12 candidate.
+
 ## SHA-256 provenance
 
 | Retained evidence | SHA-256 |

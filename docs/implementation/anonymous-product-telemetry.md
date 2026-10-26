@@ -169,6 +169,15 @@ ending and sampled-peak RSS observations differ and are not stable overhead
 estimates. The **2 MiB RSS / 0.5% CPU** targets remain unchanged and unaccepted,
 as do installed-platform, whole-wire and production privacy qualification.
 
+The 26 October [SQLite cleanup source follow-up](../validation/2026-10-26-telemetry-sqlite-cleanup.md)
+requests `PRAGMA shrink_memory` before closing native telemetry connections,
+without retaining a connection or positive policy cache. The Electron build and
+44 focused checks passed, with two Windows-only skips. Two small synthetic
+subprocess observations explore the mechanism; they do not establish a causal
+RSS improvement or qualify the unchanged resource targets. No full-resource
+journey has been repeated for this change. It is excluded from the already-frozen
+4.46.12 candidate; production collection remains unavailable.
+
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
 bounded private publisher in source. Their conditional per-report privacy bound

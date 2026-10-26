@@ -68,7 +68,7 @@ async function install() {
     for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key]
     run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
       '$ErrorActionPreference="Stop"; $entries=Get-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*" -ErrorAction SilentlyContinue; '
-      + 'if ($entries | Where-Object { $_.DisplayName -eq "Mnemion Studio" }) { throw "Refusing to modify an existing Mnemion installation" }; '
+      + 'if ($entries | Where-Object { $_.DisplayName -like "Mnemion Studio*" }) { throw "Refusing to modify an existing Mnemion installation" }; '
       + '$p=Start-Process -FilePath $env:MNEMION_PROBE_INSTALLER -ArgumentList @("/S","/currentuser",("/D="+$env:MNEMION_PROBE_INSTALL_DIRECTORY)) -PassThru -Wait; exit $p.ExitCode'], { env })
     executable = join(installed, 'Mnemion Studio.exe')
   } else if (process.platform === 'darwin') {

@@ -140,7 +140,15 @@ export class NativeTelemetryStore {
       database.exec('PRAGMA busy_timeout=0; PRAGMA trusted_schema=OFF; PRAGMA cache_size=-128; PRAGMA mmap_size=0;')
       if (write) database.exec('PRAGMA secure_delete=ON; PRAGMA synchronous=FULL; PRAGMA max_page_count=24;')
       return database
-    } catch (error) { database.close(); throw error }
+    } catch (error) { this.closeDatabase(database); throw error }
+  }
+
+  /** Release reclaimable SQLite allocations before closing each transaction's
+   * connection, without retaining a handle, statements or positive policy cache. */
+  protected closeDatabase(database?: DatabaseSync): void {
+    if (!database) return
+    try { database.exec('PRAGMA shrink_memory') } catch { /* Closing still owns rollback and cleanup. */ }
+    try { database.close() } catch { /* Optional storage cannot fail memory work. */ }
   }
 
   protected preferences(database: DatabaseSync): Preference {
@@ -182,7 +190,7 @@ export class NativeTelemetryStore {
       }
       return { revision: preference.revision, store_generation: preference.store_generation }
     } catch { return null }
-    finally { try { database?.close() } catch { /* Optional observation never breaks the caller. */ } }
+    finally { this.closeDatabase(database) }
   }
 
   record(input: unknown, stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): Promise<boolean> {
@@ -244,6 +252,6 @@ export class NativeTelemetryStore {
       this.rememberExhausted(exhausted, day)
       return recorded
     } catch { return false }
-    finally { try { database?.close() } catch { /* Optional observation never breaks the caller. */ } }
+    finally { this.closeDatabase(database) }
   }
 }
