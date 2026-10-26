@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T15:00:00+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T15:36:21+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.19](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.19). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,21 +16,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40328700855](https://github.com/Perseusxrltd/mnemion/actions/runs/40328700855) |
-| public-updates\.yml | v4\.46\.19 | queued | [Run 40344852373](https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373) |
+| ci\.yml | main | success | [Run 40345454839](https://github.com/Perseusxrltd/mnemion/actions/runs/40345454839) |
+| public-updates\.yml | v4\.46\.19 | success | [Run 40344852373](https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373) |
 | release\.yml | release/4\.46\.19 | success | [Run 40333990605](https://github.com/Perseusxrltd/mnemion/actions/runs/40333990605) |
 | verify-artifacts\.yml | main | success | [Run 40343874190](https://github.com/Perseusxrltd/mnemion/actions/runs/40343874190) |
-| website-release\.yml | main | success | [Run 40328701213](https://github.com/Perseusxrltd/mnemion/actions/runs/40328701213) |
+| website-release\.yml | main | success | [Run 40345454886](https://github.com/Perseusxrltd/mnemion/actions/runs/40345454886) |
 | website-release\.yml | v4\.46\.19 | success | [Run 40344847819](https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819) |
-
-## Active jobs
-
-[Run 40344852373](https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373): 1/7 jobs completed; 1 succeeded.
-
-- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / arm64 public upgrade: queued.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-
