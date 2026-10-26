@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T14:53:59+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T14:59:12+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.13](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.13). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114) |
+| ci\.yml | main | failure | [Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114) |
 | database-cache\.yml | main | success | [Run 40304827056](https://github.com/Perseusxrltd/mnemion/actions/runs/40304827056) |
 | desktop\.yml | main | success | [Run 40324338816](https://github.com/Perseusxrltd/mnemion/actions/runs/40324338816) |
 | public-updates\.yml | v4\.46\.13 | success | [Run 40268195296](https://github.com/Perseusxrltd/mnemion/actions/runs/40268195296) |
@@ -30,19 +30,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114): 10/12 jobs completed; 8 succeeded.
+[Run 40343874190](https://github.com/Perseusxrltd/mnemion/actions/runs/40343874190): 1/2 jobs completed; 1 succeeded.
 
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 40343874190](https://github.com/Perseusxrltd/mnemion/actions/runs/40343874190): 0/1 jobs completed; 0 succeeded.
-
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+- publish: in\_progress — Publish unchanged verified assets and dispatch public follow-ups.
 
 
 ## Unsuccessful jobs
 
+- [Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114): service \(3\.12\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - [Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
+- [Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114): service \(3\.14\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - [Run 40340059114](https://github.com/Perseusxrltd/mnemion/actions/runs/40340059114): service \(3\.13\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - [Run 40286600426](https://github.com/Perseusxrltd/mnemion/actions/runs/40286600426): native / windows-11-arm / arm64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
 - [Run 40293480655](https://github.com/Perseusxrltd/mnemion/actions/runs/40293480655): native / ubuntu-22\.04 / x64 (failure). Steps: Package the native desktop with one bounded upstream-download retry, Retain generated desktop-content secret scan receipt.
