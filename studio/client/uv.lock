@@ -138,7 +138,7 @@ wheels = [
 
 [[package]]
 name = "mnemion-desktop-build"
-version = "4.46.12"
+version = "4.46.13"
 source = { virtual = "." }
 dependencies = [
     { name = "certifi" },
