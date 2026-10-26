@@ -34,73 +34,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.28",
       "source_commit": "f40a4bbc9cbca435c0b06292dd808fcd45ffe5ae",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-26T22:17:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 121882310487,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 121882310492,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 121882310503,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 121882310574,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 121882310606,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 121882310826,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T22:29:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731"
     },
     {
       "id": 40399013490,
@@ -135,7 +72,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -144,7 +81,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron ci"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -153,7 +90,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -171,7 +108,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -180,10 +117,29 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
+      },
+      "failed_jobs": []
+    },
+    {
+      "id": 40412022100,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.30",
+      "source_commit": "cce346d4085661406b62cabedde0afaa34f38d50",
+      "status": "pending",
+      "conclusion": null,
+      "updated_at": "2026-10-26T22:23:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -221,5 +177,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189"
     }
   ],
-  "observed_at": "2026-10-26T22:21:27+00:00"
+  "observed_at": "2026-10-26T22:29:34+00:00"
 }

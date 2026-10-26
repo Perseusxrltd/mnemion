@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T22:21:27+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T22:29:34+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,30 +17,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 40408566855](https://github.com/Perseusxrltd/mnemion/actions/runs/40408566855) |
-| public-updates\.yml | v4\.46\.28 | in\_progress | [Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731) |
+| public-updates\.yml | v4\.46\.28 | success | [Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731) |
 | release\.yml | release/4\.46\.28 | success | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
 | release\.yml | release/4\.46\.29 | in\_progress | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
+| release\.yml | release/4\.46\.30 | pending | [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100) |
 | verify-artifacts\.yml | main | success | [Run 40410428285](https://github.com/Perseusxrltd/mnemion/actions/runs/40410428285) |
 | website-release\.yml | main | success | [Run 40393765519](https://github.com/Perseusxrltd/mnemion/actions/runs/40393765519) |
 | website-release\.yml | v4\.46\.28 | success | [Run 40411254189](https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189) |
 
 ## Active jobs
 
-[Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731): 1/7 jobs completed; 1 succeeded.
-
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-
 [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 15/21 jobs completed; 14 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / windows-11-arm / arm64: in\_progress — Run npm --prefix studio/electron ci.
-- native / ubuntu-22\.04 / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 - native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / macos-15 / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
