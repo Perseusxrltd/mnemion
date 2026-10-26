@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T20:14:42+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T20:18:33+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,30 +21,28 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.22 | success | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
 | release\.yml | release/4\.46\.24 | failure | [Run 40372679179](https://github.com/Perseusxrltd/mnemion/actions/runs/40372679179) |
 | release\.yml | release/4\.46\.25 | failure | [Run 40376743057](https://github.com/Perseusxrltd/mnemion/actions/runs/40376743057) |
-| release\.yml | release/4\.46\.26 | in\_progress | [Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169) |
-| release\.yml | release/4\.46\.27 | pending | [Run 40391018946](https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946) |
-| verify-artifacts\.yml | main | skipped | [Run 40389518102](https://github.com/Perseusxrltd/mnemion/actions/runs/40389518102) |
+| release\.yml | release/4\.46\.26 | failure | [Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169) |
+| release\.yml | release/4\.46\.27 | in\_progress | [Run 40391018946](https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946) |
+| verify-artifacts\.yml | main | skipped | [Run 40394365139](https://github.com/Perseusxrltd/mnemion/actions/runs/40394365139) |
 | website-release\.yml | main | success | [Run 40393765519](https://github.com/Perseusxrltd/mnemion/actions/runs/40393765519) |
 | website-release\.yml | v4\.46\.22 | success | [Run 40366540445](https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445) |
 
 ## Active jobs
 
-[Run 40393765425](https://github.com/Perseusxrltd/mnemion/actions/runs/40393765425): 3/12 jobs completed; 3 succeeded.
+[Run 40393765425](https://github.com/Perseusxrltd/mnemion/actions/runs/40393765425): 7/12 jobs completed; 7 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/electron test.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 - supervision \(macos-15\): queued.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 40384317169](https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169): 19/21 jobs completed; 17 succeeded.
+[Run 40391018946](https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946): 4/8 jobs completed; 3 succeeded.
 
-- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
-- native / macos-15-intel / x64: in\_progress — Packaged Mac update, restart guards and relaunch.
+- native / Encrypted files / Windows / x64: in\_progress — Run python -m pip install pytest cryptography==50\.0\.2.
+- native / Encrypted files / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / native\_database / Private state / Windows / x64: in\_progress — Install small private-state test dependencies.
+- native / native\_database / Private state / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
 
 
 ## Unsuccessful jobs
