@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T22:58:45+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T23:48:05+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.28](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.28). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,18 +16,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40413510185](https://github.com/Perseusxrltd/mnemion/actions/runs/40413510185) |
+| ci\.yml | main | success | [Run 40416515726](https://github.com/Perseusxrltd/mnemion/actions/runs/40416515726) |
 | public-updates\.yml | v4\.46\.28 | success | [Run 40411258731](https://github.com/Perseusxrltd/mnemion/actions/runs/40411258731) |
 | release\.yml | release/4\.46\.28 | success | [Run 40399013490](https://github.com/Perseusxrltd/mnemion/actions/runs/40399013490) |
-| release\.yml | release/4\.46\.29 | in\_progress | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
-| release\.yml | release/4\.46\.30 | pending | [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100) |
-| verify-artifacts\.yml | main | success | [Run 40410428285](https://github.com/Perseusxrltd/mnemion/actions/runs/40410428285) |
-| website-release\.yml | main | success | [Run 40415692444](https://github.com/Perseusxrltd/mnemion/actions/runs/40415692444) |
+| release\.yml | release/4\.46\.29 | success | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
+| release\.yml | release/4\.46\.30 | failure | [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100) |
+| release\.yml | release/4\.46\.31 | cancelled | [Run 40417437026](https://github.com/Perseusxrltd/mnemion/actions/runs/40417437026) |
+| verify-artifacts\.yml | main | skipped | [Run 40422136119](https://github.com/Perseusxrltd/mnemion/actions/runs/40422136119) |
+| website-release\.yml | main | success | [Run 40416515248](https://github.com/Perseusxrltd/mnemion/actions/runs/40416515248) |
 | website-release\.yml | v4\.46\.28 | success | [Run 40411254189](https://github.com/Perseusxrltd/mnemion/actions/runs/40411254189) |
 
-## Active jobs
+## Unsuccessful jobs
 
-[Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477): 20/21 jobs completed; 19 succeeded.
-
-- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
-
+- [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100): native / windows-11-arm / arm64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
+- [Run 40412022100](https://github.com/Perseusxrltd/mnemion/actions/runs/40412022100): native / windows-2022 / x64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
