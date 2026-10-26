@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T03:40:42+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T04:02:42+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,39 +16,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40265169379](https://github.com/Perseusxrltd/mnemion/actions/runs/40265169379) |
+| ci\.yml | main | pending | [Run 40266942861](https://github.com/Perseusxrltd/mnemion/actions/runs/40266942861) |
 | desktop\.yml | main | success | [Run 40251151874](https://github.com/Perseusxrltd/mnemion/actions/runs/40251151874) |
 | release\.yml | release/4\.46\.10 | failure | [Run 40245659798](https://github.com/Perseusxrltd/mnemion/actions/runs/40245659798) |
 | release\.yml | release/4\.46\.11 | failure | [Run 40254768233](https://github.com/Perseusxrltd/mnemion/actions/runs/40254768233) |
 | release\.yml | release/4\.46\.12 | failure | [Run 40258369359](https://github.com/Perseusxrltd/mnemion/actions/runs/40258369359) |
 | release\.yml | release/4\.46\.13 | in\_progress | [Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121) |
-| release\.yml | release/4\.46\.7 | cancelled | [Run 40234157718](https://github.com/Perseusxrltd/mnemion/actions/runs/40234157718) |
 | release\.yml | release/4\.46\.8 | cancelled | [Run 40236329055](https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055) |
 | release\.yml | release/4\.46\.9 | cancelled | [Run 40243385008](https://github.com/Perseusxrltd/mnemion/actions/runs/40243385008) |
 | verify-artifacts\.yml | main | skipped | [Run 40263253780](https://github.com/Perseusxrltd/mnemion/actions/runs/40263253780) |
-| website-release\.yml | main | success | [Run 40265169440](https://github.com/Perseusxrltd/mnemion/actions/runs/40265169440) |
+| website-release\.yml | main | success | [Run 40266942758](https://github.com/Perseusxrltd/mnemion/actions/runs/40266942758) |
 
 ## Active jobs
 
-[Run 40265169379](https://github.com/Perseusxrltd/mnemion/actions/runs/40265169379): 3/12 jobs completed; 3 succeeded.
+[Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121): 31/32 jobs completed; 30 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04\): in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
-
-[Run 40262676121](https://github.com/Perseusxrltd/mnemion/actions/runs/40262676121): 27/32 jobs completed; 26 succeeded.
-
-- checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04 / x64: in\_progress — Linux encrypted workspace reconnect after process restart.
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 
 
 ## Unsuccessful jobs
