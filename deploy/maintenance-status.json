@@ -18,15 +18,67 @@
   ],
   "runs": [
     {
-      "id": 40385484447,
+      "id": 40393765425,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "4b8e8a3e407970c271600be803e387b0143a70c7",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-26T19:46:23Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40385484447"
+      "source_commit": "f40a4bbc9cbca435c0b06292dd808fcd45ffe5ae",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-26T20:13:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40393765425",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 7,
+        "succeeded": 7,
+        "active": [
+          {
+            "id": 121821361817,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 121821361863,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 121821361869,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 121821361925,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 121821361936,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40366545289,
@@ -127,93 +179,124 @@
       "workflow": "release.yml",
       "branch": "release/4.46.26",
       "source_commit": "d2e55fbf12400004c8e931a8e53a492e46a279c5",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-26T19:46:45Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-26T20:17:47Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40384317169",
       "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 121807385800,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 39,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        }
+      ],
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
+    },
+    {
+      "id": 40391018946,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.27",
+      "source_commit": "4b8e8a3e407970c271600be803e387b0143a70c7",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-26T20:19:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40391018946",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 13,
+        "completed": 7,
+        "succeeded": 6,
         "active": [
           {
-            "id": 121807385661,
-            "name": "native / ubuntu-22.04-arm / arm64",
+            "id": 121823598507,
+            "name": "native / Encrypted files / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
-            "id": 121807385681,
-            "name": "native / ubuntu-22.04 / x64",
+            "id": 121823975047,
+            "name": "native / native_database / Database / linux / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install uv==0.12.24"
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
             ]
           },
           {
-            "id": 121807385710,
-            "name": "native / windows-2022 / x64",
+            "id": 121823975122,
+            "name": "native / native_database / Database / macos / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv sync --project studio/client --locked --python \"C:\\hostedtoolcache\\windows\\Python\\3.13.17\\x64\\python.exe\" --no-managed-python"
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           },
           {
-            "id": 121807385724,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Locked native service build dependencies"
-            ]
-          },
-          {
-            "id": 121807385800,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 121807385814,
-            "name": "native / macos-15 / arm64",
+            "id": 121823975141,
+            "name": "native / native_database / Database / macos / arm64",
             "status": "queued",
-            "runner_assigned": null,
+            "runner_assigned": false,
             "steps": []
+          },
+          {
+            "id": 121823975183,
+            "name": "native / native_database / Database / linux / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+            ]
+          },
+          {
+            "id": 121823975238,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Retain the compiled Windows archive for probe diagnosis"
+            ]
           }
         ]
       },
       "failed_jobs": []
     },
     {
-      "id": 40389518102,
+      "id": 40394365139,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "3b55053f31336382a2d736ea1ee873ac0fb7f169",
+      "source_commit": "531b5f07a68c0a6f48cbfb1b42c99c12bc1286b6",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-26T19:45:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40389518102"
+      "updated_at": "2026-10-26T20:17:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40394365139"
     },
     {
-      "id": 40385484524,
+      "id": 40393765519,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "4b8e8a3e407970c271600be803e387b0143a70c7",
+      "source_commit": "f40a4bbc9cbca435c0b06292dd808fcd45ffe5ae",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-26T19:18:17Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40385484524"
+      "updated_at": "2026-10-26T20:14:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40393765519"
     },
     {
       "id": 40366540445,
@@ -227,5 +310,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445"
     }
   ],
-  "observed_at": "2026-10-26T19:47:14+00:00"
+  "observed_at": "2026-10-26T20:19:20+00:00"
 }
