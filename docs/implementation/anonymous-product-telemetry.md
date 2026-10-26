@@ -214,7 +214,16 @@ budget revision is selected. The **2 MiB / 0.5%** gates remain unchanged and
 unaccepted. That diagnostic remains separate from the now-published 4.46.13
 native-control qualification; collection stays false/null/null.
 
-The resulting [CPU admission change](../validation/2026-10-26-telemetry-cpu-admission.md)
+The later [storage-slot source follow-up](../validation/2026-10-26-telemetry-storage-slot.md)
+reproduced 32 simultaneous SQLite handles in a 32-call burst. A nonwaiting slot
+claimed before asynchronous work reduced that diagnostic to one admitted
+snapshot and one live handle, releasing ownership only after actual close.
+Windows permission checks likewise retain their helper until actual exit;
+privacy refresh now uses one coherent control response. These source checks
+do not attribute the earlier RSS excess or qualify resources, and this work
+is excluded from frozen 4.46.14.
+
+The earlier [CPU admission change](../validation/2026-10-26-telemetry-cpu-admission.md)
 removes the per-core allocation path on Linux and macOS by reading fixed
 aggregate counters through the existing native helper. The upstream Linux
 `os.cpus()` implementation allocates a 458,752-byte scratch array per call;

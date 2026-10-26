@@ -1,6 +1,6 @@
 # Telemetry cold initialization and storage ownership — 26 October 2026
 
-This source review retains the desktop's existing owner and shared private
+This initial source review retains the desktop's existing owner and shared private
 SQLite coordination. It implements no optimization and accepts no resource
 result. V08 remains **Building**; collection/destination/route remain
 **false/null/null**, and all 66 requirement states are unchanged.
@@ -21,7 +21,7 @@ The reviewed source follows baseline
 `dffbfa49aa3565512c622c5d784bceb7da52eff8`; it includes later report-review work
 that the earlier attribution run did not measure.
 
-| Boundary | Current source behavior and constraint |
+| Boundary | Behavior and constraint at the initial review |
 | --- | --- |
 | App lifetime | [The service bridge](../../studio/electron/service-bridge.ts) statically imports the telemetry classes but constructs one activity/catalog on demand. Local workspace creation is separate. A desktop connected only to a remote workspace need not have a persistent local Python engine. |
 | Storage runtime | [NativeTelemetryStore](../../studio/electron/telemetry-store.ts) already loads `node:sqlite` dynamically after private-store checks. It retains the module promise, not a database connection. Unavailable and known-negative snapshots can return `null` before opening SQLite. Deferring SQLite import is therefore already implemented. |
@@ -36,7 +36,7 @@ claiming and final handoff, and zero-wait producer/delivery coordination. It
 must not create a second queue, cache positive consent, require a local memory
 engine, or introduce a telemetry daemon.
 
-## Concrete decision still required
+## Decision at the initial checkpoint
 
 Keep storage and delivery in the existing desktop lifetime. The next design
 decision is whether separating the optional control/review dependency graph
@@ -58,3 +58,18 @@ unchanged and unaccepted. Choose and justify one bounded ownership change
 before another measurement; preserve all six original outcomes. Sampled peaks,
 ending values, overlapping first-call windows and Linux development-app results
 do not establish a universal peak, causal saving or installed/platform result.
+
+## Later source mechanism
+
+A subsequent [storage-slot regression](2026-10-26-telemetry-storage-slot.md)
+reproduced 32 simultaneous SQLite handles across two store instances during one
+32-call burst. The selected source change adds a process-wide nonwaiting slot
+before asynchronous work, retained until actual close; the corrected burst
+admitted one snapshot, peaked at one handle and left none open. Independent
+later work succeeded. Windows permission-helper ownership now also lasts until
+actual exit, and privacy refresh uses one coherent control response.
+
+This bounds reproduced overlap while preserving the existing desktop owner,
+shared SQLite and fresh fences. It does not replace the storage binding, prove
+the cause of the earlier RSS excess or accept the resource budget. It is later
+source excluded from frozen 4.46.14; no new renderer benchmark was dispatched.

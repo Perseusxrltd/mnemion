@@ -114,6 +114,65 @@ test('a complete workflow shares one bounded transaction and validates both obse
   assert.deepEqual(invoke('preview'), before, 'invalid outcome did not leave a new submission')
 })
 
+test('concurrent callers share one process storage slot and never queue SQLite handles', async t => {
+  const { root, company, store, definitions } = await fixture(t)
+  const other = new NativeTelemetryStore(root, store.disclosure, definitions.catalog, company)
+  const handles = new Set()
+  let peak = 0
+  for (const candidate of [store, other]) {
+    const open = candidate.open.bind(candidate), close = candidate.closeDatabase.bind(candidate)
+    candidate.open = async (...args) => {
+      const database = await open(...args)
+      handles.add(database); peak = Math.max(peak, handles.size)
+      return database
+    }
+    candidate.closeDatabase = database => {
+      close(database)
+      if (database) handles.delete(database)
+    }
+  }
+  const snapshots = await Promise.all(Array.from({ length: 32 }, (_, index) =>
+    (index % 2 ? store : other).snapshot()))
+  t.diagnostic(JSON.stringify({ offered: snapshots.length, accepted: snapshots.filter(Boolean).length,
+    peak_live_connections: peak, remaining_connections: handles.size }))
+  assert.equal(peak, 1, 'optional callers must drop before another SQLite connection is opened')
+  assert.equal(snapshots.filter(Boolean).length, 1, 'competing samples are dropped, never delayed in a queue')
+  assert.equal(handles.size, 0)
+  const next = await store.snapshot()
+  assert.ok(next, 'the next independent sample can use the released slot')
+  assert.equal(await store.record(observation(), next, 20000), true)
+})
+
+test('failed admission and competing cleanup cannot steal a live connection slot', async t => {
+  const { root, company, store, definitions } = await fixture(t)
+  const missing = new NativeTelemetryStore(join(root, 'missing'), store.disclosure, definitions.catalog, company)
+  assert.equal(await missing.snapshot(), null)
+  assert.ok(await store.snapshot(), 'a failure before opening SQLite releases its own slot')
+  const database = await store.open()
+  try {
+    await assert.rejects(missing.open())
+    missing.closeDatabase(undefined)
+    assert.equal(store.snapshot(), null, 'a rejected caller cannot release another live connection')
+  } finally { store.closeDatabase(database) }
+  assert.ok(await store.snapshot())
+})
+
+test('an unclosed SQLite handle retains ownership until actual cleanup succeeds', async t => {
+  const { store } = await fixture(t)
+  const stamp = await store.snapshot(), database = await store.open()
+  const original = database.close.bind(database)
+  t.after(() => { database.close = original; store.closeDatabase(database) })
+  database.close = () => { throw new Error('Simulated native close failure') }
+  store.closeDatabase(database)
+  assert.equal(database.isOpen, true)
+  assert.equal(store.snapshot(), null)
+  assert.equal(await store.record(observation(), stamp, 20000), false)
+  database.close = original
+  store.closeDatabase(database)
+  assert.equal(database.isOpen, false)
+  assert.ok(await store.snapshot(), 'successful cleanup releases the slot without a policy cache')
+})
+
 test('Python opt-out wins over a pending app measurement and a later re-enable', async t => {
   const { invoke, store } = await fixture(t)
   const stamp = await store.snapshot(), pending = store.record(observation(), stamp, 20000)

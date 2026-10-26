@@ -21,6 +21,11 @@ const stampValid = (value: TelemetryStamp) => value && integer(value.revision, 2
 const sameFile = (left: Stats, right: Stats) => left.dev === right.dev && left.ino === right.ino &&
   left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs && left.size === right.size
 
+// One OS-account telemetry store is shared by every desktop owner. Acquire
+// before the first await: otherwise concurrent callers can all open SQLite
+// before any caller resumes to close its transaction. There is no wait queue.
+let storageOwner: { database?: DatabaseSync } | undefined
+
 export function nativeTelemetryDefinitions(): { disclosure: NativeTelemetryDisclosure; catalog: MeasurementCatalog } {
   return {
     disclosure: JSON.parse(readFileSync(new URL('./telemetry-disclosure.json', import.meta.url), 'utf8')),
@@ -126,24 +131,32 @@ export class NativeTelemetryStore {
   }
 
   protected async open(write = false): Promise<DatabaseSync> {
-    const path = this.safe()
-    if (process.platform === 'win32') {
-      // At most one short native ACL helper, including concurrent UI reads.
-      this.permissionCheck ??= windowsTelemetryPrivateStore(this.root, path).finally(() => { this.permissionCheck = undefined })
-      if (!await this.permissionCheck) throw failure()
-    }
-    // Load SQLite only for an active disclosed measurement, never merely for
-    // loading the app or an unavailable telemetry build.
-    this.sqlite ??= import('node:sqlite')
-    const { DatabaseSync } = await this.sqlite
-    const url = pathToFileURL(path)
-    url.search = write ? '?mode=rw' : '?mode=ro'
-    const database = new DatabaseSync(url.href, { readOnly: !write, allowExtension: false })
+    if (storageOwner) throw failure()
+    const owner: { database?: DatabaseSync } = {}
+    storageOwner = owner
+    let database: DatabaseSync | undefined
     try {
+      const path = this.safe()
+      if (process.platform === 'win32') {
+        this.permissionCheck ??= windowsTelemetryPrivateStore(this.root, path).finally(() => { this.permissionCheck = undefined })
+        if (!await this.permissionCheck) throw failure()
+      }
+      // Load SQLite only for an active disclosed measurement, never merely for
+      // loading the app or an unavailable telemetry build.
+      this.sqlite ??= import('node:sqlite')
+      const { DatabaseSync } = await this.sqlite
+      const url = pathToFileURL(path)
+      url.search = write ? '?mode=rw' : '?mode=ro'
+      database = new DatabaseSync(url.href, { readOnly: !write, allowExtension: false })
+      owner.database = database
       database.exec('PRAGMA busy_timeout=0; PRAGMA trusted_schema=OFF; PRAGMA cache_size=-128; PRAGMA mmap_size=0;')
       if (write) database.exec('PRAGMA secure_delete=ON; PRAGMA synchronous=FULL; PRAGMA max_page_count=24;')
       return database
-    } catch (error) { this.closeDatabase(database); throw error }
+    } catch (error) {
+      if (database) this.closeDatabase(database)
+      else if (storageOwner === owner) storageOwner = undefined
+      throw error
+    }
   }
 
   /** Release reclaimable SQLite allocations before closing each transaction's
@@ -151,7 +164,15 @@ export class NativeTelemetryStore {
   protected closeDatabase(database?: DatabaseSync): void {
     if (!database) return
     try { database.exec('PRAGMA shrink_memory') } catch { /* Closing still owns rollback and cleanup. */ }
-    try { database.close() } catch { /* Optional storage cannot fail memory work. */ }
+    let closed = false
+    try { database.close(); closed = true }
+    catch {
+      // A failed close cannot grant another handle. If the connection is still
+      // open (or its state is unknown), keep telemetry unavailable in this
+      // process until cleanup succeeds or the process exits.
+      try { closed = database.isOpen === false } catch { /* Retain ownership. */ }
+    }
+    if (closed && storageOwner?.database === database) storageOwner = undefined
   }
 
   protected preferences(database: DatabaseSync): Preference {
@@ -183,7 +204,7 @@ export class NativeTelemetryStore {
   }
 
   snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> | null {
-    if (!this.available) return null
+    if (!this.available || storageOwner) return null
     let scope = -1
     const day = Math.floor(Date.now() / 86400000)
     if (workflow !== undefined || surface !== undefined) {
@@ -216,7 +237,7 @@ export class NativeTelemetryStore {
   }
 
   async recordMany(inputs: unknown[], stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): Promise<boolean> {
-    if (!this.available || !stampValid(stamp) || !integer(day, 1000000)) return false
+    if (!this.available || storageOwner || !stampValid(stamp) || !integer(day, 1000000)) return false
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
     let database: DatabaseSync | undefined
     try {

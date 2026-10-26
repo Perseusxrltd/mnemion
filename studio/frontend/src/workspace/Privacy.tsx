@@ -35,8 +35,10 @@ export default function Privacy() {
     clearPreview()
     const request = previewRequest.current
     try {
-      const [status, report] = await Promise.all([telemetryStatus(), telemetryReviewStatus()])
-      if (request === previewRequest.current) { setStatus(status); setReview(report); setError(undefined) }
+      // One coherent response also avoids launching two native control
+      // processes for every initial/focus refresh.
+      const report = await telemetryReviewStatus()
+      if (request === previewRequest.current) { setStatus(report.status); setReview(report); setError(undefined) }
     }
     catch (error) {
       if (request === previewRequest.current) setError(error instanceof Error ? error.message : 'Privacy settings are unavailable.')

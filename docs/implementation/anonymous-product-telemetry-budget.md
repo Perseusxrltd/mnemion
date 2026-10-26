@@ -47,6 +47,15 @@ used for choice changes. This is not a person-wide allowance across independent
 installations, browser profiles or copied stores. The public control schema
 version is unchanged.
 
+The later [native storage-slot change](../validation/2026-10-26-telemetry-storage-slot.md)
+adds one nonwaiting process-wide claim before asynchronous permission/SQLite
+work, held until actual connection closure. Competing optional samples decline;
+an unrelated caller cannot release the claim. Shared SQLite still coordinates
+other processes, with the same current-policy and durable-spending fences.
+Windows permission-helper ownership separately lasts until actual process
+exit, even after a refusal deadline. The source checks do not qualify installed
+platforms or resources; this follow-up is excluded from frozen 4.46.14.
+
 | Source reservation bound | Meaning |
 | --- | --- |
 | Seven attempts per rolling week | Each committed reservation spends one slot, regardless of its later outcome. |
