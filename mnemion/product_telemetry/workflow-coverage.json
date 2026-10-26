@@ -11,6 +11,7 @@
   "owners": {
     "control_cli": "Local command line",
     "native_commands": "Native app and agent commands",
+    "desktop_ipc": "Desktop app request channels",
     "studio_actions": "Studio app actions",
     "browser_connections": "Browser connection controls",
     "legacy_ui": "Legacy app actions",
@@ -26,6 +27,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio"
       ]
@@ -36,6 +38,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio"
       ]
@@ -45,6 +48,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "legacy_ui"
       ]
     },
@@ -53,6 +57,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "legacy_ui"
       ]
     },
@@ -61,6 +66,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "browser_connections"
       ]
     },
@@ -70,6 +76,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "browser_connections",
         "local_stdio"
       ]
@@ -79,6 +86,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "browser_connections"
       ]
     },
@@ -93,6 +101,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "browser_connections",
         "local_stdio"
       ]
@@ -102,6 +111,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "browser_connections"
       ]
     },
@@ -260,6 +270,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "headless_controls"
       ]
     },
@@ -277,6 +288,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio",
         "headless_controls"
@@ -295,6 +307,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio"
       ]
@@ -305,6 +318,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio",
         "headless_controls"
@@ -316,6 +330,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio",
         "headless_controls"
@@ -327,6 +342,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio"
       ]
@@ -336,6 +352,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "headless_controls"
       ]
     },
@@ -399,6 +416,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "legacy_ui",
         "local_stdio"
@@ -451,7 +469,8 @@
       "workflow": "backup.configure",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
@@ -459,6 +478,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "headless_controls"
       ]
     },
@@ -471,14 +491,16 @@
       "workflow": "backup.verify",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "backup.prune",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
@@ -487,6 +509,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio",
         "headless_controls"
@@ -497,6 +520,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "headless_controls"
       ]
     },
@@ -505,6 +529,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "headless_controls"
       ]
     },
@@ -513,6 +538,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "headless_controls"
       ]
     },
@@ -540,6 +566,7 @@
       "state": "mapped",
       "owners": [
         "native_commands",
+        "desktop_ipc",
         "local_maintenance"
       ]
     },
@@ -559,56 +586,64 @@
       "workflow": "host.adopt",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.enroll",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.inspect",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.start",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.stop",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.plan_upgrade",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.resolve",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
       "workflow": "host.revoke",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
@@ -680,6 +715,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio"
       ]
@@ -726,6 +762,7 @@
       "owners": [
         "control_cli",
         "native_commands",
+        "desktop_ipc",
         "studio_actions",
         "local_stdio"
       ]
@@ -761,7 +798,8 @@
       "workflow": "vault.configure",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "desktop_ipc"
       ]
     },
     {
@@ -817,13 +855,14 @@
       "control_cli",
       "native_commands",
       "studio_actions",
-      "legacy_ui"
+      "legacy_ui",
+      "desktop_ipc"
     ],
     "summary": {
-      "total": 525,
-      "mapped": 296,
-      "excluded": 224,
-      "delegated": 5,
+      "total": 622,
+      "mapped": 348,
+      "excluded": 267,
+      "delegated": 7,
       "unmeasured": 0
     },
     "reasons": {
@@ -834,8 +873,15 @@
       "control_cli.session_maintenance": "Credential refresh is background session maintenance, not a new sign-in.",
       "native_commands.configuration_preview": "Internal setup validation and secret previews are not product usage observations.",
       "native_commands.state_inspection": "Status, discovery and polling do not identify a new user workflow.",
-      "native_commands.recovery_transport": "Inspecting or archiving a recovery receipt does not repeat the original operation.",
+      "native_commands.recovery_transport": "Inspecting, archiving or cancelling a recovery receipt does not repeat the original operation.",
       "native_commands.privacy_control": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
+      "desktop_ipc.configuration_preview": "Internal setup validation and secret previews are not product usage observations.",
+      "desktop_ipc.state_inspection": "Status, discovery and polling do not identify a new user workflow.",
+      "desktop_ipc.recovery_transport": "Inspecting, archiving or cancelling a recovery receipt does not repeat the original operation.",
+      "desktop_ipc.delegated_alias": "The enclosing Studio action owns its service or vault transport; this bridge adds no second observation.",
+      "desktop_ipc.privacy_control": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
+      "desktop_ipc.authentication_transport": "Cancelling credential acquisition belongs to its existing sign-in operation, without a separate usage observation.",
+      "desktop_ipc.automatic_connection": "Restoring the remembered desktop connection or returning its active session is not a fresh explicit workspace action.",
       "studio_actions.automatic_query": "Automatic queries, polling and saved state do not own a new action.",
       "studio_actions.continuation_transport": "The enclosing operation owns its upload or continuation steps.",
       "studio_actions.configuration_preview": "Configuration previews do not establish a completed setup.",
@@ -2859,6 +2905,767 @@
         "state": "excluded",
         "workflows": [],
         "reason": "native_commands.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "agents:choose",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "agents:install",
+        "state": "mapped",
+        "workflows": [
+          "setup.agent_install"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "agents:preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "agents:remove",
+        "state": "mapped",
+        "workflows": [
+          "setup.agent_remove"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "agents:status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "app:platform",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "app:version",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "backend:port",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "backend:token",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.create",
+        "state": "mapped",
+        "workflows": [
+          "host.adopt"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.enroll",
+        "state": "mapped",
+        "workflows": [
+          "host.enroll"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.forget",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.inspect",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.profiles",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.recoveries",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.recovery",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.recovery_transport"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "backup.create",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "backup.verify",
+        "state": "mapped",
+        "workflows": [
+          "backup.verify"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "host.status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "operations.get",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "operations.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "operations.resolve",
+        "state": "mapped",
+        "workflows": [
+          "host.resolve"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "operators.grant",
+        "state": "mapped",
+        "workflows": [
+          "host.enroll"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "operators.list",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "operators.revoke",
+        "state": "mapped",
+        "workflows": [
+          "host.revoke"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "service.start",
+        "state": "mapped",
+        "workflows": [
+          "host.start"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "service.stop",
+        "state": "mapped",
+        "workflows": [
+          "host.stop"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "upgrade.apply",
+        "state": "mapped",
+        "workflows": [
+          "update.apply"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request",
+        "selector": "request.action",
+        "variant": "upgrade.plan",
+        "state": "mapped",
+        "workflows": [
+          "host.plan_upgrade"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.request.archive",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.recovery_transport"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "hosts:action/host.schema",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-cancel",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.recovery_transport"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-choose",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-configure",
+        "state": "mapped",
+        "workflows": [
+          "backup.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-inspect",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-inventory",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-key",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-prune",
+        "state": "mapped",
+        "workflows": [
+          "backup.prune"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-restore",
+        "state": "mapped",
+        "workflows": [
+          "recovery.restore"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-run",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:backup-status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:company",
+        "state": "mapped",
+        "workflows": [
+          "access.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:company-discover",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:create",
+        "state": "mapped",
+        "workflows": [
+          "setup.create"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:journal",
+        "state": "mapped",
+        "workflows": [
+          "journal.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:journal-choose",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:memory",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:models",
+        "state": "mapped",
+        "workflows": [
+          "models.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:open",
+        "state": "mapped",
+        "workflows": [
+          "workspace.open"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:port",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:recovery-copies",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:recovery-use",
+        "state": "mapped",
+        "workflows": [
+          "recovery.finish"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:remote",
+        "state": "mapped",
+        "workflows": [
+          "setup.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:remote-check",
+        "state": "mapped",
+        "workflows": [
+          "host.inspect"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:start",
+        "state": "mapped",
+        "workflows": [
+          "host.start"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:stop",
+        "state": "mapped",
+        "workflows": [
+          "host.stop"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:vault",
+        "state": "mapped",
+        "workflows": [
+          "vault.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "local:vault-key",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "service:request",
+        "state": "delegated",
+        "workflows": [],
+        "reason": "desktop_ipc.delegated_alias"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:backup",
+        "state": "mapped",
+        "workflows": [
+          "backup.create"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:backup-choose",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:backup-inspect",
+        "state": "mapped",
+        "workflows": [
+          "recovery.inspect"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:choose",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:configure",
+        "state": "mapped",
+        "workflows": [
+          "sources.configure"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:control/pause",
+        "selector": "enabled",
+        "variant": "false",
+        "state": "mapped",
+        "workflows": [
+          "sources.pause"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:control/pause",
+        "selector": "enabled",
+        "variant": "true",
+        "state": "mapped",
+        "workflows": [
+          "sources.resume"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:control/remove",
+        "state": "mapped",
+        "workflows": [
+          "sources.remove"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:control/repair",
+        "state": "mapped",
+        "workflows": [
+          "sources.repair"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:control/sync",
+        "state": "mapped",
+        "workflows": [
+          "sources.sync"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:drain",
+        "state": "mapped",
+        "workflows": [
+          "capture.drain"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:recoveries",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:restore",
+        "state": "mapped",
+        "workflows": [
+          "recovery.restore"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:restore-discard",
+        "state": "mapped",
+        "workflows": [
+          "recovery.discard"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:restore-finish",
+        "state": "mapped",
+        "workflows": [
+          "recovery.finish"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "sources:status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "telemetry:action",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.privacy_control"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "telemetry:record",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.privacy_control"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "telemetry:snapshot",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.privacy_control"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "vault:choose",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "vault:refresh",
+        "state": "delegated",
+        "workflows": [],
+        "reason": "desktop_ipc.delegated_alias"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:company-cancel",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.authentication_transport"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:company-configuration",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:company-sign-in",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:connect",
+        "state": "mapped",
+        "workflows": [
+          "workspace.connect"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:disconnect",
+        "state": "mapped",
+        "workflows": [
+          "workspace.disconnect"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:forget",
+        "state": "mapped",
+        "workflows": [
+          "workspace.forget"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:inspect",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:invitation-accept",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:invitation-preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.configuration_preview"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:recovery-refresh",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:reset",
+        "state": "mapped",
+        "workflows": [
+          "workspace.forget"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:restore",
+        "state": "mapped",
+        "workflows": [
+          "workspace.open"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:resume",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.automatic_connection"
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:sign-in",
+        "state": "mapped",
+        "workflows": [
+          "workspace.sign_in"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "desktop_ipc.state_inspection"
       },
       {
         "owner": "studio_actions",
@@ -4936,7 +5743,7 @@
   "source_inputs": {
     "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
     "control-origins.json": "5482267dab262234d00f7591fea63c3da9defe391250ccdb2d46110e4f9e40de",
-    "desktop-origins.json": "b3d1275bdf74396915079951996fb8de25fc8d6ea3aa406316c3cad7ec23607f",
+    "desktop-origins.json": "5d673d98788737265cbb552d0250398e925a7fffa16a06ab97f5e87a576361a3",
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
@@ -4944,6 +5751,7 @@
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "5dab6820e3e24b873defa56558447ea85869dc1a6716d2e01f3b2424b23ca7a4",
-    "studio/frontend/src/api/client.ts": "59ba6d0d469ef45667a33c4b914bbb801639b2039557b451083e7afcc1ea7f77"
+    "studio/frontend/src/api/client.ts": "59ba6d0d469ef45667a33c4b914bbb801639b2039557b451083e7afcc1ea7f77",
+    "studio/electron/preload.ts": "603f97bde290a131677d158b19839f6d31aa837807e55f094a4608f94717fe13"
   }
 }

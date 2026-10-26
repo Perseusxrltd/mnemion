@@ -173,3 +173,96 @@ def test_action_exclusions_and_delegation_remain_distinct_bounded_metadata():
     ) == len(rows)
     assert len(json.dumps(actions).encode()) <= 128 * 1024
     assert len(json.dumps(cli.execute(None, {"action": "schema"})).encode()) < 256 * 1024
+
+
+def test_desktop_channels_are_independently_visible_including_resume_and_transport():
+    coverage = catalog.coverage_specification()["action_coverage"]
+    assert "desktop_ipc" in coverage["interface_checked_owners"]
+    rows = {row["action"]: row for row in coverage["actions"] if row["owner"] == "desktop_ipc"}
+    assert rows["workspaces:resume"]["state"] == "excluded"
+    assert rows["workspaces:resume"]["reason"] == "desktop_ipc.automatic_connection"
+    assert rows["workspaces:reset"]["workflows"] == ["workspace.forget"]
+    assert rows["workspaces:restore"]["workflows"] == ["workspace.open"]
+    assert rows["service:request"]["state"] == "delegated"
+    assert rows["vault:refresh"]["state"] == "delegated"
+    assert rows["telemetry:record"]["state"] == "excluded"
+
+
+def test_future_desktop_channel_is_not_hidden_by_an_existing_native_action(source_maps):
+    root, directory = source_maps
+    path = root / "studio/electron/preload.ts"
+    path.write_text(
+        path.read_text().replace(
+            "  workspaceResume:",
+            "  futureOpen: () => transfer('workspaces:future-open'),\n  workspaceResume:",
+            1,
+        )
+    )
+    coverage = telemetry_coverage.build(root)
+    row = next(
+        row
+        for row in coverage["action_coverage"]["actions"]
+        if row["owner"] == "desktop_ipc" and row["action"] == "workspaces:future-open"
+    )
+    assert row["state"] == "unmeasured" and row["workflows"] == []
+    assert (
+        next(row for row in coverage["workflows"] if row["workflow"] == "workspace.open")["state"]
+        == "mapped"
+    )
+    with pytest.raises(ValueError, match="Telemetry coverage is stale"):
+        telemetry_coverage.verify(root)
+
+    path = directory / "desktop-origins.json"
+    document = json.loads(path.read_text())
+    document["ipc"]["workspaces:future-open"] = {"action": "workspace.restore"}
+    del document["operations"]["workspace.restore"]
+    path.write_text(json.dumps(document))
+    row = next(
+        row
+        for row in telemetry_coverage.build(root)["action_coverage"]["actions"]
+        if row["owner"] == "desktop_ipc" and row["action"] == "workspaces:future-open"
+    )
+    assert row["state"] == "unmeasured" and row["workflows"] == []
+
+
+@pytest.mark.parametrize(
+    ("channel", "entry", "message"),
+    [
+        ("absent:channel", {"action": "workspace.restore"}, "absent desktop request"),
+        ("workspaces:resume", {"action": "absent.action"}, "absent native action"),
+        (
+            "workspaces:resume",
+            {"action": "workspace.restore", "exclusion": "automatic_connection"},
+            "channel declaration",
+        ),
+        ("workspaces:resume", {"actions": {"open": "workspace.restore"}}, "channel declaration"),
+        ("workspaces:resume", {"exclusion": "unreviewed_reason"}, "Unknown telemetry action"),
+    ],
+)
+def test_invalid_desktop_channel_cannot_gain_a_false_coverage_claim(
+    source_maps, channel, entry, message
+):
+    root, directory = source_maps
+    path = directory / "desktop-origins.json"
+    document = json.loads(path.read_text())
+    document["ipc"][channel] = entry
+    path.write_text(json.dumps(document))
+    with pytest.raises(ValueError, match=message):
+        telemetry_coverage.build(root)
+
+
+def test_missing_desktop_route_and_empty_variant_stay_unmeasured(source_maps):
+    root, directory = source_maps
+    path = directory / "desktop-origins.json"
+    document = json.loads(path.read_text())
+    del document["ipc"]["workspaces:restore"]
+    document["ipc"]["sources:control"] = {"actions": {}}
+    path.write_text(json.dumps(document))
+    rows = {
+        row["action"]: row
+        for row in telemetry_coverage.build(root)["action_coverage"]["actions"]
+        if row["owner"] == "desktop_ipc"
+    }
+    for action in ("workspaces:restore", "sources:control"):
+        assert rows[action]["state"] == "unmeasured"
+        assert rows[action]["workflows"] == []

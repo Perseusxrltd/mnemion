@@ -46,6 +46,29 @@ test('every native operator action and supported UI entry has a reviewed classif
   assert.equal(desktopIpcSelection('sources:status', []), null)
 })
 
+test('every shipped desktop channel is classified and excludes automatic reconnection before private input access', () => {
+  const preload = readFileSync(new URL('../preload.ts', import.meta.url), 'utf8')
+  const channels = [...preload.matchAll(/(?:transfer|ipcRenderer\.invoke)\('([^']+)'/g)].map(match => match[1])
+  assert.deepEqual(Object.keys(desktopTelemetryOrigins.ipc).sort(), [...new Set(channels)].sort())
+  const privateInput = new Proxy({}, { get() { throw new Error('PRIVATE_INPUT_READ') } })
+  for (const [channel, spec] of Object.entries(desktopTelemetryOrigins.ipc)) {
+    if (spec.exclusion) assert.equal(desktopIpcSelection(channel, [privateInput]), null, channel)
+    if (spec.actions) for (const [variant, action] of Object.entries(spec.actions)) {
+      const native = desktopTelemetryOrigins.operations[action]
+      assert.ok(native, channel + '/' + variant)
+      if (native.exclusion) assert.equal(desktopIpcSelection(channel, [variant, privateInput]), null)
+      else if (action !== 'host.request') {
+        const selected = desktopIpcSelection(channel, [variant, { enabled: true }])
+        assert.equal(selected.action, action)
+        assert.ok(desktopTelemetrySelection(selected.action, selected.input))
+      }
+    }
+  }
+  assert.equal(desktopIpcSelection('workspaces:resume', []), null)
+  assert.deepEqual(desktopIpcSelection('workspaces:restore', ['PRIVATE_BOOKMARK']), { action: 'workspace.restore', input: {} })
+  assert.deepEqual(desktopIpcSelection('workspaces:reset', []), { action: 'workspace.forget', input: {} })
+})
+
 test('the installed privacy helper is executable outside the ASAR archive', async () => {
   const base = process.platform === 'win32' ? 'file:///C:/Mnemion/resources/' : 'file:///tmp/Mnemion/resources/'
   const executable = windowsTelemetryPrivateExecutable(base + 'app.asar/dist/telemetry-private-store.js')

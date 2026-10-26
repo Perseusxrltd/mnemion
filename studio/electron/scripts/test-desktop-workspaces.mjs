@@ -7,11 +7,29 @@ import { WorkspacePasswordAuth } from '../dist/workspace-auth.js'
 import { WorkspaceStore } from '../dist/workspace-store.js'
 import { DesktopWorkspaceActions } from '../dist/desktop-workspace-actions.js'
 import { desktopAction } from '../dist/desktop-actions.js'
+import { desktopIpcSelection, measureDesktop } from '../dist/desktop-measurement.js'
+import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
+import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
 
 const endpoint = 'https://memory.example.test'
 const signal = () => new AbortController().signal
 const secret = prefix => prefix + randomBytes(32).toString('base64url')
+
+function measurements() {
+  const values = [], reads = [], catalog = new TelemetryCatalog(nativeTelemetryDefinitions().catalog)
+  const store = { available: true, catalog,
+    async snapshot() { reads.push(true); return { revision: 1, store_generation: 'a'.repeat(32) } },
+    async recordMany(inputs) {
+      values.push(...inputs.flatMap(value => catalog.observation(value).cells.map(cell => catalog.describe(cell))))
+      return true
+    },
+  }
+  return { store, values, reads, invoke(channel, args, run) {
+    const selection = desktopIpcSelection(channel, args)
+    return selection ? measureDesktop(store, selection.action, selection.input, 'desktop', run) : run()
+  } }
+}
 
 async function setup(t, options = {}) {
   const f = await workspaceFixture(t)
@@ -182,4 +200,60 @@ test('forgetting an inactive bookmark keeps the current connection and local ope
   const controller = new AbortController(); controller.abort()
   await assert.rejects(f.call('workspace.disconnect', { expected_revision: forget.revision }, controller.signal), /abort/i)
   assert.deepEqual((await f.actions.status()).active, local.active)
+})
+
+test('automatic workspace resumes never recount active, restored or absent sessions', async t => {
+  const f = await setup(t), m = measurements()
+  const first = await m.invoke('workspaces:connect', [], () => f.connections.connect(endpoint, credential, true))
+  assert.equal(m.values.filter(row => row.metric === 'submissions').length, 1)
+  const reads = m.reads.length, requests = f.observed.requests
+  for (let index = 0; index < 3; index++) {
+    const active = await m.invoke('workspaces:resume', [], () => f.connections.resume())
+    assert.equal(active.sessionToken, first.sessionToken)
+  }
+  assert.equal(f.observed.requests, requests, 'Returning an active session does not reconnect')
+  f.connections.lock()
+  const resumed = await m.invoke('workspaces:resume', [], () => f.connections.resume())
+  assert.notEqual(resumed.sessionToken, first.sessionToken)
+  assert.equal(resumed.bookmarkId, first.bookmarkId)
+  assert.equal(m.reads.length, reads, 'Automatic restoration never reads telemetry policy')
+  assert.equal(m.values.filter(row => row.metric === 'submissions').length, 1)
+
+  const explicit = await m.invoke('workspaces:restore', [first.bookmarkId], () => f.connections.restore(first.bookmarkId))
+  assert.notEqual(explicit.sessionToken, resumed.sessionToken)
+  await m.invoke('workspaces:reset', [], () => f.connections.reset())
+  assert.equal((await f.connections.status()).active, null)
+  assert.deepEqual((await f.store.status()).bookmarks, [])
+  const finalReads = m.reads.length
+  assert.equal(await m.invoke('workspaces:resume', [], () => f.connections.resume()), null)
+  assert.equal(m.reads.length, finalReads)
+  assert.deepEqual(m.values.filter(row => row.metric === 'submissions').map(row => row.workflow),
+    ['workspace.connect', 'workspace.open', 'workspace.forget'])
+  assert.deepEqual(m.values.filter(row => row.metric === 'outcomes').map(row => row.bucket),
+    ['accepted', 'accepted', 'success'])
+  const exported = JSON.stringify(m.values)
+  for (const value of [credential, first.sessionToken, first.bookmarkId, f.identity.tenant_id, endpoint]) {
+    assert.equal(exported.includes(value), false)
+  }
+})
+
+test('failed automatic restore stays unmeasured while deliberate agent changes own only their chosen action', async t => {
+  const f = await setup(t), m = measurements()
+  // Construct the real revision-bound input before entering the action boundary.
+  const connectInput = await f.connectInput()
+  const signed = await measureDesktop(m.store, 'workspace.connect', {}, 'native_agent', () => f.call('workspace.connect', connectInput))
+  assert.equal(signed.active.me.principal_id, f.identity.principal_id)
+  f.connections.lock()
+  f.observed.offline = true
+  const reads = m.reads.length
+  await assert.rejects(m.invoke('workspaces:resume', [], () => f.connections.resume()), /offline/)
+  assert.equal(m.reads.length, reads)
+  f.observed.offline = false
+  const input = { id: signed.active.bookmarkId, expected_revision: (await f.actions.status()).revision }
+  await measureDesktop(m.store, 'workspace.restore', {}, 'native_agent', () => f.call('workspace.restore', input))
+  const localInput = { expected_revision: (await f.actions.status()).revision }
+  await measureDesktop(m.store, 'local.open', {}, 'native_agent', () => f.call('local.open', localInput))
+  assert.deepEqual(m.values.filter(row => row.metric === 'submissions').map(row => row.workflow),
+    ['workspace.connect', 'workspace.open', 'workspace.open'])
+  assert.ok(m.values.every(row => row.surface === 'native_agent' && row.workflow !== 'workspace.switch'))
 })

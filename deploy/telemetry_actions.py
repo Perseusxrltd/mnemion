@@ -17,6 +17,7 @@ INPUTS = (
     "studio/electron/desktop-actions.ts",
     "packages/client/src/index.ts",
     "studio/frontend/src/api/client.ts",
+    "studio/electron/preload.ts",
 )
 STUDIO_EXCLUSIONS = {
     "automatic_query": "Automatic queries, polling and saved state do not own a new action.",
@@ -71,6 +72,12 @@ def build(root: Path, documents: dict) -> tuple[dict, dict]:
             "export const api = measuredLegacyClient({",
             r"^}\)",
             r"^  ([A-Za-z_$][\w$]*):",
+        ),
+        "desktop_ipc": _names(
+            raw[INPUTS[4]].decode(),
+            "contextBridge.exposeInMainWorld('mnemion', {",
+            r"^}\)",
+            r"(?:\btransfer|\bipcRenderer\.invoke)\('([^']+)'",
         ),
     }
     reasons = {}
@@ -138,6 +145,30 @@ def build(root: Path, documents: dict) -> tuple[dict, dict]:
     maintenance = documents["maintenance-origins.json"]
     group("control_cli", controls["operations"], controls["exclusions"])
     group("native_commands", native["operations"], native["exclusions"])
+    ipc = native.get("ipc", {})
+    if set(ipc) - interfaces["desktop_ipc"]:
+        raise ValueError("Telemetry maps refer to an absent desktop request channel")
+
+    def ipc_action(channel: str, action: str) -> None:
+        if action not in interfaces["native_commands"]:
+            raise ValueError("Desktop telemetry refers to an absent native action")
+        add("desktop_ipc", channel, native["operations"].get(action), native["exclusions"])
+
+    for channel in sorted(interfaces["desktop_ipc"]):
+        entry = ipc.get(channel)
+        if entry is None:
+            add("desktop_ipc", channel, None, native["exclusions"])
+        elif set(entry) == {"exclusion"}:
+            add("desktop_ipc", channel, entry, native["exclusions"])
+        elif set(entry) == {"action"}:
+            ipc_action(channel, entry["action"])
+        elif set(entry) == {"actions"} and channel in {"hosts:action", "sources:control"}:
+            if not entry["actions"]:
+                add("desktop_ipc", channel, None, native["exclusions"])
+            for variant, action in sorted(entry["actions"].items()):
+                ipc_action(channel + "/" + variant, action)
+        else:
+            raise ValueError("Review the desktop telemetry channel declaration")
     if set(studio["methods"]) & set(studio["excluded"]):
         raise ValueError("A Studio action cannot be mapped and excluded")
     if set(studio["methods"].values()) - interfaces["control_cli"]:

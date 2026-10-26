@@ -74,18 +74,20 @@ marks 87 categories with declared source mappings and seven unmeasured. It is
 available in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
-The [individual-action preview](../validation/2026-10-26-telemetry-action-preview.md)
-adds **525 declared actions and fixed variants: 296 mapped, 224 excluded,
-five delegated and zero unmeasured among these declarations**. It independently
-reads four shipped-interface declarations; other owners use reviewed source-route
-maps. Missing mappings in those interfaces remain visible as unmeasured even
+The [current action inventory](../validation/2026-10-26-workspace-telemetry-ownership.md)
+contains **622 declared actions and fixed variants: 348 mapped, 267 excluded,
+seven delegated and zero unmeasured among these declarations**. It independently
+reads five shipped-interface declarations, now including desktop preload request
+channels; other owners use reviewed source-route maps. Missing mappings in those
+interfaces remain visible as unmeasured even
 when the category has another owner. Search, source/state filters and pages of
 50 rows inspect fixed metadata without invoking actions or adding a producer.
-Actual Chrome verification passed on changed compiled assets based on
+Earlier [Chrome verification](../validation/2026-10-26-telemetry-action-preview.md)
+passed on changed compiled assets based on
 `93eb300`, with package 4.46.19 metadata before 4.46.20 preparation. It confirmed
 pagination, filters, delegation, on-demand loading and refresh clearing; the
-linked report preserves that browser scope separately from installed/native
-and production qualification.
+linked report preserves that browser scope separately from the 4.46.22 source
+additions, installed/native and production qualification.
 Payload-byte observations are not whole-wire traffic measurements.
 Owners cover the control CLI, desktop/native operator, Studio/browser, explicit
 local stdio, selected fresh maintenance and explicit local model preparation.
@@ -103,10 +105,27 @@ and `librarian-models --prepare` commands now own `models.prepare`. The observer
 receives only the fixed preparation kind; model/profile identifiers and normal
 command output stay outside telemetry. Listing, registry helpers and nested
 deployment/startup preparation acquire no owner. Model resource/sensor
-qualification, rollback completion, switch ownership and complete
-interface/call-site coverage remain open, alongside the
-installed and resource acceptance gates. The action report preserves the
+qualification, rollback completion and complete interface/call-site coverage
+remain open, alongside installed and resource acceptance gates. The action report preserves the
 earlier 86-mapped/eight-unmeasured audit separately from this source follow-up.
+
+The [4.46.22 workspace ownership follow-up](../validation/2026-10-26-workspace-telemetry-ownership.md)
+passed **54 distinct Python and 26 Node tests**, plus Electron and frontend source builds.
+Compiled workspace fixtures used a synthetic cipher and local stubs; they do
+not qualify installed Electron or a real provider. The Python total includes one
+real HTTP/PostgreSQL regression after correcting a stale live/saved-report
+equality assertion; the original 4.46.21 CI failure is retained, with no runtime
+change for that correction. The dispatcher and preview
+share a reviewed map of all 72 preload request channels, including fixed
+host/source variants and explicit inspection, privacy and transport exclusions.
+Automatic `workspaces:resume` is excluded before observation/policy access;
+explicit restore remains owned, and reset owns one `workspace.forget`
+acknowledgement. Workspace changes use the chosen explicit connect, sign-in or
+open boundary, without an additional synthetic switch observation. Managed-server
+rollback requires a separately disclosed host owner and cross-restart completion
+qualification; local administrator consent and private journal backfill do not
+provide either. Catalog, wire-v2, disclosure and route bytes are unchanged.
+Release preparation passed; native and production qualification remain pending.
 
 Keyed API writes require `X-Mnemion-Idempotency: new`; typed
 [host mutations](../validation/2026-10-26-telemetry-host-requests.md) require the

@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { TelemetryWorkflow, type WorkflowStore } from './telemetry-workflow.js'
 
 type Spec = { workflow?: string; completion?: string; selector?: string; variants?: Record<string, string>; variant_exclusions?: Record<string, string>; local_status?: boolean; fresh_receipt?: boolean; exclusion?: string }
-export const desktopTelemetryOrigins: { version: number; ownership: string; exclusions: Record<string, string>; operations: Record<string, Spec> } = (() => {
+type IpcSpec = { action?: string; actions?: Record<string, string>; exclusion?: string }
+export const desktopTelemetryOrigins: { version: number; ownership: string; exclusions: Record<string, string>; operations: Record<string, Spec>; ipc?: Record<string, IpcSpec> } = (() => {
   try { return JSON.parse(readFileSync(new URL('./telemetry-desktop-origins.json', import.meta.url), 'utf8')) }
   catch { return { version: 1, ownership: '', exclusions: {}, operations: {} } }
 })()
@@ -24,40 +25,29 @@ export function desktopTelemetrySelection(action: string, input: Record<string, 
 
 /** Only these explicit UI controls own a local action. Polling and the generic
  * service transport have no entry; remote UI workflows own their own scope. */
-export const desktopIpcOrigins: Record<string, string> = {
-  'workspaces:resume': 'workspace.restore', 'workspaces:connect': 'workspace.connect',
-  'workspaces:sign-in': 'workspace.sign-in', 'workspaces:company-sign-in': 'workspace.sign-in',
-  'workspaces:invitation-accept': 'workspace.sign-in', 'workspaces:restore': 'workspace.restore',
-  'workspaces:forget': 'workspace.forget', 'workspaces:disconnect': 'workspace.disconnect',
-  'agents:install': 'agent.install', 'agents:remove': 'agent.remove',
-  'sources:configure': 'source.configure', 'sources:backup': 'source.backup',
-  'sources:backup-inspect': 'source.backup.inspect', 'sources:restore': 'source.restore',
-  'sources:drain': 'source.drain', 'sources:restore-finish': 'source.restore.finish',
-  'sources:restore-discard': 'source.restore.discard',
-  'local:create': 'local.create', 'local:start': 'local.start', 'local:open': 'local.open',
-  'local:stop': 'local.stop', 'local:memory': 'local.memory', 'local:port': 'local.port',
-  'local:remote': 'local.remote', 'local:remote-check': 'local.remote-check',
-  'local:models': 'local.models', 'local:company': 'local.company', 'local:vault': 'local.vault',
-  'local:journal': 'local.journal', 'local:backup-configure': 'backup.configure',
-  'local:backup-prune': 'backup.prune', 'local:backup-run': 'backup.run',
-  'local:backup-inspect': 'backup.inspect', 'local:backup-restore': 'backup.restore',
-  'local:recovery-use': 'recovery.use',
-}
+export const desktopIpcOrigins: Record<string, string> = Object.fromEntries(
+  Object.entries(desktopTelemetryOrigins.ipc ?? {}).flatMap(([channel, spec]) =>
+    spec.action && !spec.exclusion ? [[channel, spec.action]] : []))
 
 export function desktopIpcSelection(channel: string, arguments_: unknown[]): { action: string; input: Record<string, unknown> } | null {
   if (Object.hasOwn(desktopIpcOrigins, channel)) return { action: desktopIpcOrigins[channel], input: {} }
-  const action = arguments_[0]
-  if (channel === 'hosts:action' && typeof action === 'string' && ['host.create', 'host.enroll', 'host.forget'].includes(action)) return { action, input: {} }
+  const entries = desktopTelemetryOrigins.ipc
+  const spec = entries && Object.hasOwn(entries, channel) ? entries[channel] : undefined
+  const selected = arguments_[0]
+  if (!spec?.actions || spec.exclusion || typeof selected !== 'string' || !Object.hasOwn(spec.actions, selected)) return null
+  const action = spec.actions[selected]
+  if (desktopTelemetryOrigins.operations[action]?.exclusion) return null
+  if (channel === 'hosts:action' && action !== 'host.request') return { action, input: {} }
   if (channel === 'hosts:action' && action === 'host.request') {
     const value = arguments_[1], request = value && typeof value === 'object' && 'request' in value ? value.request : undefined
     if (!request || typeof request !== 'object' || Array.isArray(request) || !('action' in request) || typeof request.action !== 'string') return null
     const input = { request: { action: request.action } }
     return desktopTelemetrySelection(action, input) ? { action, input } : null
   }
-  if (channel !== 'sources:control' || typeof action !== 'string' || !['pause', 'sync', 'remove', 'repair'].includes(action)) return null
+  if (channel !== 'sources:control') return null
   const value = arguments_[1]
   const enabled = value && typeof value === 'object' && 'enabled' in value ? value.enabled : undefined
-  return { action: 'source.' + action, input: typeof enabled === 'boolean' ? { enabled } : {} }
+  return { action, input: typeof enabled === 'boolean' ? { enabled } : {} }
 }
 
 export async function measureDesktop<T>(store: WorkflowStore, action: string, input: Record<string, unknown>, surface: 'desktop' | 'native_agent', run: () => T | Promise<T>): Promise<T> {

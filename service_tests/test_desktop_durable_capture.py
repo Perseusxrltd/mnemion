@@ -101,6 +101,7 @@ def test_native_offline_capture_then_missing_folder_delivery_and_status(env, enr
     path.parent.rmdir()
     second = desktop.perform(root, request)
     assert second["capture"]["delivery_complete"] and second["capture"]["pending_events"] == 0
+    assert second["capture"]["newly_stored_events"] == 1
     assert second["capture"]["stored_events"] == 1 and not second["capture"]["capture_complete"]
     assert second["capture"]["reason_code"] == "capture_source_unavailable"
     with env.db.transaction(reader) as connection:
@@ -133,7 +134,15 @@ def test_native_offline_capture_then_missing_folder_delivery_and_status(env, enr
         },
     )
     assert finished["activity"]["report"]["capture"]["stored_events"] == 1
-    assert finished["activity"]["report"]["capture"] == second["capture"]
+    # The live receipt count belongs to this call only. Saved operational
+    # status retains every other field without allowing history to recount it.
+    saved_capture = finished["activity"]["report"]["capture"]
+    assert "newly_stored_events" not in saved_capture
+    assert saved_capture == {
+        name: value for name, value in second["capture"].items() if name != "newly_stored_events"
+    }
+    assert second["capture"]["newly_stored_events"] == 1
+    assert "newly_stored_events" not in (root / "source-status.json").read_text()
     assert "Durably selected text" not in json.dumps(finished)
 
 

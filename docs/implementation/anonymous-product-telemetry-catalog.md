@@ -25,23 +25,24 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The [individual-action preview](../validation/2026-10-26-telemetry-action-preview.md)
-now also lists **525 actions and fixed variants: 296 mapped, 224 excluded,
-five delegated and zero unmeasured among the represented declarations**. The
+The [current action inventory](../validation/2026-10-26-workspace-telemetry-ownership.md)
+lists **622 actions and fixed variants: 348 mapped, 267 excluded,
+seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
-control contract, native action declarations, SDK class methods and legacy API
-declarations before applying the reviewed maps. Other owners use source-route
+control contract, native action declarations, SDK class methods, legacy API
+declarations and desktop preload request channels before applying the reviewed
+maps. These are five interfaces. Other owners use source-route
 maps and do not gain independent call-site proof. A newly declared interface
 action without a mapping appears as unmeasured even if its category has another
 owner. Fixed exclusion reasons and delegation are visible separately; none of
 these rows authorizes collection or represents activity history.
 
-Eight evaluated observations and retained commands from actual Chrome verify
-the action view on changed compiled assets based on `93eb300`, using package
+Eight earlier evaluated observations and retained commands from actual Chrome
+verify the action view on changed compiled assets based on `93eb300`, using package
 4.46.19 metadata before 4.46.20 preparation. Pagination, search, exclusions,
 delegation and refresh clearing passed with empty browser storage and no
-observed report or foreign requests. This is scoped browser evidence, not
-installed/native or production qualification; the
+observed report or foreign requests. This evidence precedes the 4.46.22 additions
+and does not qualify installed/native or production behavior; the
 [action-preview report](../validation/2026-10-26-telemetry-action-preview.md)
 retains the exact asset binding and cleanup receipt.
 
@@ -336,8 +337,28 @@ collection contract. Their maps describe eligible boundaries, not proof that all
 | Boundary | Current source ownership |
 | --- | --- |
 | Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 44 eligible and 33 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
+| Desktop preload requests | The same map's `ipc` section classifies **72 actual preload request channels**, including fixed `hosts:action` and `sources:control` variants. The runtime dispatcher and action inventory read these reviewed mappings; inspection, privacy, transport and automatic connection exclusions remain visible. The 4.46.22 source follow-up passed 54 distinct Python and 26 Node tests plus both source builds. |
 | Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **64 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. |
 | Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
+
+The [workspace ownership follow-up](../validation/2026-10-26-workspace-telemetry-ownership.md)
+excludes automatic `workspaces:resume` before telemetry policy/observation access:
+Connect invokes it automatically and it can return an already active session.
+Explicit `workspaces:restore` remains owned as `workspace.open`; explicit
+`workspaces:reset` now owns one `workspace.forget` acknowledgement. Workspace
+changes use their chosen connect, sign-in or open boundary, with no additional
+synthetic switch. `workspace.switch` remains an unmeasured catalog category;
+the taxonomy does not create an extra observation owner.
+
+Compiled workspace fixtures verified zero policy reads/observations for automatic
+resume and one workflow for each tested explicit control, without identity in
+cells. They use a synthetic cipher and local stubs, not installed Electron or a
+real provider. Catalog, wire-v2, disclosure and route bytes remain unchanged;
+release preparation passed, while native and production qualification remain
+pending. The Python total includes one real HTTP/PostgreSQL regression after a
+test-only correction for the intentionally transient capture count. The linked
+report retains the original 4.46.21 Python 3.13 equality-assertion failure; the
+correction preserves exact equality of all other fields and changes no runtime.
 
 The top-level desktop exclusions are 15 state inspections, six configuration
 previews, nine privacy controls and three recovery transports. Typed
@@ -624,7 +645,7 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 | Family and fixed operation variants | Proposed measurements and exclusions | Owner and current source |
 | --- | --- | --- |
 | `setup`: `create`, `configure`, `agent_install`, `agent_remove` | Submissions, confirmed completions and duration of local setup or agent configuration. Exclude owner/workspace names, settings bodies and credential provisioning data. | Origin, with local setup counted at its shared controller. [LocalSetup.perform/open](../../studio/frontend/src/workspace/LocalSetup.tsx#L49), [DesktopAgentSetup.install](../../studio/frontend/src/workspace/DesktopAgentSetup.tsx#L76). |
-| `workspace`: `connect`, `sign_in`, `open`, `switch`, `disconnect`, `forget` | Connection/open outcomes and latency; a fixed local/remote mode only if needed in an approved view. Exclude addresses, identity providers, account names and saved-connection IDs. | Origin; [Connect.connect](../../studio/frontend/src/workspace/Connect.tsx#L145) and [workspace controller dispatch](../../studio/electron/service-bridge.ts#L784). |
+| `workspace`: `connect`, `sign_in`, `open`, `switch`, `disconnect`, `forget` | Connection/open outcomes and latency; a fixed local/remote mode only if needed in an approved view. Exclude addresses, identity providers, account names and saved-connection IDs. | Explicit [Connect](../../studio/frontend/src/workspace/Connect.tsx) and [workspace controller](../../studio/electron/service-bridge.ts) boundaries. Automatic resume is excluded; restore owns open and reset owns a forget acknowledgement. Changing workspace adds no synthetic switch observation. |
 | `memory`: `list`, `read`, `recall`, `context`, `knowledge`, `core_read` | Logical retrieval use, latency, result-count buckets and fixed empty/fallback/incomplete-index observations. Mode may be lexical/semantic/hybrid; no query, snippet, score vector, citation ID or search-filter values. | Origin; [SearchMemory.search](../../studio/frontend/src/workspace/Workspace.tsx#L1180), [Knowledge](../../studio/frontend/src/workspace/Knowledge.tsx#L17). [RetrievalService._measured](../../mnemion/service/retrieval.py#L118) is currently private operational measurement, not an export source. |
 | `memory`: `save`, `revise`, `review`, `forget`, `core_write`, `import`, `export` | Submission/terminal outcomes, latency and bounded item/transfer totals. Distinguish accepted write from indexing readiness; preserve uncertain deletion outcomes. Exclude contents, review reasons, paths and idempotency keys. | Origin; [save/revise/forget UI](../../studio/frontend/src/workspace/Workspace.tsx#L753), [API write routes](../../mnemion/service/api.py#L616). Index/purge completion coverage remains open when the origin is absent. |
 | `capture`: `configure`, `preview`, `collect`, `deliver`, `pause`, `drain`, `remove` | Separate local acceptance from remote delivery; bucket accepted/delivered counts, backlog, bytes and elapsed time. Fixed partial/fence/authorization reasons map into the common vocabulary. No conversation, file, device, grant or checkpoint identifiers. | Disclosed local capture owner; [shared native/headless cycle](../../mnemion/connectors/capture_cycle.py#L21), [DesktopSources](../../studio/electron/desktop-sources.ts#L362). The service must not recount accepted pages. |
@@ -632,7 +653,7 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 | `librarian`: `configure`, `run`, `cancel`, `accept`, `reject`, `undo` | Submission versus completion, duration, processed/skipped/proposal-count buckets and available reported-token totals. Exclude memory IDs, proposals, model/profile names and decision text. | Origin for controls; [Librarian.act](../../studio/frontend/src/workspace/Librarian.tsx#L145). [Scheduled runner](../../mnemion/service/librarian_runner.py#L81) completion and unattended work require the background ownership decision. |
 | `models`: `configure`, `prepare`, `reindex`, `pause`, `resume`, `cancel` | Preparation/cache availability, downloads where measured, latency, admitted/deferred work and reported-token buckets. Use a reviewed local/remote execution class, not custom model IDs, endpoints, dimensions or exact hardware. | Origin for controls and owned local preparation; [EmbeddingModels](../../studio/frontend/src/workspace/EmbeddingModels.tsx#L33), [pinned model files](../../mnemion/service/model_files.py#L6), [ModelWorker](../../mnemion/service/model_worker.py#L25). Remote inference/background totals remain unresolved. |
 | `backup`: `configure`, `create`, `list`, `verify`, `prune`; `recovery`: `inspect`, `restore`, `finish`, `discard` | Distinct submission, delivery, verified-readback and restore boundaries; duration and size buckets. Delivery includes upload/readback, and later verification downloads again. No destinations, key IDs, digests, archive names or operation IDs. | Origin through [local backup/recovery dispatch](../../studio/electron/service-bridge.ts#L650) or [HostBackups.request](../../studio/frontend/src/workspace/HostBackups.tsx#L24). [Native backup worker](../../mnemion/host_control/backup_jobs.py#L12) and [Git transfer stages](../../mnemion/host_control/backup_git.py#L263) are private evidence; remote completion ownership stays open. |
-| `update`: `check`, `download`, `verify`, `apply`, `restart`, `rollback` | Confirmed stage outcomes, duration, transfer buckets and fixed restart/deadline reasons. A downloaded candidate is not an installed update; a rollback remains separate from success. Exclude exact version pairs, journal contents and idle/activity timelines. | Shared desktop updater policy: [check](../../studio/electron/updates.ts#L263), [guarded restart](../../studio/electron/updates.ts#L310). [Managed service update](../../mnemion/service/service_updates.py#L883) needs a disclosed host owner and background scope decision. |
+| `update`: `check`, `download`, `verify`, `apply`, `restart`, `rollback` | Confirmed stage outcomes, duration, transfer buckets and fixed restart/deadline reasons. A downloaded candidate is not an installed update; a rollback remains separate from success. Exclude exact version pairs, journal contents and idle/activity timelines. | Shared desktop updater policy: [check](../../studio/electron/updates.ts#L263), [guarded restart](../../studio/electron/updates.ts#L310). [Managed service update](../../mnemion/service/service_updates.py) requires a separately disclosed host owner and cross-restart completion qualification. Local administrator consent and private journal backfill do not supply that ownership. |
 | `host`: `adopt`, `enroll`, `inspect`, `start`, `stop`, `plan_upgrade`, `resolve`, `revoke` | Typed control use and confirmed outcomes, including busy/no-effect versus uncertain effects. Backup and update operations use their own rows, not another host mutation total. Never export host/operator identity, SSH fingerprints, signed plans or service paths. | Origin at [hostAction](../../studio/electron/service-bridge.ts#L304)/[HostProfiles.request](../../studio/electron/host-profiles.ts#L268); headless typed operations map through the [host protocol](../../mnemion/host_control/protocol.py#L153). |
 | `evaluation`: `create_dataset`, `run`, `cancel`, `assess`, `compare`, `export`, `remove_dataset` | Workflow use, duration and case-count buckets. Quality-metric aggregation requires a separate reviewed view and remains undecided. No questions, reference labels, dataset names/IDs, per-case results or human notes; no extra evaluations or model calls for telemetry. | Origin at [Evaluations](../../studio/frontend/src/workspace/insights/Evaluations.tsx#L178). [EvaluationRunner._case](../../mnemion/service/evaluation_runner.py#L309) invokes retrieval with evaluation origin; those calls must not inflate interactive recall usage. [Ranking metrics](../../mnemion/service/evaluation_metrics.py#L13) remain private today. |
 | `journal`: `configure`, `push`, `organize`, `backfill`, `recover` | Submissions, observed completion, duration and item-count buckets. No journal entries, repository destinations, source dates or replay identifiers. | Origin at [Journal.act](../../studio/frontend/src/workspace/Journal.tsx#L47), [JournalBackfill.act](../../studio/frontend/src/workspace/JournalBackfill.tsx#L35) and [recovery client methods](../../packages/client/src/index.ts#L192); unattended publication has the same unresolved background boundary. |
@@ -643,7 +664,7 @@ A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not
 feature adoption. The explicit CLI, desktop and Studio maps do not finish the
 remaining action-by-action coverage reconciliation or qualify their producers.
-The local preview now has category and individual-action views. For its four
+The local preview now has category and individual-action views. For its five
 independently enumerated interfaces, an action without a reviewed mapping is
 shown as unmeasured even when another action maps to the same category. Other
 owners are represented by their reviewed source-route maps; the preview does

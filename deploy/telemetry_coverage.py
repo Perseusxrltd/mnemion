@@ -27,6 +27,7 @@ OUTPUT = Path("mnemion/product_telemetry/workflow-coverage.json")
 OWNERS = {
     "control_cli": "Local command line",
     "native_commands": "Native app and agent commands",
+    "desktop_ipc": "Desktop app request channels",
     "studio_actions": "Studio app actions",
     "browser_connections": "Browser connection controls",
     "legacy_ui": "Legacy app actions",
@@ -90,6 +91,12 @@ def build(root: Path) -> dict:
     for entry in documents["maintenance-origins.json"]["model_preparation"].values():
         add("headless_models", entry)
 
+    actions, action_inputs = action_coverage(root, documents)
+    for action in actions["actions"]:
+        if action["owner"] == "desktop_ipc" and action["state"] == "mapped":
+            for name in action["workflows"]:
+                add("desktop_ipc", {"workflow": name})
+
     rows = [
         {
             "workflow": name,
@@ -99,7 +106,6 @@ def build(root: Path) -> dict:
         for name, owners in workflows.items()
     ]
     mapped = sum(row["state"] == "mapped" for row in rows)
-    actions, action_inputs = action_coverage(root, documents)
     return {
         "schema_version": 1,
         "catalog_version": catalog["version"],
