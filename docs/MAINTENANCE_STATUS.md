@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T17:02:47+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T17:07:48+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.19](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.19). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -19,16 +19,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | ci\.yml | main | failure | [Run 40359469526](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526) |
 | public-updates\.yml | v4\.46\.19 | success | [Run 40344852373](https://github.com/Perseusxrltd/mnemion/actions/runs/40344852373) |
 | release\.yml | release/4\.46\.19 | success | [Run 40333990605](https://github.com/Perseusxrltd/mnemion/actions/runs/40333990605) |
-| release\.yml | release/4\.46\.22 | in\_progress | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
-| verify-artifacts\.yml | main | skipped | [Run 40360187989](https://github.com/Perseusxrltd/mnemion/actions/runs/40360187989) |
+| release\.yml | release/4\.46\.22 | success | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
+| verify-artifacts\.yml | main | in\_progress | [Run 40365617692](https://github.com/Perseusxrltd/mnemion/actions/runs/40365617692) |
 | website-release\.yml | main | success | [Run 40359469878](https://github.com/Perseusxrltd/mnemion/actions/runs/40359469878) |
 | website-release\.yml | v4\.46\.19 | success | [Run 40344847819](https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819) |
 
 ## Active jobs
 
-[Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614): 20/21 jobs completed; 19 succeeded.
+[Run 40365617692](https://github.com/Perseusxrltd/mnemion/actions/runs/40365617692): 0/1 jobs completed; 0 succeeded.
 
-- native / macos-15 / arm64: in\_progress — Packaged Mac update, restart guards and relaunch.
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
 
 ## Unsuccessful jobs

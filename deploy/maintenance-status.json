@@ -28,12 +28,6 @@
       "updated_at": "2026-10-26T17:01:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40359469526",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 12,
-        "succeeded": 11,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "supervision (macos-15)",
@@ -43,7 +37,13 @@
           "steps_reported": 0,
           "steps": []
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
+      }
     },
     {
       "id": 40344852373,
@@ -73,39 +73,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.22",
       "source_commit": "2d48ace846f346a95b2a57559dc95affdbc42e91",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-26T17:07:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614"
+    },
+    {
+      "id": 40365617692,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "a00197846588d8723ac67bc1321141f06d7c4d6d",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-26T16:43:29Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614",
+      "updated_at": "2026-10-26T17:07:17Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40365617692",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 20,
-        "succeeded": 19,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 121703380937,
-            "name": "native / macos-15 / arm64",
+            "id": 121722375829,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Packaged Mac update, restart guards and relaunch"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 40360187989,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "56f0e12b44dfea652fb5f0f964de0bb9a979fa3d",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-26T16:33:12Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40360187989"
     },
     {
       "id": 40359469878,
@@ -130,5 +130,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40344847819"
     }
   ],
-  "observed_at": "2026-10-26T17:02:47+00:00"
+  "observed_at": "2026-10-26T17:07:48+00:00"
 }
