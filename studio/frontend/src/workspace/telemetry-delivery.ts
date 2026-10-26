@@ -71,6 +71,8 @@ export class BrowserTelemetryDelivery {
 
   private wire(): TelemetryWire { return this.encoder ??= new TelemetryWire(specification, telemetryCatalog) }
 
+  formatExample() { return this.wire().formatExample() }
+
   private async locked<T>(run: () => T, fallback: T): Promise<T> {
     // Serialize only this owner's short lock operations. A privacy watcher
     // must not compete with its own policy/report handoff after Web Locks

@@ -22,6 +22,15 @@ const python = source => {
   return JSON.parse(child.stdout)
 }
 
+test('offline synthetic format example agrees across native and Python controls', () => {
+  const example = wire.formatExample()
+  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([1, 0, 7, 0]))
+  assert.equal(example.kind, 'synthetic_example')
+  assert.equal(example.body_encoding, 'base64')
+  assert.deepEqual(example, python('import json; from mnemion.product_telemetry.wire import format_example; print(json.dumps(format_example()))'))
+  assert.deepEqual(wire.formatExample(), example)
+})
+
 test('every native packet matches Python across every view, category, coordinate and coin', () => {
   const digest = createHash('sha256')
   let reports = 0

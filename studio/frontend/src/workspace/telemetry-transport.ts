@@ -2,18 +2,10 @@
 import type { BrowserTelemetry } from './telemetry-policy'
 import { PreparedBrowserTelemetryReport } from './telemetry-delivery'
 import { readBrowserCompanyPolicy } from './telemetry-company'
+import { destinationValid } from './telemetry-capability'
 
 type Outcome = 'delivered' | 'suppressed' | 'failed' | 'deadline'
 type Client = Pick<BrowserTelemetry, 'status' | 'delivery' | 'restrictCompany'>
-
-function destinationValid(value: unknown): value is string {
-  if (typeof value !== 'string' || value.length > 512) return false
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash &&
-      url.pathname === '/v1/report' && url.href === value
-  } catch { return false }
-}
 
 /** Fetch cannot expose or cap DNS/TLS/TCP/IP byte counts. The durable allowance
  * reserves the entire attempt; release qualification must measure browser wire

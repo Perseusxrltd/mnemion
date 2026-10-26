@@ -616,7 +616,8 @@ if (!hasSingleInstanceLock) {
       })
     } catch (e) {
       console.error('[main] App startup failed:', e)
-      writeSmokeStatus('startup-error', { error: String(e), localDiagnostic: desktopBridge.localDiagnostic() })
+      writeSmokeStatus('startup-error', { error: String(e), localDiagnostic: desktopBridge.localDiagnostic(),
+        backupDiagnostic: desktopBridge.backupDiagnostic() })
     }
   })
 }

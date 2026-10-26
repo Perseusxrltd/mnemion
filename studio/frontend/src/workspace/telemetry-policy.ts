@@ -190,8 +190,10 @@ export class BrowserTelemetry {
           .sort((left, right) => left.cell - right.cell).map(row => ({ cell: row.cell, ...telemetryCatalog.describe(row.cell), count: row.count }))
       } catch { /* Invalid queues never become raw diagnostic output. */ }
     }
-    return { schema_version: 1, status, outbound_body: null, outbound_bytes: 0,
-      transport_available: false, message: 'No product-telemetry sender is active in this build.',
+    return { schema_version: 1, status, outbound_body: null, outbound_bytes: 0, outbound_state: 'not_inspected',
+      transport_available: status.delivery_budget!.transport_available,
+      message: 'Synthetic report-format example. No actual outgoing packet was inspected.',
+      illustrative_packet: this.delivery.formatExample(),
       measurement_catalog: measurementCatalog, local_aggregates: local }
   }
 

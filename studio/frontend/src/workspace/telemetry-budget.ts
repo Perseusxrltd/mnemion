@@ -1,5 +1,6 @@
 /** Origin-local spending metadata. Never a request body or analytics identity. */
 import type { TelemetryStatus } from '../../../shared/product-telemetry'
+import { browserTransportAvailable } from './telemetry-capability'
 export const choiceKey = 'mnemion.product-telemetry.choice.v1'
 export const queueKey = 'mnemion.product-telemetry.pending.v1'
 export const budgetKey = 'mnemion.product-telemetry.budget.v1'
@@ -60,7 +61,7 @@ export function budgetView(value: BrowserBudget | null, now = Date.now(), missin
     wire_reservation_per_attempt_bytes: COST, wire_budget_per_rolling_day_bytes: DAILY_BYTES,
     attempts_in_rolling_week: value ? value.attempts.filter(item => item.at_ms > now - WEEK).length : 0,
     reserved_wire_bytes_in_rolling_day: value ? value.attempts.filter(item => item.at_ms > now - DAY).reduce((sum, item) => sum + item.reserved_bytes, 0) : 0,
-    transport_available: false,
+    transport_available: browserTransportAvailable(),
   }
 }
 

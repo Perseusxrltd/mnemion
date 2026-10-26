@@ -1,6 +1,6 @@
 # Product telemetry delivery components — V08
 
-**Unreleased source checkpoint, 25 October 2026; V08 remains Building.** The
+**Unreleased source checkpoint, 26 October 2026; V08 remains Building.** The
 [full contract](anonymous-product-telemetry.md) and
 [local catalog/ownership](anonymous-product-telemetry-catalog.md) retain their
 scope. Python/TypeScript packet encoders, a volatile weekly accumulator, an
@@ -55,18 +55,43 @@ The result is exactly **four body bytes**:
 | 2 | Random coordinate within that view's padded domain |
 | 3 | Randomized positive-sign flag, `0` or `1` |
 
-For example, `01 00 07 00` is a valid randomized body. Its component preview
-identifies `feature_family`, coordinate `7`, sign `-1` and four body bytes; it
-does not recover a true category. This is not an actual outgoing app request.
-HTTP headers, framing, TLS and other transport traffic are additional bytes and
-remain unqualified. App/native privacy preview still reports no outbound body.
+The source app, native CLI and browser controls now expose the fixed synthetic
+bytes `01 00 07 00` as Base64 **`AQAHAA==`** under `illustrative_packet`, labeled
+`kind: "synthetic_example"` and `body_encoding: "base64"`. The shared Python
+`format_example` and TypeScript `formatExample` helpers describe `feature_family`,
+coordinate `7`, sign `-1` and four body bytes. They do not recover a true category,
+read a queue, draw new randomness or reserve an attempt. The wire remains v1.
+
+The actual-body fields stay `outbound_body: null`, `outbound_bytes: 0` and
+`outbound_state: "not_inspected"`. This is a report-format example, not an
+inspection of a queued or sent packet. It neither spends delivery allowance nor
+acknowledges disclosure or sends a request. Local aggregate inspection remains a
+separately labeled snapshot; the app clears it on choice changes, status refresh
+or window focus and rejects late preview responses. The
+[exact-packet acceptance requirement](anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview)
+remains open. The new
+[component checks](../validation/2026-10-26-telemetry-preview.md) passed; the added
+installed-app journey has not yet run. Earlier codec and sender receipts retain
+their original scope. HTTP headers, framing, TLS and other transport traffic are
+additional bytes and remain unqualified.
 
 `prepare` accepts only bounded `(cell, count)` pairs and reviewed cohort enums.
 It does **not** itself read policy or enforce an attempt budget. The later
 [budget wrapper](anonymous-product-telemetry-budget.md) supplies the shared
 policy/queue reservation in source; every transport must use that boundary for
-its attempt. Current `schema` exposes `transport_catalog`
-with `transport_available: false`; discovery does not activate transport.
+its attempt. Current `schema` exposes `transport_catalog` and
+`transport_available`, meaning valid configured release-route capability,
+separate from consent, an active attempt or delivery success. It remains false
+with the production false/null/null gates.
+
+Python status and sending share the pure
+[endpoint validator](../../mnemion/product_telemetry/endpoint.py); its bounded
+release-route read is cached because that file is an immutable package input,
+not a user consent setting. Browser status and sending share the same
+[HTTPS destination validator](../../studio/frontend/src/workspace/telemetry-capability.ts).
+These checks perform no DNS or network request. Discovering capability does not
+reserve, activate or authorize sending, and does not replace fresh policy and
+environment checks on an actual attempt.
 
 ## What the privacy bound covers
 

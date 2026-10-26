@@ -49,11 +49,28 @@ export type TelemetryStatus = {
     transport_available: boolean
   }
 }
+export type TelemetryWirePreview = {
+  schema_version: number
+  body_base64: string
+  body_bytes: number
+  view: string
+  coordinate: number
+  randomized_sign: number
+  protected_unit: string
+  per_report_privacy_loss: 'ln(3)'
+  participation_or_lifetime_guarantee: false
+}
+export type TelemetryFormatExample = TelemetryWirePreview & {
+  kind: 'synthetic_example'
+  body_encoding: 'base64'
+}
 export type TelemetryPreview = {
   schema_version: number
   status: TelemetryStatus
   outbound_body: string | null
   outbound_bytes: number
+  outbound_state?: 'not_inspected'
+  illustrative_packet?: TelemetryFormatExample
   transport_available: boolean
   message: string
   measurement_catalog?: {

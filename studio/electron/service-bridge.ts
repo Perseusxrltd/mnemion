@@ -1035,6 +1035,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
 
   return {
     localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
+    backupDiagnostic: () => localDiagnostic(local?.status.backup?.diagnostic),
     maintenanceTelemetry: telemetryStore,
     localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.busy ?? false),
     localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.active ?? false),

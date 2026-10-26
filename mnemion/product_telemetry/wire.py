@@ -172,3 +172,12 @@ def preview(packet: bytes) -> dict:
         "per_report_privacy_loss": "ln(3)",
         "participation_or_lifetime_guarantee": False,
     }
+
+
+def format_example() -> dict:
+    """Fixed synthetic bytes, unrelated to any queue, random draw or attempt."""
+    return {
+        "kind": "synthetic_example",
+        "body_encoding": "base64",
+        **preview(bytes((1, 0, 7, 0))),
+    }

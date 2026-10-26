@@ -159,8 +159,11 @@ try {
   const port = await freePort()
   const preview = await launch({ phase: 'capture-preview', port })
   if (!preview.nativeEmptyCapturePreview) throw new Error('The installed empty capture preview did not complete')
+  if (!['nativeTelemetryDisclosurePreview', 'nativeTelemetryAppAgentChoice', 'nativeTelemetryPreviewClearedOnRefresh',
+    'nativeTelemetryNoAttemptDuringInspection'].every(field => preview[field] === true)) throw new Error('Installed privacy controls did not complete')
   await stop()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
+  if (!first.nativeTelemetryOptOutSurvivesRestart) throw new Error('Installed telemetry opt-out did not survive restart')
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
   if (!first.nativeNgrokSdkLoaded) throw new Error('The installed engine did not load its remote connection runtime')
   if (!first.journalRegistrationControls) throw new Error('The installed UI did not verify host journal registration and separate publication approval')
@@ -246,6 +249,9 @@ try {
   const evidence = { passed: true, platform: process.platform, architecture: process.arch, nativeRuntime,
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, nativeEmptyCapturePreview: true, actualSetupControls: true, authenticatedApi: true,
+    nativeTelemetryDisclosurePreview: true, nativeTelemetryAppAgentChoice: true,
+    nativeTelemetryPreviewClearedOnRefresh: true, nativeTelemetryNoAttemptDuringInspection: true,
+    nativeTelemetryOptOutSurvivesRestart: true,
     nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
     nativeJournalRegistrationAndSeparateApproval: true,
     nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,
@@ -294,12 +300,16 @@ try {
   let engineDiagnostic
   let invalidEngineDiagnostic = false
   try { engineDiagnostic = localDiagnostic(state?.localDiagnostic) } catch { invalidEngineDiagnostic = true }
+  let backupDiagnostic
+  let invalidBackupDiagnostic = false
+  try { backupDiagnostic = localDiagnostic(state?.backupDiagnostic) } catch { invalidBackupDiagnostic = true }
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, platform: process.platform, architecture: process.arch,
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
     ...(workspaceOpen ? { workspaceOpen } : {}),
     ...(modelSetup ? { modelSetup } : {}),
     ...(engineDiagnostic ? { engineDiagnostic } : {}), ...(invalidEngineDiagnostic ? { invalidEngineDiagnostic: true } : {}),
+    ...(backupDiagnostic ? { backupDiagnostic } : {}), ...(invalidBackupDiagnostic ? { invalidBackupDiagnostic: true } : {}),
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error
 } finally {

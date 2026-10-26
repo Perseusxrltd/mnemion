@@ -111,6 +111,20 @@ The later [renderer refusal optimization](2026-10-26-telemetry-renderer-refusals
 adds workflow-scoped negative hints lasting at most one second, with fresh
 positive policy reads and immediate app-configuration invalidation. Focused
 source checks passed, but its development attempt was deliberately stopped and
-its compiled attempt refused before launch for insufficient host memory. There
-is no new renderer/resource pass; the observations above retain their original
-source and scope, and the resource targets remain unaccepted.
+its local compiled attempt refused before launch for insufficient host memory.
+The two subsequent failed CI attempts remain preserved. The later
+[compiled CI journey](2026-10-26-telemetry-renderer-refusals.md) passed in
+[run 40255365121](https://github.com/Perseusxrltd/mnemion/actions/runs/40255365121)
+for source `2d43b1940da913f8a315b7c9bbfe99d470b2038c`, with its receipt dated
+**01:45:45 UTC**: all three variants completed 128 real memory cycles and
+387/387 requests, with correct unavailable/opt-out/enabled report behavior and
+all four cleanup conditions verified.
+
+That compiled source run still records **resource acceptance false**. Enabled
+minus unavailable main-process RSS growth was **+2,793,472 bytes ending** and
+**+3,186,688 bytes at the sampled peak**, both above the unchanged **2 MiB**
+target. Its **+170 ms / 0.224% of one core** CPU comparison is descriptive,
+not stable causal or platform-wide acceptance. The development measurements
+above retain their original source and scope; the two runs are not a controlled
+before/after comparison. V08 remains Building and production collection stays
+unavailable.

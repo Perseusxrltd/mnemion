@@ -166,7 +166,7 @@ def _destination(root: Path, selection: str, workspace_id: str, *, create=True) 
     return destination
 
 
-def _database(root: Path, runtime: Path, workspace_id: UUID):
+def _database(root: Path, runtime: Path, workspace_id: UUID, *, ledger_only=False):
     from .local_workspace import configuration
 
     settings = configuration(root)
@@ -181,14 +181,21 @@ def _database(root: Path, runtime: Path, workspace_id: UUID):
     # Verify the current database path, TLS peer and native executable. This
     # helper neither starts nor stops the already-owned server.
     database._verify_server()
-    with psycopg.connect(database.dsn()) as connection:
-        if not connection.execute(
-            "SELECT 1 FROM mnemion.tenants WHERE id=%s", (credentials["tenant_id"],)
-        ).fetchone():
+    # Inspect identity and required disk space on the same authenticated
+    # connection. Opening another PostgreSQL backend solely for the estimate
+    # added a third TLS/authentication handshake before any snapshot work; on
+    # Windows that separate connection could time out after identity passed.
+    with psycopg.connect(database.dsn(), options="-c statement_timeout=5000") as connection:
+        row = connection.execute(
+            "SELECT CASE WHEN %s THEN 0 ELSE pg_database_size(current_database()) END "
+            "FROM mnemion.tenants WHERE id=%s",
+            (ledger_only, credentials["tenant_id"]),
+        ).fetchone()
+        if row is None:
             raise state.LocalSetupError(
                 "workspace_identity", "The database does not contain this local workspace."
             )
-    return database, settings, credentials
+    return database, settings, credentials, row[0]
 
 
 def _context(settings: dict, credentials: dict) -> dict:
@@ -243,14 +250,10 @@ def capture(
 
     with state.lock(control):
         recovery._cancel(cancelled)
-        database, settings, credentials = _database(root, runtime, request.workspace_id)
+        database, settings, credentials, estimate = _database(
+            root, runtime, request.workspace_id, ledger_only=ledger_only
+        )
         destination = _destination(root, request.destination, settings["workspace_id"])
-        estimate = 0
-        if not ledger_only:
-            with psycopg.connect(database.dsn(), options="-c statement_timeout=5000") as connection:
-                estimate = connection.execute(
-                    "SELECT pg_database_size(current_database())"
-                ).fetchone()[0]
         _require_space(control, estimate * 4)
         _require_space(destination, estimate * 2)
         key = request.recovery_key.get_secret_value()

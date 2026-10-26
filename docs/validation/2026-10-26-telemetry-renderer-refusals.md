@@ -1,9 +1,10 @@
 # Renderer telemetry refusal hints
 
-**Source checkpoint, 26 October 2026.** Focused checks passed for bounded
-renderer refusal hints. There is **no passing new renderer or resource run**
-for this change. V08 remains Building and production collection/destination/route
-stay false/null/null. The last verified public release is 4.46.6; see
+**Source checkpoint, 26 October 2026.** Focused checks and the later compiled
+CI app journeys passed for bounded renderer refusal hints. **Resource acceptance
+remains false.** The stopped local probes and two failed CI attempts are retained
+below. V08 remains Building and production collection/destination/route stay
+false/null/null. The last verified public release is 4.46.6; see
 [automatic release status](../RELEASE_STATUS.md) for availability.
 
 ## Source behavior
@@ -53,10 +54,11 @@ available host memory was **1,063,481,344 bytes**, below its **1 GiB
 `insufficient_initial_host_memory`. This is an admission refusal, not an app
 resource measurement or an out-of-memory crash.
 
-The harness is being moved to a compiled multi-entry UI and static server for
-a clean CI runner. No completed CI renderer evidence is asserted here. The
-[earlier renderer journey](2026-10-26-telemetry-renderer.md) remains historical
-evidence for its own source; its measurements do not qualify this optimization.
+Following these local refusals, the harness moved to a compiled multi-entry UI
+and static server on a clean CI runner. The completed CI journey is recorded
+below. The [earlier renderer journey](2026-10-26-telemetry-renderer.md) remains
+historical evidence for its own source; its measurements do not qualify this
+optimization.
 
 | Retained evidence | SHA-256 |
 | --- | --- |
@@ -86,7 +88,8 @@ app-journey or resource acceptance.
 The verifier now traverses both static and lazy imports. It still requires one
 copy of each policy/client module, reachable from both the app and measurement
 entry, and reports fixed module/chunk details if the check fails. The original
-failed build log and cleanup remain retained; corrected CI results are pending.
+failed build log and cleanup remain retained; the later completed CI result is
+recorded below.
 
 ## Clean-runner executable preparation
 
@@ -108,3 +111,62 @@ workflows, unknown files, unavailable Git history, pull requests and actual
 release/manual validation retain the full checks. Five real-Git selection tests
 and the existing website-content checks passed: **28 tests in 3.37 seconds**.
 This changes check selection, not the release acceptance gates.
+
+## Completed compiled CI journey — 26 October
+
+[Run 40255365121](https://github.com/Perseusxrltd/mnemion/actions/runs/40255365121)
+completed successfully for source
+`2d43b1940da913f8a315b7c9bbfe99d470b2038c`. Its workload receipt is dated
+**01:45:45 UTC**. All three compiled source-app journeys passed on **Linux x64,
+Electron 44.9.3 / Node 24.22.0**. The app was not packaged or installed.
+
+Each variant used actual onboarding, the shared renderer SDK, sandboxed preload,
+native session handle and IPC, with **128 real save/fetch/lexical-search cycles**
+against disposable API/PostgreSQL fixtures. Each recorded **387/387 successful
+requests**, including three onboarding/UI requests, with saved and recalled
+results verified. Memory operations were scripted renderer SDK calls. Compiled
+module checks confirmed that the app and probe shared their policy/client
+modules; the three copied source inventories were identical.
+
+| Variant | Accepted local telemetry writes | Accepted TLS reports | Spent reservation |
+| --- | --- | --- | --- |
+| Unavailable | 0 | 0 | 0 |
+| Opted out | 0 | 0 | 0 |
+| Enabled fixture | 66 | 1, four body bytes | One, 65,536 bytes |
+
+The enabled lease was cleared, its database was **24 KiB**, and fixture content
+was absent from its queue. No page errors, forbidden collector metadata, model
+calls or published aggregates were recorded. Cleanup verified all four recorded
+conditions: isolated profiles removed, collector stopped, temporary certificate
+profile removed and production disclosure unchanged. Only the isolated fixture
+enabled collection.
+
+The analyzer binds the exact workload receipt. These **enabled minus unavailable
+differences in RSS growth** are descriptive measurements, not absolute app RSS:
+
+| Electron process | Difference in ending RSS growth | Difference in sampled-peak RSS growth |
+| --- | --- | --- |
+| Browser/main | +2,793,472 bytes | +3,186,688 bytes |
+
+Both main-process differences exceed the unchanged **2 MiB** target. Across
+Electron processes present at both boundaries, CPU was **2,050 ms enabled versus
+1,880 ms unavailable**: **+170 ms**, or **0.224% of one core** over the unavailable
+variant's **75,769 ms** interval. This single sequential comparison does not
+isolate causal telemetry overhead or qualify the **0.5%** CPU target. Different
+source/build conditions also prevent treating the earlier development run as a
+controlled before/after performance comparison.
+
+Ending and sampled-peak growth remain separate quantities; RSS sums can count
+shared pages more than once. The **100 ms** external sampler can miss short-lived
+helpers. The workload includes connection and cold work, with no forced garbage
+collection or idle padding. `resource_acceptance` remains **false** in both the
+workload and analysis. Stable whole-feature resources, installed-platform,
+whole-wire, production ingress/privacy and complete V08 acceptance remain open.
+
+| Original CI artifact | SHA-256 |
+| --- | --- |
+| Source identity | `50e3fcfef233f11c68f0b5ad54512899d7a3fa781452621aeb0fd02f1adf12bd` |
+| Workload receipt | `a72444ab53b14d79b159e37e2bc25988ac9f540a3a10455cb43af987215b5469` |
+| Derived summary | `d49b6bdf43ec3285bfd4495bdf7236bb3983749206df3fd54aaad96858913c39` |
+| Cleanup | `1dfdad0691c70f0fcdaad9a0e56f94675038eaccb5de8e0393914569586d75a1` |
+| Each copied source inventory | `b2bf2c58080078916a490728ac60b0b43fa384b193cc8d860b610dd8e211b976` |

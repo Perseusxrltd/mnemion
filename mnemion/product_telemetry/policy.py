@@ -344,6 +344,15 @@ def _initialize(root: Path) -> bool:
     return True
 
 
+def transport_available() -> bool:
+    """Configured capability only, independent of consent or a live attempt."""
+    if not COLLECTION_AVAILABLE or not COLLECTOR_URL:
+        return False
+    from .endpoint import release_endpoint
+
+    return release_endpoint() is not None
+
+
 def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
     from .delivery import budget_status
 
@@ -500,14 +509,19 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
 def preview(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
     from .aggregate import preview as aggregate_preview
     from .catalog import specification
+    from .wire import format_example
+
+    current = status(root, policy_path=policy_path)
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "status": status(root, policy_path=policy_path),
+        "status": current,
         "outbound_body": None,
         "outbound_bytes": 0,
-        "transport_available": False,
-        "message": "No product-telemetry sender is active in this build.",
+        "outbound_state": "not_inspected",
+        "transport_available": current["delivery_budget"]["transport_available"],
+        "message": "Synthetic report-format example. No actual outgoing packet was inspected.",
+        "illustrative_packet": format_example(),
         "measurement_catalog": specification(),
         "local_aggregates": aggregate_preview(root, policy_path=policy_path),
     }

@@ -1,6 +1,6 @@
 # Product telemetry privacy controls
 
-**V08 remains in development; source reference, 25 October 2026.** Product
+**V08 remains in development; source reference, 26 October 2026.** Product
 telemetry is unavailable. The controls below are implemented in source, but
 saving an enabled preference does not start collection: `collection_available`
 and `effective_enabled` remain `false`, with no destination or release route.
@@ -24,9 +24,16 @@ to use the page offline.
 **Share anonymous product statistics** changes the saved preference, which
 defaults to enabled. **Disable product telemetry** saves an opt-out and clears
 pending local aggregates. **Refresh privacy status** reads the current choice.
-**Show payload preview** currently reports no queued request, a null outbound
-body and zero outgoing payload bytes. Expand **Workflow coverage and exclusions**
-to inspect supported workflows and their explicit privacy exclusions.
+**Show report format** displays a fixed synthetic four-byte example as Base64
+(`AQAHAA==`, representing `01 00 07 00`). It is not sampled from your counts or
+presented as a queued or sent report. Opening it makes no reservation, consumes
+no queue or delivery allowance, acknowledges no disclosure and sends no request.
+No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
+to inspect supported workflows and their explicit privacy exclusions. Any
+**Private local aggregate preview** is a snapshot of permitted local counts at
+the time it was opened, separate from the report example. Choice changes, status
+refresh, window focus and cross-tab choice notifications clear the preview;
+late responses cannot restore an older display.
 The schema and numeric encoding exist; collection remains inactive. Selected
 desktop/browser and native-operator actions now have source hooks. Remaining
 workflow and resource/platform qualification are still unfinished.
@@ -103,8 +110,11 @@ printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 including fixed numeric buckets, contribution limits and exclusions. It also
 returns `owned_control_coverage`, the full owned-CLI operation map, and
 `owned_origin_coverage` for the desktop, Studio, UI, MCP and maintenance boundaries.
-It exposes the source delivery format as `transport_catalog`, with
-`transport_available: false`; no destination is configured by reading it.
+It exposes the source delivery format as `transport_catalog`.
+`transport_available` means that this build has a valid configured collector
+route; it is separate from consent, current sending and successful delivery.
+It remains `false` in the current unavailable build. Reading it neither
+configures a destination nor probes the network.
 `status` distinguishes `user_enabled`,
 `effective_enabled`, `reason`, `storage`, `connection_mode`, company restriction, `revision` and
 `store_generation`. The generation is a private local control token, never an
@@ -114,10 +124,18 @@ Native `status` also exposes `delivery_budget`: fixed states, bounded attempt
 counts and reserved-byte totals, without exact attempt times or private lease
 tokens. These are local reservations, not measured traffic or successful uploads.
 The budget state `ready` does not enable collection.
-`preview` returns `outbound_body: null`, `outbound_bytes: 0` and
-`transport_available: false`, plus the catalog and an empty `local_aggregates`
-list while collection is unavailable. A decoded local aggregate preview is
-private inspection, not an outbound payload or event history. Success returns
+`preview` returns `outbound_state: "not_inspected"`, `outbound_body: null` and
+`outbound_bytes: 0`, plus `illustrative_packet` with `kind: "synthetic_example"`,
+`body_encoding: "base64"`, `body_base64: "AQAHAA=="` and `body_bytes: 4`.
+These example bytes do not identify the next outgoing packet. The null/zero
+actual-body fields are not a traffic counter or proof that another owner has
+no active attempt. The catalog is included; `local_aggregates` stays empty while
+collection is unavailable. When present, local counts are a private snapshot,
+not a serialized outbound report or event history. The
+[format-preview component checks](../validation/2026-10-26-telemetry-preview.md)
+passed; the added installed-app journey has not yet run. The
+[actual-packet inspection requirement](../implementation/anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview)
+remains open. Success returns
 `{"event":"result","ok":true,"result":...}`; refusal returns a fixed error code
 with `ok: false` and exit status 2.
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-import json
 from pathlib import Path
 from threading import Lock
 import time
@@ -114,24 +113,9 @@ async def application_delivery(*, root: Path | None = None, can_start=None):
     if not policy.COLLECTION_AVAILABLE or policy.COLLECTOR_URL is None:
         yield
         return
-    endpoint = None
-    try:
-        route = json.loads(Path(__file__).with_name("transport-route.json").read_text())
-        if (
-            isinstance(route, dict)
-            and set(route) == {"version", "address"}
-            and route["version"] == 1
-            and type(route["address"]) is str
-        ):
-            from urllib.parse import urlsplit
-            from .transport import Endpoint
+    from .endpoint import release_endpoint
 
-            url = urlsplit(policy.COLLECTOR_URL)
-            candidate = Endpoint(url.hostname, route["address"], url.port or 443)
-            if candidate.validate():
-                endpoint = candidate
-    except (OSError, ValueError, TypeError):
-        pass
+    endpoint = release_endpoint()
     if endpoint is None:
         yield
         return

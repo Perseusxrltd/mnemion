@@ -134,6 +134,56 @@ function available(run) {
 
 const measured = extra => ({ kind: 'outcome', workflow: 'memory.recall', surface: 'browser', outcome: 'success', ...extra })
 
+test('browser format preview is read-only and never claims an actual queued packet', () => available(() => {
+  contract.destination = 'https://example.invalid/v1/report'
+  const instance = installation(), client = instance.client()
+  const empty = client.preview()
+  assert.equal(instance.values.size, 0)
+  const example = empty.illustrative_packet
+  assert.equal(example.kind, 'synthetic_example')
+  assert.equal(example.body_encoding, 'base64')
+  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([1, 0, 7, 0]))
+  assert.equal(empty.outbound_state, 'not_inspected')
+  assert.equal(empty.outbound_body, null)
+  assert.equal(empty.outbound_bytes, 0)
+  assert.equal(empty.status.effective_enabled, false)
+  assert.equal(empty.transport_available, true)
+  client.delivery.reserve = () => { assert.fail('Preview tried to reserve a delivery') }
+  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  assert.equal(client.record(measured(), current), true)
+  const saved = [...instance.values]
+  const counted = client.preview()
+  assert.ok(counted.local_aggregates.length > 0)
+  assert.deepEqual(counted.illustrative_packet, example)
+  assert.deepEqual(client.preview(), counted)
+  assert.deepEqual([...instance.values], saved)
+  client.configure({ enabled: false, expected_revision: current.revision })
+  const off = [...instance.values]
+  const disabled = client.preview()
+  assert.equal(disabled.transport_available, true)
+  assert.equal(disabled.status.delivery_budget.transport_available, true)
+  assert.equal(disabled.status.effective_enabled, false)
+  assert.deepEqual(disabled.local_aggregates, [])
+  assert.deepEqual(disabled.illustrative_packet, example)
+  assert.deepEqual([...instance.values], off)
+}))
+
+test('browser capability reports only a configured HTTPS route, independent of permission', () => available(() => {
+  const { client, values } = installation()
+  for (const [destination, expected] of [
+    ['https://example.invalid/v1/report', true], ['http://example.invalid/v1/report', false],
+    ['https://secret@example.invalid/v1/report', false], ['https://example.invalid/other', false],
+    ['https://example.invalid/v1/report?secret=PRIVATE_SENTINEL', false], [null, false],
+  ]) {
+    contract.destination = destination
+    const preview = client().preview()
+    assert.equal(preview.transport_available, expected)
+    assert.equal(preview.status.delivery_budget.transport_available, expected)
+    assert.equal(preview.status.effective_enabled, false)
+  }
+  assert.equal(values.size, 0)
+}))
+
 test('browser queue stores coarse cells, rejects content and obeys contribution bounds', () => available(() => {
   const instance = installation(), client = instance.client()
   instance.company({ state: 'unmanaged', enabled: true, metric_groups: ['usage', 'performance'] })

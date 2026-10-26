@@ -42,7 +42,17 @@ def owner_adapter(env, tmp_path, monkeypatch):
     # The PostgreSQL fixture has its own real owner login. Native TLS/process
     # identity is exercised by the local-database and installed-hosting gates.
     native = SimpleNamespace(dsn=lambda: env.admin_dsn)
-    monkeypatch.setattr(backup, "_database", lambda *args: (native, settings, credentials))
+
+    def database(*args, ledger_only=False):
+        with psycopg.connect(env.admin_dsn) as connection:
+            estimate = (
+                0
+                if ledger_only
+                else connection.execute("SELECT pg_database_size(current_database())").fetchone()[0]
+            )
+        return native, settings, credentials, estimate
+
+    monkeypatch.setattr(backup, "_database", database)
     request = backup.BackupRequest.model_validate_json(
         json.dumps(
             {
@@ -53,6 +63,34 @@ def owner_adapter(env, tmp_path, monkeypatch):
         )
     )
     return root, destination, settings, credentials, request
+
+
+def test_backup_admission_reads_size_with_identity_and_rejects_another_tenant(
+    env, pg_bin, tmp_path, monkeypatch
+):
+    inspect_database = backup._database
+    root, _, settings, credentials, request = owner_adapter(env, tmp_path, monkeypatch)
+    (root / "database").mkdir()
+    verified = []
+    native = SimpleNamespace(
+        dsn=lambda: env.admin_dsn, _verify_server=lambda: verified.append(True)
+    )
+    # Only native process/TLS ownership is supplied by the adapter. The tenant
+    # lookup, statement timeout and disk estimate execute in real PostgreSQL.
+    monkeypatch.setattr(backup, "LocalDatabase", lambda *args: native)
+    monkeypatch.setattr(backup, "prepare_credentials", lambda root: credentials)
+    original_configuration = (root / "configuration.json").read_bytes()
+    original_credentials = (root / "credentials.json").read_bytes()
+    value = inspect_database(root, pg_bin.parent, request.workspace_id)
+    assert value[:3] == (native, settings, credentials)
+    assert value[3] > 0
+    assert inspect_database(root, pg_bin.parent, request.workspace_id, ledger_only=True)[3] == 0
+    credentials["tenant_id"] = str(uuid4())
+    with pytest.raises(state.LocalSetupError, match="does not contain"):
+        inspect_database(root, pg_bin.parent, request.workspace_id)
+    assert len(verified) == 3
+    assert (root / "configuration.json").read_bytes() == original_configuration
+    assert (root / "credentials.json").read_bytes() == original_credentials
 
 
 def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_source_mutation(

@@ -2,6 +2,7 @@
  * No networking, implicit consent, identity, caller objects or policy cache.
  */
 import { TelemetryCatalog } from './telemetry-catalog.js'
+import type { TelemetryFormatExample, TelemetryWirePreview } from '../shared/product-telemetry.js'
 
 type View = { id: number; name: string; group: string; weight: number; domain: number; values: string[];
   source: { metric?: string; field?: string; cohort?: string } }
@@ -110,11 +111,17 @@ export class TelemetryWire {
     return this.encode(view.id, category, random)
   }
 
-  preview(packet: Uint8Array): Record<string, unknown> {
+  preview(packet: Uint8Array): TelemetryWirePreview {
     const decoded = this.decode(packet)
     return { schema_version: this.specification.version, body_base64: globalThis.btoa(String.fromCharCode(...packet)),
       body_bytes: packet.length, view: this.view(decoded.view).name, coordinate: decoded.coordinate,
       randomized_sign: decoded.sign, protected_unit: this.specification.protected_unit,
       per_report_privacy_loss: 'ln(3)', participation_or_lifetime_guarantee: false }
+  }
+
+  formatExample(): TelemetryFormatExample {
+    // No queue input, random draw, reservation or acknowledgement is involved.
+    return { kind: 'synthetic_example', body_encoding: 'base64',
+      ...this.preview(new Uint8Array([1, 0, 7, 0])) }
   }
 }

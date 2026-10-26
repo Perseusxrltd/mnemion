@@ -65,9 +65,21 @@ Producers and delivery retain zero lock waiting. The maintained local stdio
 
 The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 `collection_available: false` and `destination: null`. Saving an enabled
-preference does not complete disclosure or activate collection. The preview
-returns the measurement catalog, an empty local aggregate list, no outbound body
-and zero outgoing bytes. Owned CLI, desktop/native-operator, Studio/browser and
+preference does not complete disclosure or activate collection. The current
+source preview returns the measurement catalog, an empty local aggregate list
+while unavailable, and a fixed synthetic four-byte
+[report-format example](anonymous-product-telemetry-delivery.md#one-randomized-category-per-report).
+It reports `outbound_state: "not_inspected"`, with a null actual body and zero
+inspected outgoing bytes. No report is randomized or reserved by viewing the
+example; queue contents, spent allowance and consent remain unchanged, and no
+network request is made. The app clears previews on choice changes, status
+refresh or window focus and discards late responses. Any displayed local counts
+are separately labeled snapshots. The
+[preview component checks](../validation/2026-10-26-telemetry-preview.md) passed;
+the added installed-app journey remains unexecuted.
+`transport_available` describes valid configured release-route capability,
+separate from consent and a live send; it remains false here.
+Owned CLI, desktop/native-operator, Studio/browser and
 explicit local stdio and selected fresh-maintenance hooks exist in source.
 Python, native and browser senders and application-owner wiring remain inactive;
 the release-owned [transport route](../../mnemion/product_telemetry/transport-route.json)
@@ -434,8 +446,9 @@ proposal. Its labels and buckets are not the current local encoding in the
 format defines bounded cohort views and an ingress adapter. Later source adds
 senders and owner wiring, but installed delivery and a qualified endpoint remain
 unaccepted. The fixed-enum requirement still
-excludes arbitrary combinations, exact timestamps and identity fields. Today's
-app/native preview remains empty of outbound data.
+excludes arbitrary combinations, exact timestamps and identity fields. The
+current app/native/browser preview shows a separately labeled synthetic format
+example; it does not inspect an actual outgoing packet.
 
 ```json
 {
@@ -458,6 +471,12 @@ sampling, clipping, bucket ranges and dropped reports. The local preview must
 make the exact serialized outbound body and schema available before enabling or
 sending, and disclose transport metadata separately; a clean JSON body alone is not
 evidence that the whole path is anonymous.
+
+The 26 October source format example is labeled `kind: "synthetic_example"`
+and the actual outbound state remains `not_inspected`. The exact-packet
+inspection requirement above remains an **open acceptance gate**. Showing fixed
+example bytes and their schema before enabling does not establish inspection of
+the actual next outgoing packet or close that gate.
 
 ## Collector and release conditions
 

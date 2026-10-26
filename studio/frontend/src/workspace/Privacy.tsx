@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
@@ -23,19 +23,26 @@ export default function Privacy() {
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [pendingChoice, setPendingChoice] = useState<boolean>()
+  const previewRequest = useRef(0)
+  const clearPreview = useCallback(() => {
+    previewRequest.current++
+    setPreview(undefined)
+  }, [])
   const refresh = useCallback(async () => {
+    clearPreview()
     try { setStatus(await telemetryStatus()); setError(undefined) }
     catch (error) { setError(error instanceof Error ? error.message : 'Privacy settings are unavailable.') }
-  }, [])
+  }, [clearPreview])
   useEffect(() => {
     void refresh()
     const changed = (event: StorageEvent) => { if (event.key === choiceKey || event.key === null) void refresh() }
     window.addEventListener('storage', changed)
     window.addEventListener('focus', refresh)
-    return () => { window.removeEventListener('storage', changed); window.removeEventListener('focus', refresh) }
+    return () => { previewRequest.current++; window.removeEventListener('storage', changed); window.removeEventListener('focus', refresh) }
   }, [refresh])
   async function choose(enabled: boolean, connectionMode?: TelemetryConnectionMode) {
     if (!status || busy) return
+    clearPreview()
     setBusy(true); setPendingChoice(enabled); setError(undefined)
     try {
       setStatus(await telemetryConfigure({ enabled, expected_revision: status.revision,
@@ -45,7 +52,6 @@ export default function Privacy() {
           ? enabled && status.collection_available ? status.required_disclosure_version : 0
           : status.disclosure_version,
         ...(connectionMode === undefined ? {} : { connection_mode: connectionMode }) }))
-      setPreview(undefined)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'The privacy choice could not be saved.')
       try { setStatus(await telemetryStatus()) } catch { /* Keep the explicit failure visible. */ }
@@ -95,13 +101,26 @@ export default function Privacy() {
         {!window.mnemion?.productTelemetry && <p><small>Clearing this site’s browser storage removes this preference and requires fresh disclosure. Global Privacy Control is respected. Other browsers and installations have their own choices.</small></p>}
       </section>
       <section className="ws-panel" aria-labelledby="telemetry-preview-heading">
-        <h2 id="telemetry-preview-heading">Inspect the next request</h2>
-        <p>Check the exact outgoing body. Transport metadata and its handling are described in the privacy documentation.</p>
+        <h2 id="telemetry-preview-heading">Inspect the report format</h2>
+        <p>View a fixed, synthetic example of the four-byte report body. Viewing it does not send statistics or change your privacy choice.</p>
         <button className="ws-button" disabled={busy} onClick={async () => {
-          try { setPreview(await telemetryPreview()); setError(undefined) }
-          catch (error) { setError(error instanceof Error ? error.message : 'The preview is unavailable.') }
-        }}>Show payload preview</button>
-        {preview && <><p>{preview.message}</p><pre className="ws-code">{preview.outbound_body ?? 'No request is queued.'}</pre><p>{preview.outbound_bytes} outgoing payload bytes.</p>
+          const request = ++previewRequest.current
+          setPreview(undefined)
+          try {
+            const value = await telemetryPreview()
+            if (request === previewRequest.current) { setPreview(value); setError(undefined) }
+          } catch (error) {
+            if (request === previewRequest.current) setError(error instanceof Error ? error.message : 'The preview is unavailable.')
+          }
+        }}>Show report format</button>
+        {preview && <><p>{preview.message}</p>
+          {preview.illustrative_packet && <>
+            <p><strong>Synthetic example:</strong> {preview.illustrative_packet.body_bytes} body bytes, shown below as Base64.</p>
+            <pre className="ws-code">{preview.illustrative_packet.body_base64}</pre>
+            <details><summary>Format and privacy parameters</summary><pre className="ws-code">{JSON.stringify(preview.illustrative_packet, null, 2)}</pre></details>
+          </>}
+          <p>No actual outgoing packet was inspected. The example is not a queued or sent report. Network headers, encryption and connection overhead add bytes beyond the report body.</p>
+          <p><small>{preview.transport_available ? 'A collector route is configured. Actual sending still depends on your choice, company policy and resource limits.' : 'This build has no configured collector route.'}</small></p>
           {preview.measurement_catalog && <details><summary>Workflow coverage and exclusions</summary>
             <p>{preview.measurement_catalog.ownership.measured}</p>
             <p>These are the supported measurement categories. Collection remains subject to your choice and the availability shown above.</p>
@@ -111,7 +130,7 @@ export default function Privacy() {
             <ul>{Object.entries(preview.measurement_catalog.ownership.exclusions).map(([key, description]) => <li key={key}>{description}</li>)}</ul>
           </details>}
           {!!preview.local_aggregates?.length && <details><summary>Private local aggregate preview</summary>
-            <p>Coarse counts waiting locally. These are not an outbound report or an event history.</p>
+            <p>Snapshot of coarse local counts when this preview was opened. Refresh the preview to see current counts. These are not an outbound report or an event history.</p>
             <pre className="ws-code">{JSON.stringify(preview.local_aggregates, null, 2)}</pre>
           </details>}
         </>}

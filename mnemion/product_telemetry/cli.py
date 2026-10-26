@@ -47,7 +47,7 @@ def execute(root: Path | None, request: object) -> dict:
                 "measurement_catalog": specification(),
                 "owned_control_coverage": control_specification(),
                 "owned_origin_coverage": origin_specification(),
-                "transport_available": False,
+                "transport_available": policy.transport_available(),
                 "transport_catalog": wire_specification(),
             }
         return policy.preview(root) if action == "preview" else policy.status(root)

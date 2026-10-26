@@ -1,6 +1,6 @@
 # Mnemion privacy policy
 
-Updated: **2026-10-25**. This describes the shared-memory platform, the legacy
+Updated: **2026-10-26**. This describes the shared-memory platform, the legacy
 library correction and the inactive source telemetry components below.
 
 ## Your organization's data
@@ -52,8 +52,16 @@ No V08 measurement instrumentation or collector is deployed.
 Source now includes a pre-login/offline `/privacy` page and native
 `mnemion-service telemetry` controls. They save a default-enabled preference;
 they do not enable collection. The disclosure currently states
-`collection_available: false` and `destination: null`, and the payload preview
-shows no outbound body and zero outgoing bytes. No product statistics are sent,
+`collection_available: false` and `destination: null`. The source controls show
+a fixed synthetic four-byte report-format example, separately from any private
+local-count snapshot. Viewing it does not inspect an actual outgoing packet,
+create or randomize a report, consume pending data or delivery allowance,
+acknowledge disclosure or contact a network endpoint. The app clears the preview
+on choice changes, status refresh or window focus and discards late replies.
+Configured transport capability is distinct from permission to collect or a current send; the release
+route is still unset. The example alone does not complete the
+[actual-packet inspection requirement](../implementation/anonymous-product-telemetry.md#proposed-outbound-schema-and-payload-preview).
+No product statistics are sent,
 and no production analytics or anonymous ingress is deployed. The bounded
 sender/collector components and owner wiring remain unreleased; their checks do
 not establish installed-app or public-ingress acceptance.

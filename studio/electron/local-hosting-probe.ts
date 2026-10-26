@@ -10,6 +10,7 @@ import { verifyNativeCaptureBoundaries } from './native-capture-boundaries-probe
 import { verifyNativeCapturePolicy } from './native-capture-policy-probe.js'
 import { verifyNativeHeadlessCapture, verifyNativeHeadlessPreview } from './native-headless-capture-probe.js'
 import { workspaceOpenError } from './local-hosting-diagnostics.js'
+import { verifyNativeTelemetry } from './native-telemetry-probe.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
   const path = process.env.MNEMION_STUDIO_HOSTING_PROBE
@@ -22,7 +23,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-policy', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'capture-headless', 'capture-preview'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
       (!['create', 'capture-preview'].includes(config.phase) && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
-  if (config.phase === 'capture-preview') return verifyNativeHeadlessPreview(path)
+  if (config.phase === 'capture-preview') return { ...await verifyNativeHeadlessPreview(path), ...await verifyNativeTelemetry(window) }
   if (config.phase.startsWith('capture-')) {
     // Packaged startup checks finish on Help. Capture needs the same explicit
     // workspace navigation already used by the backup and ordinary host probes.
@@ -69,6 +70,10 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     }
     location.hash = '/workspace';
     if (config.phase === 'create') {
+      const privacy = await bridge.productTelemetry('telemetry.status');
+      if (privacy.user_enabled || privacy.effective_enabled || privacy.reason !== 'user_disabled' || privacy.pending_records !== 0) {
+        throw new Error('The installed app lost the saved telemetry opt-out after restart');
+      }
       const initial = await bridge.localStatus();
       if (!initial.available || initial.info?.configured) throw new Error('The installed app must offer a fresh complete local runtime');
       await click('Create on this computer');
@@ -205,6 +210,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     if (typeof window.require !== 'undefined') throw new Error('The installed renderer is not sandboxed');
     return { phase: config.phase, memoryId, spaceId: originalSpace.id, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
+      nativeTelemetryOptOutSurvivesRestart: config.phase === 'create',
       journalRegistrationControls: config.phase === 'create',
       authenticatedApi: true, serverVersionRetained: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
       automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true,

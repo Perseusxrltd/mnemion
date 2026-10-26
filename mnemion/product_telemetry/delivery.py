@@ -87,7 +87,7 @@ def budget_status(connection=None):
         "wire_budget_per_rolling_day_bytes": DAILY_BYTES,
         "attempts_in_rolling_week": 0,
         "reserved_wire_bytes_in_rolling_day": 0,
-        "transport_available": False,
+        "transport_available": policy.transport_available(),
     }
     if connection is None:
         return result

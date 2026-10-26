@@ -16,45 +16,10 @@ import socket
 import ssl
 
 from . import delivery, policy
+from .endpoint import Endpoint
 
 MAX_TLS_BYTES = 32768
 MAX_HEADERS = 2048
-
-
-@dataclass(frozen=True, slots=True)
-class Endpoint:
-    """Release-owned address and certificate name, never a workspace address."""
-
-    host: str
-    address: str
-    port: int = 443
-
-    def validate(self) -> bool:
-        try:
-            address = ip_address(self.address)
-            if str(address) != self.address or "%" in self.address:
-                return False
-            if (
-                type(self.host) is not str
-                or len(self.host) > 253
-                or not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", self.host)
-                or ".." in self.host
-                or type(self.port) is not int
-                or not 1 <= self.port <= 65535
-            ):
-                return False
-            authority = self.host if self.port == 443 else f"{self.host}:{self.port}"
-            return policy.COLLECTOR_URL == f"https://{authority}/v1/report"
-        except (TypeError, ValueError):
-            return False
-
-    def headers(self) -> bytes:
-        authority = self.host if self.port == 443 else f"{self.host}:{self.port}"
-        return (
-            f"POST /v1/report HTTP/1.1\r\nHost: {authority}\r\n"
-            "Content-Type: application/octet-stream\r\nContent-Length: 4\r\n"
-            "Connection: close\r\n\r\n"
-        ).encode("ascii")
 
 
 @dataclass(frozen=True, slots=True)
