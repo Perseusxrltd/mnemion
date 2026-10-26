@@ -130,7 +130,7 @@ export class BrowserTelemetryDelivery {
         if (review.mode === 'review') return review.outcome === 'approved' && review.report !== null
         const day = Math.floor(now / DAY)
         return pendingState(this.port.storage().getItem(queueKey)).entries.some(row => row.window_day >= day - 1 && row.window_day <= day &&
-          status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+          status.company_policy.metric_groups.includes(telemetryCatalog.group(row.cell)))
       }, false)
     } catch { return false }
   }
@@ -197,7 +197,7 @@ export class BrowserTelemetryDelivery {
         } else {
           const pending = pendingState(this.port.storage().getItem(queueKey))
           cells = pending.entries.filter(row => row.window_day >= day - 1 && row.window_day <= day &&
-            status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+            status.company_policy.metric_groups.includes(telemetryCatalog.group(row.cell)))
             .map(row => [row.cell, row.count])
           if (!cells.length) return null
         }

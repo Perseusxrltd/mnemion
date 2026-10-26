@@ -49,6 +49,18 @@ completed with matched inputs and cleanup; its lower weighted JavaScript
 allocation samples establish no RSS/CPU saving or resource acceptance. All
 earlier failures and the 2 MiB / 0.5% budgets remain retained.
 
+The later [metadata-allocation follow-up](../validation/2026-10-26-telemetry-metadata-allocation.md)
+reuses fixed path/URI strings and owner-local validation of copied release trust;
+group filtering shares strict decoding with full preview/wire descriptions.
+Filesystem/ACL, SQLite, policy, endpoint and TLS checks remain fresh. URL
+derivation/filter description/certificate decode counts are 1/0/1 against
+original 5/3/130, with unavailable trust still zero. Actual Electron passed
+100 checks with two Windows-specific skips;
+134 browser-source tests, all-coordinate Python comparison and both builds
+passed. No RSS/CPU saving is established. One fixed six-case changed-source
+comparison is selected after integration, with its result pending and all prior
+resource failures and budgets unchanged.
+
 The later [five-target installed-control qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
 verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
 fields each**, including fixed format preview, app/native choice parity and

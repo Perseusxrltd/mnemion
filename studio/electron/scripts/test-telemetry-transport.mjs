@@ -72,6 +72,29 @@ other_cert=(x509.CertificateBuilder().subject_name(other_name).issuer_name(other
 })
 after(async () => { await rm(certificates, { recursive: true, force: true }) })
 
+for (const available of [false, true]) test('immutable release trust is parsed only when needed: ' + available, async t => {
+  const definitions = nativeTelemetryDefinitions()
+  const authorities = [cert], encoded = cert.trim().split('\n').slice(1, -1).join('')
+  const activity = new DesktopTelemetryActivity('unused', {
+    ...definitions.disclosure, collection_available: available, destination: 'https://localhost/v1/report',
+  }, definitions.catalog, () => ({ network: 'unmetered', constrained: false }), undefined, '127.0.0.1', undefined, authorities)
+  authorities[0] = 'PRIVATE_CALLER_REPLACEMENT'
+  const original = Buffer.from
+  let decodes = 0, reservations = 0
+  t.mock.method(Buffer, 'from', (...args) => {
+    if (args[0] === encoded && args[1] === 'base64') decodes++
+    return original(...args)
+  })
+  activity.reserve = async () => { reservations++; return null }
+  try {
+    const stamp = { revision: 1, store_generation: 'a'.repeat(32) }
+    for (let index = 0; index < 128; index++) activity.offerApproved(stamp)
+    await activity.deliverySettled()
+    assert.equal(reservations, available ? 1 : 0)
+    assert.equal(decodes, available ? 1 : 0, 'Repeated offers use the same copied immutable release trust')
+  } finally { activity.closeDelivery() }
+})
+
 async function peer(t, mode = 'success') {
   const sockets = new Set(), requests = []
   let connections = 0, enter, release, close

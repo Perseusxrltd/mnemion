@@ -43,6 +43,8 @@ export class NativeTelemetryStore {
   readonly catalog: TelemetryCatalog
   private sqlite?: Promise<typeof import('node:sqlite')>
   private permissionCheck?: Promise<boolean>
+  private databasePath?: string
+  private databaseUris?: { read: string; write: string }
   private saturated?: {
     bits: Uint8Array; day: number; until: number; checkedUntil: number; userDisabled: boolean
     file: Stats
@@ -56,10 +58,12 @@ export class NativeTelemetryStore {
 
   get available(): boolean { return this.disclosure.collection_available && Boolean(this.disclosure.destination) }
 
+  private path(): string { return this.databasePath ??= join(this.root, 'product-telemetry.sqlite3') }
+
   private saturationFile() {
     // This is only a negative sampling hint. Number precision can at worst
     // suppress an extra sample until expiry; it never authorizes a write.
-    return lstatSync(join(this.root, 'product-telemetry.sqlite3'))
+    return lstatSync(this.path())
   }
 
   /** A short negative cache can only drop disabled/exhausted measurements.
@@ -106,7 +110,7 @@ export class NativeTelemetryStore {
 
   private safe(): string {
     if (!isAbsolute(this.root)) throw failure()
-    const directory = lstatSync(this.root), path = join(this.root, 'product-telemetry.sqlite3'), file = lstatSync(path)
+    const directory = lstatSync(this.root), path = this.path(), file = lstatSync(path)
     if (!directory.isDirectory() || directory.isSymbolicLink() || !file.isFile() || file.isSymbolicLink() || file.nlink !== 1 || file.size > 96 * 1024) throw failure()
     if (process.platform !== 'win32' && [directory, file].some(item => item.uid !== process.getuid!() || (item.mode & 0o077))) throw failure()
     return path
@@ -148,9 +152,17 @@ export class NativeTelemetryStore {
       // loading the app or an unavailable telemetry build.
       this.sqlite ??= import('node:sqlite')
       const { DatabaseSync } = await this.sqlite
-      const url = pathToFileURL(path)
-      url.search = write ? '?mode=rw' : '?mode=ro'
-      database = new DatabaseSync(url.href, { readOnly: !write, allowExtension: false })
+      // Cache only the spelling of this immutable location. Filesystem/ACL
+      // checks above and SQLite authority reads remain fresh on every open.
+      if (!this.databaseUris) {
+        const url = pathToFileURL(path)
+        url.search = '?mode=ro'
+        const read = url.href
+        url.search = '?mode=rw'
+        this.databaseUris = { read, write: url.href }
+      }
+      database = new DatabaseSync(write ? this.databaseUris.write : this.databaseUris.read,
+        { readOnly: !write, allowExtension: false })
       owner.database = database
       database.exec('PRAGMA busy_timeout=0; PRAGMA trusted_schema=OFF; PRAGMA cache_size=-128; PRAGMA mmap_size=0;')
       if (write) database.exec('PRAGMA secure_delete=ON; PRAGMA synchronous=FULL; PRAGMA max_page_count=24;')
@@ -276,7 +288,7 @@ export class NativeTelemetryStore {
       const remove = database.prepare('DELETE FROM pending WHERE cell=?')
       for (const row of rows) {
         if (!integer(row.cell, 65535) || !integer(row.count, 255, 1) || !integer(row.window_day, 1000000)) throw failure()
-        if (!company.groups.includes(this.catalog.describe(row.cell).group)) remove.run(row.cell)
+        if (!company.groups.includes(this.catalog.group(row.cell))) remove.run(row.cell)
         else occupied.add(row.cell)
       }
       // Reuse this transaction's statements and capacity snapshot for the pair.
@@ -287,7 +299,7 @@ export class NativeTelemetryStore {
       let recorded = false
       const exhausted: number[] = []
       for (const { scope, cells } of observations) {
-        const permitted = cells.filter(cell => company.groups.includes(this.catalog.describe(cell).group))
+        const permitted = cells.filter(cell => company.groups.includes(this.catalog.group(cell)))
         const prior = budget.get(scope)
         const limit = scope >= 512 ? this.catalog.specification.limits.resource_observations_per_day : this.catalog.specification.limits.observations_per_workflow_day
         if (prior && !integer(prior.count, 64, 1)) throw failure()

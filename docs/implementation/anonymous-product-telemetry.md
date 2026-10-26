@@ -257,6 +257,16 @@ prevents a causal savings claim; combined CPU is descriptive. No repeat
 measurement is selected. CPU/resource, provider/privacy and installed-platform
 acceptance remain open.
 
+The later [metadata-allocation follow-up](../validation/2026-10-26-telemetry-metadata-allocation.md)
+reuses fixed database path/URI strings, lazily validates each desktop owner's
+copied certificate list and shares strict cell decoding for filtering and full
+descriptions. Fresh authority/TLS checks, preview/wire semantics and budgets
+remain unchanged. Actual Electron passed 100 checks with two Windows-specific
+skips; 134 browser-source tests, all-coordinate Python comparison and both builds
+passed. Original allocation failures remain retained. No RSS/CPU saving is
+established; the selected six-case changed-source comparison after integration
+has no result yet.
+
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
 observations can be reused for **250 ms**, so a recent re-enable may lose optional

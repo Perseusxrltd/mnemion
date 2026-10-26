@@ -73,29 +73,39 @@ export class TelemetryCatalog {
   }
 
   describe(cell: number): CellDescription {
+    return this.decode(cell, true) as CellDescription
+  }
+
+  /** Validate a coordinate without constructing a full preview description. */
+  group(cell: number): string {
+    return this.decode(cell, false) as string
+  }
+
+  private decode(cell: number, detailed: boolean): CellDescription | string {
     if (!Number.isInteger(cell) || cell < 0 || cell > 65535) throw invalid()
     const catalog = this.specification
     if (cell >= 61440) {
       const index = Math.floor((cell - 61440) / 16), offset = (cell - 61440) % 16
       const entry = Object.entries(catalog.resource_metrics)[index]
       if (!entry || offset >= entry[1].upper_bounds.length) throw invalid()
-      return { metric: entry[0], group: entry[1].group, bucket: offset, unit: entry[1].unit }
+      return detailed ? { metric: entry[0], group: entry[1].group, bucket: offset, unit: entry[1].unit } : entry[1].group
     }
     const workflow = Math.floor(cell / 512), surface = Math.floor((cell % 512) / 128), offset = cell % 128
     if (workflow >= this.workflows.length) throw invalid()
-    const context = { workflow: this.workflows[workflow], surface: catalog.surfaces[surface] }
-    if (offset === 0) return { ...context, metric: 'submissions', group: 'usage' }
-    if (offset <= catalog.outcomes.length) return { ...context, metric: 'outcomes', group: 'usage', bucket: catalog.outcomes[offset - 1] }
+    const context = detailed ? { workflow: this.workflows[workflow], surface: catalog.surfaces[surface] } : undefined
+    if (offset === 0) return detailed ? { ...context, metric: 'submissions', group: 'usage' } : 'usage'
+    if (offset <= catalog.outcomes.length) return detailed
+      ? { ...context, metric: 'outcomes', group: 'usage', bucket: catalog.outcomes[offset - 1] } : 'usage'
     const reason = offset - 1 - catalog.outcomes.length
     if (reason >= 0 && reason < catalog.reasons.length) {
       if (reason === 0) throw invalid()
-      return { ...context, metric: 'reasons', group: 'reliability', bucket: catalog.reasons[reason] }
+      return detailed ? { ...context, metric: 'reasons', group: 'reliability', bucket: catalog.reasons[reason] } : 'reliability'
     }
     const family = this.workflows[workflow].split('.', 1)[0]
     for (const [name, start, metric] of this.slots) {
       if (offset < start || offset >= start + metric.upper_bounds.length) continue
       if (metric.families !== 'all' && !metric.families?.includes(family)) throw invalid()
-      return { ...context, metric: name, group: metric.group, bucket: offset - start, unit: metric.unit }
+      return detailed ? { ...context, metric: name, group: metric.group, bucket: offset - start, unit: metric.unit } : metric.group
     }
     throw invalid()
   }

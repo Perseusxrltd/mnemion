@@ -21,8 +21,12 @@ export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
     certificateAuthorities: readonly string[] = nativeTelemetryRoute()?.certificate_authorities ?? []) {
     super(root, disclosure, catalog, companyFile, undefined, undefined, conditions)
     const authorities = Object.freeze([...certificateAuthorities])
+    let releaseTrustValid: boolean | undefined
     this.activity = new TelemetryActivity({
-      available: () => this.available && address !== null && validCertificateAuthorities(authorities),
+      // Only the copied immutable release metadata is retained. Consent,
+      // current policy, the endpoint and TLS are checked at their own gates.
+      available: () => this.available && address !== null &&
+        (releaseTrustValid ??= validCertificateAuthorities(authorities)),
       reserve: async (stamp, stop) => {
         if (gauges && (!await this.eligible(stamp) || !await gauges.prepare(stop) || stop.aborted)) return null
         return this.reserve(stamp)

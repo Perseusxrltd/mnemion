@@ -227,7 +227,7 @@ export class BrowserTelemetry {
           else if (action === 'inspect_report' && this.reviewReady(budget, Date.now()) && browserTransportAvailable()) {
             const day = Math.floor(Date.now() / DAY)
             const pending = pendingState(this.storage().getItem(queueKey)).entries.some(row => row.window_day >= day - 1 && row.window_day <= day &&
-              status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+              status.company_policy.metric_groups.includes(telemetryCatalog.group(row.cell)))
             if (pending) await this.reviewClock.ensure()
           }
         }
@@ -285,7 +285,7 @@ export class BrowserTelemetry {
         else {
           const day = Math.floor(now / DAY)
           const rows = pendingState(storage.getItem(queueKey)).entries.filter(row => row.window_day >= day - 1 && row.window_day <= day &&
-            status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+            status.company_policy.metric_groups.includes(telemetryCatalog.group(row.cell)))
           if (!rows.length) message = 'no_observations'
           else {
             const lifetime = startReviewLifetime(now, this.reviewClock.read()!, (Math.min(...rows.map(row => row.window_day)) + 2) * DAY)
@@ -322,7 +322,7 @@ export class BrowserTelemetry {
       try {
         const day = Math.floor(Date.now() / 86400000)
         local = pendingState(this.storage().getItem(queueKey)).entries.filter(row => row.window_day >= day - 1 && row.window_day <= day)
-          .filter(row => status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+          .filter(row => status.company_policy.metric_groups.includes(telemetryCatalog.group(row.cell)))
           .sort((left, right) => left.cell - right.cell).map(row => ({ cell: row.cell, ...telemetryCatalog.describe(row.cell), count: row.count }))
       } catch { /* Invalid queues never become raw diagnostic output. */ }
     }

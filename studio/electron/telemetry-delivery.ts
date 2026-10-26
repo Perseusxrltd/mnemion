@@ -189,7 +189,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
         const remove = database.prepare('DELETE FROM pending WHERE cell=?'), cells: [number, number][] = []
         for (const row of rows) {
           if (!integer(row.cell, 65535) || !integer(row.count, 255) || row.count < 1) throw invalid()
-          if (company.groups.includes(this.catalog.describe(row.cell).group)) cells.push([row.cell, row.count])
+          if (company.groups.includes(this.catalog.group(row.cell))) cells.push([row.cell, row.count])
           else remove.run(row.cell)
         }
         if (!cells.length) return null

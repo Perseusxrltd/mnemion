@@ -21,7 +21,7 @@ export function pendingState(raw: string | null): PendingState {
   for (const row of value.entries) {
     if (!object(row) || Object.keys(row).length !== 3 || !integer(row.cell, 65535) ||
         !integer(row.count, 255, 1) || !integer(row.window_day, 1000000) || cells.has(row.cell)) throw invalid()
-    telemetryCatalog.describe(row.cell)
+    telemetryCatalog.group(row.cell)
     cells.add(row.cell)
   }
   for (const row of value.contributions) {
@@ -38,9 +38,9 @@ export function pendingState(raw: string | null): PendingState {
 export function collect(state: PendingState, input: unknown, day: number, groups: string[]): { state: PendingState; recorded: boolean } {
   if (!integer(day, 1000000)) throw invalid()
   const { scope, cells } = telemetryCatalog.observation(input)
-  const entries = state.entries.filter(row => row.window_day >= day - 1 && row.window_day <= day && groups.includes(telemetryCatalog.describe(row.cell).group))
+  const entries = state.entries.filter(row => row.window_day >= day - 1 && row.window_day <= day && groups.includes(telemetryCatalog.group(row.cell)))
   const contributions = state.contributions.filter(row => row.window_day === day)
-  const filtered = cells.filter(cell => groups.includes(telemetryCatalog.describe(cell).group))
+  const filtered = cells.filter(cell => groups.includes(telemetryCatalog.group(cell)))
   const next = { catalog_version: 1, entries, contributions }
   const prior = contributions.find(row => row.scope === scope)
   const limit = scope >= 512 ? measurementCatalog.limits.resource_observations_per_day : measurementCatalog.limits.observations_per_workflow_day

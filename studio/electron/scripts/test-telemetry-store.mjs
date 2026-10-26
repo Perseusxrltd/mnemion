@@ -4,7 +4,9 @@ import { mkdtemp, rm, access, readFile, stat, link } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import url, { fileURLToPath } from 'node:url'
+import { syncBuiltinESMExports } from 'node:module'
+import { createHash } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryWorkflow, TelemetryWorkflowChoice } from '../dist/telemetry-workflow.js'
@@ -53,14 +55,14 @@ print(json.dumps(result))
 const observation = extra => ({ kind: 'outcome', workflow: 'memory.recall', surface: 'desktop', outcome: 'success', ...extra })
 const stampOf = status => ({ revision: status.revision, store_generation: status.store_generation })
 
-async function fixture(t) {
+async function fixture(t, directory = 'private choice') {
   const temporary = await mkdtemp(join(tmpdir(), 'mnemion-native-telemetry-'))
   const children = new TelemetryFixtureChildren(python, environment)
   t.after(async () => {
     await children.close()
     await rm(temporary, { recursive: true, force: true })
   })
-  const root = join(temporary, 'private choice'), company = join(temporary, 'company.json')
+  const root = join(temporary, directory), company = join(temporary, 'company.json')
   const invoke = (action, extra = {}) => {
     const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', timeout: 20000,
       input: JSON.stringify({ action, root, company, ...extra }) })
@@ -84,6 +86,76 @@ test('inactive native collection reads no choice and creates no store', async t 
   assert.equal(await store.snapshot(), null)
   assert.equal(await store.record({ private: 'PRIVATE_SENTINEL' }, { revision: 0, store_generation: null }), false)
   await assert.rejects(access(root))
+})
+
+test('store URI derivation is reused while the current choice remains fresh', async t => {
+  const { root, invoke, store, initial } = await fixture(t, 'private choice % # é')
+  const path = join(root, 'product-telemetry.sqlite3'), original = url.pathToFileURL
+  let conversions = 0
+  url.pathToFileURL = (...args) => {
+    if (args[0] === path) conversions++
+    return original(...args)
+  }
+  syncBuiltinESMExports()
+  try {
+    const stamp = await store.snapshot()
+    assert.deepEqual(stamp, stampOf(initial))
+    assert.equal(await store.record(observation(), stamp, 20000), true)
+    assert.deepEqual(await store.snapshot(), stamp)
+    invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+    assert.equal(await store.snapshot(), null, 'URI reuse must never preserve permission')
+    assert.equal(await store.record(observation(), stamp, 20000), false)
+    assert.deepEqual(invoke('preview'), [])
+    assert.equal(conversions, 1, 'An immutable filesystem location needs one URL encoding')
+  } finally {
+    url.pathToFileURL = original
+    syncBuiltinESMExports()
+  }
+})
+
+test('native and Python agree on every numeric telemetry cell privacy group', () => {
+  const definitions = nativeTelemetryDefinitions()
+  const catalog = new NativeTelemetryStore('unused', definitions.disclosure, definitions.catalog).catalog
+  const child = spawnSync(python, ['-c', `
+import hashlib,json
+from mnemion.product_telemetry.catalog import describe,MeasurementError
+digest=hashlib.sha256()
+accepted=0
+for cell in range(65536):
+ try:
+  group=describe(cell)['group']
+  accepted+=1
+ except MeasurementError:
+  group='-'
+ digest.update((group+'\\n').encode())
+print(json.dumps({'accepted':accepted,'digest':digest.hexdigest()}))
+`], { env: environment, encoding: 'utf8', timeout: 20000 })
+  assert.equal(child.status, 0, child.stderr)
+  const digest = createHash('sha256')
+  let accepted = 0
+  for (let cell = 0; cell < 65536; cell++) {
+    let group
+    try { group = catalog.group(cell); accepted++ }
+    catch (error) { assert.equal(error.message, 'telemetry_invalid_measurement'); group = '-' }
+    digest.update(group + '\n')
+  }
+  assert.deepEqual({ accepted, digest: digest.digest('hex') }, JSON.parse(child.stdout))
+  for (const cell of [-1, 65536, NaN, 1.5, '0', null]) {
+    assert.throws(() => catalog.group(cell), /^Error: telemetry_invalid_measurement$/)
+  }
+})
+
+test('group filtering preserves company restrictions without making descriptions', async t => {
+  const { invoke, store, initial } = await fixture(t)
+  invoke('company', { value: { schema_version: 1, enabled: true, metric_groups: ['usage'] } })
+  let descriptions = 0
+  const describe = store.catalog.describe.bind(store.catalog)
+  t.mock.method(store.catalog, 'describe', cell => { descriptions++; return describe(cell) })
+  assert.equal(await store.record(observation({ latency_ms: 20, result_items: 7 }), stampOf(initial), 20000), true)
+  const rows = invoke('preview')
+  assert.ok(rows.length > 0)
+  assert.ok(rows.every(row => row.group === 'usage'))
+  assert.equal(descriptions, 0, 'Filtering numeric cells does not need preview objects')
 })
 
 test('fixed workflow choices preserve one original snapshot and clock and finish once', async t => {
