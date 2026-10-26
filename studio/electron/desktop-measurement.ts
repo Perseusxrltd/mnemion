@@ -97,6 +97,10 @@ export async function measureDesktop<T>(store: WorkflowStore, action: string, in
       }
     }
     let outcome = selection?.completion ?? 'accepted', reason = 'none'
+    if (action === 'app.preferences') {
+      const applied = result && typeof result === 'object' && 'applied' in result ? result.applied : undefined
+      if (applied !== true) { outcome = applied === false ? 'failed' : 'unconfirmed'; reason = 'other_failure' }
+    }
     if (selection?.localStatus && result && typeof result === 'object' && 'state' in result && result.state === 'error') {
       outcome = 'failed'; reason = 'other_failure'
     }

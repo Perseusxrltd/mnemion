@@ -501,15 +501,33 @@ def execute(args, parser) -> int:
             config = read_config(args.config)
             if args.capture_control:
                 from .capture_resources import bounded
-                from .headless_capture_control import perform
+                from .headless_capture_control import Control, perform
 
                 body = sys.stdin.buffer.read(65537)
                 if len(body) > 65536:
                     raise ValueError("Capture control input exceeds its limit")
                 if config.capture is None:
                     raise InboxError("capture_enrollment_missing")
-                with bounded(config.capture.memory_limit_mib):
-                    result = perform(config, json.loads(body))
+                request = Control.model_validate(json.loads(body))
+                try:
+                    from ..maintenance_measurement import begin_capture_control
+
+                    measurement = begin_capture_control(
+                        request.action,
+                        owned=SCAN_REPORT_ENV not in os.environ
+                        and SCAN_TRIGGER_ENV not in os.environ,
+                    )
+                except Exception:
+                    pass  # Optional observation cannot prevent a control action.
+                try:
+                    with bounded(config.capture.memory_limit_mib):
+                        result = perform(config, request)
+                except KeyboardInterrupt:
+                    if measurement is not None:
+                        measurement.failed(cancelled=True)
+                    raise
+                if measurement is not None:
+                    measurement.succeeded()
                 print(json.dumps({"ok": True, "result": result}, ensure_ascii=False), flush=True)
                 return 0
             try:

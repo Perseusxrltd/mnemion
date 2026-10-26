@@ -9,6 +9,7 @@ import { createServer } from 'net'
 import { installServiceBridge, localClientBusy, verifyLocalClient, verifyWorkspaceStorage } from './service-bridge.js'
 import { DesktopUpdates } from './updates.js'
 import { desktopAppAction } from './desktop-app-actions.js'
+import { desktopUpdateMenu } from './update-menu.js'
 import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
 import { verifyNativeHostControl } from './native-host-control-probe.js'
 import { verifyLocalHostingProbe, watchHostingProbeQuit } from './local-hosting-probe.js'
@@ -229,18 +230,7 @@ function quitApp() {
 }
 
 function updateMenu(): MenuItemConstructorOptions[] {
-  return [
-    { label: updates?.status.version ? `${updates.status.state} · ${updates.status.version}` : updates?.status.state || 'Automatic updates', enabled: false },
-    { label: 'Check for updates', enabled: !!updates?.enabled, click: () => { void updates?.check() } },
-    { label: 'Restart to update', enabled: !!updates?.canRequestRestart,
-      click: () => { void updates?.restartIfSafe(true) } },
-    { label: 'Automatic updates and safe restarts', type: 'checkbox', checked: updates?.preferences.automaticUpdates ?? true,
-      enabled: !updates?.policyManaged, click: item => updates?.setPreference('automaticUpdates', item.checked) },
-    { label: 'Start at login', type: 'checkbox', checked: updates?.preferences.startAtLogin ?? true,
-      click: item => updates?.setPreference('startAtLogin', item.checked) },
-    { label: 'Keep running in background', type: 'checkbox', checked: updates?.preferences.background ?? true,
-      click: item => updates?.setPreference('background', item.checked) },
-  ]
+  return desktopUpdateMenu(updates, desktopBridge.measureMenuAction)
 }
 
 function refreshMenus() {

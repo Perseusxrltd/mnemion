@@ -2,12 +2,16 @@
 
 import json
 import argparse
+from contextlib import nullcontext
+from io import BytesIO
 from types import SimpleNamespace
+from typing import get_args
 
 import pytest
 
 from mnemion import maintenance_measurement as measured
 from mnemion.product_telemetry import aggregate, policy
+from mnemion.product_telemetry.catalog import maintenance_specification
 
 
 @pytest.fixture
@@ -131,3 +135,156 @@ def test_actual_connector_entrypoint_owns_only_its_local_work(
     assert sum(row["count"] for row in rows if row["metric"] == "submissions") == (
         1 if mode == "owned" else 0
     )
+
+
+def test_all_capture_controls_have_an_explicit_owned_or_excluded_classification():
+    from mnemion.connectors.headless_capture_control import Control
+
+    spec = maintenance_specification()
+    assert set(spec["capture_controls"]) == set(get_args(Control.model_fields["action"].annotation))
+    for entry in spec["capture_controls"].values():
+        assert ("workflow" in entry) != ("exclusion" in entry)
+        if "exclusion" in entry:
+            assert entry["exclusion"] in spec["exclusions"]
+
+
+def capture_command(monkeypatch, tmp_path, action, effect):
+    from mnemion.connectors import capture_resources, headless_capture_control, runner
+
+    monkeypatch.delenv(runner.SCAN_REPORT_ENV, raising=False)
+    monkeypatch.delenv(runner.SCAN_TRIGGER_ENV, raising=False)
+    monkeypatch.setattr(
+        runner,
+        "read_config",
+        lambda _: SimpleNamespace(capture=SimpleNamespace(memory_limit_mib=256)),
+    )
+    monkeypatch.setattr(capture_resources, "bounded", lambda _: nullcontext())
+    body = {
+        "action": action,
+        "confirm": True,
+        "expected_revision": "PRIVATE_REVISION",
+        "preview_hash": "a" * 64,
+        "archive": str(tmp_path / "PRIVATE_ARCHIVE"),
+        "archive_sha256": "b" * 64,
+        "recovery_key": {"env": "PRIVATE_RECOVERY_KEY"},
+        "retirement_token": {"env": "PRIVATE_RETIREMENT_TOKEN"},
+    }
+    monkeypatch.setattr(
+        runner.sys, "stdin", SimpleNamespace(buffer=BytesIO(json.dumps(body).encode()))
+    )
+    calls = []
+
+    def perform(config, request):
+        calls.append(request.action)
+        assert request.expected_revision == "PRIVATE_REVISION"
+        return effect()
+
+    monkeypatch.setattr(headless_capture_control, "perform", perform)
+    args = SimpleNamespace(
+        capture_control=True,
+        watch=False,
+        inspect=False,
+        managed_state=None,
+        config="PRIVATE_CONFIG",
+    )
+    return runner, args, calls
+
+
+@pytest.mark.parametrize(
+    "action,spec", list(maintenance_specification()["capture_controls"].items())
+)
+def test_actual_capture_control_entrypoint_records_only_its_fixed_acknowledgement(
+    installation, monkeypatch, tmp_path, capsys, action, spec
+):
+    result = {"PRIVATE_RESULT": "PRIVATE_CAPTURE_CONTENT", "delivered": 12789}
+    runner, args, calls = capture_command(monkeypatch, tmp_path, action, lambda: result)
+    assert runner.execute(args, argparse.ArgumentParser()) == 0
+    assert calls == [action]
+    assert json.loads(capsys.readouterr().out)["result"] == result
+    rows = aggregate.preview(installation)
+    if "exclusion" in spec:
+        assert rows == []
+    else:
+        assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+        assert {row["workflow"] for row in rows} == {spec["workflow"]}
+        assert {row["surface"] for row in rows} == {"headless"}
+        assert (
+            next(row for row in rows if row["metric"] == "outcomes")["bucket"] == spec["completion"]
+        )
+        assert not {"work_items", "result_items", "queue_items"} & {row["metric"] for row in rows}
+    assert "PRIVATE" not in json.dumps(rows) and "12789" not in json.dumps(rows)
+    assert b"PRIVATE" not in (installation / policy.DATABASE_NAME).read_bytes()
+
+
+@pytest.mark.parametrize(
+    "condition",
+    ["managed", "remote", "opted_out", "unavailable", "late_opt_out", "observer_failure"],
+)
+def test_capture_controls_preserve_work_without_inheriting_or_resurrecting_consent(
+    installation, monkeypatch, tmp_path, capsys, condition
+):
+    def effect():
+        if condition == "late_opt_out":
+            policy.configure(installation, {"enabled": False, "expected_revision": 0})
+        return {"PRIVATE_RESULT": True}
+
+    runner, args, calls = capture_command(monkeypatch, tmp_path, "pause", effect)
+    if condition == "managed":
+        monkeypatch.setenv(runner.SCAN_REPORT_ENV, "PRIVATE_MANAGED_REPORT")
+    elif condition == "remote":
+        monkeypatch.setenv(runner.SCAN_TRIGGER_ENV, "requested")
+    elif condition == "opted_out":
+        policy.configure(installation, {"enabled": False, "expected_revision": 0})
+    elif condition == "unavailable":
+        monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", False)
+    elif condition == "observer_failure":
+        monkeypatch.setattr(
+            measured,
+            "begin_capture_control",
+            lambda *_a, **_k: (_ for _ in ()).throw(OSError("PRIVATE_OBSERVER")),
+        )
+    assert runner.execute(args, argparse.ArgumentParser()) == 0
+    assert calls == ["pause"]
+    assert json.loads(capsys.readouterr().out)["result"] == {"PRIVATE_RESULT": True}
+    assert aggregate.preview(installation) == []
+
+
+def test_capture_control_uncertainty_does_not_retry_the_original_operation(
+    installation, monkeypatch, tmp_path, capsys
+):
+    def effect():
+        raise OSError("PRIVATE_AFTER_MUTATION")
+
+    runner, args, calls = capture_command(monkeypatch, tmp_path, "backup", effect)
+    assert runner.execute(args, argparse.ArgumentParser()) == 2
+    assert calls == ["backup"]
+    assert "PRIVATE_AFTER_MUTATION" not in capsys.readouterr().err
+    rows = aggregate.preview(installation)
+    assert next(row for row in rows if row["metric"] == "outcomes")["bucket"] == "unconfirmed"
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+
+
+def test_reusable_capture_control_helper_does_not_acquire_an_owner(monkeypatch):
+    from mnemion.connectors import headless_capture_control as controls
+
+    monkeypatch.setattr(controls.device, "status", lambda _: {"private": "PRIVATE_RESULT"})
+    monkeypatch.setattr(
+        measured.workflow, "begin", lambda *_a, **_k: pytest.fail("A helper inferred ownership")
+    )
+    assert controls.perform(SimpleNamespace(capture=True), {"action": "status"}) == {
+        "private": "PRIVATE_RESULT"
+    }
+
+
+def test_capture_control_interruption_preserves_the_interrupt_and_never_replays(
+    installation, monkeypatch, tmp_path
+):
+    def effect():
+        raise KeyboardInterrupt
+
+    runner, args, calls = capture_command(monkeypatch, tmp_path, "drain", effect)
+    with pytest.raises(KeyboardInterrupt):
+        runner.execute(args, argparse.ArgumentParser())
+    assert calls == ["drain"]
+    rows = aggregate.preview(installation)
+    assert next(row for row in rows if row["metric"] == "outcomes")["bucket"] == "cancelled"

@@ -48,7 +48,7 @@ test('the app preview loads source coverage only on demand without changing priv
   try {
     const preview = await exported.telemetryPreview()
     assert.equal([...jsonImports].some(name => name.endsWith('/workflow-coverage.json')), true)
-    assert.deepEqual(preview.workflow_coverage.summary, { total: 94, mapped: 86, unmeasured: 8 })
+    assert.deepEqual(preview.workflow_coverage.summary, { total: 94, mapped: 87, unmeasured: 7 })
     assert.deepEqual(preview.workflow_coverage.workflows.find(row => row.workflow === 'update.verify'), {
       workflow: 'update.verify', state: 'unmeasured', owners: [],
     })

@@ -45,6 +45,11 @@ def control_specification() -> dict:
     return json.loads(files(__package__).joinpath("control-origins.json").read_text())
 
 
+def maintenance_specification() -> dict:
+    """Reviewed background work and explicit standalone capture controls."""
+    return json.loads(files(__package__).joinpath("maintenance-origins.json").read_text())
+
+
 def origin_specification() -> dict:
     """Local discovery of each reviewed application boundary and its exclusions."""
     return {

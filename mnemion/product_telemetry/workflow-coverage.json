@@ -5,8 +5,8 @@
   "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
   "summary": {
     "total": 94,
-    "mapped": 86,
-    "unmeasured": 8
+    "mapped": 87,
+    "unmeasured": 7
   },
   "owners": {
     "control_cli": "Local command line",
@@ -15,7 +15,9 @@
     "browser_connections": "Browser connection controls",
     "legacy_ui": "Legacy app actions",
     "local_stdio": "Local stdio agents",
-    "local_maintenance": "Local source and updater work"
+    "local_maintenance": "Local source and updater work",
+    "headless_controls": "Standalone capture controls",
+    "headless_models": "Local model preparation"
   },
   "workflows": [
     {
@@ -257,7 +259,8 @@
       "workflow": "capture.drain",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "headless_controls"
       ]
     },
     {
@@ -275,7 +278,8 @@
         "control_cli",
         "native_commands",
         "studio_actions",
-        "local_stdio"
+        "local_stdio",
+        "headless_controls"
       ]
     },
     {
@@ -302,7 +306,8 @@
         "control_cli",
         "native_commands",
         "studio_actions",
-        "local_stdio"
+        "local_stdio",
+        "headless_controls"
       ]
     },
     {
@@ -312,7 +317,8 @@
         "control_cli",
         "native_commands",
         "studio_actions",
-        "local_stdio"
+        "local_stdio",
+        "headless_controls"
       ]
     },
     {
@@ -329,7 +335,8 @@
       "workflow": "sources.remove",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "headless_controls"
       ]
     },
     {
@@ -399,8 +406,10 @@
     },
     {
       "workflow": "models.prepare",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "headless_models"
+      ]
     },
     {
       "workflow": "models.reindex",
@@ -449,7 +458,8 @@
       "workflow": "backup.create",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "headless_controls"
       ]
     },
     {
@@ -478,28 +488,32 @@
         "control_cli",
         "native_commands",
         "studio_actions",
-        "local_stdio"
+        "local_stdio",
+        "headless_controls"
       ]
     },
     {
       "workflow": "recovery.restore",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "headless_controls"
       ]
     },
     {
       "workflow": "recovery.finish",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "headless_controls"
       ]
     },
     {
       "workflow": "recovery.discard",
       "state": "mapped",
       "owners": [
-        "native_commands"
+        "native_commands",
+        "headless_controls"
       ]
     },
     {
@@ -803,6 +817,6 @@
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
-    "maintenance-origins.json": "fd3866ff07c15b70c98704fb17c8f866b7a97c77d740c627be526b7af76421f9"
+    "maintenance-origins.json": "08695f5f4a92e2394064db546c81ea492633b6dfc9ea14e804fa9395e937ae37"
   }
 }

@@ -14,7 +14,7 @@ export function desktopAppAction(updates: DesktopUpdates | null, action: string,
       if (updates.preferences[key] !== input.expected_value) throw new Error('That app preference changed. Read app.status before retrying.')
       if (key === 'automaticUpdates' && updates.policyManaged) throw new Error('Automatic updates are controlled by this computer’s administrator.')
       updates.setPreference(key, input.enabled)
-      return updates.inspect()
+      return { ...updates.inspect(), applied: updates.preferences[key] === input.enabled }
     }
     case 'app.update-check':
       if (!updates.enabled) throw new Error('Automatic updates are paused, managed by the administrator, or unavailable for this distribution. Read app.status.')

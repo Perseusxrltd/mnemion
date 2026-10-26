@@ -1,9 +1,66 @@
 """Disclosed local connector work; reusable sync and remote jobs stay unowned."""
 
+from contextlib import contextmanager
 import time
 
 from .control_measurement import _optional
 from .product_telemetry import workflow
+from .product_telemetry.catalog import maintenance_specification
+
+
+class LocalActionMeasurement:
+    def __init__(self, active, completion):
+        self.active = active
+        self.completion = completion
+
+    @_optional
+    def succeeded(self):
+        # A successful local acknowledgement is not an inferred remote job,
+        # delivered-item total or replay of private recovery history.
+        self.active.finish(self.completion)
+
+    @_optional
+    def failed(self, *, cancelled=False):
+        # A mutation may have taken effect before its caller lost confirmation.
+        # Do not infer a confirmed failure from an arbitrary exception.
+        self.active.finish(
+            "cancelled" if cancelled else "unconfirmed",
+            "none" if cancelled else "other_failure",
+        )
+
+
+@_optional
+def begin_capture_control(action: str, *, owned: bool):
+    if not owned or type(action) is not str:
+        return None
+    spec = maintenance_specification()["capture_controls"].get(action)
+    if spec is None or "exclusion" in spec:
+        return None
+    active = workflow.begin(spec["workflow"], "headless")
+    return LocalActionMeasurement(active, spec["completion"]) if active else None
+
+
+@contextmanager
+def observed_preparation(kind: str, *, owned: bool):
+    measurement = None
+    try:
+        if owned is True and type(kind) is str:
+            spec = maintenance_specification()["model_preparation"].get(kind)
+            if spec:
+                active = workflow.begin(spec["workflow"], "headless")
+                if active:
+                    measurement = LocalActionMeasurement(active, spec["completion"])
+    except Exception:
+        pass
+    try:
+        yield
+    except BaseException as error:
+        if measurement is not None:
+            measurement.failed(cancelled=isinstance(error, KeyboardInterrupt))
+        raise
+    else:
+        if measurement is not None:
+            measurement.succeeded()
 
 
 class SourceMeasurement:

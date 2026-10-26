@@ -9,6 +9,25 @@
     "desktop.update_download": { "workflow": "update.download", "surface": "desktop", "retries": "one cycle including verification and bounded retries" },
     "desktop.update_apply": { "workflow": "update.apply", "surface": "desktop", "success": "accepted installer handoff only; installed version is unobserved" }
   },
+  "capture_controls": {
+    "status": { "exclusion": "control_inspection" },
+    "preview": { "exclusion": "control_inspection" },
+    "key": { "exclusion": "control_secret" },
+    "enroll": { "workflow": "sources.configure", "completion": "accepted" },
+    "pause": { "workflow": "sources.pause", "completion": "accepted" },
+    "resume": { "workflow": "sources.resume", "completion": "accepted" },
+    "drain": { "workflow": "capture.drain", "completion": "accepted" },
+    "backup": { "workflow": "backup.create", "completion": "accepted" },
+    "inspect": { "workflow": "recovery.inspect", "completion": "success" },
+    "restore": { "workflow": "recovery.restore", "completion": "accepted" },
+    "finish": { "workflow": "recovery.finish", "completion": "accepted" },
+    "discard": { "workflow": "recovery.discard", "completion": "success" },
+    "retire": { "workflow": "sources.remove", "completion": "accepted" }
+  },
+  "model_preparation": {
+    "embedding": { "workflow": "models.prepare", "completion": "success" },
+    "librarian_tokenizer": { "workflow": "models.prepare", "completion": "success" }
+  },
   "resources": {
     "desktop_source_rss": "Maximum supplied by this owned worker's live RSS callback; unavailable if the worker supplies no sample.",
     "desktop_source_budget": "The selected worker's configured memory ceiling, only alongside an actual worker RSS sample.",
@@ -21,7 +40,11 @@
     "desktop_requested_scan": "An explicit Sync request already has its desktop/native-operator owner; the queued continuation contributes no second workflow.",
     "reusable_sync": "Calling the reusable connector sync or capture helpers does not infer an owner.",
     "remote_or_managed_scan": "Remote-requested scans and host-managed child processes do not inherit an administrator's telemetry choice.",
-    "inspection_and_controls": "Discovery, provider inspection, saved scan history and capture-control transport do not start a background observer.",
+    "inspection_and_controls": "Discovery, provider inspection, saved scan history and capture-control transport do not start a background observer. Explicit standalone controls use their own reviewed action boundary.",
+    "control_inspection": "Capture status and configuration previews do not identify a new work operation.",
+    "control_secret": "Generating or inspecting private keys is not product telemetry.",
+    "control_nested": "Only the standalone command owns a control. Reusable perform calls, managed/reporting children and remote-requested work do not inherit its choice.",
+    "model_nested": "Deployment/startup calls explicitly decline preparation ownership. Registry helpers and model-list inspection acquire no owner; model/profile names and output stay private.",
     "updater_poll": "Scheduled current-version checks, progress messages and safe-restart readiness checks are not separate uses.",
     "updater_internal_stage": "Signature verification and download retries belong to the original download cycle, not extra workflow submissions.",
     "updater_quit": "Unfinished download observations are discarded on quit. No shutdown flush or inferred post-restart success.",

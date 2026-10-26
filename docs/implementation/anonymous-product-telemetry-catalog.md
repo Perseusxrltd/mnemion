@@ -8,7 +8,8 @@ and browser queues, revision/generation fencing, local controls and exact manual
 report review are implemented. Source owners cover `mnemion-control call`, selected
 desktop/native-operator actions, Studio clients, browser connection/legacy UI,
 explicitly configured local stdio, fresh local source/capture work and automatic
-desktop updater cycles. Shared budgets, opportunistic delivery owners, senders,
+desktop updater cycles, plus explicit local model preparation. Shared budgets,
+opportunistic delivery owners, senders,
 collector and publisher components also exist; their scoped evidence does not
 establish production qualification. **Collection remains unavailable; destination
 and release route address are null.** No production product analytics is active.
@@ -16,11 +17,13 @@ All 66 requirement texts and the other 65 states remain unchanged; V08 stays Bui
 
 The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 now makes all 94 categories visible in app/browser and native format inspection:
-86 have mapped source boundaries and eight remain unmeasured. It is generated
+87 have mapped source boundaries and seven remain unmeasured. It is generated
 from these maps and verified by the release checker. This reconciles catalog
 references without claiming complete per-action, sensor or installed coverage;
-the [coverage report](../validation/2026-10-26-telemetry-coverage.md) records the
-scope and the remaining gaps.
+the [initial coverage report](../validation/2026-10-26-telemetry-coverage.md)
+preserves its 86-mapped/eight-unmeasured checkpoint. The
+[action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
+records the later preparation boundary and remaining gaps.
 
 Current [wire v2 and report v3](../validation/2026-10-26-telemetry-review-selection.md)
 retain a four-byte body and 23 permitted views. Automatic packets use the
@@ -414,7 +417,8 @@ delivery still require acceptance.
 ## Fresh local maintenance coverage
 
 The [maintenance-origin map](../../mnemion/product_telemetry/maintenance-origins.json)
-adds the fifth schema map: **six origins, five sensor descriptions and nine
+is the fifth schema map: **six source/updater origins, 13 capture-control
+classifications, two preparation kinds, five sensor descriptions and 13
 exclusions**. These are selected local owners under the same disclosure,
 generation/revision and company policy; collection is still unavailable. Existing
 [desktop](../../studio/electron/telemetry-activity.ts) and
@@ -426,8 +430,17 @@ CLI keepalive or new measurement owner for nested work.
 | --- | --- |
 | Desktop scheduled source/capture | [DesktopSources](../../studio/electron/desktop-sources.ts) starts an observer only for automatic work. Explicit Sync continuations already have a request owner. Successful empty scans, paused work and mere status inspection add no use. |
 | Standalone source/capture | The [connector entrypoint](../../mnemion/connectors/runner.py) owns its fresh local execution. Reusable sync calls, remote-requested work and host-managed child processes do not inherit this owner. |
+| Standalone capture controls | The [connector entrypoint](../../mnemion/connectors/runner.py) separately observes ten eligible actions; status, preview and key generation are excluded. Managed/reporting children and reusable control helpers acquire no owner. |
+| Explicit model preparation | The [service CLI](../../mnemion/service/cli.py) owns direct `prepare-model` and `librarian-models --prepare` invocations as `models.prepare`. The observer receives only `embedding` or `librarian_tokenizer`; model/profile identifiers and normal output remain outside telemetry. |
 | Desktop update download | The [updater](../../studio/electron/updates.ts) keeps download, verification and bounded retries in one cycle with one terminal success, failure or cancellation. Current-version and safe-restart polls add no use. Unfinished cycles are discarded on quit. |
 | Installer handoff | `update.apply` records only an **accepted handoff**, if observed. Its optional snapshot has a 25 ms wait budget before the original guarded action. It does not assert an installed version or completed restart, and there is no shutdown flush or wait for telemetry. |
+
+The [preparation adapter](../../mnemion/maintenance_measurement.py) records only
+the permitted workflow, bounded timing and fixed outcomes/reasons. Both automatic
+[deployment/startup calls](../../mnemion/service/deployment.py) explicitly set
+`preparation_owner=False`; listing and registry helpers acquire no owner.
+Preparation resource/sensor qualification remains open. Source ownership does
+not authorize model downloads or inference for telemetry.
 
 The [native](../../studio/electron/maintenance-measurement.ts) and
 [headless](../../mnemion/maintenance_measurement.py) source adapters extract only
@@ -505,7 +518,10 @@ Arbitrary API paths, command names, labels and catch-all metadata are forbidden.
 A producer may supply only selected numeric primitives and catalog enums,
 never a request, result, exception, receipt or audit object. Version 1's numeric
 upper edges are below; values above the last edge share the last bucket.
-Exact input values are discarded by the encoder, and no sensor is sampled yet.
+Exact input values are discarded by the encoder. Selected source owners have
+hooks for the bounded counts, durations and resource samples described above;
+the encoder does not sample those sensors. Collection remains unavailable,
+and an unavailable sensor produces no observation.
 
 | Metric | Unit and bucket upper edges |
 | --- | --- |
@@ -519,9 +535,11 @@ Exact input values are discarded by the encoder, and no sensor is sampled yet.
 
 Submission, outcome and fixed-reason cells use the same bounded daily counters.
 The separate resource cells carry no workflow or surface label. Platform/release
-cohorts and outbound reporting windows remain unimplemented; they must not become
-a joinable profile. Missing sensors or terminal outcomes produce no substitute
-zero/success observation. Sampling placement and usefulness still need review.
+cohorts remain unimplemented and must not become a joinable profile. Fixed
+closed-week aggregation, publication and retention are implemented in source;
+production collection and reporting remain unqualified. Missing sensors or
+terminal outcomes produce no substitute zero/success observation. Sampling
+placement and usefulness still need review.
 
 The catalog fixes eight outcomes:
 
@@ -584,8 +602,11 @@ A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not
 feature adoption. The explicit CLI, desktop and Studio maps do not finish the
 remaining action-by-action coverage reconciliation or qualify their producers.
-Any unmapped action must appear as unmeasured in the local preview and remain a
-coverage item; it must not fall into an arbitrary “other operation” event.
+The current local preview marks whole catalog categories as unmeasured when
+they have no declared source mapping. It does not yet enumerate every action
+or surface. Making each unmapped action visible as unmeasured in that preview
+remains an open coverage item, including when another action maps to the same
+category. No unmapped action may fall into an arbitrary “other operation” event.
 
 ## Private operational metrics and remaining decisions
 

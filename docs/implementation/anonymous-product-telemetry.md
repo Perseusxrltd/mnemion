@@ -69,16 +69,32 @@ original action.
 The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
 matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
 event/input/result objects, free text and identifying values do not.
-The generated [coverage inventory](../validation/2026-10-26-telemetry-coverage.md)
-marks 86 categories with declared source mappings and eight unmeasured. It is
-available in app/browser format inspection and native schema/preview, with no
-new collection owner. Release checks reject stale inventories. A source mapping
+The generated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+marks 87 categories with declared source mappings and seven unmeasured. It is
+available in app/browser format inspection and native schema/preview as read-only
+metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
 Payload-byte observations are not whole-wire traffic measurements.
 Owners cover the control CLI, desktop/native operator, Studio/browser, explicit
-local stdio and selected fresh maintenance. The control CLI classifies all
+local stdio, selected fresh maintenance and explicit local model preparation.
+The control CLI classifies all
 **161 operations: 82 eligible and 79 excluded across five reasons**. The catalog
 records the detailed maps and remaining action-by-action coverage.
+
+Explicit app/tray requests and standalone capture controls now have reviewed
+[action boundaries](../validation/2026-10-26-telemetry-action-coverage.md).
+All 13 capture controls are classified: ten eligible acknowledgements and three
+inspection/key exclusions. Managed children and reusable helpers acquire no
+second owner. Preference acknowledgements expose whether the save applied;
+failed saves are not successful telemetry outcomes. Explicit `prepare-model`
+and `librarian-models --prepare` commands now own `models.prepare`. The observer
+receives only the fixed preparation kind; model/profile identifiers and normal
+command output stay outside telemetry. Listing, registry helpers and nested
+deployment/startup preparation acquire no owner. Model resource/sensor
+qualification, rollback completion, delivered-item measurements, switch
+ownership and full per-action preview visibility remain open, alongside the
+installed and resource acceptance gates. The action report preserves the
+earlier 86-mapped/eight-unmeasured audit separately from this source follow-up.
 
 Keyed API writes require `X-Mnemion-Idempotency: new`; typed
 [host mutations](../validation/2026-10-26-telemetry-host-requests.md) require the

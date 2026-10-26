@@ -6,6 +6,8 @@ import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { windowsTelemetryPrivateExecutable } from '../dist/telemetry-private-store.js'
 import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
+import { desktopUpdateMenu } from '../dist/update-menu.js'
+import { desktopAppAction } from '../dist/desktop-app-actions.js'
 
 const catalog = new TelemetryCatalog(nativeTelemetryDefinitions().catalog)
 function fixture() {
@@ -147,4 +149,69 @@ test('unexpected results and unavailable privacy checks cannot change the origin
   const started = performance.now()
   assert.equal(await measureDesktop(f.store, 'local.start', {}, 'native_agent', () => 'started'), 'started')
   assert.ok(performance.now() - started < 250)
+})
+
+test('actual app and tray menu callbacks own one acknowledgement without waiting for update completion', async () => {
+  const f = fixture(), calls = []
+  const updates = { status: { state: 'Ready', version: '4.46.18' }, enabled: true, canRequestRestart: true,
+    preferences: { automaticUpdates: true, startAtLogin: true, background: true }, policyManaged: false,
+    check() { calls.push('check'); return new Promise(() => {}) },
+    restartIfSafe(requested) { calls.push(['restart', requested]); return new Promise(() => {}) },
+    setPreference(key, enabled) { calls.push([key, enabled]); this.preferences[key] = enabled },
+  }
+  const menu = desktopUpdateMenu(updates, (action, run) => measureDesktop(f.store, action, {}, 'desktop', run))
+  assert.equal(menu[0].enabled, false)
+  for (const item of menu.slice(1)) await item.click({ checked: false })
+  assert.deepEqual(calls, ['check', ['restart', true], ['automaticUpdates', false], ['startAtLogin', false], ['background', false]])
+  const submitted = f.values.filter(row => row.metric === 'submissions')
+  assert.deepEqual(submitted.map(row => row.workflow), ['update.check', 'update.restart', 'setup.configure', 'setup.configure', 'setup.configure'])
+  assert.ok(f.values.every(row => row.surface === 'desktop'))
+  assert.deepEqual(f.values.filter(row => row.metric === 'outcomes').map(row => row.bucket), ['accepted', 'accepted', 'success', 'success', 'success'])
+})
+
+test('menu refresh, missing update controller and disabled collection do not acquire usage', async () => {
+  const f = fixture(), calls = []
+  f.store.available = false
+  const observe = (action, run) => measureDesktop(f.store, action, {}, 'desktop', run)
+  const missing = desktopUpdateMenu(null, observe)
+  for (const item of missing.slice(1)) await item.click({ checked: false })
+  const updates = { status: { state: 'Current' }, enabled: true, canRequestRestart: false,
+    preferences: { automaticUpdates: true, startAtLogin: true, background: true }, policyManaged: true,
+    check() { calls.push('check') }, setPreference() { calls.push('preference') },
+  }
+  const menu = desktopUpdateMenu(updates, observe)
+  desktopUpdateMenu(updates, observe)
+  assert.equal(menu[2].enabled, false)
+  assert.equal(menu[3].enabled, false)
+  assert.deepEqual(calls, [])
+  await menu[1].click({})
+  await menu[4].click({ checked: false })
+  assert.deepEqual(calls, ['check', 'preference'])
+  assert.deepEqual(f.reads, [])
+  assert.deepEqual(f.values, [])
+})
+
+test('a preference persistence failure is not reported as success by either menu or agent controls', async () => {
+  const updates = { status: { state: 'Current' }, enabled: true, canRequestRestart: false,
+    preferences: { automaticUpdates: true, startAtLogin: true, background: true }, policyManaged: false,
+    setPreference() { this.status.state = 'Preference could not be saved' },
+    inspect() { return { preferences: { ...this.preferences }, status: { ...this.status } } },
+  }
+  const f = fixture()
+  const menu = desktopUpdateMenu(updates, (action, run) => measureDesktop(f.store, action, {}, 'desktop', run))
+  await menu[4].click({ checked: false })
+  const result = await measureDesktop(f.store, 'app.preferences', {}, 'native_agent', () =>
+    desktopAppAction(updates, 'app.preferences', { key: 'startAtLogin', enabled: false, expected_value: true }, new AbortController().signal))
+  assert.equal(result.applied, false)
+  assert.equal(updates.preferences.startAtLogin, true)
+  assert.deepEqual(f.values.filter(row => row.metric === 'outcomes').map(row => row.bucket), ['failed', 'failed'])
+})
+
+test('a missing preference acknowledgement does not imply a successful save', async () => {
+  const f = fixture()
+  for (const result of [undefined, {}, { applied: 'PRIVATE_UNEXPECTED_RESULT' }]) {
+    assert.equal(await measureDesktop(f.store, 'app.preferences', {}, 'native_agent', () => result), result)
+  }
+  assert.deepEqual(f.values.filter(row => row.metric === 'outcomes').map(row => row.bucket), ['unconfirmed', 'unconfirmed', 'unconfirmed'])
+  assert.equal(JSON.stringify(f.values).includes('PRIVATE'), false)
 })

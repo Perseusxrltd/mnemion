@@ -30,6 +30,8 @@ OWNERS = {
     "legacy_ui": "Legacy app actions",
     "local_stdio": "Local stdio agents",
     "local_maintenance": "Local source and updater work",
+    "headless_controls": "Standalone capture controls",
+    "headless_models": "Local model preparation",
 }
 
 
@@ -80,6 +82,10 @@ def build(root: Path) -> dict:
                 add("local_stdio", entry)
     for entry in documents["maintenance-origins.json"]["origins"].values():
         add("local_maintenance", entry)
+    for entry in documents["maintenance-origins.json"]["capture_controls"].values():
+        add("headless_controls", entry)
+    for entry in documents["maintenance-origins.json"]["model_preparation"].values():
+        add("headless_models", entry)
 
     rows = [
         {

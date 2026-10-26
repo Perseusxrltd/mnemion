@@ -404,13 +404,13 @@ def main(argv: list[str] | None = None) -> int:
                 "Runtime containers must run as the unprivileged application user"
             )
         if args.mode == "model":
-            return service(["prepare-model"])
+            return service(["prepare-model"], preparation_owner=False)
         os.environ["MNEMION_MODEL_OFFLINE"] = "1"
         credentials = state / args.mode / "credentials.json"
         if args.mode == "worker":
             return service(["--credentials", str(credentials), "worker", *args.arguments])
         # Verify the pinned cache before serving a healthy application.
-        prepared = service(["prepare-model"])
+        prepared = service(["prepare-model"], preparation_owner=False)
         if prepared:
             return prepared
         return service(

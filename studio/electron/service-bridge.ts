@@ -1044,6 +1044,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
     backupDiagnostic: () => localDiagnostic(local?.status.backup?.diagnostic),
     maintenanceTelemetry: telemetryStore,
+    measureMenuAction: (action: 'app.update-check' | 'app.update-restart' | 'app.preferences', run: () => unknown) =>
+      measureAction(action, {}, 'desktop', run),
     localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.busy ?? false),
     localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),

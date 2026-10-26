@@ -27,7 +27,18 @@ def _required(name: str) -> str:
     return value
 
 
-def main(argv: list[str] | None = None) -> int:
+def _preparation_scope(kind: str, owned: bool):
+    from contextlib import nullcontext
+
+    try:
+        from ..maintenance_measurement import observed_preparation
+
+        return observed_preparation(kind, owned=owned)
+    except Exception:
+        return nullcontext()
+
+
+def main(argv: list[str] | None = None, *, preparation_owner: bool = True) -> int:
     parser = argparse.ArgumentParser(
         prog="mnemion-service", description="Shared memory for applications and teams"
     )
@@ -511,20 +522,21 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "prepare-model":
         from .model_registry import ModelRegistry
 
-        registry = ModelRegistry.from_environment()
-        try:
-            model = registry.profile(args.profile)
-            model.prepare()
-            print(
-                json.dumps(
-                    {
-                        "generation_id": model.generation.id,
-                        "dimensions": model.generation.dimensions,
-                    }
+        with _preparation_scope("embedding", preparation_owner):
+            registry = ModelRegistry.from_environment()
+            try:
+                model = registry.profile(args.profile)
+                model.prepare()
+                print(
+                    json.dumps(
+                        {
+                            "generation_id": model.generation.id,
+                            "dimensions": model.generation.dimensions,
+                        }
+                    )
                 )
-            )
-        finally:
-            registry.close()
+            finally:
+                registry.close()
     elif args.command == "models":
         from .model_registry import ModelRegistry
 
@@ -540,22 +552,23 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "librarian-models":
         from .librarian_provider import LibrarianRegistry
 
-        registry = LibrarianRegistry.from_environment()
-        try:
-            if args.prepare:
-                try:
-                    registry.get(args.prepare).tokenizer.prepare()
-                except Exception:
-                    raise RuntimeError(
-                        "Librarian tokenizer preparation failed; private values omitted"
-                    ) from None
-            print(
-                json.dumps(
-                    {"profiles": [p.profile.describe() for p in registry.providers.values()]}
+        with _preparation_scope("librarian_tokenizer", bool(args.prepare) and preparation_owner):
+            registry = LibrarianRegistry.from_environment()
+            try:
+                if args.prepare:
+                    try:
+                        registry.get(args.prepare).tokenizer.prepare()
+                    except Exception:
+                        raise RuntimeError(
+                            "Librarian tokenizer preparation failed; private values omitted"
+                        ) from None
+                print(
+                    json.dumps(
+                        {"profiles": [p.profile.describe() for p in registry.providers.values()]}
+                    )
                 )
-            )
-        finally:
-            registry.close()
+            finally:
+                registry.close()
     elif args.command in {"schema", "agent-schema"}:
         from .api import create_app
         from .db import Database
