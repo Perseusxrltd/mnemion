@@ -65,9 +65,9 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
     assert value["outbound_body"] is None and value["outbound_bytes"] == 0
     example = value["illustrative_packet"]
     assert example["kind"] == "synthetic_example" and example["body_encoding"] == "base64"
-    assert base64.b64decode(example["body_base64"], validate=True) == bytes((1, 0, 7, 0))
+    assert base64.b64decode(example["body_base64"], validate=True) == bytes((2, 0, 7, 0))
     assert example["body_bytes"] == 4
-    assert set(example) == {"kind", "body_encoding", *wire.preview(bytes((1, 0, 7, 0)))}
+    assert set(example) == {"kind", "body_encoding", *wire.preview(bytes((2, 0, 7, 0)))}
     assert "PRIVATE_SENTINEL" not in json.dumps(value)
     assert value["transport_available"] is True
     assert value["status"]["delivery_budget"]["transport_available"] is True

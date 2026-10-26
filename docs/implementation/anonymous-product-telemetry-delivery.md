@@ -27,15 +27,15 @@ passed; the fixture used synthetic CPU admission, so actual sensor qualification
 remains open. The release-owned route address remains
 null; these earlier transport passes do not qualify the new owner paths.
 
-## One randomized category per report
+## Automatic categories and fixed reviewed reports
 
-The [version 1 format](../../mnemion/product_telemetry/wire-v1.json) defines
+The [version 2 format](../../mnemion/product_telemetry/wire-v2.json) retains
 **23 views, 280 category values and 400 padded Hadamard coordinates**. The views
 cover feature family/operation, invocation surface, outcome/reason, fixed metric
 buckets and separate coarse platform, architecture and release-family cohorts.
 They do not form a joined device profile.
 
-The [Python](../../mnemion/product_telemetry/wire.py) and
+For automatic reports, the [Python](../../mnemion/product_telemetry/wire.py) and
 [TypeScript](../../studio/electron/telemetry-wire.ts) encoders:
 
 1. Select one view using fixed weights among permitted metric groups, independently
@@ -50,17 +50,29 @@ The result is exactly **four body bytes**:
 
 | Byte | Meaning |
 | --- | --- |
-| 0 | Format version, currently `1` |
+| 0 | Format version, currently `2` |
 | 1 | Chosen view index |
 | 2 | Random coordinate within that view's padded domain |
-| 3 | Randomized positive-sign flag, `0` or `1` |
+| 3 | Automatic sign flags `0`/`1`; canonical reviewed flag `2`, with coordinate `0`. Other forms are refused. |
+
+The [selection correction](../validation/2026-10-26-telemetry-review-selection.md)
+prepares reviewed packets deterministically before inspection: first permitted
+view, coordinate `0` and flags `2`, with no category or coin entropy. They carry
+no categorical measurement and count only toward coarse global
+report volume, never categorical sums, per-view counts or precision. Automatic
+randomization and delivery budgets are unchanged. Legacy wire v1 is rejected
+because it has no selection marker; this does not prevent reading previously
+stored immutable aggregate reports. This newer source is excluded from frozen
+4.46.14; earlier codec/transport receipts retain their original versions.
 
 The source app, native CLI and browser controls now expose the fixed synthetic
-bytes `01 00 07 00` as Base64 **`AQAHAA==`** under `illustrative_packet`, labeled
+bytes `02 00 07 00` as Base64 **`AgAHAA==`** under `illustrative_packet`, labeled
 `kind: "synthetic_example"` and `body_encoding: "base64"`. The shared Python
 `format_example` and TypeScript `formatExample` helpers describe `feature_family`,
 coordinate `7`, sign `-1` and four body bytes. They do not recover a true category,
-read a queue, draw new randomness or reserve an attempt. The wire remains v1.
+read a queue, draw new randomness or reserve an attempt. This wire v2 example
+is marked automatic. Published 4.46.13 retains its original wire v1 example
+`01 00 07 00` / `AQAHAA==`; the historical format-preview checks cover that version.
 
 The actual-body fields stay `outbound_body: null`, `outbound_bytes: 0` and
 `outbound_state: "not_inspected"`. This is a report-format example, not an
@@ -102,15 +114,25 @@ environment checks on an actual attempt.
 
 For a fixed permitted view and coordinate, a randomized sign has probability
 `3/4` or `1/4` under any possible category. The maximum likelihood ratio is
-therefore `3`, giving **per-report local differential privacy ε = ln(3)** for
-the sampled categorical value, conditional on that permitted view.
+therefore `3`, giving the **randomizer's categorical bound ε = ln(3)** for
+the sampled value, conditional on that permitted view and before human selection.
+Applying it to received automatic reports requires inclusion independent of
+their randomized packet. Arbitrary human approval need not preserve that bound.
+The strengthened manual path therefore sends a fixed body within the permitted
+groups, without categorical measurement or randomization.
+Exact reviewed previews therefore expose `report_selection: "reviewed"`,
+`aggregation: "coarse_global_volume_only"`, null `per_report_privacy_loss` and
+`randomization_privacy_loss`, and
+`privacy_bound_scope: "fixed_body_for_permitted_groups"`. These fields do not
+claim protection for participation, human inclusion or policy-group choices.
 
 This is **not** participation, policy-choice, lifetime or network anonymity.
 The chosen view is visible, permission groups affect view selection, and repeated
 reports compose privacy loss. The packet contains no category label, local count,
 stable identifier, generation token, credential or event timestamp, but absence
 of these fields alone does not establish anonymity. Confidence and utility also
-assume independent randomization by conforming senders; the source provides no
+assume independent randomization, packet-independent inclusion and correctly
+marked automatic reports from conforming senders; the source provides no
 authenticated-contributor or poisoning-resistance guarantee.
 
 At the codec-only checkpoint, the JSON's budget entries were proposals. The later
@@ -122,7 +144,7 @@ installed production delivery remains unqualified:
 | --- | --- |
 | At least 86,400 seconds between attempts | Shared cooldown adds zero through one hour of random jitter; no scheduler exists. |
 | At most seven attempts per rolling week | Private SQLite accounting survives opt-out; every reservation remains spent without a refund. |
-| Conditional weekly bound `7 × ln(3)` | Requires every actual report to use the allowance; no installed sender proves this and it is not a lifetime/person guarantee. |
+| Conditional automatic categorical bound `7 × ln(3)` | Requires the shared allowance and packet-independent inclusion of correctly marked automatic reports. It does not cover arbitrary manual selection or establish a lifetime/person guarantee. |
 | Reserve 65,536 wire bytes per attempt | Fixed accounting plus a 256 KiB rolling-day guard. The newer Python component caps charged TLS bytes separately; whole-wire cost remains unqualified. |
 
 Existing local cell/contribution limits clear on explicit choice; the separate
@@ -314,7 +336,8 @@ cost and all-platform acceptance remain open.
 ## Fixed closed-week output
 
 [AggregateWindow](../../mnemion/product_telemetry/reporting.py) retains signed
-coordinate sums and per-view counts, not raw reports or client rows. Its **400
+coordinate sums and per-view counts for automatic reports only, not raw reports
+or client rows. Reviewed reports affect only the global total. Its **400
 signed coordinates plus 23 counts occupy 3,384 array bytes**; that excludes Python
 objects, server/TLS overhead and published output. The source bounds a window to
 ten million accepted reports. A window seals once in memory and clears its arrays;
@@ -330,35 +353,46 @@ actual server, TLS terminator, proxy or provider: transport metadata and logs
 still require evidence through the complete deployed path.
 
 Weeks are server-owned, fixed Monday-to-Monday windows. Only a closed window is
-passed to a publisher callback. The reporting follow-up adds **report schema
-version 2** with a root `report_range` containing one global power-of-two volume
-range after **at least 64 accepted reports** in that week, for example
+passed to a publisher callback. Current **report schema version 3** retains the
+root `report_range` introduced in v2: one global power-of-two volume range after
+**at least 64 accepted automatic or reviewed reports** in that week, for example
 `[64, 128)`. Fewer than 64 reports produce no
 closed-week document. This is the collector's unverified contribution volume,
 not a user/device count, adoption measure or total feature usage. It adds no
 live view, filter or exact count.
 
-Each detailed view still needs **at least 4,096 reports of its own**, and
+Each detailed view still needs **at least 4,096 automatic reports of its own**, and
 uses power-of-two count ranges such as `[4096, 8192)`. All views may remain
 `insufficient_reports` in a document that contains a global volume range.
 A rare/noisy cell whose confidence interval includes zero is
 `insufficient_precision`, with no
 published point estimate or residual. Inconsistent estimates suppress the view.
-Published fractions describe sampled categories, not unique users or total
-global feature usage.
+Published fractions describe categories sampled from received automatic reports,
+not unique users, all activity or total global feature usage. Reviewed reports
+cannot satisfy a detailed threshold or narrow an interval, and no separate
+manual count is published.
 
-Report schema v2 is separate from **wire v1**, whose four-byte packet, category
-randomization and client allowance remain unchanged. The updated reader accepts
-existing immutable v1 reports without rewriting them or inventing a missing
-global range. The new volume bucket does not inherit the categorical
+Report v3 declares `estimation_population: "automatic_reports_only"` and
+`reviewed_report_use: "coarse_global_volume_only"`, with the inclusion assumptions
+above. It accompanies **wire v2**, whose packet remains four bytes. The reader
+accepts immutable aggregate report v1/v2 documents without rewriting them or
+inventing a missing global range. Legacy wire v1 is still refused. The volume
+bucket does not inherit the categorical
 `ln(3)` bound as a participation or lifetime privacy guarantee; it remains
 subject to the complete privacy and utility qualification.
 
-The [weekly-volume source checks](../validation/2026-10-25-telemetry-weekly-volume.md)
+The earlier [weekly-volume source checks](../validation/2026-10-25-telemetry-weekly-volume.md)
 passed **67 tests in 17.87 seconds**, covering wire distribution/privacy,
 closed-week publication, legacy report compatibility, malformed/inconsistent
 ranges and the actual TLS minimal runtime. This is source/component evidence;
-deployment, installed behavior and full V08 qualification remain open.
+deployment, installed behavior and full V08 qualification remain open. The
+[later selection validation](../validation/2026-10-26-telemetry-review-selection.md)
+records the original finite defect and retained intermediate failures/results.
+Final fixed-body validation passed **149 Python, 113 browser-source and 41
+native Node checks**, without skips, plus both builds. It includes no-entropy
+manual preparation, noncanonical-body rejection, unchanged automatic estimates,
+real TLS and Python/Node private SQLite handoff. Installed/platform and resource
+acceptance remain open.
 
 Clock rollback and shutdown discard volatile state; publisher failure drops the
 closed result rather than creating a raw-request backlog. The standard
@@ -396,7 +430,7 @@ original evidence; the final Python selection and frontend build passed.
 
 ## Material usefulness limit
 
-The conservative simultaneous interval half-width at **4,096 reports per view is
+The conservative simultaneous interval half-width at **4,096 automatic reports per view is
 13.495 percentage points**. This threshold is per view, not total reports:
 with all groups permitted, the fine-feature view receives weight `16/256`.
 The new 64-report global bucket can make coarse closed-week receipt volume

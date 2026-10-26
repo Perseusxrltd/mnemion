@@ -66,9 +66,13 @@ export type TelemetryWirePreview = {
   body_bytes: number
   view: string
   coordinate: number
-  randomized_sign: number
+  randomized_sign: number | null
   protected_unit: string
-  per_report_privacy_loss: 'ln(3)'
+  report_selection: 'automatic' | 'reviewed'
+  aggregation: 'automatic_categorical_estimates' | 'coarse_global_volume_only'
+  randomization_privacy_loss: 'ln(3)' | null
+  per_report_privacy_loss: 'ln(3)' | null
+  privacy_bound_scope: 'packet_independent_inclusion' | 'fixed_body_for_permitted_groups'
   participation_or_lifetime_guarantee: false
 }
 export type TelemetryFormatExample = TelemetryWirePreview & {

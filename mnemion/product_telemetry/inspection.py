@@ -55,8 +55,12 @@ def checked(state, preference, company, now):
     if result["report"] is not None:
         # Exact structural decoding is separate from bounded storage parsing.
         try:
-            identifier, _, _ = wire.decode(bytes(result["report"]["packet"]))
-            if wire.view(identifier)["group"] not in result["report"]["groups"]:
+            identifier, _, _, reviewed = wire.decode(bytes(result["report"]["packet"]))
+            expected = next(
+                (view["id"] for view in wire.VIEWS if view["group"] in result["report"]["groups"]),
+                None,
+            )
+            if not reviewed or identifier != expected:
                 return review.clear_review(result)
         except (ValueError, TypeError):
             return review.clear_review(result)
@@ -233,7 +237,9 @@ def execute(root: Path | None, action: str, request: dict, *, policy_path: Path 
                             now, clock, (min(row[2] for row in rows) + 2) * DAY_MS
                         )
                         packet = wire.prepare(
-                            [(row[0], row[1]) for row in rows], groups=company["metric_groups"]
+                            [(row[0], row[1]) for row in rows],
+                            groups=company["metric_groups"],
+                            reviewed=True,
                         )
                         state = {
                             "version": 1,

@@ -177,6 +177,7 @@ export default function Privacy() {
       <section className="ws-panel" aria-labelledby="telemetry-review-heading">
         <h2 id="telemetry-review-heading">Review reports before sending</h2>
         <p>Optionally pause every report until you approve it. You can select this before enabling collection.</p>
+        <p>Reviewed reports have a fixed body within your permitted metric groups and contribute only to overall report volume. They contain no categorical measurement. Feature statistics use automatic reports.</p>
         <label className="ws-check"><input type="checkbox" checked={review?.review?.mode === 'review'}
           disabled={busy || !review?.review || status.storage === 'unreadable'}
           onChange={event => void controlReport('review_mode', event.target.checked ? 'review' : 'automatic')} />
@@ -206,7 +207,7 @@ export default function Privacy() {
           <p>Review expires by {new Date(review.review!.expires_ms!).toLocaleTimeString()}. Its age and permissions are checked again on approval and sending.</p>
           <details><summary>Report fields</summary><pre className="ws-code">{JSON.stringify(review.packet, null, 2)}</pre></details>
         </>}
-        <p><small>Review lasts at most 15 minutes and can end sooner. Expired or discarded reports are lost; they never restore an allowance. Leaving manual review clears the held report and resumes automatic delivery. Closing all browser tabs prevents reuse of that review. Selective sharing can affect the accuracy of aggregate statistics.</small></p>
+        <p><small>Review lasts at most 15 minutes and can end sooner. Expired or discarded reports are lost; they never restore an allowance. Leaving manual review clears the held report and resumes automatic delivery. Closing all browser tabs prevents reuse of that review.</small></p>
         <p><small>Stored status is a snapshot. Refresh or inspect again after another user, agent or process changes it. Approval cannot override your privacy choice, company policy, connection limits or resource pressure.</small></p>
       </section>
       <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling documentation</Link>

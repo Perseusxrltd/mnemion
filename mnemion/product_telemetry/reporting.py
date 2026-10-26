@@ -54,11 +54,15 @@ class AggregateWindow:
         if self._closed or self._total >= WIRE["reporting"]["maximum_reports_per_window"]:
             return False
         try:
-            identifier, coordinate, sign = decode(packet)
+            identifier, coordinate, sign, reviewed = decode(packet)
         except WireError:
             return False
-        self._sums[identifier][coordinate] += sign
-        self._counts[identifier] += 1
+        # Human inclusion can depend on the randomized packet itself. Such a
+        # subset need not follow the encoder distribution and cannot contribute
+        # to categorical estimates or their sample counts/confidence bounds.
+        if not reviewed:
+            self._sums[identifier][coordinate] += sign
+            self._counts[identifier] += 1
         self._total += 1
         return True
 
@@ -140,7 +144,9 @@ class AggregateWindow:
                 "report_unit": "unverified_anonymous_report_not_a_user_or_device",
                 "sampling": "one_count_weighted_local_category_in_an_independently_chosen_permitted_view",
                 "confidence": 1 - options["simultaneous_error_probability"],
-                "confidence_assumptions": "independent_randomization_by_conforming_senders_not_authenticated_clients_or_poisoning_resistance",
+                "confidence_assumptions": "independent_randomization_and_packet_independent_inclusion_of_correctly_marked_automatic_reports_not_authenticated_clients_or_poisoning_resistance",
+                "estimation_population": "automatic_reports_only",
+                "reviewed_report_use": "coarse_global_volume_only",
                 "privacy_loss_per_report": "ln(3)",
                 "participation_or_lifetime_guarantee": False,
                 "views": views,

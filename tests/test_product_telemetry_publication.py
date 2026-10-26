@@ -144,17 +144,23 @@ def test_publisher_refuses_an_unclosed_week_or_an_unsafe_path(tmp_path, summary)
             ReportStore(tmp_path / "redirect")
 
 
+@pytest.mark.parametrize("version", [1, 2])
 def test_legacy_report_bodies_remain_immutable_and_readable_alongside_volume_reports(
-    tmp_path, summary
+    tmp_path, summary, version
 ):
     def clock():
         return 345600 + 2901 * 604800
 
     store = ReportStore(tmp_path / "publisher", clock=clock)
     legacy = deepcopy(summary)
-    legacy["schema_version"] = 1
+    legacy["schema_version"] = version
     legacy["window_week"] = 2899
-    del legacy["report_range"]
+    del legacy["estimation_population"], legacy["reviewed_report_use"]
+    legacy["confidence_assumptions"] = (
+        "independent_randomization_by_conforming_senders_not_authenticated_clients_or_poisoning_resistance"
+    )
+    if version == 1:
+        del legacy["report_range"]
     # Preserve the old body's bytes, including its original formatting. A read
     # must not synthesize a volume count or migrate this immutable closed week.
     original = json.dumps(legacy, indent=2)
@@ -168,7 +174,7 @@ def test_legacy_report_bodies_remain_immutable_and_readable_alongside_volume_rep
         assert (
             database.execute("SELECT body FROM reports WHERE week=2899").fetchone()[0] == original
         )
-    assert "report_range" not in reopened.reports()[0]
+    assert ("report_range" in reopened.reports()[0]) is (version == 2)
 
 
 @pytest.mark.parametrize(
@@ -195,8 +201,30 @@ def test_invalid_or_inconsistent_volume_never_enters_retained_reports(tmp_path, 
 
 
 def test_total_cannot_claim_more_reports_than_its_suppressed_views_allow(summary):
+    # Version3 can also count reviewed reports; version2 had only view inputs.
+    summary["schema_version"] = 2
+    del summary["estimation_population"], summary["reviewed_report_use"]
+    summary["confidence_assumptions"] = (
+        "independent_randomization_by_conforming_senders_not_authenticated_clients_or_poisoning_resistance"
+    )
     for item in summary["views"]:
         item.update(state="insufficient_reports", report_range=None, estimates=None)
     summary["report_range"] = {"minimum": 131072, "maximum_exclusive": 262144}
     with pytest.raises(wire.WireError):
         validate(summary)
+
+
+def test_reviewed_volume_has_no_complementary_mode_count_and_cannot_grant_estimate_precision(
+    summary,
+):
+    for item in summary["views"]:
+        item.update(state="insufficient_reports", report_range=None, estimates=None)
+    summary["report_range"] = {"minimum": 131072, "maximum_exclusive": 262144}
+    assert validate(summary) is summary
+    for change in (
+        {"reviewed_report_range": {"minimum": 64, "maximum_exclusive": 128}},
+        {"estimation_population": "all_reports"},
+        {"reviewed_report_use": "categorical_estimates"},
+    ):
+        with pytest.raises(wire.WireError):
+            validate({**summary, **change})

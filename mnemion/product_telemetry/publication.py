@@ -33,7 +33,7 @@ CREATE TRIGGER report_limit BEFORE INSERT ON reports
 WHEN (SELECT count(*) FROM reports) >= 8
 BEGIN SELECT RAISE(ABORT, 'telemetry_report_capacity'); END;
 """
-CONSTANTS = {
+LEGACY_CONSTANTS = {
     "window_seconds": 604800,
     "report_unit": "unverified_anonymous_report_not_a_user_or_device",
     "sampling": "one_count_weighted_local_category_in_an_independently_chosen_permitted_view",
@@ -41,6 +41,12 @@ CONSTANTS = {
     "confidence_assumptions": "independent_randomization_by_conforming_senders_not_authenticated_clients_or_poisoning_resistance",
     "privacy_loss_per_report": "ln(3)",
     "participation_or_lifetime_guarantee": False,
+}
+CONSTANTS = {
+    **LEGACY_CONSTANTS,
+    "confidence_assumptions": "independent_randomization_and_packet_independent_inclusion_of_correctly_marked_automatic_reports_not_authenticated_clients_or_poisoning_resistance",
+    "estimation_population": "automatic_reports_only",
+    "reviewed_report_use": "coarse_global_volume_only",
 }
 
 
@@ -63,16 +69,17 @@ def validate(result: object) -> dict:
     if type(result) is not dict:
         raise WireError
     version = result.get("schema_version")
-    if type(version) is not int or version not in (1, WIRE["reporting"]["schema_version"]):
+    if type(version) is not int or version not in (1, 2, WIRE["reporting"]["schema_version"]):
         raise WireError
-    fields = {*CONSTANTS, "schema_version", "window_week", "views"}
-    if version == 2:
+    constants = CONSTANTS if version == 3 else LEGACY_CONSTANTS
+    fields = {*constants, "schema_version", "window_week", "views"}
+    if version >= 2:
         fields.add("report_range")
     if (
         set(result) != fields
         or any(
             type(result[key]) is not type(value) or result[key] != value
-            for key, value in CONSTANTS.items()
+            for key, value in constants.items()
         )
         or type(result["window_week"]) is not int
         or not 0 <= result["window_week"] <= 1000000
@@ -80,7 +87,7 @@ def validate(result: object) -> dict:
         or len(result["views"]) != len(VIEWS)
     ):
         raise WireError
-    if version == 2 and not _report_range(
+    if version >= 2 and not _report_range(
         result["report_range"], WIRE["reporting"]["minimum_reports_per_window"]
     ):
         raise WireError
@@ -134,9 +141,11 @@ def validate(result: object) -> dict:
                     or not interval[0] <= estimate["fraction"] <= interval[1]
                 ):
                     raise WireError
-    if version == 2 and (
+    if version >= 2 and (
         minimum_total >= result["report_range"]["maximum_exclusive"]
-        or maximum_total < result["report_range"]["minimum"]
+        # Legacy totals cover only categorical inputs. Version3 also includes
+        # reviewed volume, without exposing a complementary review-mode count.
+        or (version == 2 and maximum_total < result["report_range"]["minimum"])
     ):
         raise WireError
     return result

@@ -22,14 +22,27 @@ these restrictions, resource limits, request-data exclusion and clean shutdown.
 No production collector is deployed; provider/ingress privacy, client
 resources, useful reporting and full installed acceptance still gate release.
 
-The [closed-week volume follow-up](../validation/2026-10-25-telemetry-weekly-volume.md)
-adds one global power-of-two report range after 64 accepted contributions, with
-the existing 4,096-per-view precision threshold unchanged. New report schema v2
-preserves immutable v1 reading and the original four-byte wire format. The
+The earlier [closed-week volume follow-up](../validation/2026-10-25-telemetry-weekly-volume.md)
+added one global power-of-two report range after 64 accepted contributions, with
+the existing 4,096-per-view precision threshold unchanged. Report schema v2
+preserved immutable v1 reading and the original four-byte wire format. The
 67 focused source checks passed. Volume is not a count of people or installations
 and is not authenticated; detailed statistics can remain unavailable. This
 source follow-up does not activate collection or close the remaining privacy,
 resource, deployment and installed-platform requirements.
+
+The [review-selection correction](../validation/2026-10-26-telemetry-review-selection.md)
+now uses **wire v2/report v3**. Manual packets are fixed before inspection for
+the permitted groups: first permitted view, coordinate zero and flags two,
+with no categorical measurement or random draw. They count only toward the
+coarse global volume range, never categorical sums,
+per-view counts or precision. Automatic randomization, four-byte size, thresholds
+and budgets are unchanged. Legacy wire v1 is rejected; immutable aggregate v1/v2
+reports remain readable. Final fixed-body checks passed **149 Python, 113
+browser-source and 41 native Node checks**, with both builds passed. The
+intermediate marker-only results and two obsolete TLS-fixture failures remain
+preserved. This newer work is excluded from frozen
+4.46.14 and does not activate collection or qualify installed telemetry.
 
 The [app and native usage guide](../guides/product-telemetry-controls.md)
 describes the pre-login/offline `/privacy` page and private-stdin
@@ -69,7 +82,7 @@ The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 preference does not complete disclosure or activate collection. The current
 source preview returns the measurement catalog, an empty local aggregate list
 while unavailable, and a fixed synthetic four-byte
-[report-format example](anonymous-product-telemetry-delivery.md#one-randomized-category-per-report).
+[report-format example](anonymous-product-telemetry-delivery.md#automatic-categories-and-fixed-reviewed-reports).
 It reports `outbound_state: "not_inspected"`, with a null actual body and zero
 inspected outgoing bytes. No report is randomized or reserved by viewing the
 example; queue contents, spent allowance and consent remain unchanged, and no
@@ -585,6 +598,14 @@ made no report request and spent no delivery attempt. These changes are excluded
 from 4.46.13; interactive privacy/utility, full resources/sensors, wire and
 installed/platform acceptance remain open. Production remains false/null/null
 and V08 remains Building.
+
+The later selection correction exposes `report_selection` and `aggregation`
+in exact previews. Reviewed packets show both privacy-loss fields as null and
+`privacy_bound_scope: "fixed_body_for_permitted_groups"`; no categorical
+measurement is transmitted. `ln(3)` describes automatic randomization, not
+arbitrary human inclusion. Report v3 estimates only correctly marked automatic reports under
+independent randomization and packet-independent inclusion. Neither a small
+packet nor its selection marker establishes participation or network anonymity.
 
 ## Collector and release conditions
 

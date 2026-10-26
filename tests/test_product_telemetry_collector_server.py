@@ -244,8 +244,16 @@ def test_real_tls_accepts_only_bounded_packets_without_logs_or_resume_tickets(se
                     b"X-Request-ID",
                 )
             )
-            + b"\r\n\x01\x00\x00\x00",
+            + b"\r\n\x02\x00\x00\x00",
             204,
+        ),
+        (
+            b"POST /v1/report HTTP/1.1\r\nHost: localhost\r\nContent-Length: 4\r\n\r\n\x02\x00\x00\x02",
+            204,  # Reviewed packets use the same bounded transport.
+        ),
+        (
+            b"POST /v1/report HTTP/1.1\r\nHost: localhost\r\nContent-Length: 4\r\n\r\n\x01\x00\x00\x00",
+            400,  # Legacy wire cannot establish automatic inclusion.
         ),
         (
             b"POST /v1/report?"

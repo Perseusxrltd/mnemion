@@ -110,11 +110,11 @@ def test_unknown_sensor_and_cohort_are_not_a_zero_sensor_or_joined_fingerprint()
         b"",
         b"PRIVATE_SENTINEL",
         b'{"key":"PRIVATE_TOKEN"}',
-        bytes((1, 255, 0, 1)),
-        bytes((1, 0, 16, 1)),
-        bytes((1, 0, 0, 2)),
-        bytes((2, 0, 0, 1)),
-        [1, 0, 0, 1],
+        bytes((2, 255, 0, 1)),
+        bytes((2, 0, 16, 1)),
+        bytes((2, 0, 0, 4)),
+        bytes((1, 0, 0, 1)),  # Earlier packets cannot prove automatic inclusion.
+        [2, 0, 0, 1],
     ],
 )
 def test_invalid_frames_cannot_become_private_free_text_or_extra_fields(packet):
@@ -140,10 +140,12 @@ def test_invalid_source_cells_are_rejected_without_an_outbound_fallback(rows):
         wire.prepare(rows, groups=["usage"])
 
 
-def fill(window, *, view=0, category=3, repeats=64):
+def fill(window, *, view=0, category=3, repeats=64, reviewed=False):
     for _ in range(repeats):
         for column, coin in product(range(wire.view(view)["domain"]), range(4)):
-            assert window.contribute(wire.encode(view, category, random_below=draws(column, coin)))
+            assert window.contribute(
+                wire.encode(view, category, reviewed=reviewed, random_below=draws(column, coin))
+            )
 
 
 def test_collector_stores_only_small_numeric_arrays_and_releases_once_then_erases():
@@ -184,6 +186,101 @@ def test_small_windows_and_saturation_do_not_publish_residuals_or_grow_storage(m
     assert not any(window._counts)
 
 
+def test_packet_selection_cannot_turn_reviewed_reports_into_false_usage_estimates():
+    def distribution(category):
+        return Counter(
+            wire.encode(0, category, random_below=draws(column, coin))
+            for column, coin in product(range(wire.VIEWS[0]["domain"]), range(4))
+        )
+
+    original, selected = distribution(1), distribution(2)
+    repeat = 65
+    offered = {packet: count * 3 * repeat for packet, count in original.items()}
+    accepted = {packet: count * repeat for packet, count in selected.items()}
+    # Every retained packet could come from setup, but the chosen subset has
+    # exactly the randomized distribution of workspace. No sampler can infer
+    # the original usage distribution from these received packets alone.
+    assert sum(offered.values()) == 12480 and sum(accepted.values()) == 4160
+    assert all(accepted[packet] <= count for packet, count in offered.items())
+    window = AggregateWindow(2900)
+    before = window.storage_bytes
+    canonical = bytes((2, 0, 0, 2))
+    # These categorical packets cannot be relabeled as reviewed. The accepted
+    # manual body has no varying coordinate/sign in which selection can encode
+    # a categorical value; the original randomized subset is not sent.
+    for packet in accepted:
+        marked = bytes((*packet[:3], packet[3] | 2))
+        if marked != canonical:
+            assert not window.contribute(marked)
+    for _ in range(sum(accepted.values())):
+        assert window.contribute(canonical)
+    assert not any(window._counts) and not any(value for sums in window._sums for value in sums)
+    result = window.seal()
+    assert result["report_range"] == {"minimum": 4096, "maximum_exclusive": 8192}
+    assert all(
+        item["state"] == "insufficient_reports"
+        and item["report_range"] is None
+        and item["estimates"] is None
+        for item in result["views"]
+    )
+    assert result["reviewed_report_use"] == "coarse_global_volume_only"
+    assert result["estimation_population"] == "automatic_reports_only"
+    assert "reviewed_report_range" not in result
+    assert window.storage_bytes == before
+
+
+def test_reviewed_reports_cannot_inflate_automatic_thresholds_or_precision():
+    reference, mixed, insufficient = (AggregateWindow(2900) for _ in range(3))
+    fill(reference, category=1)
+    fill(mixed, category=1)
+    fill(mixed, category=2, repeats=65, reviewed=True)
+    fill(insufficient, category=1, repeats=63)
+    fill(insufficient, category=2, repeats=65, reviewed=True)
+    assert reference.seal()["views"] == mixed.seal()["views"]
+    assert all(item["state"] == "insufficient_reports" for item in insufficient.seal()["views"])
+
+
+def test_review_preview_limits_its_privacy_claim_and_legacy_wire_is_not_assumed_automatic():
+    automatic = wire.preview(wire.encode(0, 1, random_below=draws(7, 0)))
+    reviewed = wire.preview(wire.encode(0, 1, reviewed=True, random_below=draws(7, 0)))
+    assert automatic["per_report_privacy_loss"] == "ln(3)"
+    assert reviewed["per_report_privacy_loss"] is None
+    assert reviewed["randomization_privacy_loss"] is None
+    assert reviewed["randomized_sign"] is None
+    assert reviewed["privacy_bound_scope"] == "fixed_body_for_permitted_groups"
+    assert reviewed["report_selection"] == "reviewed"
+    assert reviewed["body_bytes"] == automatic["body_bytes"] == 4
+    window = AggregateWindow(2900)
+    assert not window.contribute(bytes((1, 0, 7, 0)))
+    assert window._total == 0
+    with pytest.raises(wire.WireError):
+        wire.encode(0, 1, reviewed="PRIVATE_VALUE")
+
+
+def test_manual_body_is_constant_for_all_values_and_preparation_never_draws_entropy():
+    def no_entropy(_):
+        pytest.fail("A volume-only report must not sample a category, view or sign")
+
+    for view in wire.VIEWS:
+        packets = {
+            wire.encode(view["id"], category, reviewed=True, random_below=no_entropy)
+            for category in range(len(view["values"]))
+        }
+        assert packets == {bytes((2, view["id"], 0, 2))}
+    first = catalog.observation(
+        {"kind": "submission", "workflow": "memory.recall", "surface": "desktop"}
+    )[1][0]
+    second = catalog.observation(
+        {"kind": "submission", "workflow": "backup.create", "surface": "desktop"}
+    )[1][0]
+    for groups in (["usage", "resources"], ["performance"], ["resources", "reliability"]):
+        expected = next(view["id"] for view in wire.VIEWS if view["group"] in groups)
+        for rows in ([(first, 1)], [(second, 255)]):
+            assert wire.prepare(
+                rows, groups=groups, reviewed=True, random_below=no_entropy
+            ) == bytes((2, expected, 0, 2))
+
+
 @pytest.mark.parametrize("count", [0, 63, 64, 127, 128, 700, 4095])
 def test_closed_volume_is_coarse_and_does_not_release_small_view_counts(count):
     window = AggregateWindow(2900)
@@ -197,7 +294,7 @@ def test_closed_volume_is_coarse_and_does_not_release_small_view_counts(count):
     if count < 64:
         assert result is None
     else:
-        assert result["schema_version"] == 2
+        assert result["schema_version"] == 3
         assert result["report_range"] == {
             "minimum": 1 << (count.bit_length() - 1),
             "maximum_exclusive": 1 << count.bit_length(),

@@ -9,7 +9,7 @@ import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { TelemetryWire, secureRandomBelow } from '../dist/telemetry-wire.js'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
-const specification = JSON.parse(readFileSync(new URL('../dist/telemetry-wire-v1.json', import.meta.url), 'utf8'))
+const specification = JSON.parse(readFileSync(new URL('../dist/telemetry-wire-v2.json', import.meta.url), 'utf8'))
 const catalog = new TelemetryCatalog(JSON.parse(readFileSync(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8')))
 const wire = new TelemetryWire(specification, catalog)
 const draws = (...values) => () => values.shift()
@@ -24,7 +24,7 @@ const python = source => {
 
 test('offline synthetic format example agrees across native and Python controls', () => {
   const example = wire.formatExample()
-  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([1, 0, 7, 0]))
+  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([2, 0, 7, 0]))
   assert.equal(example.kind, 'synthetic_example')
   assert.equal(example.body_encoding, 'base64')
   assert.deepEqual(example, python('import json; from mnemion.product_telemetry.wire import format_example; print(json.dumps(format_example()))'))
@@ -34,25 +34,27 @@ test('offline synthetic format example agrees across native and Python controls'
 test('every native packet matches Python across every view, category, coordinate and coin', () => {
   const digest = createHash('sha256')
   let reports = 0
-  for (const view of specification.views) for (let category = 0; category < view.values.length; category++) {
+  for (const reviewed of [false, true]) for (const view of specification.views) for (let category = 0; category < view.values.length; category++) {
     for (let column = 0; column < view.domain; column++) for (let coin = 0; coin < 4; coin++) {
-      const packet = wire.encode(view.id, category, draws(column, coin))
+      const packet = wire.encode(view.id, category, draws(column, coin), reviewed)
       digest.update(packet); reports++
       assert.equal(packet.length, 4)
-      assert.equal(wire.decode(packet).coordinate, column)
+      assert.equal(wire.decode(packet).coordinate, reviewed ? 0 : column)
+      assert.equal(wire.decode(packet).reviewed, reviewed)
     }
   }
   const expected = python(`
 import hashlib,json
 from mnemion.product_telemetry.wire import VIEWS,encode
 digest=hashlib.sha256();reports=0
-for view in VIEWS:
- for category in range(len(view['values'])):
-  for column in range(view['domain']):
-   for coin in range(4):
-    values=iter((column,coin))
-    digest.update(encode(view['id'],category,random_below=lambda _:next(values)))
-    reports+=1
+for reviewed in (False,True):
+ for view in VIEWS:
+  for category in range(len(view['values'])):
+   for column in range(view['domain']):
+    for coin in range(4):
+     values=iter((column,coin))
+     digest.update(encode(view['id'],category,reviewed=reviewed,random_below=lambda _:next(values)))
+     reports+=1
 print(json.dumps({'reports':reports,'digest':digest.hexdigest()}))
 `)
   assert.deepEqual({ reports, digest: digest.digest('hex') }, expected)
@@ -90,13 +92,14 @@ test('native encoder rejects private fields, malformed cells and unsupported fra
   for (const rows of [[], [[0, 0]], [[0, true]], [[0, 256]], [[0, 1], [0, 1]], [[65535, 1]], [{ private: 'PRIVATE_SENTINEL' }]]) {
     assert.throws(() => wire.prepare(rows, ['usage']), /telemetry_invalid_/)
   }
-  for (const packet of [new Uint8Array(), new Uint8Array([1, 255, 0, 1]), new Uint8Array([1, 0, 16, 1]), new Uint8Array([1, 0, 0, 2]), [1, 0, 0, 1]]) {
+  for (const packet of [new Uint8Array(), new Uint8Array([2, 255, 0, 1]), new Uint8Array([2, 0, 16, 1]), new Uint8Array([2, 0, 0, 4]), new Uint8Array([1, 0, 0, 1]), [2, 0, 0, 1]]) {
     assert.throws(() => wire.decode(packet), /telemetry_invalid_report/)
   }
   assert.throws(() => wire.prepare([[0, 1]], ['resources'], { platform: 'PRIVATE_HOST' }), /telemetry_invalid_report/)
   assert.throws(() => wire.prepare([[0, 1]], ['resources'], { device: 'PRIVATE_ID' }), /telemetry_invalid_report/)
   assert.throws(() => wire.prepare([[0, 1]], []), /telemetry_invalid_report/)
   assert.throws(() => wire.encode(0, true), /telemetry_invalid_report/)
+  assert.throws(() => wire.encode(0, 1, draws(7, 0), 'PRIVATE_VALUE'), /telemetry_invalid_report/)
 })
 
 test('only permitted views are selected, including unknown sensors without fabricated zeros', () => {
@@ -119,6 +122,29 @@ test('preview is the exact four-byte body without a decoded private value', () =
   assert.equal(preview.body_bytes, 4)
   assert.equal(preview.participation_or_lifetime_guarantee, false)
   assert.ok(!Object.hasOwn(preview, 'category') && !Object.hasOwn(preview, 'identity'))
+})
+
+test('manual packet preview marks volume-only aggregation without a selected-report privacy claim', () => {
+  const packet = wire.encode(0, 1, draws(7, 0), true), preview = wire.preview(packet)
+  assert.equal(preview.report_selection, 'reviewed')
+  assert.equal(preview.aggregation, 'coarse_global_volume_only')
+  assert.equal(preview.per_report_privacy_loss, null)
+  assert.equal(preview.randomization_privacy_loss, null)
+  assert.equal(preview.randomized_sign, null)
+  assert.equal(preview.privacy_bound_scope, 'fixed_body_for_permitted_groups')
+  assert.deepEqual(preview, python("import json; from mnemion.product_telemetry import wire; print(json.dumps(wire.preview(bytes([2,0,0,2]))))"))
+})
+
+test('review preparation has a constant permitted body with no entropy or category output', () => {
+  const noEntropy = () => assert.fail('Reviewed volume must not draw entropy')
+  const one = catalog.observation({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }).cells[0]
+  const two = catalog.observation({ kind: 'submission', workflow: 'backup.create', surface: 'desktop' }).cells[0]
+  for (const groups of [['usage', 'resources'], ['performance'], ['resources', 'reliability']]) {
+    const expected = specification.views.find(view => groups.includes(view.group)).id
+    for (const rows of [[[one, 1]], [[two, 255]]]) assert.deepEqual(
+      wire.prepare(rows, groups, {}, noEntropy, true), new Uint8Array([2, expected, 0, 2]))
+  }
+  for (const packet of [[2, 0, 1, 2], [2, 0, 0, 3]]) assert.throws(() => wire.decode(new Uint8Array(packet)), /telemetry_invalid_report/)
 })
 
 test('CSPRNG range reduction rejects bias and stops after bounded entropy failures', t => {

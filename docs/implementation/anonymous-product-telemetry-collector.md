@@ -1,6 +1,6 @@
 # Dedicated product telemetry collector
 
-**Source implementation, 25 October 2026.** The dedicated collector entrypoint
+**Source implementation, with a 26 October selection follow-up.** The dedicated collector entrypoint
 and minimal deployment runtime are implemented. They are not a deployed or
 qualified production destination. Product collection remains disabled; the
 disclosed destination and release-owned route remain unset. See the
@@ -16,9 +16,14 @@ private-file checks and aggregate publisher; Python supplies TLS and SQLite.
 ## Request handling
 
 The [entrypoint](../../mnemion/product_telemetry/server.py) accepts TLS 1.3 and
-HTTP/1.1. `POST /v1/report` accepts the existing four-byte randomized packet;
+HTTP/1.1. `POST /v1/report` now accepts four-byte wire v2 automatic randomized
+reports or canonical fixed reviewed reports;
 `OPTIONS /v1/report` supplies fixed credential-free CORS headers. There is no
 workspace API, authentication endpoint, live statistics route or report query.
+Legacy wire v1 is refused because it cannot distinguish reviewed from automatic
+reports. The endpoint path remains unchanged.
+Reviewed packets require coordinate `0` and flags `2`; manual preparation uses
+the first permitted view without a category measurement or random draw.
 
 | Boundary | Behavior |
 | --- | --- |
@@ -32,9 +37,10 @@ workspace API, authentication endpoint, live statistics route or report query.
 The network and TLS stack still handle connection metadata transiently. These
 source controls do not prove provider, firewall, proxy, tracing or backup
 privacy. Adding an ingress proxy requires its own qualification; the collector
-does not trust forwarded headers. Packet privacy remains the conditional
-per-report bound described in the [delivery design](anonymous-product-telemetry-delivery.md),
-not a network, participation or lifetime anonymity guarantee.
+does not trust forwarded headers. The categorical randomization bound described
+in the [delivery design](anonymous-product-telemetry-delivery.md) does not cover
+arbitrary human selection after review or establish network, participation or
+lifetime anonymity.
 
 ## Storage and reports
 
@@ -42,28 +48,42 @@ The current weekly accumulator stays in memory. Only validated, immutable
 closed-week reports can enter the private SQLite publisher, with at most eight
 retained weeks and a 1 MiB database ceiling.
 
-The reporting follow-up adds **report schema v2**: a closed week with at least
-**64 accepted reports** can expose one global power-of-two volume bucket, such
+Current **report schema v3** retains the volume range introduced in v2: a closed
+week with at least **64 accepted automatic or reviewed reports** can expose
+one global power-of-two volume bucket, such
 as `[64, 128)`. Below that threshold there is no weekly document. This offers
 coarse evidence of received contributions during a small launch; it does not
 measure people, devices, adoption or total feature usage. Every detailed view
-still requires **4,096 reports of its own**; confidence rules, noise and
+still requires **4,096 automatic reports of its own**; confidence rules, noise and
 rare-cell suppression remain unchanged. A volume-only result can therefore
-leave all views `insufficient_reports`. The [weekly-volume source selection](../validation/2026-10-25-telemetry-weekly-volume.md)
+leave all views `insufficient_reports`. Reviewed packets contribute to no
+categorical sum, per-view count or precision calculation; no separate manual
+count is published. The earlier [weekly-volume source selection](../validation/2026-10-25-telemetry-weekly-volume.md)
 passed **67 tests in 17.87 seconds**, including report compatibility and the
 actual TLS minimal runtime; it does not qualify production deployment or
 installed collection.
 
-The reader accepts existing immutable **v1 reports** without rewriting them or
-adding a global bucket. This output-schema change leaves the **four-byte wire
-v1**, client budgets, endpoint selection and eight-week retention unchanged.
+The [selection correction](../validation/2026-10-26-telemetry-review-selection.md)
+declares `estimation_population: "automatic_reports_only"` and
+`reviewed_report_use: "coarse_global_volume_only"`. Categorical estimates require
+correctly marked automatic reports with independent randomization and
+packet-independent inclusion; this is not authenticated or representative usage.
+The reader accepts immutable aggregate **v1/v2 reports** without rewriting them
+or adding a missing global bucket. That compatibility does not accept wire v1.
+Four-byte size, client budgets, endpoint selection and eight-week retention
+remain unchanged.
 The `server reports` command's outer envelope remains `schema_version: 1`;
 each report item carries its own schema version, with a root `report_range`
-only in v2.
+in v2 and v3.
 There is no exact count, identifier, live statistics route or filter API. A
 coarse contribution threshold is not an anonymity or distinct-person threshold,
 and the volume bucket does not extend the packet's categorical privacy bound
 to participation.
+
+The final fixed-body source checks are linked above, including real TLS,
+unchanged automatic precision and immutable aggregate v1/v2 readers. They do not qualify
+production deployment, installed delivery or full V08. Frozen 4.46.14 excludes
+this selection correction, and production collection remains false/null/null.
 
 Stopping or restarting the collector discards the open week's accumulated data;
 it never flushes raw reports. Certificate rotation that restarts this process

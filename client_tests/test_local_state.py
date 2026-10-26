@@ -263,6 +263,8 @@ def test_private_staging_does_not_delete_a_replacement_directory(tmp_path):
 def test_shared_or_redirected_state_folder_is_refused(tmp_path):
     shared = tmp_path / "shared"
     shared.mkdir(mode=0o755)
+    # A restrictive process umask must not silently make this unsafe fixture private.
+    shared.chmod(0o755)
     with pytest.raises(state.LocalSetupError, match="private"):
         state.directory(shared)
     private = state.directory(tmp_path / "private")

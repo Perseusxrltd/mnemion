@@ -35,8 +35,9 @@ to use the page offline.
 **Share anonymous product statistics** changes the saved preference, which
 defaults to enabled. **Disable product telemetry** saves an opt-out and clears
 pending local aggregates. **Refresh privacy status** reads the current choice.
-**Show report format** displays a fixed synthetic four-byte example as Base64
-(`AQAHAA==`, representing `01 00 07 00`). It is not sampled from your counts or
+**Show report format** displays a fixed synthetic four-byte example as Base64.
+Published 4.46.13 uses `AQAHAA==` (`01 00 07 00`); the newer wire v2 source uses
+`AgAHAA==` (`02 00 07 00`), marked automatic. It is not sampled from your counts or
 presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no request.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
@@ -143,9 +144,21 @@ clears the held report and restores automatic delivery opportunities.
 The consumed snapshot is not restored. New observations, contribution limits
 and already spent delivery budgets are preserved. Closing all browser tabs
 prevents reuse of that browser review. Refresh/focus clears displayed bytes;
-inspect again to revalidate and reveal a still-valid report. Selective approvals
-can affect aggregate statistics; interactive privacy and utility qualification
-remain open. See the [source validation boundary](../validation/2026-10-26-telemetry-report-review.md).
+inspect again to revalidate and reveal a still-valid report.
+
+New [wire v2 source](../validation/2026-10-26-telemetry-review-selection.md) marks
+the packet as reviewed before showing it. Its body is fixed within your
+permitted metric groups and contains no categorical measurement or random draw.
+Reviewed reports contribute only to
+the coarse overall report-volume range; feature percentages and their sample
+counts use automatic reports. The preview exposes `report_selection`,
+`aggregation` and null privacy-loss fields for manual review, with
+`privacy_bound_scope: "fixed_body_for_permitted_groups"`. The automatic
+`ln(3)` randomization bound is not a guarantee for human inclusion, policy
+choices, participation or network anonymity.
+This source correction is excluded from frozen 4.46.14. Interactive privacy,
+utility and installed qualification remain open despite the passing final
+fixed-body source and component checks linked above.
 
 The Chromium check used synthetic observations and an in-memory capability;
 it verified controls without sending a report or spending a delivery attempt.
@@ -182,7 +195,8 @@ tokens. These are local reservations, not measured traffic or successful uploads
 The budget state `ready` does not enable collection.
 `preview` returns `outbound_state: "not_inspected"`, `outbound_body: null` and
 `outbound_bytes: 0`, plus `illustrative_packet` with `kind: "synthetic_example"`,
-`body_encoding: "base64"`, `body_base64: "AQAHAA=="` and `body_bytes: 4`.
+`body_encoding: "base64"`, `body_base64: "AgAHAA=="` and `body_bytes: 4` in the
+new wire v2 source; published 4.46.13 retains its wire v1 example above.
 These example bytes do not identify the next outgoing packet. The null/zero
 actual-body fields are not a traffic counter or proof that another owner has
 no active attempt. The catalog is included; `local_aggregates` stays empty while

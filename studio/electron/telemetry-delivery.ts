@@ -96,7 +96,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
   }
 
   private wire(): TelemetryWire {
-    this.encoder ??= new TelemetryWire(JSON.parse(readFileSync(new URL('./telemetry-wire-v1.json', import.meta.url), 'utf8')), this.catalog)
+    this.encoder ??= new TelemetryWire(JSON.parse(readFileSync(new URL('./telemetry-wire-v2.json', import.meta.url), 'utf8')), this.catalog)
     return this.encoder
   }
 
@@ -118,8 +118,9 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     const checked = checkReview(state, this.reviewContext(stamp, groups), now, readReviewClock())
     if (checked.report) {
       try {
-        const view = this.wire().decode(new Uint8Array(checked.report.packet)).view
-        if (!groups.includes(this.wire().specification.views[view].group)) return clearReview(checked)
+        const decoded = this.wire().decode(new Uint8Array(checked.report.packet))
+        const expected = this.wire().specification.views.find(view => groups.includes(view.group))?.id
+        if (!decoded.reviewed || decoded.view !== expected) return clearReview(checked)
       } catch { return clearReview(checked) }
     }
     return checked

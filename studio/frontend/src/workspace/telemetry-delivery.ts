@@ -1,5 +1,5 @@
 /** Origin-wide reservations. No sender, idle timer, network request or identity. */
-import specification from '../../../../mnemion/product_telemetry/wire-v1.json'
+import specification from '../../../../mnemion/product_telemetry/wire-v2.json'
 import type { TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
 import { TelemetryWire, secureRandomBelow } from '../../../electron/telemetry-wire'
 import { pendingState, telemetryCatalog } from './telemetry-aggregate'
@@ -88,15 +88,16 @@ export class BrowserTelemetryDelivery {
 
   formatExample() { return this.wire().formatExample() }
   packetPreview(packet: Uint8Array) { return this.wire().preview(packet) }
-  prepareInspection(cells: number[][], groups: string[]): Uint8Array { return this.wire().prepare(cells, groups) }
+  prepareInspection(cells: number[][], groups: string[]): Uint8Array { return this.wire().prepare(cells, groups, {}, undefined, true) }
 
   checkedReview(state: ReviewState, status: TelemetryStatus, now: number): ReviewState {
     if (!state.report) return state
     const checked = checkReview(state, status.effective_enabled ? browserReviewContext(status) : null, now, this.port.reviewClock?.() ?? null)
     if (checked.report) {
       try {
-        const view = this.wire().decode(new Uint8Array(checked.report.packet)).view
-        if (!status.company_policy.metric_groups.includes(this.wire().specification.views[view].group)) return clearReview(checked)
+        const decoded = this.wire().decode(new Uint8Array(checked.report.packet))
+        const expected = this.wire().specification.views.find(view => status.company_policy.metric_groups.includes(view.group))?.id
+        if (!decoded.reviewed || decoded.view !== expected) return clearReview(checked)
       } catch { return clearReview(checked) }
     }
     return checked

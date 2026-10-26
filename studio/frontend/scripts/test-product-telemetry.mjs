@@ -142,7 +142,7 @@ test('browser format preview is read-only and never claims an actual queued pack
   const example = empty.illustrative_packet
   assert.equal(example.kind, 'synthetic_example')
   assert.equal(example.body_encoding, 'base64')
-  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([1, 0, 7, 0]))
+  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([2, 0, 7, 0]))
   assert.equal(empty.outbound_state, 'not_inspected')
   assert.equal(empty.outbound_body, null)
   assert.equal(empty.outbound_bytes, 0)

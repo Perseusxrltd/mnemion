@@ -85,6 +85,9 @@ test('inspection freezes one exact packet without spending and repeat views do n
   assert.equal(await f.record(), true)
   const first = await f.action(f.first, 'inspect_report')
   assert.equal(first.packet.body_bytes, 4)
+  assert.equal(first.packet.report_selection, 'reviewed')
+  assert.equal(first.packet.aggregation, 'coarse_global_volume_only')
+  assert.equal(first.packet.per_report_privacy_loss, null)
   assert.equal(f.budget().attempts.length, 0)
   assert.equal(await f.first.delivery.eligible(f.stamp()), false)
   assert.equal(await f.first.delivery.reserve(f.stamp(), allowed), null)
@@ -115,6 +118,20 @@ test('competing tabs claim approved bytes only once and preserve post-inspection
   assert.equal(f.values.get(queueKey), pending)
   await owner.delivery.cancel(report)
   assert.equal(f.budget().attempts.length, 1)
+}))
+
+for (const damage of ['legacy_wire', 'automatic_flag', 'noncanonical_view']) test('browser review rejects ' + damage + ' before approval or spending', () => scenario(async f => {
+  f.choose(f.first, true); await f.action(f.first, 'review_mode', { mode: 'review' }); await f.record()
+  await f.action(f.first, 'inspect_report')
+  const budget = f.budget()
+  if (damage === 'legacy_wire') budget.review.report.packet[0] = 1
+  else if (damage === 'noncanonical_view') budget.review.report.packet[1] = 1
+  else budget.review.report.packet[3] &= 1
+  f.storage.setItem(budgetKey, JSON.stringify(budget))
+  assert.equal((await f.action(f.second, 'approve_report')).review.outcome, 'invalidated')
+  assert.equal(f.budget().review.report, null)
+  assert.equal(f.budget().attempts.length, 0)
+  assert.equal(await f.first.delivery.reserve(f.stamp(), allowed), null)
 }))
 
 test('stalled wall time and a lost epoch cannot renew approval or resume automatic delivery', () => scenario(async f => {

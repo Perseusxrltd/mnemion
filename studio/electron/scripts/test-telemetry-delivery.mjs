@@ -19,7 +19,7 @@ const program = `
 import json,sys,sqlite3
 from contextlib import closing
 from pathlib import Path
-from mnemion.product_telemetry import policy,aggregate,delivery,inspection,review_clock
+from mnemion.product_telemetry import policy,aggregate,delivery,inspection
 request=json.loads(sys.stdin.readline())
 root,company=Path(request['root']),Path(request['company'])
 policy.COLLECTION_AVAILABLE=True
@@ -29,15 +29,6 @@ policy.transport_available=lambda:True
 aggregate._day=lambda:request['now']//86400000
 delivery._now_ms=lambda:request['now']
 inspection._now_ms=lambda:request['now']
-if request.get('native_clock'):
- import ctypes
- class NativeClock(ctypes.Structure):
-  _fields_=[('elapsed_ms',ctypes.c_uint64),('epoch',ctypes.c_ubyte*16)]
- library=ctypes.CDLL(request['native_clock'])
- function=library.mnemion_review_clock_v1
- function.argtypes=[ctypes.c_int,ctypes.POINTER(NativeClock)]
- function.restype=ctypes.c_int
- review_clock._native=(library,function,NativeClock)
 if request.get('wait'):
  print('ready',flush=True)
  sys.stdin.readline()
@@ -83,8 +74,10 @@ async function fixture(t) {
   })
   const root = join(temporary, 'private'), company = join(temporary, 'policy.json')
   let now = 1700000000000
-  const request = (action, extra = {}) => JSON.stringify({ action, root, company, now,
-    native_clock: resolve(repository, 'studio/electron/dist/telemetry-network.node'), ...extra }) + '\n'
+  // The supported Windows ARM desktop uses an x64 Python engine. Python must
+  // use its own normal clock loader, including the compiler-free OS reader,
+  // instead of trying to load the desktop architecture's Node binary.
+  const request = (action, extra = {}) => JSON.stringify({ action, root, company, now, ...extra }) + '\n'
   const invoke = (action, extra = {}) => {
     const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', timeout: 20000, input: request(action, extra) })
     assert.equal(child.status, 0, child.stderr)
@@ -145,7 +138,7 @@ test('a changed full review scope blocks native handoff even when the selected m
   f.invoke('approve_report')
   const report = await f.store.reserve(f.stamp, network)
   assert.ok(report)
-  const wire = new TelemetryWire(JSON.parse(await readFile(new URL('../dist/telemetry-wire-v1.json', import.meta.url), 'utf8')), f.definitions.catalog)
+  const wire = new TelemetryWire(JSON.parse(await readFile(new URL('../dist/telemetry-wire-v2.json', import.meta.url), 'utf8')), f.definitions.catalog)
   const group = wire.specification.views[wire.decode(report.body()).view].group
   f.invoke('company', { value: { schema_version: 1, enabled: true, metric_groups: [group] } })
   let writes = 0

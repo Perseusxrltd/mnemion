@@ -146,6 +146,9 @@ def test_repeated_inspection_keeps_exact_bytes_and_preserves_new_observations(su
     initial = subject.stored()
     first = subject.action("inspect_report")
     assert first["review"]["outcome"] == "held" and first["packet"]["body_bytes"] == 4
+    assert first["packet"]["report_selection"] == "reviewed"
+    assert first["packet"]["aggregation"] == "coarse_global_volume_only"
+    assert first["packet"]["per_report_privacy_loss"] is None
     held = subject.stored()
     assert held["pending"] == held["spent"] == []
     assert held["contributions"] == initial["contributions"]
@@ -206,6 +209,27 @@ def test_competing_owners_can_claim_only_once(subject):
     for report in results:
         if report is not None:
             subject.budget.cancel(report)
+
+
+@pytest.mark.parametrize("damage", ["legacy_wire", "automatic_flag", "noncanonical_view"])
+def test_a_review_cannot_approve_legacy_or_automatic_marked_bytes(subject, damage):
+    subject.pause()
+    assert subject.record()
+    subject.action("inspect_report")
+    stored = subject.stored()["review"]
+    if damage == "legacy_wire":
+        stored["report"]["packet"][0] = 1
+    elif damage == "noncanonical_view":
+        stored["report"]["packet"][1] = 1
+    else:
+        stored["report"]["packet"][3] &= 1
+    with closing(sqlite3.connect(subject.root / policy.DATABASE_NAME)) as connection:
+        review_storage.write(connection, stored)
+        connection.commit()
+    result = subject.action("approve_report")
+    assert result["review"]["outcome"] == "invalidated"
+    assert result["packet"] is None and subject.reserve() is None
+    assert subject.stored()["spent"] == []
 
 
 @pytest.mark.parametrize(
