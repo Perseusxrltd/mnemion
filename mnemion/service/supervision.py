@@ -826,7 +826,12 @@ def child(state: Path, role: str) -> int:
                     ],
                     os.environ,
                 )
-            return watch(state)
+            from .update_measurement import automatic_watcher
+
+            # The original (non-isolated) runtime is also a dedicated updater
+            # child. Its own account/environment supplies telemetry authority.
+            with automatic_watcher():
+                return watch(state)
     elif role == "updater":
         raise SupervisionError("This Supervisor instance has no managed updater")
     arguments = ["--credentials", str(state / f"{role}.json")]

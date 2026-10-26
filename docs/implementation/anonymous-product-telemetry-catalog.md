@@ -8,7 +8,8 @@ and browser queues, revision/generation fencing, local controls and exact manual
 report review are implemented. Source owners cover `mnemion-control call`, selected
 desktop/native-operator actions, Studio clients, browser connection/legacy UI,
 explicitly configured local stdio, fresh local source/capture work and automatic
-desktop updater cycles, plus explicit local model preparation. Shared budgets,
+desktop updater cycles, explicit local model preparation and the dedicated
+automatic managed-host updater under its own acknowledged policy. Shared budgets,
 opportunistic delivery owners, senders,
 collector and publisher components also exist; their scoped evidence does not
 establish production qualification. **Collection remains unavailable; destination
@@ -17,7 +18,7 @@ All 66 requirement texts and the other 65 states remain unchanged; V08 stays Bui
 
 The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 now makes all 94 categories visible in app/browser and native format inspection:
-87 have mapped source boundaries and seven remain unmeasured. It is generated
+88 have mapped source boundaries and six remain unmeasured. It is generated
 from these maps and verified by the release checker. This reconciles catalog
 references without claiming complete per-action, sensor or installed coverage;
 the [initial coverage report](../validation/2026-10-26-telemetry-coverage.md)
@@ -25,8 +26,8 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The [current action inventory](../validation/2026-10-26-workspace-telemetry-ownership.md)
-lists **622 actions and fixed variants: 348 mapped, 267 excluded,
+The [current action inventory](../validation/2026-10-26-telemetry-host-updates.md)
+lists **628 actions and fixed variants: 351 mapped, 270 excluded,
 seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API
@@ -459,8 +460,8 @@ delivery still require acceptance.
 
 The [maintenance-origin map](../../mnemion/product_telemetry/maintenance-origins.json)
 is the fifth schema map: **six source/updater origins, 13 capture-control
-classifications, two preparation kinds, five sensor descriptions and 13
-exclusions**. These are selected local owners under the same disclosure,
+classifications, two preparation kinds, six managed-updater classifications,
+five sensor descriptions and 14 exclusions**. These are selected local owners under the same disclosure,
 generation/revision and company policy; collection is still unavailable. Existing
 [desktop](../../studio/electron/telemetry-activity.ts) and
 [Python service/stdio](../../mnemion/product_telemetry/activity.py) lifetimes can
@@ -475,6 +476,18 @@ CLI keepalive or new measurement owner for nested work.
 | Explicit model preparation | The [service CLI](../../mnemion/service/cli.py) owns direct `prepare-model` and `librarian-models --prepare` invocations as `models.prepare`. The observer receives only `embedding` or `librarian_tokenizer`; model/profile identifiers and normal output remain outside telemetry. |
 | Desktop update download | The [updater](../../studio/electron/updates.ts) keeps download, verification and bounded retries in one cycle with one terminal success, failure or cancellation. Current-version and safe-restart polls add no use. Unfinished cycles are discarded on quit. |
 | Installer handoff | `update.apply` records only an **accepted handoff**, if observed. Its optional snapshot has a 25 ms wait budget before the original guarded action. It does not assert an installed version or completed restart, and there is no shutdown flush or wait for telemetry. |
+| Automatic managed-host updater | Both dedicated watch entrypoints own fresh stage/apply/rollback under the host OS account's acknowledged policy. Ready-runtime reuse, held/incompatible apply and ordinary checks add no use. The surviving updater observes service readiness and fresh rollback completion. Interrupted apply is discarded, never reconstructed from a private journal; a remote operator's preference supplies no consent. |
+
+The [managed-host observer](../../mnemion/service/update_measurement.py) receives
+only a fixed action. It does not receive versions, paths, journals, credentials,
+request/result objects or exception details, and supplies no mixed-host resource
+measurements. During existing five- or ten-second waits, its per-watcher
+minute-limited opportunities may deliver a bounded current queue or still-valid
+approved held report. The context cancels/closes before synchronous work resumes;
+there is no independent wake schedule, worker thread or shutdown flush. Generic
+manual/API/library calls do not establish this owner. See the
+[source evidence](../validation/2026-10-26-telemetry-host-updates.md); full resource,
+platform and production delivery qualification remain open.
 
 The [preparation adapter](../../mnemion/maintenance_measurement.py) records only
 the permitted workflow, bounded timing and fixed outcomes/reasons. Both automatic
@@ -535,7 +548,7 @@ how it was invoked; it is not a user, installation or request identifier.
 | Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
 | Local stdio-MCP | Explicit source owner at the [maintained gateway](../../mnemion/service/mcp.py) or [legacy stdio loop](../../mnemion/mcp_server.py), under local OS-account policy. | HTTP context, imported handlers and JSON arguments cannot acquire this owner. Aliases and nested SDK calls do not add another count. Other headless entrypoints still need review. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
-| Fresh local maintenance | The selected desktop/standalone source and automatic updater owners described above, under local policy. | Empty scans, explicit Sync continuations, reusable helpers and remote/managed work do not acquire another owner. |
+| Fresh local maintenance | The selected desktop/standalone source and automatic updater owners described above, under their own local policy. | Empty scans, explicit Sync continuations, reusable helpers and remote/managed source work do not acquire another owner. The dedicated host updater has a separate explicit boundary. |
 | Server jobs and other autonomous host work | No server export or terminal backfill for client-derived work. Other autonomous maintenance still needs a reviewed owner. | [Index/purge jobs](../../mnemion/service/worker.py#L290), saved scan history and mixed-host resource totals cannot supply a fallback feed. A `background` label does not make user-derived work autonomous. |
 
 Version 1 declares seven privacy coverage exclusions:
@@ -653,7 +666,7 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 | `librarian`: `configure`, `run`, `cancel`, `accept`, `reject`, `undo` | Submission versus completion, duration, processed/skipped/proposal-count buckets and available reported-token totals. Exclude memory IDs, proposals, model/profile names and decision text. | Origin for controls; [Librarian.act](../../studio/frontend/src/workspace/Librarian.tsx#L145). [Scheduled runner](../../mnemion/service/librarian_runner.py#L81) completion and unattended work require the background ownership decision. |
 | `models`: `configure`, `prepare`, `reindex`, `pause`, `resume`, `cancel` | Preparation/cache availability, downloads where measured, latency, admitted/deferred work and reported-token buckets. Use a reviewed local/remote execution class, not custom model IDs, endpoints, dimensions or exact hardware. | Origin for controls and owned local preparation; [EmbeddingModels](../../studio/frontend/src/workspace/EmbeddingModels.tsx#L33), [pinned model files](../../mnemion/service/model_files.py#L6), [ModelWorker](../../mnemion/service/model_worker.py#L25). Remote inference/background totals remain unresolved. |
 | `backup`: `configure`, `create`, `list`, `verify`, `prune`; `recovery`: `inspect`, `restore`, `finish`, `discard` | Distinct submission, delivery, verified-readback and restore boundaries; duration and size buckets. Delivery includes upload/readback, and later verification downloads again. No destinations, key IDs, digests, archive names or operation IDs. | Origin through [local backup/recovery dispatch](../../studio/electron/service-bridge.ts#L650) or [HostBackups.request](../../studio/frontend/src/workspace/HostBackups.tsx#L24). [Native backup worker](../../mnemion/host_control/backup_jobs.py#L12) and [Git transfer stages](../../mnemion/host_control/backup_git.py#L263) are private evidence; remote completion ownership stays open. |
-| `update`: `check`, `download`, `verify`, `apply`, `restart`, `rollback` | Confirmed stage outcomes, duration, transfer buckets and fixed restart/deadline reasons. A downloaded candidate is not an installed update; a rollback remains separate from success. Exclude exact version pairs, journal contents and idle/activity timelines. | Shared desktop updater policy: [check](../../studio/electron/updates.ts#L263), [guarded restart](../../studio/electron/updates.ts#L310). [Managed service update](../../mnemion/service/service_updates.py) requires a separately disclosed host owner and cross-restart completion qualification. Local administrator consent and private journal backfill do not supply that ownership. |
+| `update`: `check`, `download`, `verify`, `apply`, `restart`, `rollback` | Confirmed stage outcomes, duration, transfer buckets and fixed restart/deadline reasons. A downloaded candidate is not an installed update; a rollback remains separate from success. Exclude exact version pairs, journal contents and idle/activity timelines. | Shared desktop updater policy: [check](../../studio/electron/updates.ts#L263), [guarded restart](../../studio/electron/updates.ts#L310). The dedicated [managed updater](../../mnemion/service/update_measurement.py) owns fresh download/apply/rollback under its host account's acknowledged policy. Its live readiness/rollback observations do not backfill interrupted work. Installed lifecycle qualification remains open. |
 | `host`: `adopt`, `enroll`, `inspect`, `start`, `stop`, `plan_upgrade`, `resolve`, `revoke` | Typed control use and confirmed outcomes, including busy/no-effect versus uncertain effects. Backup and update operations use their own rows, not another host mutation total. Never export host/operator identity, SSH fingerprints, signed plans or service paths. | Origin at [hostAction](../../studio/electron/service-bridge.ts#L304)/[HostProfiles.request](../../studio/electron/host-profiles.ts#L268); headless typed operations map through the [host protocol](../../mnemion/host_control/protocol.py#L153). |
 | `evaluation`: `create_dataset`, `run`, `cancel`, `assess`, `compare`, `export`, `remove_dataset` | Workflow use, duration and case-count buckets. Quality-metric aggregation requires a separate reviewed view and remains undecided. No questions, reference labels, dataset names/IDs, per-case results or human notes; no extra evaluations or model calls for telemetry. | Origin at [Evaluations](../../studio/frontend/src/workspace/insights/Evaluations.tsx#L178). [EvaluationRunner._case](../../mnemion/service/evaluation_runner.py#L309) invokes retrieval with evaluation origin; those calls must not inflate interactive recall usage. [Ranking metrics](../../mnemion/service/evaluation_metrics.py#L13) remain private today. |
 | `journal`: `configure`, `push`, `organize`, `backfill`, `recover` | Submissions, observed completion, duration and item-count buckets. No journal entries, repository destinations, source dates or replay identifiers. | Origin at [Journal.act](../../studio/frontend/src/workspace/Journal.tsx#L47), [JournalBackfill.act](../../studio/frontend/src/workspace/JournalBackfill.tsx#L35) and [recovery client methods](../../packages/client/src/index.ts#L192); unattended publication has the same unresolved background boundary. |

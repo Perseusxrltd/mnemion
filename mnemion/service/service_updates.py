@@ -20,6 +20,7 @@ from ..version import __version__
 from . import supervision
 from . import update_state as state_io
 from . import runtime_wheels
+from . import update_measurement
 from .update_cleanup import KEEP_BACKUPS, SLOT, retain_backup, retain_runtimes
 from .update_manifest import ManifestError, ServiceRelease, verify_manifest, version_tuple
 from .update_packages import copy_inspected_source, verify_installed_package
@@ -460,6 +461,12 @@ def _stage(root: Path, settings: dict) -> dict:
         raise ManifestError(
             "Staging needs at least 3 GiB free for packages and the isolated runtime"
         )
+    with update_measurement.operation("stage"):
+        return _stage_fresh(root, settings, release, active, slot)
+
+
+def _stage_fresh(root: Path, settings: dict, release: ServiceRelease, active: dict, slot: Path):
+    receipt = slot / "ready.json"
     config = _configuration(root)
     state_io.directory(slot)
     envelope = state_io.read(root / "candidate.json")
@@ -821,6 +828,11 @@ def _backup(
 
 def _rollback(state: Path, root: Path, journal: dict) -> None:
     previous = resolved_runtime(state, runtime=journal["previous"])
+    with update_measurement.operation("rollback"):
+        _rollback_fresh(state, root, journal, previous)
+
+
+def _rollback_fresh(state: Path, root: Path, journal: dict, previous: dict) -> None:
     _processes(state, start=False)
     state_io.write(root / "active.json", previous)
     _processes(state, start=True)
@@ -908,6 +920,19 @@ def _apply(state: Path, root: Path, settings: dict, *, retry: bool = False) -> d
             "version": release.version,
             "reason": "model_configuration_changed",
         }
+    with update_measurement.operation("apply") as measurement:
+        return _apply_fresh(state, root, settings, release, previous, candidate, measurement)
+
+
+def _apply_fresh(
+    state: Path,
+    root: Path,
+    settings: dict,
+    release: ServiceRelease,
+    previous: dict,
+    candidate: dict,
+    measurement,
+) -> dict:
     backup = _backup(root, settings, previous, release)
     journal = {
         "phase": "prepared",
@@ -935,6 +960,8 @@ def _apply(state: Path, root: Path, settings: dict, *, retry: bool = False) -> d
         finally:
             # An evidence write failure must not prevent runtime recovery.
             _rollback(state, root, journal)
+        if measurement is not None:
+            measurement.restored_after_failure()
         raise ManifestError(
             "The update failed; the previous service runtime was restored"
         ) from None
@@ -984,7 +1011,7 @@ def watch(state: Path) -> int:
                 except state_io.OperationBusy:
                     # A manual operation may own the journal/lock. Retry after
                     # it releases ownership instead of exhausting Supervisor.
-                    time.sleep(10)
+                    update_measurement.quiet_wait(10, clock=time)
                     continue
                 except Exception as error:
                     # Keep the journal for operator review and avoid an endless
@@ -1027,7 +1054,7 @@ def watch(state: Path) -> int:
                     # six-hour update window or interrupting source ingestion.
                     state_io.pause_new_connector_scans(root)
                     schedule.after(30, reason="operation_busy")
-                    time.sleep(5)
+                    update_measurement.quiet_wait(5, clock=time)
                     continue
                 except Exception as error:
                     # The bounded private logs retain diagnostics. Public state
@@ -1046,7 +1073,7 @@ def watch(state: Path) -> int:
                 schedule.after(
                     config["interval_seconds"] * random.uniform(0.9, 1.1), reason="periodic"
                 )
-            time.sleep(10)
+            update_measurement.quiet_wait(10, clock=time)
     except UpdateInterrupted:
         return 0
     finally:
@@ -1172,7 +1199,11 @@ def execute(args: argparse.Namespace) -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     arguments(parser)
-    return execute(parser.parse_args(argv))
+    args = parser.parse_args(argv)
+    if args.action == "watch":
+        with update_measurement.automatic_watcher():
+            return execute(args)
+    return execute(args)
 
 
 if __name__ == "__main__":

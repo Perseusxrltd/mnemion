@@ -212,7 +212,7 @@ at most one active attempt and throttles eligibility probes for one minute;
 explicit resume restores eligibility without starting work. This is
 an opportunity limit, not a periodic timer or the delivery allowance: the
 seven-attempt rolling week and 24-hour-plus-jitter cooldown still apply. Only a
-committed owned observation offers work; inputs/results and missed opportunities
+committed owned observation offers work in those desktop/browser controllers; inputs/results and missed opportunities
 are not retained for retry. Pause/close cancels existing work without a flush.
 
 | Source owner | Opportunity and lifetime |
@@ -220,6 +220,7 @@ are not retained for retry. Pause/close cancels existing work without a flush.
 | [Desktop](../../studio/electron/telemetry-activity.ts) | Offers after the shared local measurement transaction closes; the service bridge cancels delivery on quit/suspend and resumes eligibility after resume. |
 | [Browser page](../../studio/frontend/src/workspace/telemetry-activity.ts) | Offers after the measurement Web Lock is released; only a visible, already active page can attempt delivery. Pagehide, offline, visibility and connection changes cancel active work. No service worker is added. |
 | [Python service/local stdio loop](../../mnemion/product_telemetry/activity.py) | Registers one owner per private installation directory within an existing service or [maintained local stdio](../../mnemion/service/mcp.py) lifespan. Fixed local policy stamps can offer committed work to that loop; closing the lifespan cancels the attempt. A one-shot CLI starts no loop or keepalive. |
+| [Automatic managed-host updater](../../mnemion/service/update_measurement.py) | Both dedicated updater entrypoints use their own host-account policy. During existing five- or ten-second waits, fresh eligibility may be checked at most once per minute per watcher. A bounded current queue or still-valid approved held report can be offered, including when the ordinary pending queue is empty. A new watcher does not wait for the next six-hour update poll. The temporary delivery context closes before synchronous update work resumes; there is no extra wake schedule, thread or shutdown flush. |
 
 The Python owner transports the disclosed local queue; it does not make remote
 API/MCP traffic measurable. Unknown native metering still needs a user declaration.

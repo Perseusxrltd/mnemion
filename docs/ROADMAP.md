@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.22**.
+Reviewed source distribution: **4.46.23**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,16 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, automatic host-update telemetry source:**
+[The dedicated server updater](validation/2026-10-26-telemetry-host-updates.md)
+now owns fresh staging, compatible apply and rollback under its own acknowledged
+host-account policy. Its existing waits can offer bounded queued or approved
+reports, with no extra periodic wake or shutdown flush. 164 distinct Python
+cases and frontend/Electron builds passed; original fixture failures are retained.
+The current inventory has 88 mapped/six unmeasured categories and 628 declared
+actions. This also batches the transaction metadata optimization after 4.46.22;
+V08 remains Building with resource, provider privacy and installed acceptance open.
 
 **26 October 2026, source coverage checkpoint:** the
 [telemetry privacy inventory](validation/2026-10-26-telemetry-coverage.md)

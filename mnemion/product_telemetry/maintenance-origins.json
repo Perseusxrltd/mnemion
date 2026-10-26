@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "ownership": "Fresh work performed by a disclosed local desktop or standalone connector process. No persisted operational history or cross-user server work is exported.",
+  "ownership": "Fresh work performed by a disclosed local desktop, standalone connector or automatic managed updater under its own host OS account's acknowledged policy. No persisted operational history or cross-user server work is exported.",
   "origins": {
     "desktop.scheduled_source": { "workflow": "sources.scan", "surface": "desktop", "exclude_empty_success": true },
     "desktop.scheduled_capture": { "workflow": "capture.collect", "surface": "desktop", "exclude_empty_success": true },
@@ -28,6 +28,14 @@
     "embedding": { "workflow": "models.prepare", "completion": "success" },
     "librarian_tokenizer": { "workflow": "models.prepare", "completion": "success" }
   },
+  "host_updates": {
+    "stage": { "workflow": "update.download", "completion": "success", "scope": "fresh staging including artifact verification; a reused ready runtime contributes nothing" },
+    "apply": { "workflow": "update.apply", "completion": "success", "scope": "the automatic updater remains alive to observe process readiness and completed cutover; recovered candidate failure is recorded only after rollback returns" },
+    "rollback": { "workflow": "update.rollback", "completion": "success", "scope": "fresh rollback performed now, including by a new watcher; no backfilled interrupted apply result" },
+    "check": { "exclusion": "updater_poll" },
+    "manual": { "exclusion": "host_updater_unowned" },
+    "interrupted": { "exclusion": "updater_quit" }
+  },
   "resources": {
     "desktop_source_rss": "Maximum supplied by this owned worker's live RSS callback; unavailable if the worker supplies no sample.",
     "desktop_source_budget": "The selected worker's configured memory ceiling, only alongside an actual worker RSS sample.",
@@ -47,7 +55,8 @@
     "model_nested": "Deployment/startup calls explicitly decline preparation ownership. Registry helpers and model-list inspection acquire no owner; model/profile names and output stay private.",
     "updater_poll": "Scheduled current-version checks, progress messages and safe-restart readiness checks are not separate uses.",
     "updater_internal_stage": "Signature verification and download retries belong to the original download cycle, not extra workflow submissions.",
-    "updater_quit": "Unfinished download observations are discarded on quit. No shutdown flush or inferred post-restart success.",
+    "updater_quit": "Unfinished update observations are discarded on quit. No shutdown flush or inferred post-restart success.",
+    "host_updater_unowned": "Manual/API/library update calls do not acquire the standalone automatic watcher's owner or inherit a remote operator's telemetry choice.",
     "mixed_host": "Shared service workers, their queues and host-wide CPU/RAM totals are not observed."
   }
 }

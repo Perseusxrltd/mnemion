@@ -5,8 +5,8 @@
   "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
   "summary": {
     "total": 94,
-    "mapped": 87,
-    "unmeasured": 7
+    "mapped": 88,
+    "unmeasured": 6
   },
   "owners": {
     "control_cli": "Local command line",
@@ -18,7 +18,8 @@
     "local_stdio": "Local stdio agents",
     "local_maintenance": "Local source and updater work",
     "headless_controls": "Standalone capture controls",
-    "headless_models": "Local model preparation"
+    "headless_models": "Local model preparation",
+    "host_updates": "Automatic managed server updates"
   },
   "workflows": [
     {
@@ -553,7 +554,8 @@
       "workflow": "update.download",
       "state": "mapped",
       "owners": [
-        "local_maintenance"
+        "local_maintenance",
+        "host_updates"
       ]
     },
     {
@@ -567,7 +569,8 @@
       "owners": [
         "native_commands",
         "desktop_ipc",
-        "local_maintenance"
+        "local_maintenance",
+        "host_updates"
       ]
     },
     {
@@ -579,8 +582,10 @@
     },
     {
       "workflow": "update.rollback",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "host_updates"
+      ]
     },
     {
       "workflow": "host.adopt",
@@ -859,9 +864,9 @@
       "desktop_ipc"
     ],
     "summary": {
-      "total": 622,
-      "mapped": 348,
-      "excluded": 267,
+      "total": 628,
+      "mapped": 351,
+      "excluded": 270,
       "delegated": 7,
       "unmeasured": 0
     },
@@ -893,7 +898,10 @@
       "local_stdio.lookup_or_preview": "Catalogs, identity/status inspection and dry-run previews do not count as memory work.",
       "local_stdio.privacy_controls": "Privacy controls are not measured. Explicit report inspection may stage already-permitted aggregates without sending them.",
       "headless_controls.control_secret": "Generating or inspecting private keys is not product telemetry.",
-      "headless_controls.control_inspection": "Capture status and configuration previews do not identify a new work operation."
+      "headless_controls.control_inspection": "Capture status and configuration previews do not identify a new work operation.",
+      "host_updates.updater_poll": "Scheduled current-version checks, progress messages and safe-restart readiness checks are not separate uses.",
+      "host_updates.updater_quit": "Unfinished update observations are discarded on quit. No shutdown flush or inferred post-restart success.",
+      "host_updates.host_updater_unowned": "Manual/API/library update calls do not acquire the standalone automatic watcher's owner or inherit a remote operator's telemetry choice."
     },
     "actions": [
       {
@@ -5737,6 +5745,51 @@
         "workflows": [
           "models.prepare"
         ]
+      },
+      {
+        "owner": "host_updates",
+        "action": "apply",
+        "state": "mapped",
+        "workflows": [
+          "update.apply"
+        ]
+      },
+      {
+        "owner": "host_updates",
+        "action": "check",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "host_updates.updater_poll"
+      },
+      {
+        "owner": "host_updates",
+        "action": "interrupted",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "host_updates.updater_quit"
+      },
+      {
+        "owner": "host_updates",
+        "action": "manual",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "host_updates.host_updater_unowned"
+      },
+      {
+        "owner": "host_updates",
+        "action": "rollback",
+        "state": "mapped",
+        "workflows": [
+          "update.rollback"
+        ]
+      },
+      {
+        "owner": "host_updates",
+        "action": "stage",
+        "state": "mapped",
+        "workflows": [
+          "update.download"
+        ]
       }
     ]
   },
@@ -5747,7 +5800,7 @@
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
-    "maintenance-origins.json": "08695f5f4a92e2394064db546c81ea492633b6dfc9ea14e804fa9395e937ae37",
+    "maintenance-origins.json": "ba3e35034e19a75d93129a9f3f42cbcd867df5540f05bb3429239889488c1a41",
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "5dab6820e3e24b873defa56558447ea85869dc1a6716d2e01f3b2424b23ca7a4",

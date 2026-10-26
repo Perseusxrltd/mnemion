@@ -42,8 +42,8 @@ presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
 to inspect the source coverage and explicit privacy exclusions. New source
-provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-coverage.md):
-86 of 94 categories have a declared measurement source; eight remain unmeasured.
+provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-host-updates.md):
+88 of 94 categories have a declared measurement source; six remain unmeasured.
 These counts describe catalog mappings, not complete screens, sensors or active
 collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
 inventory is generated from Git source maps and checked for staleness at release.
@@ -410,11 +410,28 @@ use. Explicit Sync continuations, remote-requested or host-managed scans,
 reusable sync helpers and server-worker activity are excluded. Existing request
 acknowledgements remain separate from observed maintenance outcomes.
 
-Automatic update download, verification and bounded retries form one cycle.
+Automatic desktop update download, verification and bounded retries form one cycle.
 Current-version and safe-restart polls add no use. An unfinished cycle is
 discarded on quit, and installer handoff is only `accepted`; it does not prove
 the new version installed. Its optional snapshot can wait up to **25 ms** before
 the original guarded action. There is no shutdown flush or wait for telemetry.
+
+The automatic managed-server watcher has a separate source boundary for fresh
+staging, compatible apply and rollback. It uses its **own OS-account acknowledged
+telemetry preference**, not your browser or remote operator setting. Use the
+existing offline local controls under the same account and application-data
+configuration to inspect or change that choice. Starting the watcher does not
+initialize, repair or acknowledge it. The current unavailable release contract
+cannot activate collection or acknowledge an available destination.
+
+The live watcher observes service readiness and rollback it actually performs.
+Interrupted work is discarded, without a result reconstructed from private
+journals. A later watcher may offer an existing bounded queue or approved held
+report during its normal five- or ten-second waits, at most once per minute in
+that watcher lifetime. No independent timer or thread is added; delivery closes
+before update work resumes, and shutdown does not flush it. Policy, metering,
+pressure, review expiry and spending can still refuse any opportunity. This is
+not a promise to send within a minute or qualification of every installed host.
 
 Source observations use only reviewed numeric work/queue/store-size buckets and
 coarse own-process resources. Desktop RSS is the maximum supplied by that child

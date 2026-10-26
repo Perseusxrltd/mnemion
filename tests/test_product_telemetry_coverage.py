@@ -17,7 +17,7 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
     telemetry_coverage.verify(ROOT)
     coverage = catalog.coverage_specification()
     assert coverage["scope"] == "declared_source_boundaries"
-    assert coverage["summary"] == {"total": 94, "mapped": 87, "unmeasured": 7}
+    assert coverage["summary"] == {"total": 94, "mapped": 88, "unmeasured": 6}
     assert [row["workflow"] for row in coverage["workflows"]] == list(catalog.WORKFLOWS)
     rows = {row["workflow"]: row for row in coverage["workflows"]}
     assert rows["memory.recall"]["state"] == "mapped"
@@ -30,6 +30,8 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
     assert rows["backup.list"]["state"] == "unmeasured"
     assert "headless_controls" in rows["capture.drain"]["owners"]
     assert rows["models.prepare"]["owners"] == ["headless_models"]
+    assert rows["update.rollback"]["owners"] == ["host_updates"]
+    assert "host_updates" in rows["update.apply"]["owners"]
     # Reading static disclosure data does not retain a caller's modifications.
     rows["memory.recall"]["owners"].clear()
     assert catalog.coverage_specification() != coverage
@@ -128,7 +130,7 @@ def test_future_interface_action_is_not_hidden_or_given_an_invented_workflow(sou
         "state": "unmeasured",
         "workflows": [],
     } in coverage["action_coverage"]["actions"]
-    assert coverage["summary"] == {"total": 94, "mapped": 87, "unmeasured": 7}
+    assert coverage["summary"] == {"total": 94, "mapped": 88, "unmeasured": 6}
     with pytest.raises(ValueError, match="Telemetry coverage is stale"):
         telemetry_coverage.verify(root)
     # An unfinished selector declaration cannot make a known action disappear.

@@ -2,6 +2,7 @@
 
 import copy
 from contextlib import nullcontext
+import json
 import os
 import subprocess
 import sys
@@ -270,6 +271,152 @@ def staged(managed, monkeypatch):
     monkeypatch.setattr(updates.supervision, "status", lambda _: {"running": True, "ready": True})
     monkeypatch.setattr(updates, "_models", lambda *args: ["fixture-generation"])
     return runtime
+
+
+@pytest.fixture
+def host_telemetry(tmp_path, monkeypatch):
+    from mnemion.product_telemetry import policy
+
+    root = tmp_path / "product-telemetry"
+    monkeypatch.setattr(policy, "default_directory", lambda: root)
+    monkeypatch.setattr(policy, "company_policy_file", lambda: tmp_path / "company.json")
+    monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    policy.configure(root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1})
+    return root
+
+
+@pytest.mark.parametrize("owned", [True, False])
+def test_automatic_cutover_has_one_owner_and_manual_apply_has_none(
+    managed, monkeypatch, host_telemetry, owned
+):
+    from mnemion.product_telemetry import aggregate
+
+    staged(managed, monkeypatch)
+    events = []
+    monkeypatch.setattr(updates, "_backup", lambda *args: events.append("backup") or "PRIVATE.zip")
+    monkeypatch.setattr(
+        updates,
+        "_processes",
+        lambda *args, start, **kwargs: events.append("start" if start else "stop"),
+    )
+    with updates.update_measurement.automatic_watcher() if owned else nullcontext():
+        # A ready cached stage must not become another download observation.
+        assert updates._stage(managed.root, managed.settings)["status"] == "staged"
+        result = updates._apply(managed.state, managed.root, managed.settings)
+    assert result["status"] == "updated"
+    assert events == ["backup", "stop", "start"]
+    rows = aggregate.preview(host_telemetry)
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == int(owned)
+    assert all(row["workflow"] == "update.apply" for row in rows)
+    assert [row["bucket"] for row in rows if row["metric"] == "outcomes"] == (
+        ["success"] if owned else []
+    )
+    assert "PRIVATE" not in json.dumps(rows)
+
+
+def test_fresh_stage_records_once_but_current_and_cached_versions_do_not(
+    managed, monkeypatch, host_telemetry
+):
+    from mnemion.product_telemetry import aggregate
+
+    runtime = staged(managed, monkeypatch)
+    receipt = managed.root / "releases" / runtime["slot"] / "ready.json"
+    saved = state_io.read(receipt)
+    receipt.unlink()
+    calls = []
+
+    def stage(*args):
+        calls.append(True)
+        state_io.write(receipt, saved)
+        return {"status": "staged", "automatic_compatible": True}
+
+    monkeypatch.setattr(updates, "_stage_fresh", stage)
+    with updates.update_measurement.automatic_watcher():
+        assert updates._stage(managed.root, managed.settings)["status"] == "staged"
+        assert updates._stage(managed.root, managed.settings)["status"] == "staged"
+        state_io.write(managed.root / "active.json", runtime)
+        with pytest.raises(ManifestError, match="newer"):
+            updates._stage(managed.root, managed.settings)
+    assert calls == [True]
+    rows = aggregate.preview(host_telemetry)
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert all(row["workflow"] == "update.download" for row in rows)
+
+
+@pytest.mark.parametrize("ending", ["restored", "rollback_unconfirmed", "interrupted"])
+def test_real_recovery_observes_fresh_work_without_replaying_interrupted_apply(
+    managed, monkeypatch, host_telemetry, ending
+):
+    from mnemion.product_telemetry import aggregate, policy
+
+    candidate = staged(managed, monkeypatch)
+    monkeypatch.setattr(updates, "_backup", lambda *args: "PRIVATE_BACKUP.zip")
+
+    def process(state, *, start):
+        if start:
+            if ending == "interrupted":
+                raise updates.UpdateInterrupted()
+            if state_io.read(managed.root / "active.json") == candidate:
+                raise ManifestError("PRIVATE_CANDIDATE_FAILURE")
+            if ending == "rollback_unconfirmed":
+                raise OSError("PRIVATE_ROLLBACK_FAILURE")
+
+    monkeypatch.setattr(updates, "_processes", process)
+    with updates.update_measurement.automatic_watcher():
+        expected = (
+            updates.UpdateInterrupted
+            if ending == "interrupted"
+            else OSError
+            if ending == "rollback_unconfirmed"
+            else ManifestError
+        )
+        with pytest.raises(expected):
+            updates._apply(managed.state, managed.root, managed.settings)
+    if ending == "interrupted":
+        assert aggregate.preview(host_telemetry) == []
+        assert state_io.read(managed.root / "journal.json")["phase"] == "starting"
+        monkeypatch.setattr(updates, "_processes", lambda *args, **kwargs: None)
+        # A new process/lifetime observes only the rollback it actually runs.
+        with updates.update_measurement.automatic_watcher():
+            updates._recover(managed.state, managed.root)
+        expected_outcomes = {"update.rollback": "success"}
+    elif ending == "restored":
+        expected_outcomes = {"update.apply": "failed", "update.rollback": "success"}
+        with updates.update_measurement.automatic_watcher():
+            assert updates._apply(managed.state, managed.root, managed.settings)["status"] == (
+                "held_after_failure"
+            )
+    else:
+        expected_outcomes = {"update.apply": "unconfirmed", "update.rollback": "unconfirmed"}
+        assert (managed.root / "journal.json").exists()
+    rows = aggregate.preview(host_telemetry)
+    assert {
+        row["workflow"]: row["bucket"] for row in rows if row["metric"] == "outcomes"
+    } == expected_outcomes
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == len(
+        expected_outcomes
+    )
+    assert b"PRIVATE" not in (host_telemetry / policy.DATABASE_NAME).read_bytes()
+
+
+def test_mid_cutover_opt_out_keeps_the_update_and_suppresses_telemetry(
+    managed, monkeypatch, host_telemetry
+):
+    from mnemion.product_telemetry import aggregate, policy
+
+    staged(managed, monkeypatch)
+    monkeypatch.setattr(updates, "_backup", lambda *args: "PRIVATE.zip")
+
+    def process(state, *, start):
+        if start:
+            policy.configure(host_telemetry, {"enabled": False, "expected_revision": 0})
+
+    monkeypatch.setattr(updates, "_processes", process)
+    with updates.update_measurement.automatic_watcher():
+        assert updates._apply(managed.state, managed.root, managed.settings)["status"] == "updated"
+    assert aggregate.preview(host_telemetry) == []
+    assert not (managed.root / "journal.json").exists()
 
 
 @pytest.mark.parametrize("managed", ["4.0.8", "4.1.0"], indirect=True)

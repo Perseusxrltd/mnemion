@@ -197,6 +197,7 @@ def build(root: Path, documents: dict) -> tuple[dict, dict]:
         ("origins", "local_maintenance"),
         ("capture_controls", "headless_controls"),
         ("model_preparation", "headless_models"),
+        ("host_updates", "host_updates"),
     ):
         group(owner, maintenance[key], maintenance["exclusions"])
     states = ("mapped", "excluded", "delegated", "unmeasured")

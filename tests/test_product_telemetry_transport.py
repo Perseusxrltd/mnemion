@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import socket
 import sqlite3
 import ssl
+import time
 from types import SimpleNamespace
 
 from cryptography import x509
@@ -166,6 +167,104 @@ def test_unavailable_application_owner_does_not_change_lifespan_errors(tmp_path)
 
     asyncio.run(scenario())
     assert not (tmp_path / "absent").exists()
+
+
+@pytest.mark.parametrize("ending", ["success", "wait_deadline", "opt_out", "approved_review"])
+def test_managed_update_wait_sends_prior_queue_and_closes_before_returning(
+    installation, monkeypatch, ending
+):
+    from mnemion.product_telemetry import activity, conditions, endpoint, inspection, workflow
+    from mnemion.service import update_measurement as measured
+
+    f = installation
+    monkeypatch.setattr(policy, "default_directory", lambda: f.root)
+    monkeypatch.setattr(endpoint, "release_address", lambda: "127.0.0.1")
+    prepared, closed, reports = [], [], []
+
+    class ReadyConditions:
+        def __init__(self, **kwargs):
+            pass
+
+        async def prepare(self):
+            prepared.append(True)
+            return True
+
+        def read(self):
+            return {"network": "unmetered", "constrained": False}
+
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr(conditions, "ServiceConditions", ReadyConditions)
+    reserve = delivery.DeliveryBudget.reserve
+
+    def observed_reserve(self, **kwargs):
+        report = reserve(self, **kwargs)
+        if report is not None:
+            reports.append(report)
+        return report
+
+    monkeypatch.setattr(delivery.DeliveryBudget, "reserve", observed_reserve)
+
+    async def scenario():
+        mode = "hold" if ending in {"wait_deadline", "opt_out"} else "success"
+        async with peer(f.context, mode) as server:
+            f.prepare(server.endpoint, reserve=False)
+            if ending == "approved_review":
+                monkeypatch.setattr(
+                    inspection,
+                    "read_review_clock",
+                    lambda **kwargs: {"epoch": "a" * 32, "elapsed_ms": 123456},
+                )
+
+                def action(name, **extra):
+                    current = inspection.status(f.root)
+                    return inspection.execute(
+                        f.root,
+                        name,
+                        {
+                            "expected_revision": current["status"]["revision"],
+                            "expected_generation": current["status"]["store_generation"],
+                            "expected_review_token": current["review"]["token"],
+                            **extra,
+                        },
+                    )
+
+                action("review_mode", mode="review")
+            # Already-recorded observations survive only in the bounded product
+            # queue. The new owner is not given an operational update journal.
+            prior = workflow.begin("update.apply", "headless")
+            assert prior is not None
+            prior.finish("success")
+            if ending == "approved_review":
+                assert action("inspect_report")["review"]["outcome"] == "held"
+                assert action("approve_report")["review"]["outcome"] == "approved"
+                assert policy.status()["pending_records"] == 0
+
+            def existing_watch_wait():
+                with measured.automatic_watcher():
+                    measured.quiet_wait(0.75, clock=time)
+                    assert f.root.absolute() not in activity._owners
+                    assert all(report._closed for report in reports)
+                    # An ordinary next sleep is not an extra transmission or a
+                    # fresh queue/policy inspection within the admission limit.
+                    measured.quiet_wait(0.01, clock=time)
+
+            waiting = asyncio.create_task(asyncio.to_thread(existing_watch_wait))
+            await asyncio.wait_for(server.entered.wait(), 3)
+            if ending == "opt_out":
+                policy.configure(f.root, {"enabled": False, "expected_revision": 0})
+            await asyncio.wait_for(waiting, 3)
+            assert len(server.requests) == 1 and len(server.requests[0][1]) == 4
+            assert len(prepared) == len(closed) == len(reports) == 1
+            assert reports[0]._body == b"\0" * 4
+            with closing(sqlite3.connect(f.root / policy.DATABASE_NAME)) as database:
+                assert database.execute("SELECT lease_token FROM delivery_state").fetchone() == (
+                    None,
+                )
+                assert database.execute("SELECT count(*) FROM delivery_attempts").fetchone() == (1,)
+
+    asyncio.run(scenario())
 
 
 @pytest.mark.parametrize("ending", ["success", "opt_out", "shutdown"])

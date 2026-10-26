@@ -35,6 +35,7 @@ OWNERS = {
     "local_maintenance": "Local source and updater work",
     "headless_controls": "Standalone capture controls",
     "headless_models": "Local model preparation",
+    "host_updates": "Automatic managed server updates",
 }
 
 
@@ -90,6 +91,8 @@ def build(root: Path) -> dict:
         add("headless_controls", entry)
     for entry in documents["maintenance-origins.json"]["model_preparation"].values():
         add("headless_models", entry)
+    for entry in documents["maintenance-origins.json"]["host_updates"].values():
+        add("host_updates", entry)
 
     actions, action_inputs = action_coverage(root, documents)
     for action in actions["actions"]:

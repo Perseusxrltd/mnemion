@@ -70,12 +70,12 @@ The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
 matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
 event/input/result objects, free text and identifying values do not.
 The generated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-marks 87 categories with declared source mappings and seven unmeasured. It is
+marks 88 categories with declared source mappings and six unmeasured. It is
 available in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
-The [current action inventory](../validation/2026-10-26-workspace-telemetry-ownership.md)
-contains **622 declared actions and fixed variants: 348 mapped, 267 excluded,
+The [current action inventory](../validation/2026-10-26-telemetry-host-updates.md)
+contains **628 declared actions and fixed variants: 351 mapped, 270 excluded,
 seven delegated and zero unmeasured among these declarations**. It independently
 reads five shipped-interface declarations, now including desktop preload request
 channels; other owners use reviewed source-route maps. Missing mappings in those
@@ -105,7 +105,7 @@ and `librarian-models --prepare` commands now own `models.prepare`. The observer
 receives only the fixed preparation kind; model/profile identifiers and normal
 command output stay outside telemetry. Listing, registry helpers and nested
 deployment/startup preparation acquire no owner. Model resource/sensor
-qualification, rollback completion and complete interface/call-site coverage
+qualification, installed rollback and complete interface/call-site coverage
 remain open, alongside installed and resource acceptance gates. The action report preserves the
 earlier 86-mapped/eight-unmeasured audit separately from this source follow-up.
 
@@ -121,10 +121,11 @@ host/source variants and explicit inspection, privacy and transport exclusions.
 Automatic `workspaces:resume` is excluded before observation/policy access;
 explicit restore remains owned, and reset owns one `workspace.forget`
 acknowledgement. Workspace changes use the chosen explicit connect, sign-in or
-open boundary, without an additional synthetic switch observation. Managed-server
-rollback requires a separately disclosed host owner and cross-restart completion
-qualification; local administrator consent and private journal backfill do not
-provide either. Catalog, wire-v2, disclosure and route bytes are unchanged.
+open boundary, without an additional synthetic switch observation. That
+checkpoint did not include a managed-host rollback owner. The subsequent
+host-update boundary below uses the host's own acknowledged policy; a remote
+operator's preference and private journal backfill cannot provide it.
+Catalog, wire-v2, disclosure and route bytes are unchanged.
 Release preparation passed; native and production qualification remain pending.
 
 Keyed API writes require `X-Mnemion-Idempotency: new`; typed
@@ -172,10 +173,24 @@ owners. Empty/paused scans, explicit Sync continuations, remote-requested or
 host-managed scans, reusable helpers and server-worker activity do not acquire
 another owner. Native resource samples require a real child callback; headless
 RSS is an ending observation, with its own CPU delta and configured capture
-limit. No source history or mixed-host totals are exported. Updater download,
+limit. No source history or mixed-host totals are exported. Desktop updater download,
 verification and retries form one cycle; polls add no use, unfinished cycles
 are discarded on quit, and installer handoff is only accepted. Native request
 acknowledgements remain separate categories, not extra completed uses.
+
+The [managed-host update follow-up](../validation/2026-10-26-telemetry-host-updates.md)
+owns fresh headless staging, compatible apply and rollback under the watcher's
+own OS-account acknowledged policy. Both the baseline supervised child and the
+isolated standalone watcher establish this boundary. Manual/API/library calls,
+ordinary checks, ready-runtime reuse and held/incompatible apply acquire no
+automatic owner. The live updater observes service readiness before successful
+apply; a candidate failure is confirmed only after rollback returns. Other
+exceptions remain unconfirmed. Interrupted unfinished work is discarded; a
+later watcher can observe its own fresh rollback, never reconstruct the earlier
+apply from a journal. Only fixed workflow/outcome values and bounded timing
+enter telemetry; versions, paths, operational records and mixed-host resources
+do not. This is source ownership, with installed update/recovery qualification
+still open.
 
 The [4.46.21 capture-delivery source follow-up](../validation/2026-10-26-capture-delivery-telemetry.md)
 preserves receipt bodies and separates request-local fresh/replayed metadata
@@ -200,6 +215,16 @@ identifiers, and reject late cancelled results with freshness measured from
 query start. Linux/macOS aggregate CPU admission avoids per-core enumeration;
 changed/reset counters require comparable readings and preserve the **20% CPU
 admission threshold**. Windows retains the existing fallback.
+
+The managed updater can also offer an existing bounded queue or still-valid
+approved held report during its already scheduled five- or ten-second waits.
+Fresh eligibility checks occur at most once per minute in that watcher lifetime;
+this is not a new wake schedule or a global limit across restarts. An approved
+report can be eligible even with zero ordinary pending records, without waiting
+for the next six-hour update check. The temporary delivery context is cancelled
+and closed before synchronous update work resumes. Shutdown adds no flush or
+keepalive. Choice, company policy, review approval/expiry, pressure, metering,
+spending and final-send fences still control whether anything is sent.
 
 Without a packaged network helper, source Windows can use its documented local
 OS hint; Linux/macOS cost stays unknown. A present broken helper is not bypassed.
