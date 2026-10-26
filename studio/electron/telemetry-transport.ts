@@ -1,11 +1,16 @@
 /** One bounded HTTPS attempt. The existing app owner supplies its lifetime. */
 import { constants, X509Certificate } from 'node:crypto'
 import { once } from 'node:events'
+import { createRequire } from 'node:module'
 import { isIP, Socket, type SocketConstructorOpts } from 'node:net'
 import { Duplex } from 'node:stream'
-import { connect, createSecureContext, type TLSSocket } from 'node:tls'
+import type { TLSSocket } from 'node:tls'
 import { NativeTelemetryDelivery, PreparedTelemetryReport } from './telemetry-delivery.js'
 import { validCertificateAuthorities } from './telemetry-route.js'
+
+// The TLS ESM facade enumerates the lazy rootCertificates export. Select only
+// the APIs used here so an explicit trust set never loads that general list.
+const { connect, createSecureContext } = createRequire(import.meta.url)('node:tls') as typeof import('node:tls')
 
 const MAX_TLS_BYTES = 32768, MAX_HEADERS = 2048, DEADLINE = 5000
 type Outcome = 'delivered' | 'suppressed' | 'failed' | 'deadline' | 'wire_limit'

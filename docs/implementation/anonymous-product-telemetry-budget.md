@@ -39,6 +39,16 @@ ambient fixture trust across revisions prevents a causal savings comparison.
 Combined CPU remains descriptive, the resource gate fails, and no repeat
 measurement or budget change is selected.
 
+The later [cold-start allocation corrections](../validation/2026-10-26-telemetry-cold-start.md)
+avoid materializing the general TLS certificate list during sender import and
+throwing exceptions for an absent optional company policy. Release trust and
+fresh permission checks remain unchanged, with no positive permission cache.
+Two ordinary-Node tests and 95 actual Electron checks passed, with two platform
+skips and a passing Electron build. The fixed two-case source-app follow-up
+completed with matched inputs and cleanup; its lower weighted JavaScript
+allocation samples establish no RSS/CPU saving or resource acceptance. All
+earlier failures and the 2 MiB / 0.5% budgets remain retained.
+
 The later [five-target installed-control qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
 verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
 fields each**, including fixed format preview, app/native choice parity and

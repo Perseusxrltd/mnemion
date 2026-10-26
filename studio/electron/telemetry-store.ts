@@ -114,7 +114,10 @@ export class NativeTelemetryStore {
 
   protected company(): Company {
     try {
-      const info = lstatSync(this.companyFile)
+      // An absent optional file is common. Avoid allocating an ENOENT error
+      // on every fresh read; other filesystem errors still deny below.
+      const info = lstatSync(this.companyFile, { throwIfNoEntry: false })
+      if (!info) return { enabled: true, groups: [...this.disclosure.metric_groups] }
       if (!info.isFile() || info.isSymbolicLink() || info.size > 8192) throw failure()
       const raw = readFileSync(this.companyFile)
       if (raw.length > 8192) throw failure()
