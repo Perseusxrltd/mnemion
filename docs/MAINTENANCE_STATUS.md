@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-26T17:14:03+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-26T17:50:29+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.22](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.22). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,21 +16,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40345454839](https://github.com/Perseusxrltd/mnemion/actions/runs/40345454839) |
-| public-updates\.yml | v4\.46\.22 | queued | [Run 40366545289](https://github.com/Perseusxrltd/mnemion/actions/runs/40366545289) |
+| ci\.yml | main | success | [Run 40367482620](https://github.com/Perseusxrltd/mnemion/actions/runs/40367482620) |
+| public-updates\.yml | v4\.46\.22 | success | [Run 40366545289](https://github.com/Perseusxrltd/mnemion/actions/runs/40366545289) |
 | release\.yml | release/4\.46\.22 | success | [Run 40351425614](https://github.com/Perseusxrltd/mnemion/actions/runs/40351425614) |
 | verify-artifacts\.yml | main | success | [Run 40365617692](https://github.com/Perseusxrltd/mnemion/actions/runs/40365617692) |
-| website-release\.yml | main | success | [Run 40345454886](https://github.com/Perseusxrltd/mnemion/actions/runs/40345454886) |
+| website-release\.yml | main | success | [Run 40367482691](https://github.com/Perseusxrltd/mnemion/actions/runs/40367482691) |
 | website-release\.yml | v4\.46\.22 | success | [Run 40366540445](https://github.com/Perseusxrltd/mnemion/actions/runs/40366540445) |
-
-## Active jobs
-
-[Run 40366545289](https://github.com/Perseusxrltd/mnemion/actions/runs/40366545289): 1/7 jobs completed; 1 succeeded.
-
-- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / arm64 public upgrade: queued.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-
