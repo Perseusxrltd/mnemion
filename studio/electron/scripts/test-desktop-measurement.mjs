@@ -7,6 +7,7 @@ import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { windowsTelemetryPrivateExecutable } from '../dist/telemetry-private-store.js'
 import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
+import { markWorkspaceSelection, takeWorkspaceSelection } from '../dist/workspace-selection.js'
 import { desktopUpdateMenu } from '../dist/update-menu.js'
 import { desktopAppAction } from '../dist/desktop-app-actions.js'
 
@@ -106,6 +107,57 @@ test('explicit app and native capture previews own no private selection or resul
     assert.ok(f.values.every(row => row.workflow === 'capture.preview' && row.surface === surface))
     assert.equal(f.values.find(row => row.metric === 'outcomes').bucket, 'success')
     assert.equal(JSON.stringify(f.values).includes('PRIVATE'), false)
+  }
+})
+
+test('explicit backup inventory observes only its completion, never file names or result fields', async () => {
+  const input = new Proxy({}, { get() { throw new Error('PRIVATE_INVENTORY_INPUT') } })
+  const result = new Proxy({}, { get(_target, key) { if (key === 'then') return undefined; throw new Error('PRIVATE_BACKUP_LIST') } })
+  assert.deepEqual(desktopIpcSelection('local:backup-inventory', [input]), { action: 'backup.inventory', input: {} })
+  for (const surface of ['desktop', 'native_agent']) {
+    const f = fixture()
+    assert.equal(await measureDesktop(f.store, 'backup.inventory', input, surface, () => result), result)
+    assert.equal(f.values.filter(row => row.metric === 'submissions').length, 1)
+    assert.ok(f.values.every(row => row.workflow === 'backup.list' && row.surface === surface))
+    assert.equal(f.values.find(row => row.metric === 'outcomes').bucket, 'success')
+  }
+})
+
+test('workspace selection needs the exact fresh controller result and keeps its original snapshot', async () => {
+  const f = fixture(), stamps = [], original = f.store.recordMany
+  f.store.recordMany = async (values, stamp) => { stamps.push(stamp); return original(values) }
+  const input = new Proxy({}, { get() { throw new Error('PRIVATE_WORKSPACE_INPUT') } })
+  const result = new Proxy({}, { get(_target, key) { if (key === 'then') return undefined; throw new Error('PRIVATE_WORKSPACE_RESULT') } })
+  assert.equal(await measureDesktop(f.store, 'workspace.restore', input, 'desktop', () => {
+    f.store.snapshot = async () => { throw new Error('A completion must not read another privacy choice') }
+    return markWorkspaceSelection(result, 'switched')
+  }), result)
+  assert.equal(f.reads.length, 1)
+  assert.equal(stamps.length, 1)
+  assert.deepEqual(stamps[0], { revision: 1, store_generation: 'a'.repeat(32) })
+  assert.ok(f.values.every(row => row.workflow === 'workspace.switch'))
+  assert.equal(takeWorkspaceSelection(result), null)
+  f.store.snapshot = async () => ({ revision: 2, store_generation: 'b'.repeat(32) })
+  for (const reused of [result, { workspaceSelection: 'switched' }]) {
+    assert.equal(await measureDesktop(f.store, 'workspace.restore', {}, 'desktop', () => reused), reused)
+  }
+  assert.equal(stamps.length, 1, 'reused and unbranded results cannot add usage')
+})
+
+test('unavailable and late selection measurements consume their result without retaining a future use', async () => {
+  for (const mode of ['unavailable', 'late']) {
+    const f = fixture(), result = { private: 'PRIVATE_WORKSPACE_RESULT' }
+    let release
+    if (mode === 'unavailable') f.store.available = false
+    else f.store.snapshot = () => new Promise(resolve => { release = resolve })
+    assert.equal(await measureDesktop(f.store, 'workspace.restore', {}, 'desktop', () => markWorkspaceSelection(result, 'opened')), result)
+    release?.({ revision: 1, store_generation: 'a'.repeat(32) })
+    await Promise.resolve()
+    f.store.available = true
+    f.store.snapshot = async () => ({ revision: 1, store_generation: 'a'.repeat(32) })
+    assert.equal(await measureDesktop(f.store, 'workspace.restore', {}, 'desktop', () => result), result)
+    assert.deepEqual(f.values, [])
+    assert.equal(takeWorkspaceSelection(result), null)
   }
 })
 

@@ -42,8 +42,9 @@ presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
 to inspect the source coverage and explicit privacy exclusions. New source
-provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-capture-actions.md):
-91 of 94 categories have a declared measurement source; three remain unmeasured.
+provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-workspace-selections.md):
+93 of 94 categories have a declared measurement source. The separate
+`update.verify` category remains unmeasured; verification stays part of download.
 These counts describe catalog mappings, not complete screens, sensors or active
 collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
 inventory is generated from Git source maps and checked for staleness at release.
@@ -384,6 +385,21 @@ now have optional source hooks. The desktop/native agent uses the shared private
 OS-account store; the browser uses its own site policy. They retain the choice
 and generation captured when work began and recheck them before recording. An
 old action cannot regain permission after an opt-out and later re-enable.
+
+Selecting a saved workspace now distinguishes opening it from switching away
+from another verified workspace/account or the selected local workspace. Opening
+the same profile with a fresh session still counts as open. This uses one original
+choice and clock; only the fixed open/switch decision reaches telemetry. Failed
+restores retain a failed-open observation. Automatic resume remains unmeasured,
+and new connections, sign-in and local-open actions keep their existing labels.
+
+Explicit app/native **Backup inventory** now owns a backup-list observation when
+the bounded list operation returns successfully. This does not prove the listed
+backups are valid, restored or delivered to cloud storage. The observer does not
+read the returned contents; status/polls and reusable helpers remain unmeasured.
+These [source changes](../validation/2026-10-26-telemetry-workspace-selections.md)
+passed focused checks and builds; installed-platform acceptance remains separate,
+and collection stays inactive.
 
 Explicit conversation preview in the app/native agent and standalone
 `--capture-control` action `preview` now own `capture.preview`. Success means the

@@ -10,6 +10,7 @@ import { desktopAction } from '../dist/desktop-actions.js'
 import { desktopIpcSelection, measureDesktop } from '../dist/desktop-measurement.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
+import { takeWorkspaceSelection } from '../dist/workspace-selection.js'
 import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
 
 const endpoint = 'https://memory.example.test'
@@ -214,6 +215,7 @@ test('automatic workspace resumes never recount active, restored or absent sessi
   assert.equal(f.observed.requests, requests, 'Returning an active session does not reconnect')
   f.connections.lock()
   const resumed = await m.invoke('workspaces:resume', [], () => f.connections.resume())
+  assert.equal(takeWorkspaceSelection(resumed), null, 'automatic restore leaves no later-use result metadata')
   assert.notEqual(resumed.sessionToken, first.sessionToken)
   assert.equal(resumed.bookmarkId, first.bookmarkId)
   assert.equal(m.reads.length, reads, 'Automatic restoration never reads telemetry policy')
@@ -256,4 +258,71 @@ test('failed automatic restore stays unmeasured while deliberate agent changes o
   assert.deepEqual(m.values.filter(row => row.metric === 'submissions').map(row => row.workflow),
     ['workspace.connect', 'workspace.open', 'workspace.open'])
   assert.ok(m.values.every(row => row.surface === 'native_agent' && row.workflow !== 'workspace.switch'))
+})
+
+for (const dimension of ['endpoint', 'tenant', 'principal']) test(`saved workspace restore distinguishes ${dimension} changes without exporting identity`, async t => {
+  const f = await workspaceFixture(t), m = measurements()
+  const other = { ...f.identity,
+    ...(dimension === 'tenant' ? { tenant_id: randomUUID() } : {}),
+    ...(dimension === 'principal' ? { principal_id: randomUUID() } : {}) }
+  const otherCredential = credential + '_second'
+  const connections = new WorkspaceConnections(f.store, async (_address, key) => key === credential ? f.identity : other)
+  const target = await connections.connect(endpoint, credential, true)
+  await connections.connect(dimension === 'endpoint' ? endpoint + '/second' : endpoint, otherCredential, true)
+  const restored = await m.invoke('workspaces:restore', [target.bookmarkId], () => connections.restore(target.bookmarkId))
+  assert.equal(restored.me.principal_id, f.identity.principal_id)
+  assert.equal(restored.me.tenant_id, f.identity.tenant_id)
+  assert.notEqual(restored.sessionToken, target.sessionToken)
+  const reopened = await m.invoke('workspaces:restore', [target.bookmarkId], () => connections.restore(target.bookmarkId))
+  assert.notEqual(reopened.sessionToken, restored.sessionToken, 'rotated session handles do not imply another workspace')
+  assert.deepEqual(m.values.filter(row => row.metric === 'submissions').map(row => row.workflow), ['workspace.switch', 'workspace.open'])
+  assert.equal(m.reads.length, 2)
+  const exported = JSON.stringify(m.values)
+  for (const privateValue of [credential, otherCredential, endpoint, target.bookmarkId, f.identity.tenant_id, other.principal_id, restored.sessionToken]) assert.equal(exported.includes(privateValue), false)
+  assert.equal(Object.hasOwn(restored, 'workspaceSelection'), false)
+  assert.equal(takeWorkspaceSelection(structuredClone(restored)), null)
+})
+
+test('native local-to-saved restore transfers one result and reopening stays an open action', async t => {
+  const f = await setup(t), m = measurements()
+  const saved = await f.call('workspace.connect', await f.connectInput())
+  await f.call('local.open', { expected_revision: (await f.actions.status()).revision })
+  const restore = async () => {
+    const input = { id: saved.active.bookmarkId, expected_revision: (await f.actions.status()).revision }
+    return measureDesktop(m.store, 'workspace.restore', {}, 'native_agent', () => f.call('workspace.restore', input))
+  }
+  const switched = await restore()
+  assert.equal(switched.local_selected, false)
+  const reopened = await restore()
+  assert.equal(reopened.active.bookmarkId, switched.active.bookmarkId)
+  assert.deepEqual(m.values.filter(row => row.metric === 'submissions').map(row => row.workflow), ['workspace.switch', 'workspace.open'])
+  assert.equal(m.reads.length, 2)
+  assert.equal(takeWorkspaceSelection(switched), null)
+  assert.equal(Object.hasOwn(switched, 'workspaceSelection'), false)
+  assert.ok(m.values.every(row => row.surface === 'native_agent'))
+})
+
+test('failed and superseded restores cannot claim a completed workspace switch', async t => {
+  const f = await workspaceFixture(t), m = measurements()
+  let offline = false, entered, release
+  const gate = new Promise(resolve => { entered = resolve })
+  const connections = new WorkspaceConnections(f.store, async () => {
+    if (offline) throw new Error('PRIVATE_REMOTE_FAILURE')
+    if (release) { entered(); await release.promise }
+    return f.identity
+  })
+  const saved = await connections.connect(endpoint, credential, true)
+  offline = true
+  await assert.rejects(m.invoke('workspaces:restore', [saved.bookmarkId], () => connections.restore(saved.bookmarkId)), /PRIVATE_REMOTE_FAILURE/)
+  offline = false
+  let finish
+  release = { promise: new Promise(resolve => { finish = resolve }) }
+  const pending = m.invoke('workspaces:restore', [saved.bookmarkId], () => connections.restore(saved.bookmarkId))
+  await gate
+  connections.lock()
+  finish()
+  await assert.rejects(pending, /newer connection/)
+  assert.ok(m.values.every(row => row.workflow === 'workspace.open'))
+  assert.deepEqual(m.values.filter(row => row.metric === 'outcomes').map(row => row.bucket), ['failed', 'failed'])
+  assert.equal(JSON.stringify(m.values).includes('PRIVATE_REMOTE_FAILURE'), false)
 })

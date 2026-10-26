@@ -1,6 +1,7 @@
 /** Private OS-account selection controls. Never return native session handles or keys. */
 import { createHash } from 'node:crypto'
 import { WorkspaceConnections, type WorkspaceSession } from './workspace-connections.js'
+import { markWorkspaceSelection, takeWorkspaceSelection } from './workspace-selection.js'
 
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i
 type Options = {
@@ -45,8 +46,10 @@ export class DesktopWorkspaceActions {
       if ((await this.status()).revision !== before.revision) throw new Error('The desktop connection changed during review. Read workspace.status before retrying.')
       // Once accepted, the ordinary connection manager owns completion. A caller
       // disconnect cannot undo a completed login or safely replay a refresh token.
-      await operation()
-      return await this.status()
+      const result = await operation()
+      const after = await this.status()
+      const selection = takeWorkspaceSelection(result)
+      return selection ? markWorkspaceSelection(after, before.local_selected ? 'switched' : selection) : after
     } finally {
       const after = await this.status().catch(() => null)
       if (!after || after.revision !== before.revision) this.options.changed()
@@ -82,8 +85,9 @@ export class DesktopWorkspaceActions {
     if (action === 'workspace.restore') {
       const id = identifier(input.id)
       return this.mutate(input, signal, async () => {
-        await connections.restore(id)
+        const result = await connections.restore(id)
         this.options.deselectLocal()
+        return result
       })
     }
     if (action === 'workspace.disconnect') return this.mutate(input, signal, async () => {

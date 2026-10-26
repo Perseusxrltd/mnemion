@@ -1,6 +1,7 @@
 /** Ownership boundary outside the numeric encoder. Never inspect free text. */
 import { readFileSync } from 'node:fs'
-import { TelemetryWorkflow, type WorkflowStore } from './telemetry-workflow.js'
+import { TelemetryWorkflow, TelemetryWorkflowChoice, type WorkflowStore } from './telemetry-workflow.js'
+import { takeWorkspaceSelection, type WorkspaceSelection } from './workspace-selection.js'
 
 type Spec = { workflow?: string; completion?: string; selector?: string; variants?: Record<string, string>; variant_exclusions?: Record<string, string>; local_status?: boolean; fresh_receipt?: boolean; exclusion?: string }
 type IpcSpec = { action?: string; actions?: Record<string, string>; exclusion?: string }
@@ -9,9 +10,14 @@ export const desktopTelemetryOrigins: { version: number; ownership: string; excl
   catch { return { version: 1, ownership: '', exclusions: {}, operations: {} } }
 })()
 
-export function desktopTelemetrySelection(action: string, input: Record<string, unknown>): { workflow: string; completion: string; localStatus: boolean; freshReceipt: boolean } | null {
+export function desktopTelemetrySelection(action: string, input: Record<string, unknown>): { workflow: string; completion: string; localStatus: boolean; freshReceipt: boolean; workspaceSelection?: Record<WorkspaceSelection, string> } | null {
   const spec = Object.hasOwn(desktopTelemetryOrigins.operations, action) ? desktopTelemetryOrigins.operations[action] : undefined
   if (!spec || spec.exclusion) return null
+  if (spec.selector === 'workspace.selection') {
+    const opened = spec.variants?.opened, switched = spec.variants?.switched
+    return opened && switched && spec.completion ? { workflow: opened, completion: spec.completion,
+      localStatus: false, freshReceipt: false, workspaceSelection: { opened, switched } } : null
+  }
   // Only a reviewed boolean or the fixed host-action enum may select a row.
   // Keys, host identity, command arguments and receipt contents are not inputs.
   let variant = spec.selector === 'enabled' && typeof input.enabled === 'boolean' ? String(input.enabled) : null
@@ -58,7 +64,9 @@ export async function measureDesktop<T>(store: WorkflowStore, action: string, in
     if (selection && store.available) {
       // Slow, blocked or unavailable optional privacy I/O cannot hold an app
       // action for the helper's timeout. A late snapshot produces no sample.
-      const pending = TelemetryWorkflow.begin(store, selection.workflow, surface)
+      const pending = selection.workspaceSelection
+        ? TelemetryWorkflowChoice.choose(store, [selection.workspaceSelection.opened, selection.workspaceSelection.switched], surface)
+        : TelemetryWorkflow.begin(store, selection.workflow, surface)
       if (pending !== null) {
         let timer: ReturnType<typeof setTimeout> | undefined
         try { measurement = await Promise.race([pending,
@@ -97,7 +105,13 @@ export async function measureDesktop<T>(store: WorkflowStore, action: string, in
     if (action === 'local.stop' && (result === false || (result && typeof result === 'object' && 'stopped' in result && result.stopped === false))) {
       outcome = 'deferred'; reason = 'host_busy'
     }
-    void measurement?.finish(outcome, reason)
+    if (selection?.workspaceSelection) {
+      // Consume even when policy refused this action: renewed consent cannot
+      // turn a retained result into fresh work. Never inspect its private fields.
+      const selected = takeWorkspaceSelection(result)
+      if (!selected || !(measurement instanceof TelemetryWorkflowChoice)) measurement?.discard()
+      else void measurement.finishChoice(selection.workspaceSelection[selected], outcome, reason)
+    } else void measurement?.finish(outcome, reason)
   } catch { /* Unexpected result shape must not change the original result. */ }
   return result
 }

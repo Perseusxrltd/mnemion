@@ -4,6 +4,7 @@ import { WorkspaceStore, workspaceEndpoint, workspaceIdentity, type WorkspaceIde
 import { WorkspacePasswordAuth, type PasswordTokens, type PasswordSession, type InvitationPreview } from './workspace-auth.js'
 import { recoveryRecord, type RecoveryDirectoryRecord } from './workspace-recovery.js'
 import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
+import { markWorkspaceSelection, takeWorkspaceSelection } from './workspace-selection.js'
 
 export interface WorkspaceSession {
   endpoint: string
@@ -98,7 +99,7 @@ export class WorkspaceConnections {
   }
 
   private async activate(endpoint: string, credential: string, remember: boolean, generation: number,
-    expected?: ExpectedWorkspaceIdentity, password?: PasswordTokens): Promise<WorkspaceSession> {
+    expected?: ExpectedWorkspaceIdentity, password?: PasswordTokens, selection = false): Promise<WorkspaceSession> {
     const identified = await this.identify(endpoint, credential)
     endpoint = identified.endpoint
     const me = identified.me
@@ -118,10 +119,15 @@ export class WorkspaceConnections {
         password ? sessionMetadata(password) : undefined, directory) : undefined
       if (!remember) await this.store.select(null)
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
+      // Compare only here, after verification and the final generation fence.
+      // Identifiers stay inside their existing private connection controller.
+      const switched = selection && this.active !== null && (this.active.endpoint !== endpoint ||
+        this.active.me.tenant_id !== me.tenant_id || this.active.me.principal_id !== me.principal_id)
       this.active = { endpoint, credential, me, remembered: !!bookmark, bookmarkId: bookmark?.id,
         sessionToken: PREFIX + randomBytes(32).toString('base64url'),
         ...(password ? { authentication: password.authentication ?? 'password' as const, password } : {}) }
-      return this.publicSession()!
+      const result = this.publicSession()!
+      return selection ? markWorkspaceSelection(result, switched ? 'switched' : 'opened') : result
     })
   }
 
@@ -134,9 +140,9 @@ export class WorkspaceConnections {
   }
 
   private async activatePassword(endpoint: string, tokens: PasswordTokens, remember: boolean, generation: number,
-    expected?: WorkspaceBookmark): Promise<WorkspaceSession> {
+    expected?: WorkspaceBookmark, selection = false): Promise<WorkspaceSession> {
     try {
-      return await this.activate(endpoint, tokens.accessToken, remember, generation, expected, tokens)
+      return await this.activate(endpoint, tokens.accessToken, remember, generation, expected, tokens, selection)
     } catch (error) {
       await this.passwordAuth().signOut(endpoint, tokens.refreshToken, sessionMetadata(tokens), tokens.tenantId).catch(() => {})
       throw error
@@ -179,13 +185,13 @@ export class WorkspaceConnections {
     const { bookmark, credential, session } = await this.store.credential(id)
     await this.beforeRestore?.(bookmark)
     if (generation !== this.generation) throw new Error('A newer connection was selected.')
-    if (!session) return this.activate(bookmark.endpoint, credential, true, generation, bookmark)
+    if (!session) return this.activate(bookmark.endpoint, credential, true, generation, bookmark, undefined, true)
     await this.serial(async () => {
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
       await this.store.markRefreshPending(id)
     })
     const tokens = await this.passwordAuth().refresh(bookmark.endpoint, credential, session, bookmark)
-    return this.activatePassword(bookmark.endpoint, tokens, true, generation, bookmark)
+    return this.activatePassword(bookmark.endpoint, tokens, true, generation, bookmark, true)
   }
 
   async resume(): Promise<WorkspaceSession | null> {
@@ -197,7 +203,10 @@ export class WorkspaceConnections {
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
       const { activeId } = await this.store.status()
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
-      return activeId ? this.restore(activeId) : null
+      const result = activeId ? await this.restore(activeId) : null
+      // An automatic continuation cannot leave evidence for a later user use.
+      takeWorkspaceSelection(result)
+      return result
     })()
     this.resuming = pending
     try { return await pending } finally { if (this.resuming === pending) this.resuming = null }

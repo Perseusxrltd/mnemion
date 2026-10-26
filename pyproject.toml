@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.46.24"
+version = "4.46.25"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"

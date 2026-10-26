@@ -7,6 +7,7 @@ import { isAbsolute, join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
+import { markWorkspaceSelection } from './workspace-selection.js'
 import { WorkspacePasswordAuth, type SignInRequest } from './workspace-auth.js'
 import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
 import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
@@ -238,7 +239,9 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   }
   function deselectLocal() {
     ++localOpenGeneration
-    if (localPreferences().selected) saveLocalPreferences({ ...localPreferences(), selected: false })
+    const selected = localPreferences().selected
+    if (selected) saveLocalPreferences({ ...localPreferences(), selected: false })
+    return selected
   }
   function desktopLocalStatus(status: LocalStatus): LocalStatus {
     // The desktop may be native while its service uses OS compatibility. Add
@@ -485,12 +488,13 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     deselectLocal()
     return workspaceConnections().connect(value.endpoint, value.credential, value.remember)
   })
-  handle('workspaces:restore', (event, id: unknown) => {
+  handle('workspaces:restore', async (event, id: unknown) => {
     trusted(event)
     requireLocalSteady()
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
-    deselectLocal()
-    return workspaceConnections().restore(id)
+    const fromLocal = deselectLocal()
+    const result = await workspaceConnections().restore(id)
+    return fromLocal ? markWorkspaceSelection(result, 'switched') : result
   })
   handle('workspaces:forget', (event, id: unknown) => {
     trusted(event)

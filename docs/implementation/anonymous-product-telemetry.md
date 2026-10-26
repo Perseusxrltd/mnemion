@@ -70,13 +70,13 @@ The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
 matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
 event/input/result objects, free text and identifying values do not.
 The generated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-marks 91 categories with declared source mappings and three unmeasured:
-`workspace.switch`, `backup.list` and `update.verify`. It is
+marks 93 categories with declared source mappings; `update.verify` remains
+unmeasured as a separate category. It is
 available in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
-The [current action inventory](../validation/2026-10-26-telemetry-capture-actions.md)
-contains **630 declared actions and fixed variants: 356 mapped, 267 excluded,
+The [current action inventory](../validation/2026-10-26-telemetry-workspace-selections.md)
+contains **632 declared actions and fixed variants: 360 mapped, 265 excluded,
 seven delegated and zero unmeasured among these declarations**. It independently
 reads five shipped-interface declarations, now including desktop preload request
 channels; other owners use reviewed source-route maps. Missing mappings in those
@@ -126,13 +126,36 @@ share a reviewed map of all 72 preload request channels, including fixed
 host/source variants and explicit inspection, privacy and transport exclusions.
 Automatic `workspaces:resume` is excluded before observation/policy access;
 explicit restore remains owned, and reset owns one `workspace.forget`
-acknowledgement. Workspace changes use the chosen explicit connect, sign-in or
-open boundary, without an additional synthetic switch observation. That
+acknowledgement. At that checkpoint, workspace changes used the chosen explicit
+connect, sign-in or open boundary, without a separate switch category. That
 checkpoint did not include a managed-host rollback owner. The subsequent
 host-update boundary below uses the host's own acknowledged policy; a remote
 operator's preference and private journal backfill cannot provide it.
 Catalog, wire-v2, disclosure and route bytes are unchanged.
 Release preparation passed; native and production qualification remain pending.
+
+The [4.46.25 saved-workspace follow-up](../validation/2026-10-26-telemetry-workspace-selections.md)
+now lets only an explicit saved restore select `workspace.open` or
+`workspace.switch`, retaining one original policy/generation snapshot and clock.
+The verified, normalized endpoint/tenant/principal transition decides; a new
+session handle for the same profile remains an open. App/native local-to-saved
+selections are switches. Both choices retain the existing `accepted` outcome;
+throwing restores retain failed `workspace.open` semantics.
+
+One-use WeakMap metadata carries only the selection enum, outside JSON and saved
+state. Cloned, unbranded or reused results cannot establish a new switch; automatic
+resume clears the metadata and has no owner. New connect, sign-in and local-open
+actions keep their existing labels. Explicit native/app backup inventory now
+owns `backup.list` on controller success, without inspecting the returned backup
+contents or claiming validity/cloud delivery. Status, polls and reusable helpers
+remain excluded. `update.verify` remains part of download's observed cycle,
+with no synthetic extra action.
+
+The follow-up passed **30 distinct Python cases, 69 compiled Node controller
+cases plus one Node/Python SQLite policy case, and 25 browser-source cases**;
+both source builds passed and the 70 Node cases had no skips. The original two
+Python coverage-fixture failures are retained with their test-only corrections.
+These results do not establish resource, provider privacy or installed acceptance.
 
 Keyed API writes require `X-Mnemion-Idempotency: new`; typed
 [host mutations](../validation/2026-10-26-telemetry-host-requests.md) require the

@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryWorkflow, TelemetryWorkflowChoice } from '../dist/telemetry-workflow.js'
+import { measureDesktop } from '../dist/desktop-measurement.js'
+import { markWorkspaceSelection } from '../dist/workspace-selection.js'
 import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -146,6 +148,31 @@ test('collection exhaustion leaves delivery choice available and enforces its ow
   await active.finishChoice('capture.deliver', 'success')
   const outcomes = invoke('preview', { day }).filter(row => row.metric === 'outcomes')
   assert.deepEqual(Object.fromEntries(outcomes.map(row => [row.workflow, row.count])), { 'capture.collect': 64, 'capture.deliver': 1 })
+})
+
+test('workspace restoration cannot reuse a result after a real cross-runtime opt-out and reenable', async t => {
+  const { invoke, store, initial } = await fixture(t)
+  const recordMany = store.recordMany.bind(store), pending = [], result = { private: 'PRIVATE_WORKSPACE' }
+  store.recordMany = (...args) => { const work = recordMany(...args); pending.push(work); return work }
+  await measureDesktop(store, 'workspace.restore', {}, 'desktop', () => {
+    const off = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+    invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
+      expected_generation: off.store_generation, disclosure_version: 1 } })
+    return markWorkspaceSelection(result, 'switched')
+  })
+  await Promise.all(pending)
+  const day = Math.floor(Date.now() / 86400000)
+  assert.deepEqual(invoke('preview', { day }), [])
+  await measureDesktop(store, 'workspace.restore', {}, 'desktop', () => result)
+  await Promise.all(pending)
+  assert.deepEqual(invoke('preview', { day }), [], 'renewed consent cannot re-own the retained result')
+  const fresh = { private: 'ANOTHER_PRIVATE_WORKSPACE' }
+  await measureDesktop(store, 'workspace.restore', {}, 'desktop', () => markWorkspaceSelection(fresh, 'switched'))
+  await Promise.all(pending)
+  const rows = invoke('preview', { day })
+  assert.equal(rows.filter(row => row.metric === 'submissions').reduce((n, row) => n + row.count, 0), 1)
+  assert.ok(rows.every(row => row.workflow === 'workspace.switch'))
+  assert.equal(JSON.stringify(rows).includes('PRIVATE_WORKSPACE'), false)
 })
 
 test('native transactions preserve every supported schema without migrating a producer store', async t => {

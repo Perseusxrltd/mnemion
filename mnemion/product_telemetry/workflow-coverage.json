@@ -5,8 +5,8 @@
   "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
   "summary": {
     "total": 94,
-    "mapped": 91,
-    "unmeasured": 3
+    "mapped": 93,
+    "unmeasured": 1
   },
   "owners": {
     "control_cli": "Local command line",
@@ -93,8 +93,11 @@
     },
     {
       "workflow": "workspace.switch",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "desktop_ipc"
+      ]
     },
     {
       "workflow": "workspace.disconnect",
@@ -492,8 +495,11 @@
     },
     {
       "workflow": "backup.list",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "desktop_ipc"
+      ]
     },
     {
       "workflow": "backup.verify",
@@ -871,9 +877,9 @@
       "desktop_ipc"
     ],
     "summary": {
-      "total": 630,
-      "mapped": 356,
-      "excluded": 267,
+      "total": 632,
+      "mapped": 360,
+      "excluded": 265,
       "delegated": 7,
       "unmeasured": 0
     },
@@ -2295,9 +2301,10 @@
       {
         "owner": "native_commands",
         "action": "backup.inventory",
-        "state": "excluded",
-        "workflows": [],
-        "reason": "native_commands.state_inspection"
+        "state": "mapped",
+        "workflows": [
+          "backup.list"
+        ]
       },
       {
         "owner": "native_commands",
@@ -2895,9 +2902,21 @@
       {
         "owner": "native_commands",
         "action": "workspace.restore",
+        "selector": "workspace.selection",
+        "variant": "opened",
         "state": "mapped",
         "workflows": [
           "workspace.open"
+        ]
+      },
+      {
+        "owner": "native_commands",
+        "action": "workspace.restore",
+        "selector": "workspace.selection",
+        "variant": "switched",
+        "state": "mapped",
+        "workflows": [
+          "workspace.switch"
         ]
       },
       {
@@ -3212,9 +3231,10 @@
       {
         "owner": "desktop_ipc",
         "action": "local:backup-inventory",
-        "state": "excluded",
-        "workflows": [],
-        "reason": "desktop_ipc.state_inspection"
+        "state": "mapped",
+        "workflows": [
+          "backup.list"
+        ]
       },
       {
         "owner": "desktop_ipc",
@@ -3657,9 +3677,21 @@
       {
         "owner": "desktop_ipc",
         "action": "workspaces:restore",
+        "selector": "workspace.selection",
+        "variant": "opened",
         "state": "mapped",
         "workflows": [
           "workspace.open"
+        ]
+      },
+      {
+        "owner": "desktop_ipc",
+        "action": "workspaces:restore",
+        "selector": "workspace.selection",
+        "variant": "switched",
+        "state": "mapped",
+        "workflows": [
+          "workspace.switch"
         ]
       },
       {
@@ -5830,7 +5862,7 @@
   "source_inputs": {
     "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
     "control-origins.json": "5482267dab262234d00f7591fea63c3da9defe391250ccdb2d46110e4f9e40de",
-    "desktop-origins.json": "625a79bd8e142a48a15fa02cdc0e8eda60378941c1bdc06f8ceadbae06e4bc4d",
+    "desktop-origins.json": "8e769b897e880f815c96047c66deaa0d5a2482c6610821e8caefebee175be444",
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",

@@ -17,7 +17,7 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
     telemetry_coverage.verify(ROOT)
     coverage = catalog.coverage_specification()
     assert coverage["scope"] == "declared_source_boundaries"
-    assert coverage["summary"] == {"total": 94, "mapped": 91, "unmeasured": 3}
+    assert coverage["summary"] == {"total": 94, "mapped": 93, "unmeasured": 1}
     assert [row["workflow"] for row in coverage["workflows"]] == list(catalog.WORKFLOWS)
     rows = {row["workflow"]: row for row in coverage["workflows"]}
     assert rows["memory.recall"]["state"] == "mapped"
@@ -27,7 +27,8 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
         "state": "unmeasured",
         "owners": [],
     }
-    assert rows["backup.list"]["state"] == "unmeasured"
+    assert rows["backup.list"]["owners"] == ["native_commands", "desktop_ipc"]
+    assert rows["workspace.switch"]["owners"] == ["native_commands", "desktop_ipc"]
     assert rows["capture.deliver"]["owners"] == ["local_maintenance"]
     assert rows["capture.pause"]["owners"] == ["headless_controls"]
     assert rows["capture.preview"]["owners"] == [
@@ -122,6 +123,7 @@ def test_missing_action_stays_visible_when_other_sources_cover_the_category(sour
 
 def test_future_interface_action_is_not_hidden_or_given_an_invented_workflow(source_maps):
     root, directory = source_maps
+    original_summary = telemetry_coverage.build(root)["summary"]
     path = root / "studio/electron/desktop-actions.ts"
     path.write_text(
         path.read_text().replace(
@@ -137,7 +139,7 @@ def test_future_interface_action_is_not_hidden_or_given_an_invented_workflow(sou
         "state": "unmeasured",
         "workflows": [],
     } in coverage["action_coverage"]["actions"]
-    assert coverage["summary"] == {"total": 94, "mapped": 91, "unmeasured": 3}
+    assert coverage["summary"] == original_summary
     with pytest.raises(ValueError, match="Telemetry coverage is stale"):
         telemetry_coverage.verify(root)
     # An unfinished selector declaration cannot make a known action disappear.
@@ -191,7 +193,18 @@ def test_desktop_channels_are_independently_visible_including_resume_and_transpo
     assert rows["workspaces:resume"]["state"] == "excluded"
     assert rows["workspaces:resume"]["reason"] == "desktop_ipc.automatic_connection"
     assert rows["workspaces:reset"]["workflows"] == ["workspace.forget"]
-    assert rows["workspaces:restore"]["workflows"] == ["workspace.open"]
+    restores = [
+        row
+        for row in coverage["actions"]
+        if row["owner"] == "desktop_ipc" and row["action"] == "workspaces:restore"
+    ]
+    assert len(restores) == 2
+    assert {row["variant"]: row["workflows"] for row in restores} == {
+        "opened": ["workspace.open"],
+        "switched": ["workspace.switch"],
+    }
+    assert all(row["selector"] == "workspace.selection" for row in restores)
+    assert rows["local:backup-inventory"]["workflows"] == ["backup.list"]
     assert rows["service:request"]["state"] == "delegated"
     assert rows["vault:refresh"]["state"] == "delegated"
     assert rows["telemetry:record"]["state"] == "excluded"

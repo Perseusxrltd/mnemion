@@ -18,8 +18,8 @@ All 66 requirement texts and the other 65 states remain unchanged; V08 stays Bui
 
 The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 now makes all 94 categories visible in app/browser and native format inspection:
-91 have mapped source boundaries and three remain unmeasured:
-`workspace.switch`, `backup.list` and `update.verify`. It is generated
+93 have mapped source boundaries; `update.verify` remains unmeasured as a
+separate category. It is generated
 from these maps and verified by the release checker. This reconciles catalog
 references without claiming complete per-action, sensor or installed coverage;
 the [initial coverage report](../validation/2026-10-26-telemetry-coverage.md)
@@ -27,8 +27,8 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The [current action inventory](../validation/2026-10-26-telemetry-capture-actions.md)
-lists **630 actions and fixed variants: 356 mapped, 267 excluded,
+The [current action inventory](../validation/2026-10-26-telemetry-workspace-selections.md)
+lists **632 actions and fixed variants: 360 mapped, 265 excluded,
 seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API
@@ -338,7 +338,7 @@ collection contract. Their maps describe eligible boundaries, not proof that all
 
 | Boundary | Current source ownership |
 | --- | --- |
-| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 45 eligible and 32 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
+| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 46 eligible and 31 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
 | Desktop preload requests | The same map's `ipc` section classifies **72 actual preload request channels**, including fixed `hosts:action` and `sources:control` variants. The runtime dispatcher and action inventory read these reviewed mappings; inspection, privacy, transport and automatic connection exclusions remain visible. The 4.46.22 source follow-up passed 54 distinct Python and 26 Node tests plus both source builds. |
 | Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **64 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. |
 | Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
@@ -346,11 +346,10 @@ collection contract. Their maps describe eligible boundaries, not proof that all
 The [workspace ownership follow-up](../validation/2026-10-26-workspace-telemetry-ownership.md)
 excludes automatic `workspaces:resume` before telemetry policy/observation access:
 Connect invokes it automatically and it can return an already active session.
-Explicit `workspaces:restore` remains owned as `workspace.open`; explicit
-`workspaces:reset` now owns one `workspace.forget` acknowledgement. Workspace
-changes use their chosen connect, sign-in or open boundary, with no additional
-synthetic switch. `workspace.switch` remains an unmeasured catalog category;
-the taxonomy does not create an extra observation owner.
+That checkpoint owned explicit `workspaces:restore` as `workspace.open` and
+`workspaces:reset` as one `workspace.forget` acknowledgement. Workspace changes
+used their chosen connect, sign-in or open boundary; `workspace.switch` was still
+unmeasured. Those historical counts and checks remain in the linked report.
 
 Compiled workspace fixtures verified zero policy reads/observations for automatic
 resume and one workflow for each tested explicit control, without identity in
@@ -362,7 +361,30 @@ test-only correction for the intentionally transient capture count. The linked
 report retains the original 4.46.21 Python 3.13 equality-assertion failure; the
 correction preserves exact equality of all other fields and changes no runtime.
 
-The top-level desktop exclusions are 15 state inspections, five configuration
+The [4.46.25 selection follow-up](../validation/2026-10-26-telemetry-workspace-selections.md)
+changes only explicit saved restore to a fixed `workspace.open`/`workspace.switch`
+choice under one original privacy snapshot and clock. The controller compares
+verified normalized endpoint, tenant and principal; a refreshed session handle
+for the same profile is not a switch. App/native local-to-saved selections are
+handled explicitly. A one-use enum in a WeakMap carries the decision without
+adding JSON fields or passing identities into telemetry. Both valid choices keep
+the existing `accepted` outcome. Missing/cloned/reused result metadata discards
+completion, while throwing restores keep failed `workspace.open` semantics.
+Automatic resume clears the metadata and stays unowned. Connect, sign-in and
+local-open retain their original labels.
+
+Native `backup.inventory` and app `local:backup-inventory` now own `backup.list`
+on successful return of the bounded controller result. The observer does not
+inspect backup contents or infer validity, restoration or cloud delivery.
+Status/polls and reusable inventory helpers stay unowned. The source selection
+passed 30 distinct Python cases, 69 compiled Node cases plus one Node/Python
+SQLite policy case, and 25 browser-source cases. Both builds passed; the 70 Node
+cases had no skips. The original two Python coverage-fixture failures and their
+test-only corrections remain recorded. Resource, provider privacy and installed
+acceptance stay open. `update.verify` stays within the existing download cycle,
+with its independent category visibly unmeasured.
+
+The top-level desktop exclusions are 14 state inspections, five configuration
 previews, nine privacy controls and three recovery transports. Typed
 [`host.request` ownership](../validation/2026-10-26-telemetry-host-requests.md)
 now requires a successful authenticated reply whose request-scoped
@@ -685,7 +707,7 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 | Family and fixed operation variants | Proposed measurements and exclusions | Owner and current source |
 | --- | --- | --- |
 | `setup`: `create`, `configure`, `agent_install`, `agent_remove` | Submissions, confirmed completions and duration of local setup or agent configuration. Exclude owner/workspace names, settings bodies and credential provisioning data. | Origin, with local setup counted at its shared controller. [LocalSetup.perform/open](../../studio/frontend/src/workspace/LocalSetup.tsx#L49), [DesktopAgentSetup.install](../../studio/frontend/src/workspace/DesktopAgentSetup.tsx#L76). |
-| `workspace`: `connect`, `sign_in`, `open`, `switch`, `disconnect`, `forget` | Connection/open outcomes and latency; a fixed local/remote mode only if needed in an approved view. Exclude addresses, identity providers, account names and saved-connection IDs. | Explicit [Connect](../../studio/frontend/src/workspace/Connect.tsx) and [workspace controller](../../studio/electron/service-bridge.ts) boundaries. Automatic resume is excluded; restore owns open and reset owns a forget acknowledgement. Changing workspace adds no synthetic switch observation. |
+| `workspace`: `connect`, `sign_in`, `open`, `switch`, `disconnect`, `forget` | Connection/open outcomes and latency; a fixed local/remote mode only if needed in an approved view. Exclude addresses, identity providers, account names and saved-connection IDs. | Explicit [Connect](../../studio/frontend/src/workspace/Connect.tsx) and [workspace controller](../../studio/electron/service-bridge.ts) boundaries. Only saved restore selects open/switch from verified transition metadata, with one owner; automatic resume stays excluded. Reset owns a forget acknowledgement. New connect/sign-in/local-open keep their labels. |
 | `memory`: `list`, `read`, `recall`, `context`, `knowledge`, `core_read` | Logical retrieval use, latency, result-count buckets and fixed empty/fallback/incomplete-index observations. Mode may be lexical/semantic/hybrid; no query, snippet, score vector, citation ID or search-filter values. | Origin; [SearchMemory.search](../../studio/frontend/src/workspace/Workspace.tsx#L1180), [Knowledge](../../studio/frontend/src/workspace/Knowledge.tsx#L17). [RetrievalService._measured](../../mnemion/service/retrieval.py#L118) is currently private operational measurement, not an export source. |
 | `memory`: `save`, `revise`, `review`, `forget`, `core_write`, `import`, `export` | Submission/terminal outcomes, latency and bounded item/transfer totals. Distinguish accepted write from indexing readiness; preserve uncertain deletion outcomes. Exclude contents, review reasons, paths and idempotency keys. | Origin; [save/revise/forget UI](../../studio/frontend/src/workspace/Workspace.tsx#L753), [API write routes](../../mnemion/service/api.py#L616). Index/purge completion coverage remains open when the origin is absent. |
 | `capture`: `configure`, `preview`, `collect`, `deliver`, `pause`, `drain`, `remove` | Separate local acceptance from remote delivery; bucket accepted/delivered counts, backlog, bytes and elapsed time. Fixed partial/fence/authorization reasons map into the common vocabulary. No conversation, file, device, grant or checkpoint identifiers. | Disclosed local capture owner; [shared native/headless cycle](../../mnemion/connectors/capture_cycle.py#L21), [DesktopSources](../../studio/electron/desktop-sources.ts#L362). The service must not recount accepted pages. |
