@@ -68,6 +68,17 @@ Use [release status](../RELEASE_STATUS.md) for current availability. Full owners
 coverage, installed production delivery, resource/wire limits, utility and
 anonymity acceptance remain open.
 
+The [4.46.22 installed review-control report](../validation/2026-10-26-telemetry-installed-review.md)
+adds six-target evidence for mode selection before permission, app/native mode
+roundtrips and restart persistence, alongside existing default/format/opt-out
+controls. Each exact artifact passes 67 hosting fields, including eight telemetry
+fields; these are not 67 independent telemetry tests. Five artifacts belong to
+workflow attempt 1 and Mac ARM alone to the capacity retry in attempt 2. This
+qualification reused the original artifacts with no new build, app or model run.
+No report was staged or approved, and recorded delivery attempts stayed zero.
+Later ownership changes, 4.46.25 installed behavior and resource/provider privacy
+remain unqualified by these controls.
+
 ## Earlier component checkpoints — 24–25 October 2026
 
 The original [delivery components](anonymous-product-telemetry-delivery.md)
@@ -259,6 +270,17 @@ files per variant**. Enabled matched main-process maxima of **3,121,152 and
 2 MiB. All opted-out, renderer and GPU variation is retained. The result does not
 establish a causal improvement or resource acceptance; the next step is an
 explicit architecture review, without another benchmark or budget revision.
+
+The [later fixed allocation follow-up](../validation/2026-10-26-telemetry-allocation-followup.md)
+at source `4779cf11` completed six cases with 2,045 matched files each and 2,322
+successful fixture API requests/2,304 memory operations, without model calls.
+Enabled matched main-process maxima were **3,145,728 / 3,186,688 bytes** and endings
+**2,768,896 / 2,428,928 bytes**. The unchanged 2 MiB gate still fails. Opted-out,
+renderer, GPU and utility-process results remain in the report and original
+receipt. Combined CPU differences of about 0.537% / 0.198% of one core are
+descriptive, not stable per-process acceptance. Reduced wrapper allocation does
+not establish causal RSS savings; no unchanged-workload rerun is selected.
+
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The full product delivery path must still prove
@@ -784,9 +806,10 @@ The following implementation and acceptance work remains open:
 Before launch, the contract requires actual sentinel/outbound and ingress-log
 evidence, opt-out races and queue clearing across all producers, no nested SDK
 or server recounting, unknown-client and deferred-job cases, resource/wire
-measurements and cohort/linkage attacks. Published 4.46.13 has six-target installed
-control evidence; all six targets and web still need qualification for the newer
-review and full production delivery path. Source checks qualify only their
-recorded boundaries; they do not establish full V08 or anonymous ingress. The
+measurements and cohort/linkage attacks. The 4.46.13 basic controls and 4.46.22
+review-mode/opt-out controls have their recorded six-target installed evidence.
+All six targets and web still need staged-report approval/delivery and current
+owner qualification. Source checks qualify only their recorded boundaries;
+they do not establish full V08 or anonymous ingress. The
 collector implementation and isolated staging evidence do not configure a
 production collector or paid tooling through this catalog.

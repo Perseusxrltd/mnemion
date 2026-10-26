@@ -1,9 +1,10 @@
 # Product telemetry privacy controls
 
 **V08 remains in development; updated 26 October 2026.** Product
-telemetry is unavailable. Basic choice, status and format controls ship in
-4.46.13; the report-review actions below are newer, unreleased source. In either case,
-saving an enabled preference does not start collection: `collection_available`
+telemetry is unavailable. Basic choice, status and format controls shipped in
+4.46.13. Installed 4.46.22 controls also have evidence for review-mode changes
+and persistence, as described below. Saving an enabled preference does not start
+collection: `collection_available`
 and `effective_enabled` remain `false`, with no destination or release route.
 Use [release status](../RELEASE_STATUS.md) to check availability in your version.
 
@@ -24,6 +25,15 @@ the controls, not active telemetry or full V08; actual user installation checks
 remain separate.
 The earlier [five-target 4.46.12 evidence](../validation/2026-10-26-telemetry-preview.md)
 remains retained with that candidate's original failures.
+
+The [4.46.22 installed review-control evidence](../validation/2026-10-26-telemetry-installed-review.md)
+passes eight telemetry fields across all six targets. It covers format/default
+controls without consent, app/native preference and review-mode changes, focus
+refresh and opt-out/manual-mode persistence across a clean app restart. Five
+targets retain their first-attempt artifacts; Mac ARM passed in the separate
+capacity retry. No new app run was needed to qualify this evidence. Report
+staging, approval and delivery, later owners and 4.46.25 installed behavior remain
+outside this acceptance.
 
 ## In the app
 
@@ -63,11 +73,11 @@ A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
 
-New source adds [optional report review](#optional-report-review-unreleased-source)
-on top of the bounded clock foundation. Source checks and an isolated Chromium
-control journey passed; full acceptance remains open and this work is excluded
-from 4.46.13. The published synthetic format example stays unchanged, and the
-current unavailable collection gate still prevents staging an actual report.
+[Optional report review](#optional-report-review) builds on the bounded clock
+foundation. The 4.46.22 installed evidence qualifies mode selection and empty
+report controls; source/component checks retain their separate scope. This work
+is absent from 4.46.13. The current unavailable collection gate still prevents
+staging an actual report, and full acceptance remains open.
 
 **Telemetry connection settings** offers `auto`, `unmetered` and `metered`.
 Automatic mode pauses delivery when metering is unknown; an unmetered declaration
@@ -131,11 +141,18 @@ the required coordination between tabs also keeps it off. Clearing site storage
 removes the saved choice and requires fresh disclosure; no identifier or
 fingerprint is used to recover it.
 
-## Optional report review (unreleased source)
+<a id="optional-report-review-unreleased-source"></a>
+
+## Optional report review
 
 In **Review reports before sending**, select **Pause reports for manual review**
 if you want to approve individual reports. You can select this before granting
 collection permission. Automatic delivery remains the default.
+
+In the qualified 4.46.22 installed checks, this choice saved without granting
+permission. Inspect/approve/discard stayed disabled with no report available,
+and manual mode survived opt-out and restart. Those checks did not stage,
+approve or send a report.
 
 Once collection is permitted under its current disclosure, authorized local
 observations exist and the allowance is ready, **Inspect next report** stages
@@ -545,3 +562,10 @@ initialization and storage-runtime ownership, with no repeated benchmark or
 budget revision selected. The **2 MiB RSS / 0.5% CPU** gates remain unchanged
 and unaccepted; exact-next-packet inspection, production privacy and complete
 native/web acceptance are still open.
+
+The [latest fixed resource follow-up](../validation/2026-10-26-telemetry-allocation-followup.md)
+completed six source-app cases without model calls. Both enabled main-process
+matched RSS maxima and ending differences remained above 2 MiB. Other process
+roles and opted-out comparisons are retained; this establishes no causal
+improvement or resource pass. The resource limits and inactive collection choice
+remain unchanged.

@@ -2,11 +2,16 @@
 
 import io
 import hashlib
+import http.client
 import json
 import re
+import socket
+import ssl
 import tarfile
 import tomllib
+import urllib.error
 import zipfile
+from contextlib import contextmanager
 
 import pytest
 
@@ -120,6 +125,158 @@ def test_changed_scanner_cache_is_rejected_before_execution(tmp_path, monkeypatc
     with pytest.raises(scan.ScanError, match="pinned digest"):
         with scan.scanner(tmp_path):
             pytest.fail("Invalid scanner accepted")
+
+
+def temporary_http(status):
+    return urllib.error.HTTPError(
+        "https://private.invalid/secret",
+        status,
+        "private-error-sentinel",
+        {},
+        io.BytesIO(b"private-body"),
+    )
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        *[temporary_http(status) for status in (429, 500, 502, 503, 504)],
+        TimeoutError("private-error-sentinel"),
+        urllib.error.URLError(TimeoutError("private-error-sentinel")),
+        ConnectionResetError("private-error-sentinel"),
+        socket.gaierror("private-error-sentinel"),
+        http.client.IncompleteRead(b"private-body"),
+    ],
+)
+def test_scanner_retries_only_its_transient_download_once(monkeypatch, failure):
+    name, payload = "linux_x64.tar.gz", b"pinned-scanner-fixture"
+    monkeypatch.setitem(scan.ARCHIVES, name, hashlib.sha256(payload).hexdigest())
+    calls, pauses = [], []
+
+    def opened(request, timeout):
+        calls.append((request.full_url, timeout))
+        if len(calls) == 1:
+            raise failure
+        return io.BytesIO(payload)
+
+    monkeypatch.setattr(scan.urllib.request, "urlopen", opened)
+    monkeypatch.setattr(scan.time, "sleep", pauses.append)
+    assert scan.download_archive(name) == payload
+    assert len(calls) == 2 and pauses == [2]
+    assert all(0 < timeout <= 30 for _, timeout in calls)
+    assert (
+        calls[0][0]
+        == calls[1][0]
+        == (
+            f"https://github.com/gitleaks/gitleaks/releases/download/v{scan.VERSION}/"
+            f"gitleaks_{scan.VERSION}_{name}"
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "failure,code",
+    [
+        (temporary_http(401), "download_http"),
+        (temporary_http(403), "download_http"),
+        (temporary_http(404), "download_http"),
+        (ssl.SSLCertVerificationError("private-error-sentinel"), "tls_error"),
+        (urllib.error.URLError(ssl.SSLError("private-error-sentinel")), "tls_error"),
+        (urllib.error.URLError("private-error-sentinel"), "unexpected_error"),
+    ],
+)
+def test_scanner_refuses_nontransient_downloads_without_raw_error_text(monkeypatch, failure, code):
+    calls = []
+
+    def opened(*args, **kwargs):
+        calls.append(True)
+        raise failure
+
+    monkeypatch.setattr(scan.urllib.request, "urlopen", opened)
+    monkeypatch.setattr(scan.time, "sleep", lambda _: pytest.fail("Permanent failure retried"))
+    with pytest.raises(scan.ScanError) as refused:
+        scan.download_archive("linux_x64.tar.gz")
+    assert len(calls) == 1
+    assert refused.value.failure["code"] == code
+    assert refused.value.failure["attempts"] == 1
+    public = str(refused.value) + json.dumps(refused.value.failure)
+    assert not any(
+        value in public for value in ["private-error-sentinel", "private.invalid", "private-body"]
+    )
+
+
+def test_scanner_download_retry_exhaustion_keeps_no_partial_cache(tmp_path, monkeypatch):
+    calls, pauses = [], []
+    monkeypatch.setattr(scan, "archive_name", lambda: "linux_x64.tar.gz")
+
+    def opened(*args, **kwargs):
+        calls.append(True)
+        raise temporary_http(503)
+
+    monkeypatch.setattr(scan.urllib.request, "urlopen", opened)
+    monkeypatch.setattr(scan.time, "sleep", pauses.append)
+    with pytest.raises(scan.ScanError) as refused:
+        with scan.scanner(tmp_path):
+            pytest.fail("An incomplete scanner download was executed")
+    assert refused.value.failure == {"code": "download_http", "http_status": 503, "attempts": 2}
+    assert calls == [True, True] and pauses == [2]
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("oversized", [False, True])
+def test_download_size_and_integrity_failures_are_never_retried(monkeypatch, oversized):
+    calls = []
+    if oversized:
+        monkeypatch.setattr(scan, "MAX_DOWNLOAD", 4)
+
+    def opened(*args, **kwargs):
+        calls.append(True)
+        return io.BytesIO(b"unverified-scanner")
+
+    monkeypatch.setattr(scan.urllib.request, "urlopen", opened)
+    monkeypatch.setattr(scan.time, "sleep", lambda _: pytest.fail("Integrity failure retried"))
+    with pytest.raises(scan.ScanError) as refused:
+        scan.download_archive("linux_x64.tar.gz")
+    assert len(calls) == 1
+    assert refused.value.failure["code"] == (
+        "download_oversized" if oversized else "download_integrity"
+    )
+
+
+def test_late_download_completion_cannot_extend_the_retry_window(monkeypatch):
+    now = [0]
+
+    class Late(io.BytesIO):
+        def read1(self, size):
+            now[0] = scan.DOWNLOAD_SECONDS + 1
+            return super().read1(size)
+
+    monkeypatch.setattr(scan.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(scan.urllib.request, "urlopen", lambda *a, **k: Late(b""))
+    monkeypatch.setattr(scan.time, "sleep", lambda _: pytest.fail("Expired window retried"))
+    with pytest.raises(scan.ScanError) as refused:
+        scan.download_archive("linux_x64.tar.gz")
+    assert refused.value.failure == {"code": "timeout", "attempts": 1}
+
+
+def test_scan_initialization_failure_records_a_safe_stage_and_stays_closed(tmp_path, monkeypatch):
+    (tmp_path / ".gitleaks.toml").write_text("fixture-rules")
+    source = tmp_path / "sample.txt"
+    source.write_text("fixture-source")
+    output = tmp_path / "result.json"
+
+    @contextmanager
+    def denied(_cache):
+        raise PermissionError("private-error-sentinel")
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(scan, "scanner", denied)
+    with pytest.raises(scan.ScanError) as refused:
+        scan.scan(tmp_path, [source], output, tmp_path / "cache")
+    record = json.loads(output.read_text())
+    assert record["passed"] is False and "scanner" not in record
+    assert record["failure"] == {"stage": "scanner_initialization", "code": "permission_denied"}
+    assert "private-error-sentinel" not in str(refused.value) + output.read_text()
 
 
 def test_scanner_archive_rejects_linked_executable():

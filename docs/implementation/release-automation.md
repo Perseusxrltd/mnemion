@@ -157,6 +157,17 @@ The [4.46.24 source follow-up](../validation/2026-10-26-telemetry-capture-action
 passed 41 guard tests using mocked GitHub reads and mutations. Those tests do not
 establish runner availability, an actual retry or native release qualification.
 
+Generated-content scanner failures have a separate
+[initialization recovery boundary](../validation/2026-10-26-linux-package-recovery.md).
+Receipts record fixed failure stages/codes without raw exception text or input.
+Only a classified transient archive-download failure can receive one additional
+acquisition attempt; digest, size, permission and canary checks remain mandatory.
+This does not rerun a build or excuse a finding. A 60-second monotonic download
+window is checked around chunks and between attempts, with configured blocking
+I/O timeouts capped at 30 seconds. It is not a strict total wall-clock or DNS
+deadline. Any failed scan still blocks publication; local recovery checks do not
+qualify the native Linux release gate.
+
 For a corrected version that has **never been published**, commit and push
 the fix to main, then use `python -m deploy.release_automation start --attempt 2`
 (or the next attempt number). This freezes a separate `release/X.Y.Z-r2` branch;

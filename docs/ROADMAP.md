@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.25**.
+Reviewed source distribution: **4.46.26**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,27 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, scanner recovery and fixed resource follow-up:**
+[Scanner initialization](validation/2026-10-26-linux-package-recovery.md) now has
+one narrowly classified acquisition retry and fixed safe failure diagnostics.
+37 focused tests and a fresh pinned local scanner run passed, including six
+canaries and 625 generated files with zero findings. The original hosted Linux
+cause and future native release acceptance remain open. The
+[six-case resource follow-up](validation/2026-10-26-telemetry-allocation-followup.md)
+completed, but both enabled main RSS maxima and endings still exceed 2 MiB.
+All original outcomes remain; no causal improvement, rerun or budget change is
+claimed. All 66 states remain unchanged; V08 stays Building with collection off.
+
+**26 October 2026, installed 4.46.22 privacy-review controls:**
+[Original artifact qualification](validation/2026-10-26-telemetry-installed-review.md)
+passes eight telemetry fields on all six targets, including review choice before
+permission, app/native mode changes and opt-out/manual-mode restart persistence.
+Five targets come from attempt 1; Mac ARM alone comes from the later capacity
+retry. No new build, app run or model call was needed. Report staging, approval,
+delivery, later owners, 4.46.25 installed behavior and actual PC/VPS upgrades are
+not qualified. All 66 states remain unchanged; V08 stays Building with collection
+off and resource/provider privacy gates open.
 
 **26 October 2026, saved-workspace and backup-list telemetry source:**
 [The selection follow-up](validation/2026-10-26-telemetry-workspace-selections.md)

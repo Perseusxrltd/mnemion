@@ -12,6 +12,7 @@ import base64
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import http.client
 import io
 import json
 import os
@@ -19,12 +20,15 @@ from pathlib import Path, PurePosixPath
 import platform
 import re
 import shutil
+import socket
+import ssl
 import stat
 import subprocess
 import sys
 import tarfile
 import tempfile
 import time
+import urllib.error
 import urllib.request
 import uuid
 import zipfile
@@ -39,6 +43,7 @@ ARCHIVES = {
     "windows_arm64.zip": "b95f5e4f5c425cedca7ee203d9afd29597e692c4924a12ed42f970537c72cc0f",
 }
 MAX_DOWNLOAD = 32 * 1024**2
+DOWNLOAD_SECONDS = 60
 MAX_REPORT = 16 * 1024**2
 MAX_EXPANSION = 8 * 1024**3
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,9 +68,98 @@ PROCESS_ENVIRONMENT = {
 class ScanError(RuntimeError):
     """Fixed diagnostics only; never print scanner input or matched content."""
 
-    def __init__(self, message, *, finding_summary=None):
+    def __init__(self, message, *, finding_summary=None, failure=None):
         super().__init__(message)
         self.finding_summary = finding_summary
+        self.failure = failure
+
+
+def failure_details(error):
+    """Fixed diagnostic vocabulary; never serialize an exception or its arguments."""
+    if isinstance(error, urllib.error.HTTPError):
+        status = error.code
+        return {
+            "code": "download_http",
+            "http_status": status if type(status) is int and 100 <= status <= 599 else None,
+        }
+    cause = error.reason if isinstance(error, urllib.error.URLError) else error
+    for kind, code in (
+        (ssl.SSLError, "tls_error"),
+        (socket.gaierror, "dns_error"),
+        (TimeoutError, "timeout"),
+        (ConnectionError, "connection_error"),
+        (http.client.IncompleteRead, "incomplete_read"),
+        (PermissionError, "permission_denied"),
+        (FileNotFoundError, "missing_file"),
+        (subprocess.TimeoutExpired, "process_timeout"),
+        (OSError, "io_error"),
+    ):
+        if isinstance(cause, kind):
+            return {"code": code}
+    return {"code": "unexpected_error"}
+
+
+def download_archive(name):
+    """Recover one transient acquisition failure without rerunning a scan/build."""
+    if name not in ARCHIVES:
+        raise ScanError("Unexpected scanner archive")
+    url = f"https://github.com/gitleaks/gitleaks/releases/download/v{VERSION}/gitleaks_{VERSION}_{name}"
+    request = urllib.request.Request(url, headers={"User-Agent": "Mnemion-release-scanner"})
+    deadline = time.monotonic() + DOWNLOAD_SECONDS
+    for attempt in range(1, 3):
+        try:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError()
+            with urllib.request.urlopen(request, timeout=min(30, remaining)) as response:
+                data = bytearray()
+                while True:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError()
+                    chunk = response.read1(min(64 * 1024, MAX_DOWNLOAD + 1 - len(data)))
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError()
+                    if not chunk:
+                        break
+                    data.extend(chunk)
+                    if len(data) > MAX_DOWNLOAD:
+                        raise ScanError(
+                            "Scanner download exceeded its size bound",
+                            failure={"code": "download_oversized", "attempts": attempt},
+                        )
+            if hashlib.sha256(data).hexdigest() != ARCHIVES[name]:
+                raise ScanError(
+                    "Scanner download did not match the pinned digest",
+                    failure={"code": "download_integrity", "attempts": attempt},
+                )
+            return bytes(data)
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            ConnectionError,
+            socket.gaierror,
+            http.client.IncompleteRead,
+            ssl.SSLError,
+        ) as error:
+            failure = {**failure_details(error), "attempts": attempt}
+            if isinstance(error, urllib.error.HTTPError):
+                error.close()
+            transient = failure["code"] in {
+                "dns_error",
+                "timeout",
+                "connection_error",
+                "incomplete_read",
+            } or (
+                failure["code"] == "download_http"
+                and failure["http_status"] in {429, 500, 502, 503, 504}
+            )
+            if not transient or attempt == 2 or deadline - time.monotonic() <= 2:
+                raise ScanError(
+                    "Pinned scanner download could not complete; publication remains blocked",
+                    failure=failure,
+                ) from None
+        time.sleep(2)
+    raise ScanError("Pinned scanner download attempts exhausted")
 
 
 def digest(path):
@@ -121,11 +215,7 @@ def scanner(cache):
     if archive.is_symlink():
         raise ScanError("Scanner cache must not contain linked archives")
     if not archive.exists():
-        url = f"https://github.com/gitleaks/gitleaks/releases/download/v{VERSION}/{archive.name}"
-        with urllib.request.urlopen(url, timeout=30) as response:
-            data = response.read(MAX_DOWNLOAD + 1)
-        if len(data) > MAX_DOWNLOAD or hashlib.sha256(data).hexdigest() != ARCHIVES[name]:
-            raise ScanError("Scanner download did not match the pinned digest")
+        data = download_archive(name)
         temporary = archive.with_name(archive.name + "." + uuid.uuid4().hex + ".tmp")
         try:
             with temporary.open("xb") as stream:
@@ -551,6 +641,7 @@ def scan(root, paths, output, cache, *, source=False):
         "executable_internals_decompiled": False,
         "encrypted_content_decrypted": False,
     }
+    stage = "snapshot"
     try:
         with tempfile.TemporaryDirectory(prefix="secret-source-", dir=cache.parent) as temporary:
             inputs = originals
@@ -563,8 +654,10 @@ def scan(root, paths, output, cache, *, source=False):
                 inputs = [snapshot]
             if any(output.is_relative_to(path) for path in inputs if path.is_dir()):
                 raise ScanError("Secret scan reports must be outside scanned directories")
+            stage = "scanner_initialization"
             with scanner(cache) as (executable, identity):
                 record["scanner"] = identity
+                stage = "scanner_canary"
                 with tempfile.TemporaryDirectory(
                     prefix="scan-canary-", dir=cache.parent
                 ) as control:
@@ -575,14 +668,22 @@ def scan(root, paths, output, cache, *, source=False):
                 record["decoded_metadata_key_canary_passed"] = True
                 record["public_fips_adjacent_key_canary_passed"] = True
                 record["public_fips_fragment_adjacent_key_canary_passed"] = True
+                stage = "content_scan"
                 record.update(run_scanner(executable, rules, inputs, evidence))
+            stage = "input_verification"
             if inventory(originals) != before or digest(rules) != record["rules_sha256"]:
                 raise ScanError("Secret scan inputs changed during inspection")
             record["passed"] = True
     except ScanError as error:
+        record["failure"] = {"stage": stage, **(error.failure or {"code": "scan_rejected"})}
         if error.finding_summary is not None:
             record["finding_summary"] = error.finding_summary
         raise
+    except Exception as error:
+        record["failure"] = {"stage": stage, **failure_details(error)}
+        raise ScanError(
+            "Secret scan could not complete; publication remains blocked", failure=record["failure"]
+        ) from None
     finally:
         if output.exists():
             output.replace(output.with_name(output.name + ".previous-" + stamp))

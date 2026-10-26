@@ -9,11 +9,18 @@ all requirement texts and the other 65 states are unchanged. The
 address. Source controls, owners, senders and collector components exist.
 **No production product collection or qualified anonymous ingress is active.**
 
-The [six-target installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
-and public auto-update gates qualify their recorded release. They do not
-qualify later review/delivery changes or full V08. Consult the automatically
-maintained [release status](../RELEASE_STATUS.md) for current availability;
-source implementation and full telemetry acceptance remain separate.
+The [4.46.13 installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
+and public auto-update gates qualify their recorded release. The later
+[4.46.22 installed review-control qualification](../validation/2026-10-26-telemetry-installed-review.md)
+passes eight telemetry fields on all six targets: format/default/no-consent
+controls, app/native choice and review-mode changes, focus clearing, zero recorded
+delivery attempts, and opt-out/review-mode persistence across the probe's restart.
+Five targets use fresh attempt-1 artifacts; Mac ARM alone uses its fresh
+capacity-retry artifact from attempt 2. No new build, app run or model call was
+needed for this evidence qualification. It does not qualify staged-report
+approval/delivery, later owners or 4.46.25 installed behavior, resource/provider
+privacy, actual PC/VPS upgrades or full V08. Consult the automatically maintained
+[release status](../RELEASE_STATUS.md) for current availability.
 
 Use the [app/native control guide](../guides/product-telemetry-controls.md),
 [catalog and ownership map](anonymous-product-telemetry-catalog.md),
@@ -186,9 +193,19 @@ The [transaction metadata follow-up](../validation/2026-10-26-telemetry-query-ow
 consolidates fresh native authority reads and reuses the checked format only
 inside one transaction. A fixed 32-workflow comparison reduced statement wrappers
 from 608 to 384 with identical queue and contribution state; 67 focused checks
-passed with two Windows-only skips. This source follows frozen 4.46.22 and is
-queued for the next batch. It establishes no RSS/CPU saving or installed acceptance.
+passed with two Windows-only skips. The allocation change is retained; it
+establishes no RSS/CPU saving or installed acceptance.
 The dependency review did not justify splitting common imports as the resource fix.
+
+The [fixed allocation resource follow-up](../validation/2026-10-26-telemetry-allocation-followup.md)
+then completed all six source-app cases at `4779cf11`, matching 2,045 files each,
+with 2,322 successful fixture API requests, 2,304 memory operations and no model
+calls. Enabled main-process matched RSS maxima were **3,145,728 / 3,186,688 bytes**;
+ending differences were **2,768,896 / 2,428,928 bytes**, all above 2 MiB. Both
+opted-out comparisons and every sampled process role remain retained. Combined
+Electron CPU differences are descriptive, not stable per-process overhead.
+Resource acceptance still fails; no causal improvement, budget change or replay
+of this workload is selected.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
@@ -311,9 +328,10 @@ recorded boundaries, not provider/ingress privacy or a production deployment.
 
 - **Coverage and installed behavior:** finish the action-by-action ownership and
   exclusion review, including autonomous work and unknown remote clients. All
-  six native targets and web need the newer review/delivery, restart/update,
-  cancellation, storage-loss and pressure/sensor journeys. Published control
-  evidence does not transfer to those additions.
+  six native targets and web still need the staged-report approval/delivery,
+  current-owner, cancellation, storage-loss and pressure/sensor journeys. The
+  4.46.22 mode/opt-out restart evidence does not qualify later source changes or
+  the full restart/update lifecycle.
 - **Resources and architecture:** the fixed compiled-app comparisons still exceed
   the unchanged **2 MiB / 0.5%** acceptance gates. Ending RSS, matched maxima,
   other process roles and profiled CPU are retained in the evidence index; no
