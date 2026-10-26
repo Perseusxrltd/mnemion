@@ -42,8 +42,8 @@ presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
 to inspect the source coverage and explicit privacy exclusions. New source
-provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-host-updates.md):
-88 of 94 categories have a declared measurement source; six remain unmeasured.
+provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-capture-actions.md):
+91 of 94 categories have a declared measurement source; three remain unmeasured.
 These counts describe catalog mappings, not complete screens, sensors or active
 collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
 inventory is generated from Git source maps and checked for staleness at release.
@@ -385,6 +385,15 @@ OS-account store; the browser uses its own site policy. They retain the choice
 and generation captured when work began and recheck them before recording. An
 old action cannot regain permission after an opt-out and later re-enable.
 
+Explicit conversation preview in the app/native agent and standalone
+`--capture-control` action `preview` now own `capture.preview`. Success means the
+bounded preview returned, even if some files or catalog details were unavailable;
+it does not mean capture was configured or delivered. The preview reads local
+samples for you, but its content, paths and configuration hash are not telemetry.
+Standalone capture pause owns one `capture.pause` acknowledgement. The separate
+`--inspect` path, status, key generation and telemetry's own privacy/format-preview
+controls remain unmeasured. Generic source pause/resume keeps its existing label.
+
 The reusable SDK does not collect product telemetry. Its response-bound receipt
 metadata lets the Studio wrapper exclude replayed or uncertain keyed writes;
 generic SDK/API requests, polling, privacy controls and unowned continuation
@@ -409,6 +418,15 @@ standalone source/capture work. Empty successful scans and paused work add no
 use. Explicit Sync continuations, remote-requested or host-managed scans,
 reusable sync helpers and server-worker activity are excluded. Existing request
 acknowledgements remain separate from observed maintenance outcomes.
+
+For an owned capture cycle, no locally accepted items plus a verified positive
+fresh stored count selects `capture.deliver`; accepting local items selects
+`capture.collect`, including mixed collection/delivery work. This keeps one owner
+and the whole cycle's outcome and latency. Completed cycles without fresh work
+add no use. Incomplete or denied cycles keep their existing outcomes; an unknown
+fresh count stays unavailable, and replayed receipts or saved history do not
+become fresh usage. The [source validation](../validation/2026-10-26-telemetry-capture-actions.md)
+does not qualify installed platforms or activate collection.
 
 Automatic desktop update download, verification and bounded retries form one cycle.
 Current-version and safe-restart polls add no use. An unfinished cycle is

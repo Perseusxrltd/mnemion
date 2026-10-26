@@ -32,6 +32,99 @@ def cells(root):
     ]
 
 
+def test_fixed_choices_keep_one_original_clock_and_complete_at_most_once(installation, monkeypatch):
+    now = [10.0]
+    monkeypatch.setattr(workflow.time, "monotonic", lambda: now[0])
+    reads = []
+    status = policy.status
+
+    def observed(*args, **kwargs):
+        reads.append(True)
+        return status(*args, **kwargs)
+
+    monkeypatch.setattr(policy, "status", observed)
+    active = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    assert active is not None and len(reads) == 1
+    now[0] += 0.250
+    active.finish_choice("capture.deliver", "success", work_items=0, result_items=3)
+    active.finish_choice("capture.collect", "failed")
+    active.finish("failed")
+    assert len(reads) == 1, "Finishing cannot acquire a new policy snapshot"
+    rows = cells(installation)
+    assert {row["workflow"] for row in rows} == {"capture.deliver"}
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert next(row["bucket"] for row in rows if row["metric"] == "latency_ms") == 3
+
+
+def test_choice_validation_rejects_unknown_or_unbounded_input_before_privacy_io(
+    installation, monkeypatch
+):
+    monkeypatch.setattr(
+        policy, "status", lambda *_a, **_k: pytest.fail("Invalid choice read policy")
+    )
+    for choices in (
+        (),
+        ("capture.collect",),
+        ("capture.collect", "capture.collect"),
+        ("capture.collect", "PRIVATE_CHOICE"),
+        ("capture.collect", "capture.deliver", "sources.scan", "memory.read", "memory.save"),
+        ["capture.collect", "capture.deliver"],
+    ):
+        assert workflow.begin_choices(choices, "headless") is None
+    assert (
+        workflow.begin_choices(("capture.collect", "capture.deliver"), ["PRIVATE_SURFACE"]) is None
+    )
+
+
+def test_an_undeclared_choice_cannot_be_retried_under_a_different_workflow(installation):
+    active = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    active.finish_choice("memory.save", "success")
+    active.finish_choice("capture.deliver", "success")
+    assert cells(installation) == []
+
+
+def test_final_choice_keeps_the_original_opt_out_and_reenable_fence(installation):
+    active = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    off = policy.configure(installation, {"enabled": False, "expected_revision": 0})
+    policy.configure(
+        installation,
+        {
+            "enabled": True,
+            "expected_revision": off["revision"],
+            "expected_generation": off["store_generation"],
+            "disclosure_version": 1,
+        },
+    )
+    active.finish_choice("capture.deliver", "success")
+    assert cells(installation) == []
+    fresh = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    fresh.finish_choice("capture.deliver", "success")
+    assert sum(row["count"] for row in cells(installation) if row["metric"] == "submissions") == 1
+
+
+def test_collection_saturation_does_not_hide_a_separately_bounded_delivery(installation):
+    current = policy.status(installation)
+    for _ in range(64):
+        assert aggregate.record(
+            installation,
+            {"kind": "submission", "workflow": "capture.collect", "surface": "headless"},
+            expected_revision=current["revision"],
+            expected_generation=current["store_generation"],
+        )
+    blocked = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    assert blocked is not None
+    blocked.finish_choice("capture.collect", "success")
+    active = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    assert active is not None
+    active.finish_choice("capture.deliver", "success")
+    submissions = {
+        row["workflow"]: row["count"]
+        for row in cells(installation)
+        if row["metric"] == "submissions"
+    }
+    assert submissions == {"capture.collect": 64, "capture.deliver": 1}
+
+
 def cli(monkeypatch, tmp_path, operation, request, handler, *, retries=2):
     input_file = tmp_path / (uuid4().hex + ".json")
     input_file.write_text(json.dumps(request))

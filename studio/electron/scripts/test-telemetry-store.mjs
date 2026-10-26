@@ -7,7 +7,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
-import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
+import { TelemetryWorkflow, TelemetryWorkflowChoice } from '../dist/telemetry-workflow.js'
 import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -82,6 +82,70 @@ test('inactive native collection reads no choice and creates no store', async t 
   assert.equal(await store.snapshot(), null)
   assert.equal(await store.record({ private: 'PRIVATE_SENTINEL' }, { revision: 0, store_generation: null }), false)
   await assert.rejects(access(root))
+})
+
+test('fixed workflow choices preserve one original snapshot and clock and finish once', async t => {
+  const { invoke, store } = await fixture(t), choices = ['capture.collect', 'capture.deliver']
+  const snapshot = store.snapshot.bind(store)
+  let reads = 0, now = 10
+  store.snapshot = (...args) => { reads++; return snapshot(...args) }
+  const pending = TelemetryWorkflowChoice.choose(store, choices, 'desktop', () => now)
+  choices[1] = 'memory.save'
+  const active = await pending
+  assert.ok(active)
+  assert.equal(reads, 1)
+  now += 250
+  await active.finishChoice('capture.deliver', 'success', 'none', { work_items: 0, result_items: 3 })
+  await active.finishChoice('capture.collect', 'failed')
+  await active.finish('failed')
+  assert.equal(reads, 1, 'completion does not acquire new permission')
+  const rows = invoke('preview', { day: Math.floor(Date.now() / 86400000) })
+  assert.deepEqual([...new Set(rows.map(row => row.workflow))], ['capture.deliver'])
+  assert.equal(rows.filter(row => row.metric === 'submissions').reduce((n, row) => n + row.count, 0), 1)
+  assert.equal(rows.find(row => row.metric === 'latency_ms').bucket, 3)
+})
+
+test('choice validation and undeclared completion never create another workflow', async t => {
+  const { invoke, store } = await fixture(t)
+  const snapshot = store.snapshot.bind(store)
+  let reads = 0
+  store.snapshot = (...args) => { reads++; return snapshot(...args) }
+  for (const choices of [[], ['capture.collect'], ['capture.collect', 'capture.collect'],
+    ['capture.collect', 'PRIVATE_CHOICE'], ['capture.collect', 'capture.deliver', 'sources.scan', 'memory.read', 'memory.save']]) {
+    assert.equal(TelemetryWorkflowChoice.choose(store, choices, 'desktop'), null)
+  }
+  assert.equal(reads, 0)
+  const active = await TelemetryWorkflowChoice.choose(store, ['capture.collect', 'capture.deliver'], 'desktop')
+  await active.finishChoice('memory.save', 'success')
+  await active.finishChoice('capture.deliver', 'success')
+  assert.equal(reads, 1)
+  assert.deepEqual(invoke('preview'), [])
+})
+
+test('a chosen completion cannot inherit permission from opt-out followed by reenable', async t => {
+  const { invoke, store, initial } = await fixture(t)
+  const active = await TelemetryWorkflowChoice.choose(store, ['capture.collect', 'capture.deliver'], 'desktop')
+  const off = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+  invoke('configure', { choice: { enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: 1 } })
+  await active.finishChoice('capture.deliver', 'success')
+  assert.deepEqual(invoke('preview', { day: Math.floor(Date.now() / 86400000) }), [])
+})
+
+test('collection exhaustion leaves delivery choice available and enforces its own quota', async t => {
+  const { invoke, store, initial } = await fixture(t), stamp = stampOf(initial)
+  const day = Math.floor(Date.now() / 86400000)
+  const collected = observation({ workflow: 'capture.collect' })
+  assert.equal(invoke('record', { value: collected, stamp, repeat: 64, day }).filter(Boolean).length, 64)
+  assert.equal(await store.record(collected, stamp, day), false)
+  assert.equal(await TelemetryWorkflow.begin(store, 'capture.collect', 'desktop'), null)
+  const blocked = await TelemetryWorkflowChoice.choose(store, ['capture.collect', 'capture.deliver'], 'desktop')
+  assert.ok(blocked)
+  await blocked.finishChoice('capture.collect', 'success')
+  const active = await TelemetryWorkflowChoice.choose(store, ['capture.collect', 'capture.deliver'], 'desktop')
+  assert.ok(active)
+  await active.finishChoice('capture.deliver', 'success')
+  const outcomes = invoke('preview', { day }).filter(row => row.metric === 'outcomes')
+  assert.deepEqual(Object.fromEntries(outcomes.map(row => [row.workflow, row.count])), { 'capture.collect': 64, 'capture.deliver': 1 })
 })
 
 test('native transactions preserve every supported schema without migrating a producer store', async t => {

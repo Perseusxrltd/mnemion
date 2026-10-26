@@ -127,18 +127,35 @@ verification dispatches remain read-only. No package is rebuilt after verificati
 When a gate fails, inspect that run and fix its concrete cause. A failed full run
 is not an invitation to bypass it or repeatedly exercise unrelated passing gates.
 Re-run the failed workflow only when a fix or resolved transient error justifies
-it. The status workflow now makes one exception automatically: if GitHub reports
-that its hosted runner could not acquire a job, and every unsuccessful job has
-zero steps and no assigned runner, it retries only the failed jobs once. This
-requires the exact GitHub capacity annotation, a first attempt, our repository,
-and either the current public release tag or an unpublished frozen release
-branch still on main. It rechecks that identity before requesting the retry.
+it. The status workflow makes one exception automatically: a completed first
+attempt can receive one failed-job retry when its complete, bounded job inventory
+contains only successes, skips or unstarted failures with the exact GitHub hosted
+runner-capacity annotation. Each failed/cancelled job must have zero steps and no
+assigned runner; other failure annotations or incomplete evidence refuse retry.
+This requires our repository and either the current public release tag, an
+unpublished frozen release branch still on main, or the latest eligible Product
+checks push to `main`.
+
+For source CI, the run commit must equal current `main`, or a bounded comparison
+must show only paths accepted by the existing `ci_scope.documentation()`
+classification. Its documentation/metadata scope does not include the separate
+diagnostic-only exemption. The exact run commit must be both comparison base and
+merge base, with one to 299 files and both names of a rename checked. Source
+changes, missing/truncated comparisons, another branch/event and any newer main
+push CI refuse retry. Immediately before the request, the helper rereads run
+identity and repeats source eligibility. A capacity retry does not make a failed
+or incomplete suite reusable as passing release evidence.
+
 Actual test failures, timeouts, ordinary cancellations, forks, stale versions
 and second attempts remain for investigation. Passing jobs and release assets
 are reused; no paid runner or check bypass is added. Inspect without mutation
 using `python -m deploy.runner_capacity_retry --run RUN_ID`; `--apply` enables the
 same bounded action used by the workflow. Its separate job has Actions write
 permission but no repository-content or issue write permission.
+
+The [4.46.24 source follow-up](../validation/2026-10-26-telemetry-capture-actions.md#source-ci-capacity-recovery)
+passed 41 guard tests using mocked GitHub reads and mutations. Those tests do not
+establish runner availability, an actual retry or native release qualification.
 
 For a corrected version that has **never been published**, commit and push
 the fix to main, then use `python -m deploy.release_automation start --attempt 2`

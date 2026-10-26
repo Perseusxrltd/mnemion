@@ -17,7 +17,7 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
     telemetry_coverage.verify(ROOT)
     coverage = catalog.coverage_specification()
     assert coverage["scope"] == "declared_source_boundaries"
-    assert coverage["summary"] == {"total": 94, "mapped": 88, "unmeasured": 6}
+    assert coverage["summary"] == {"total": 94, "mapped": 91, "unmeasured": 3}
     assert [row["workflow"] for row in coverage["workflows"]] == list(catalog.WORKFLOWS)
     rows = {row["workflow"]: row for row in coverage["workflows"]}
     assert rows["memory.recall"]["state"] == "mapped"
@@ -28,6 +28,13 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
         "owners": [],
     }
     assert rows["backup.list"]["state"] == "unmeasured"
+    assert rows["capture.deliver"]["owners"] == ["local_maintenance"]
+    assert rows["capture.pause"]["owners"] == ["headless_controls"]
+    assert rows["capture.preview"]["owners"] == [
+        "native_commands",
+        "desktop_ipc",
+        "headless_controls",
+    ]
     assert "headless_controls" in rows["capture.drain"]["owners"]
     assert rows["models.prepare"]["owners"] == ["headless_models"]
     assert rows["update.rollback"]["owners"] == ["host_updates"]
@@ -130,7 +137,7 @@ def test_future_interface_action_is_not_hidden_or_given_an_invented_workflow(sou
         "state": "unmeasured",
         "workflows": [],
     } in coverage["action_coverage"]["actions"]
-    assert coverage["summary"] == {"total": 94, "mapped": 88, "unmeasured": 6}
+    assert coverage["summary"] == {"total": 94, "mapped": 91, "unmeasured": 3}
     with pytest.raises(ValueError, match="Telemetry coverage is stale"):
         telemetry_coverage.verify(root)
     # An unfinished selector declaration cannot make a known action disappear.

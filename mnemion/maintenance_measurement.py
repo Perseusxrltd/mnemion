@@ -92,6 +92,9 @@ class SourceMeasurement:
             return
         capture = report.get("capture")
         if type(capture) is dict:
+            if not isinstance(self.active, workflow.WorkflowChoice):
+                self.active.discard()
+                return
             fresh = capture.get("newly_stored_events")
             if type(fresh) is not int or not 0 <= fresh <= capture["remote_committed_events"]:
                 fresh = None
@@ -142,12 +145,24 @@ class SourceMeasurement:
                         )
         except Exception:
             pass
-        self.active.finish(outcome, reason, **metrics)
+        if type(capture) is dict:
+            choice = (
+                "capture.deliver"
+                if capture["locally_accepted"] == 0 and fresh is not None and fresh > 0
+                else "capture.collect"
+            )
+            self.active.finish_choice(choice, outcome, reason, **metrics)
+        else:
+            self.active.finish(outcome, reason, **metrics)
 
 
 @_optional
 def begin_source(*, capture: bool, owned: bool, memory_limit=None):
     if not owned:
         return None
-    active = workflow.begin("capture.collect" if capture else "sources.scan", "headless")
+    active = (
+        workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+        if capture
+        else workflow.begin("sources.scan", "headless")
+    )
     return SourceMeasurement(active, memory_limit) if active else None

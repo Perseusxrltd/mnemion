@@ -53,6 +53,14 @@ def fixture(monkeypatch):
             },
         ],
         sha="a" * 40,
+        main_sha="a" * 40,
+        ci_runs=[],
+        ci_comparison={
+            "status": "ahead",
+            "base_commit": {"sha": "a" * 40},
+            "merge_base_commit": {"sha": "a" * 40},
+            "files": [{"filename": "deploy/maintenance-status.json", "status": "modified"}],
+        },
         comparison="ahead",
         mutate=None,
         calls=[],
@@ -64,9 +72,15 @@ def fixture(monkeypatch):
             return copy.deepcopy(state.run)
         if path == "releases/latest":
             return state.latest
+        if path == "git/ref/heads/main":
+            return {"object": {"type": "commit", "sha": state.main_sha}}
+        if path == "actions/workflows/ci.yml/runs?branch=main&event=push&per_page=1":
+            return {"workflow_runs": state.ci_runs}
         if path.startswith("git/ref/"):
             return {"object": {"type": "commit", "sha": state.sha}}
         if path.startswith("compare/"):
+            if state.run["path"] == subject.SOURCE_CHECKS:
+                return state.ci_comparison
             return {"status": state.comparison}
         raise AssertionError(path)
 
@@ -97,10 +111,13 @@ def mutations(state):
     return [call for call in state.calls if "POST" in call]
 
 
-@pytest.mark.parametrize("candidate", [False, True])
+@pytest.mark.parametrize("candidate", ["public", "candidate", "source"])
 def test_exact_capacity_failure_retries_only_failed_jobs_once(fixture, candidate):
-    if candidate:
+    if candidate == "candidate":
         fixture.run.update(path=".github/workflows/release.yml", head_branch="release/4.24.0-r2")
+    elif candidate == "source":
+        fixture.run.update(path=subject.SOURCE_CHECKS, head_branch="main", event="push")
+        fixture.ci_runs = [copy.deepcopy(fixture.run)]
     dry = subject.inspect(123)
     assert dry["eligible"] and not dry["retried"] and dry["job_ids"] == [9]
     assert not mutations(fixture)
@@ -109,6 +126,72 @@ def test_exact_capacity_failure_retries_only_failed_jobs_once(fixture, candidate
     fixture.run["run_attempt"] = 2
     assert not subject.inspect(123, apply=True)["eligible"]
     assert len(mutations(fixture)) == 1
+
+
+def source_checks(fixture):
+    fixture.run.update(path=subject.SOURCE_CHECKS, head_branch="main", event="push")
+    fixture.ci_runs = [copy.deepcopy(fixture.run)]
+
+
+def test_source_checks_allow_only_documentation_advancement_on_main(fixture):
+    source_checks(fixture)
+    fixture.main_sha = "b" * 40
+    assert subject.inspect(123, apply=True)["retried"]
+    assert len(mutations(fixture)) == 1
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "branch",
+        "event",
+        "newer_run",
+        "source_change",
+        "code_rename",
+        "truncated",
+        "missing",
+        "diverged",
+    ],
+)
+def test_superseded_or_unproved_source_checks_never_retry(fixture, damage):
+    source_checks(fixture)
+    fixture.main_sha = "b" * 40
+    if damage == "branch":
+        fixture.run["head_branch"] = "codex/other"
+    elif damage == "event":
+        fixture.run["event"] = "pull_request"
+    elif damage == "newer_run":
+        fixture.ci_runs[0]["id"] = 124
+    elif damage == "source_change":
+        fixture.ci_comparison["files"] = [{"filename": "mnemion/version.py"}]
+    elif damage == "code_rename":
+        fixture.ci_comparison["files"] = [
+            {"filename": "docs/code.md", "previous_filename": "mnemion/version.py"}
+        ]
+    elif damage == "truncated":
+        fixture.ci_comparison["files"] = [{"filename": f"docs/{i}.md"} for i in range(300)]
+    elif damage == "missing":
+        fixture.ci_comparison.pop("files")
+    else:
+        fixture.ci_comparison["status"] = "diverged"
+    assert not subject.inspect(123, apply=True)["eligible"]
+    assert not mutations(fixture)
+
+
+@pytest.mark.parametrize("change", ["newer_run", "source_change"])
+def test_source_retry_rechecks_supersession_immediately_before_mutation(fixture, change):
+    source_checks(fixture)
+
+    def mutate():
+        if change == "newer_run":
+            fixture.ci_runs[0]["id"] = 124
+        else:
+            fixture.main_sha = "b" * 40
+            fixture.ci_comparison["files"] = [{"filename": "mnemion/version.py"}]
+
+    fixture.mutate = mutate
+    assert not subject.inspect(123, apply=True)["eligible"]
+    assert not mutations(fixture)
 
 
 @pytest.mark.parametrize(

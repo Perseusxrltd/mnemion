@@ -18,7 +18,8 @@ All 66 requirement texts and the other 65 states remain unchanged; V08 stays Bui
 
 The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 now makes all 94 categories visible in app/browser and native format inspection:
-88 have mapped source boundaries and six remain unmeasured. It is generated
+91 have mapped source boundaries and three remain unmeasured:
+`workspace.switch`, `backup.list` and `update.verify`. It is generated
 from these maps and verified by the release checker. This reconciles catalog
 references without claiming complete per-action, sensor or installed coverage;
 the [initial coverage report](../validation/2026-10-26-telemetry-coverage.md)
@@ -26,8 +27,8 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The [current action inventory](../validation/2026-10-26-telemetry-host-updates.md)
-lists **628 actions and fixed variants: 351 mapped, 270 excluded,
+The [current action inventory](../validation/2026-10-26-telemetry-capture-actions.md)
+lists **630 actions and fixed variants: 356 mapped, 267 excluded,
 seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API
@@ -337,7 +338,7 @@ collection contract. Their maps describe eligible boundaries, not proof that all
 
 | Boundary | Current source ownership |
 | --- | --- |
-| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 44 eligible and 33 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
+| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 45 eligible and 32 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
 | Desktop preload requests | The same map's `ipc` section classifies **72 actual preload request channels**, including fixed `hosts:action` and `sources:control` variants. The runtime dispatcher and action inventory read these reviewed mappings; inspection, privacy, transport and automatic connection exclusions remain visible. The 4.46.22 source follow-up passed 54 distinct Python and 26 Node tests plus both source builds. |
 | Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **64 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. |
 | Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
@@ -361,7 +362,7 @@ test-only correction for the intentionally transient capture count. The linked
 report retains the original 4.46.21 Python 3.13 equality-assertion failure; the
 correction preserves exact equality of all other fields and changes no runtime.
 
-The top-level desktop exclusions are 15 state inspections, six configuration
+The top-level desktop exclusions are 15 state inspections, five configuration
 previews, nine privacy controls and three recovery transports. Typed
 [`host.request` ownership](../validation/2026-10-26-telemetry-host-requests.md)
 now requires a successful authenticated reply whose request-scoped
@@ -472,11 +473,20 @@ CLI keepalive or new measurement owner for nested work.
 | --- | --- |
 | Desktop scheduled source/capture | [DesktopSources](../../studio/electron/desktop-sources.ts) starts an observer only for automatic work. Explicit Sync continuations already have a request owner. Successful empty scans, paused work and mere status inspection add no use. |
 | Standalone source/capture | The [connector entrypoint](../../mnemion/connectors/runner.py) owns its fresh local execution. Reusable sync calls, remote-requested work and host-managed child processes do not inherit this owner. |
-| Standalone capture controls | The [connector entrypoint](../../mnemion/connectors/runner.py) separately observes ten eligible actions; status, preview and key generation are excluded. Managed/reporting children and reusable control helpers acquire no owner. |
+| Standalone capture controls | The [connector entrypoint](../../mnemion/connectors/runner.py) separately observes eleven eligible actions, including `capture.preview` and one `capture.pause` acknowledgement. Status and key generation are excluded; the separate `--inspect` path stays unowned. Managed/reporting children and reusable control helpers acquire no owner. |
 | Explicit model preparation | The [service CLI](../../mnemion/service/cli.py) owns direct `prepare-model` and `librarian-models --prepare` invocations as `models.prepare`. The observer receives only `embedding` or `librarian_tokenizer`; model/profile identifiers and normal output remain outside telemetry. |
 | Desktop update download | The [updater](../../studio/electron/updates.ts) keeps download, verification and bounded retries in one cycle with one terminal success, failure or cancellation. Current-version and safe-restart polls add no use. Unfinished cycles are discarded on quit. |
 | Installer handoff | `update.apply` records only an **accepted handoff**, if observed. Its optional snapshot has a 25 ms wait budget before the original guarded action. It does not assert an installed version or completed restart, and there is no shutdown flush or wait for telemetry. |
 | Automatic managed-host updater | Both dedicated watch entrypoints own fresh stage/apply/rollback under the host OS account's acknowledged policy. Ready-runtime reuse, held/incompatible apply and ordinary checks add no use. The surviving updater observes service readiness and fresh rollback completion. Interrupted apply is discarded, never reconstructed from a private journal; a remote operator's preference supplies no consent. |
+
+The [capture-action follow-up](../validation/2026-10-26-telemetry-capture-actions.md)
+maps explicit native `source.preview`, app IPC `sources:preview` and standalone
+`--capture-control` action `preview` to `capture.preview`. A successful bounded
+preview may still report a limited or unavailable catalog; it is not proof of
+configured capture, complete file coverage or delivery. The observer receives no
+selection, paths, preview content or configuration hash. Standalone pause records
+an accepted acknowledgement; resume and generic desktop pause/resume retain their
+source categories. Telemetry's own privacy/format-preview controls remain excluded.
 
 The [managed-host observer](../../mnemion/service/update_measurement.py) receives
 only a fixed action. It does not receive versions, paths, journals, credentials,
@@ -521,9 +531,26 @@ fresh count is bounded to 50 events per page. Optional SDK `RequestReceipt`
 metadata is per call and adds no owner. Live `newly_stored_events` is excluded
 from `CaptureReport` serialization and saved source history. The scoped source
 validation passed 172 distinct Python and 111 Node controller/wire cases and
-both source builds; original fixture failures remain recorded. Category coverage
-stays 94 total, 87 mapped and seven unmeasured; installed and full V08 acceptance
-remain separate.
+both source builds; original fixture failures remain recorded. That checkpoint's
+category coverage was 94 total, 87 mapped and seven unmeasured; installed and full
+V08 acceptance remain separate.
+
+Current capture maintenance starts one fixed choice between `capture.collect`
+and `capture.deliver` under the original policy revision, generation and clock.
+No locally accepted items plus a positive verified `newly_stored_events` selects
+`capture.deliver`; cycles accepting local items stay `capture.collect`. The
+choice preserves whole-cycle outcome and latency, including denied/deferred
+outcomes, and adds no second owner. Completed cycles without fresh work are
+discarded. Unknown fresh counts omit `result_items`; receipts or saved history
+cannot establish fresh delivery. Final write fences and the chosen category's
+contribution limits remain enforced.
+
+The 4.46.24 source selection passed 109 distinct Python, 154 compiled desktop/store
+Node and 120 browser-source cases, with two Windows-only Node skips and both
+builds passing. Original failures and test-only corrections remain in the linked
+report. Its separate source-CI capacity lane passed 41 mocked guard tests.
+Catalog, disclosure, route and wire coordinates are unchanged; source checks do
+not establish resource, provider privacy or installed-platform acceptance.
 
 Resource cells describe only the owned process. Native source work can use the
 maximum RSS supplied by its actual child callback and that worker's configured

@@ -1,5 +1,5 @@
 /** Owned device work only. No logs, identifiers, versions or remote job history. */
-import { TelemetryWorkflow, type WorkflowStore } from './telemetry-workflow.js'
+import { TelemetryWorkflow, TelemetryWorkflowChoice, type WorkflowStore } from './telemetry-workflow.js'
 
 export type MaintenanceStore = () => WorkflowStore
 const workflows = new Set(['sources.scan', 'capture.collect', 'update.download', 'update.apply'])
@@ -8,7 +8,9 @@ export async function beginMaintenance(store: MaintenanceStore | undefined, work
   if (!store || !workflows.has(workflow)) return null
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    const pending = TelemetryWorkflow.begin(store(), workflow, 'desktop')
+    const pending = workflow === 'capture.collect'
+      ? TelemetryWorkflowChoice.choose(store(), ['capture.collect', 'capture.deliver'], 'desktop')
+      : TelemetryWorkflow.begin(store(), workflow, 'desktop')
     if (pending === null) return null
     return await Promise.race([pending,
       new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })])
@@ -27,6 +29,7 @@ export function finishSource(measurement: TelemetryWorkflow | null, report: Sour
   if (!measurement) return
   try {
     const capture = report.capture
+    if (capture && !(measurement instanceof TelemetryWorkflowChoice)) { measurement.discard(); return }
     const fresh = capture && Number.isSafeInteger(capture.newly_stored_events) &&
       capture.newly_stored_events! >= 0 && capture.newly_stored_events! <= capture.remote_committed_events
       ? capture.newly_stored_events! : undefined
@@ -45,7 +48,10 @@ export function finishSource(measurement: TelemetryWorkflow | null, report: Sour
     if (resources && resources.rss > 0) void measurement.resources([
       { metric: 'rss_bytes', value: resources.rss }, { metric: 'resource_budget_bytes', value: resources.limit },
     ])
-    void measurement.finish(outcome, reason, metrics)
+    if (capture && measurement instanceof TelemetryWorkflowChoice) {
+      const choice = capture.locally_accepted === 0 && fresh !== undefined && fresh > 0 ? 'capture.deliver' : 'capture.collect'
+      void measurement.finishChoice(choice, outcome, reason, metrics)
+    } else void measurement.finish(outcome, reason, metrics)
   } catch { measurement.discard() }
 }
 

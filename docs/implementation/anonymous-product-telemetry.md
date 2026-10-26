@@ -70,12 +70,13 @@ The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
 matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
 event/input/result objects, free text and identifying values do not.
 The generated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-marks 88 categories with declared source mappings and six unmeasured. It is
+marks 91 categories with declared source mappings and three unmeasured:
+`workspace.switch`, `backup.list` and `update.verify`. It is
 available in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
-The [current action inventory](../validation/2026-10-26-telemetry-host-updates.md)
-contains **628 declared actions and fixed variants: 351 mapped, 270 excluded,
+The [current action inventory](../validation/2026-10-26-telemetry-capture-actions.md)
+contains **630 declared actions and fixed variants: 356 mapped, 267 excluded,
 seven delegated and zero unmeasured among these declarations**. It independently
 reads five shipped-interface declarations, now including desktop preload request
 channels; other owners use reviewed source-route maps. Missing mappings in those
@@ -97,8 +98,13 @@ records the detailed maps and remaining action-by-action coverage.
 
 Explicit app/tray requests and standalone capture controls now have reviewed
 [action boundaries](../validation/2026-10-26-telemetry-action-coverage.md).
-All 13 capture controls are classified: ten eligible acknowledgements and three
-inspection/key exclusions. Managed children and reusable helpers acquire no
+All 13 capture controls are classified: eleven eligible actions and two
+status/key exclusions. Explicit native/app conversation preview and standalone
+`--capture-control` action `preview` now own `capture.preview`; standalone pause
+owns one `capture.pause` acknowledgement. The separate `--inspect` path remains
+unowned. Preview completion describes a bounded local inspection, not configured
+capture or successful delivery; its content and source identity stay private.
+Managed children and reusable helpers acquire no
 second owner. Preference acknowledgements expose whether the save applied;
 failed saves are not successful telemetry outcomes. Explicit `prepare-model`
 and `librarian-models --prepare` commands now own `models.prepare`. The observer
@@ -169,9 +175,10 @@ Actual choice/status and admitted observations, reservations and handoffs still
 use fresh checks; negative hints never grant permission.
 
 Fresh automatic desktop scans/capture and standalone connector execution have
-owners. Empty/paused scans, explicit Sync continuations, remote-requested or
-host-managed scans, reusable helpers and server-worker activity do not acquire
-another owner. Native resource samples require a real child callback; headless
+owners. Completed empty scans and paused work contribute nothing. Explicit Sync
+continuations, remote-requested or host-managed scans, reusable helpers and
+server-worker activity do not acquire another maintenance owner.
+Native resource samples require a real child callback; headless
 RSS is an ending observation, with its own CPU delta and configured capture
 limit. No source history or mixed-host totals are exported. Desktop updater download,
 verification and retries form one cycle; polls add no use, unfinished cycles
@@ -204,6 +211,23 @@ status; SDK metadata remains per call without ownership. There is no second
 The follow-up passed 172 distinct Python and 111 Node controller/wire cases
 and both source builds, with the original frontend-fixture failures retained.
 These checks do not qualify an installed 4.46.21 release or full V08.
+
+The [4.46.24 capture-action follow-up](../validation/2026-10-26-telemetry-capture-actions.md)
+lets the existing cycle owner choose `capture.deliver` when it accepted no local
+items and observed a positive verified fresh stored count. Cycles accepting local
+items remain `capture.collect`, including mixed collection/delivery work. One
+original policy/generation snapshot and start time govern that choice; final
+write fences and contribution limits still apply. The category does not change
+whole-cycle outcome or latency. Completed cycles without fresh work remain
+suppressed; incomplete/denied outcomes and unknown-count handling are preserved.
+There is no second SDK, HTTP or mixed-cycle owner.
+
+This follow-up passed **109 distinct Python, 154 compiled desktop/store Node
+and 120 browser-source cases**, with two Windows-only Node skips and both source
+builds passing. Three initial Python failures and one Node failure remain
+recorded with their test-only corrections. The related narrow source-CI
+capacity recovery passed 41 separate mocked guard tests. These source checks
+do not qualify installed/native behavior, production telemetry or resource gates.
 
 ### Admission, delivery and reporting
 

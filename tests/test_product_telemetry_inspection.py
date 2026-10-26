@@ -200,14 +200,28 @@ def test_approval_claims_exact_packet_once_without_erasing_later_counts(subject,
 def test_competing_owners_can_claim_only_once(subject):
     subject.pause()
     assert subject.record()
-    subject.action("inspect_report")
+    packet = subject.action("inspect_report")["packet"]
     subject.action("approve_report")
+    approved = subject.stored()
     with ThreadPoolExecutor(max_workers=2) as workers:
+        # Nonblocking optional telemetry may make both contenders back off.
+        # Force that case and prove the approved packet and allowance survive.
+        with closing(subject.budget._open()) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            assert list(workers.map(lambda _: subject.reserve(), range(2))) == [None, None]
+            connection.rollback()
+        assert subject.stored() == approved
         results = list(workers.map(lambda _: subject.reserve(), range(2)))
+    assert sum(result is not None for result in results) <= 1
+    if all(result is None for result in results):
+        assert subject.stored() == approved
+        results.append(subject.reserve())
     assert sum(result is not None for result in results) == 1
     assert len(subject.stored()["spent"]) == 1
+    assert subject.reserve() is None
     for report in results:
         if report is not None:
+            assert report.preview() == packet
             subject.budget.cancel(report)
 
 

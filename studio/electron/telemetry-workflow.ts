@@ -14,7 +14,7 @@ export type WorkflowStore = {
 export class TelemetryWorkflow {
   private finished = false
   private readonly started: number
-  private constructor(
+  protected constructor(
     private readonly store: WorkflowStore,
     private readonly stamp: TelemetryStamp,
     private readonly workflow: string,
@@ -44,17 +44,49 @@ export class TelemetryWorkflow {
     } catch { /* Unavailable sensors and optional storage never affect work. */ }
   }
 
-  async finish(outcome: string, reason = 'none', metrics: Record<string, number> = {}): Promise<void> {
+  finish(outcome: string, reason = 'none', metrics: Record<string, number> = {}): Promise<void> {
+    return this.complete(this.workflow, outcome, reason, metrics)
+  }
+
+  protected async complete(workflow: string, outcome: string, reason: string, metrics: Record<string, number>): Promise<void> {
     if (this.finished) return
     this.finished = true
     try {
       if (Object.keys(metrics).some(key => key === 'latency_ms' || !Object.hasOwn(this.store.catalog.specification.metrics, key))) return
-      const result = { kind: 'outcome', workflow: this.workflow, surface: this.surface, outcome, reason,
+      const result = { kind: 'outcome', workflow, surface: this.surface, outcome, reason,
         ...metrics, latency_ms: Math.max(0, this.clock() - this.started) }
       // Validate before admitting even the submission. The store immediately
       // turns these primitives into fixed numeric cells before its first await.
       this.store.catalog.observation(result)
-      await this.store.recordMany([{ kind: 'submission', workflow: this.workflow, surface: this.surface }, result], this.stamp)
+      await this.store.recordMany([{ kind: 'submission', workflow, surface: this.surface }, result], this.stamp)
     } catch { /* An optional measurement never changes the original action. */ }
+  }
+}
+
+/** Classify one operation using its original permission and time, never a
+ * second snapshot after the result. Only the declared choices are admissible. */
+export class TelemetryWorkflowChoice extends TelemetryWorkflow {
+  private constructor(store: WorkflowStore, stamp: TelemetryStamp, private readonly choices: readonly string[], surface: string, clock: () => number) {
+    super(store, stamp, choices[0], surface, clock)
+  }
+
+  static choose(store: WorkflowStore, choices: readonly string[], surface: string, clock = monotonicNow): Promise<TelemetryWorkflowChoice | null> | null {
+    try {
+      if (!store.available || !Array.isArray(choices) || choices.length < 2 || choices.length > 4 ||
+        new Set(choices).size !== choices.length || !choices.every(name => store.catalog.workflows.includes(name)) ||
+        !store.catalog.specification.surfaces.includes(surface)) return null
+      const fixed = Object.freeze([...choices])
+      // No single-category exhaustion hint can stand for the other choices.
+      // recordMany enforces the selected category's atomic contribution limit.
+      const pending = store.snapshot()
+      if (pending === null) return null
+      return pending.then(stamp => stamp && Number.isInteger(stamp.revision) && typeof stamp.store_generation === 'string' && /^[0-9a-f]{32}$/.test(stamp.store_generation)
+        ? new TelemetryWorkflowChoice(store, { ...stamp }, fixed, surface, clock) : null).catch(() => null)
+    } catch { return null }
+  }
+
+  finishChoice(choice: string, outcome: string, reason = 'none', metrics: Record<string, number> = {}): Promise<void> {
+    if (!this.choices.includes(choice)) { this.discard(); return Promise.resolve() }
+    return this.complete(choice, outcome, reason, metrics)
   }
 }

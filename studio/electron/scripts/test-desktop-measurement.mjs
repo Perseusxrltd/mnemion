@@ -92,6 +92,23 @@ test('source resume and host selection read only the reviewed primitive selector
   }
 })
 
+test('explicit app and native capture previews own no private selection or result fields', async () => {
+  const input = new Proxy({}, { get() { throw new Error('PRIVATE_PREVIEW_INPUT') } })
+  const result = new Proxy({}, { get(_target, key) { if (key === 'then') return undefined; throw new Error('PRIVATE_PREVIEW_RESULT') } })
+  const selection = desktopIpcSelection('sources:preview', [input])
+  assert.deepEqual(selection, { action: 'source.preview', input: {} })
+  for (const surface of ['desktop', 'native_agent']) {
+    const f = fixture()
+    let calls = 0
+    assert.equal(await measureDesktop(f.store, 'source.preview', input, surface, () => { calls++; return result }), result)
+    assert.equal(calls, 1)
+    assert.equal(f.values.filter(row => row.metric === 'submissions').length, 1)
+    assert.ok(f.values.every(row => row.workflow === 'capture.preview' && row.surface === surface))
+    assert.equal(f.values.find(row => row.metric === 'outcomes').bucket, 'success')
+    assert.equal(JSON.stringify(f.values).includes('PRIVATE'), false)
+  }
+})
+
 test('fresh independent host mutations record one fixed accepted workflow at each owned surface', async () => {
   const selected = desktopTelemetryOrigins.operations['host.request'].variants
   assert.equal(Object.keys(selected).length, 9)

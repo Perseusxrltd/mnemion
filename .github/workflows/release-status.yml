@@ -32,7 +32,7 @@ jobs:
       github.repository == 'Perseusxrltd/mnemion' &&
       github.event_name == 'workflow_run' &&
       (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled') &&
-      (github.event.workflow_run.name == 'Prepare signed release' || github.event.workflow_run.name == 'Public desktop update rehearsal')
+      (github.event.workflow_run.name == 'Product checks' || github.event.workflow_run.name == 'Prepare signed release' || github.event.workflow_run.name == 'Public desktop update rehearsal')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

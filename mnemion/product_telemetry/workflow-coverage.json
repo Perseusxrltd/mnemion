@@ -5,8 +5,8 @@
   "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
   "summary": {
     "total": 94,
-    "mapped": 88,
-    "unmeasured": 6
+    "mapped": 91,
+    "unmeasured": 3
   },
   "owners": {
     "control_cli": "Local command line",
@@ -246,8 +246,12 @@
     },
     {
       "workflow": "capture.preview",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "native_commands",
+        "desktop_ipc",
+        "headless_controls"
+      ]
     },
     {
       "workflow": "capture.collect",
@@ -258,13 +262,17 @@
     },
     {
       "workflow": "capture.deliver",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "local_maintenance"
+      ]
     },
     {
       "workflow": "capture.pause",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "headless_controls"
+      ]
     },
     {
       "workflow": "capture.drain",
@@ -321,8 +329,7 @@
         "native_commands",
         "desktop_ipc",
         "studio_actions",
-        "local_stdio",
-        "headless_controls"
+        "local_stdio"
       ]
     },
     {
@@ -864,9 +871,9 @@
       "desktop_ipc"
     ],
     "summary": {
-      "total": 628,
-      "mapped": 351,
-      "excluded": 270,
+      "total": 630,
+      "mapped": 356,
+      "excluded": 267,
       "delegated": 7,
       "unmeasured": 0
     },
@@ -2717,9 +2724,10 @@
       {
         "owner": "native_commands",
         "action": "source.preview",
-        "state": "excluded",
-        "workflows": [],
-        "reason": "native_commands.configuration_preview"
+        "state": "mapped",
+        "workflows": [
+          "capture.preview"
+        ]
       },
       {
         "owner": "native_commands",
@@ -3485,9 +3493,10 @@
       {
         "owner": "desktop_ipc",
         "action": "sources:preview",
-        "state": "excluded",
-        "workflows": [],
-        "reason": "desktop_ipc.configuration_preview"
+        "state": "mapped",
+        "workflows": [
+          "capture.preview"
+        ]
       },
       {
         "owner": "desktop_ipc",
@@ -5584,9 +5593,21 @@
       {
         "owner": "local_maintenance",
         "action": "desktop.scheduled_capture",
+        "selector": "fresh_cycle_work",
+        "variant": "collected",
         "state": "mapped",
         "workflows": [
           "capture.collect"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "desktop.scheduled_capture",
+        "selector": "fresh_cycle_work",
+        "variant": "delivered_only",
+        "state": "mapped",
+        "workflows": [
+          "capture.deliver"
         ]
       },
       {
@@ -5616,9 +5637,21 @@
       {
         "owner": "local_maintenance",
         "action": "headless.standalone_capture",
+        "selector": "fresh_cycle_work",
+        "variant": "collected",
         "state": "mapped",
         "workflows": [
           "capture.collect"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
+        "action": "headless.standalone_capture",
+        "selector": "fresh_cycle_work",
+        "variant": "delivered_only",
+        "state": "mapped",
+        "workflows": [
+          "capture.deliver"
         ]
       },
       {
@@ -5689,15 +5722,16 @@
         "action": "pause",
         "state": "mapped",
         "workflows": [
-          "sources.pause"
+          "capture.pause"
         ]
       },
       {
         "owner": "headless_controls",
         "action": "preview",
-        "state": "excluded",
-        "workflows": [],
-        "reason": "headless_controls.control_inspection"
+        "state": "mapped",
+        "workflows": [
+          "capture.preview"
+        ]
       },
       {
         "owner": "headless_controls",
@@ -5796,11 +5830,11 @@
   "source_inputs": {
     "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
     "control-origins.json": "5482267dab262234d00f7591fea63c3da9defe391250ccdb2d46110e4f9e40de",
-    "desktop-origins.json": "5d673d98788737265cbb552d0250398e925a7fffa16a06ab97f5e87a576361a3",
+    "desktop-origins.json": "625a79bd8e142a48a15fa02cdc0e8eda60378941c1bdc06f8ceadbae06e4bc4d",
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
-    "maintenance-origins.json": "ba3e35034e19a75d93129a9f3f42cbcd867df5540f05bb3429239889488c1a41",
+    "maintenance-origins.json": "a518784bb20fb2eb03984c61a5a252cdfef14fd2f2ca0e1e5e0a02b53f3bbcdd",
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "5dab6820e3e24b873defa56558447ea85869dc1a6716d2e01f3b2424b23ca7a4",

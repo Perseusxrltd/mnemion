@@ -117,6 +117,7 @@ def test_capture_counts_only_fresh_receipts_and_keeps_work_and_results_separate(
     )
     rows = aggregate.preview(installation)
     assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert {row.get("workflow") for row in rows} == {"capture.collect"}
     assert next(row for row in rows if row["metric"] == "work_items")["bucket"] == 2
     results = [row for row in rows if row["metric"] == "result_items"]
     assert len(results) == int(fresh is not None)
@@ -144,25 +145,30 @@ def test_reconciled_or_unknown_receipts_alone_do_not_invent_a_fresh_capture_use(
     assert aggregate.preview(installation) == []
 
 
-def test_new_delivery_without_local_capture_finishes_once(installation):
+@pytest.mark.parametrize("completed", [True, False])
+def test_new_delivery_without_local_capture_finishes_once(installation, completed):
     active = measured.begin_source(capture=True, owned=True)
     active.process = None
     active.finish(
         report(
+            completed=completed,
             capture={
                 "locally_accepted": 0,
                 "remote_committed_events": 12,
                 "newly_stored_events": 12,
                 "pending_events": 0,
                 "database_bytes": 65536,
-            }
+            },
         )
     )
     active.finish(report())
     rows = aggregate.preview(installation)
-    assert {row.get("workflow") for row in rows} == {"capture.collect"}
+    assert {row.get("workflow") for row in rows} == {"capture.deliver"}
     assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
     assert next(row for row in rows if row["metric"] == "result_items")["bucket"] == 3
+    assert next(row for row in rows if row["metric"] == "outcomes")["bucket"] == (
+        "success" if completed else "deferred"
+    )
 
 
 @pytest.mark.parametrize("mode", ["owned", "inspect", "managed", "remote"])
@@ -282,6 +288,23 @@ def test_actual_capture_control_entrypoint_records_only_its_fixed_acknowledgemen
         assert not {"work_items", "result_items", "queue_items"} & {row["metric"] for row in rows}
     assert "PRIVATE" not in json.dumps(rows) and "12789" not in json.dumps(rows)
     assert b"PRIVATE" not in (installation / policy.DATABASE_NAME).read_bytes()
+
+
+@pytest.mark.parametrize(
+    "action,expected", [("preview", "capture.preview"), ("pause", "capture.pause")]
+)
+def test_standalone_preview_and_pause_have_capture_specific_categories(
+    installation, monkeypatch, tmp_path, capsys, action, expected
+):
+    result = {"PRIVATE_RESULT": "PRIVATE_CONTENT"}
+    runner, args, calls = capture_command(monkeypatch, tmp_path, action, lambda: result)
+    assert runner.execute(args, argparse.ArgumentParser()) == 0
+    assert calls == [action]
+    assert json.loads(capsys.readouterr().out)["result"] == result
+    rows = aggregate.preview(installation)
+    assert {row["workflow"] for row in rows} == {expected}
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert "PRIVATE" not in json.dumps(rows)
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-"""Retry one unstarted release attempt when GitHub explicitly reports no runner."""
+"""Retry one unstarted current check/release when GitHub explicitly reports no runner."""
 
 from __future__ import annotations
 
@@ -6,11 +6,13 @@ import argparse
 import json
 import re
 
+from .ci_scope import documentation
 from .published_release import REPOSITORY
 from .release_automation import api, gh, semver, tag_commit
 
 CAPACITY_FAILURE = "The job was not acquired by Runner of type hosted even after multiple attempts"
-WORKFLOWS = {".github/workflows/public-updates.yml", ".github/workflows/release.yml"}
+SOURCE_CHECKS = ".github/workflows/ci.yml"
+WORKFLOWS = {".github/workflows/public-updates.yml", ".github/workflows/release.yml", SOURCE_CHECKS}
 IDENTITY = ("id", "head_sha", "head_branch", "path", "event", "run_attempt", "status", "conclusion")
 
 
@@ -29,10 +31,61 @@ def pages(path: str, key: str | None = None) -> list[dict]:
     raise ValueError("Runner evidence exceeds the bounded inventory")
 
 
+def current_source_checks(run: dict) -> bool:
+    """Avoid cancelling newer branch checks by retrying a superseded run."""
+    if run.get("head_branch") != "main":
+        return False
+    target = api(REPOSITORY, "git/ref/heads/main").get("object", {})
+    current = target.get("sha")
+    if (
+        target.get("type") != "commit"
+        or not isinstance(current, str)
+        or not re.fullmatch(r"[a-f0-9]{40}", current)
+    ):
+        return False
+    if current != run["head_sha"]:
+        # Automatic release-status commits need not trigger another CI run.
+        # Reuse its established documentation scope, not a broad path bypass.
+        comparison = api(REPOSITORY, f"compare/{run['head_sha']}...{current}")
+        files = comparison.get("files")
+        if (
+            comparison.get("status") != "ahead"
+            or comparison.get("base_commit", {}).get("sha") != run["head_sha"]
+            or comparison.get("merge_base_commit", {}).get("sha") != run["head_sha"]
+            or not isinstance(files, list)
+            or not 1 <= len(files) < 300  # GitHub truncates comparison files at 300.
+            or any(
+                not isinstance(item, dict)
+                or not isinstance(item.get("filename"), str)
+                or not documentation(item["filename"])
+                or (
+                    "previous_filename" in item
+                    and (
+                        not isinstance(item["previous_filename"], str)
+                        or not documentation(item["previous_filename"])
+                    )
+                )
+                for item in files
+            )
+        ):
+            return False
+    latest = api(REPOSITORY, "actions/workflows/ci.yml/runs?branch=main&event=push&per_page=1")
+    rows = latest.get("workflow_runs")
+    return (
+        isinstance(rows, list)
+        and len(rows) == 1
+        and isinstance(rows[0], dict)
+        and all(
+            rows[0].get(key) == run.get(key)
+            for key in ("id", "head_sha", "head_branch", "path", "event")
+        )
+    )
+
+
 def eligible_source(run: dict, run_id: int) -> bool:
     if (
         run.get("id") != run_id
-        or run.get("event") != "workflow_dispatch"
+        or run.get("event") != ("push" if run.get("path") == SOURCE_CHECKS else "workflow_dispatch")
         or run.get("path") not in WORKFLOWS
         or run.get("run_attempt") != 1
         or run.get("status") != "completed"
@@ -44,6 +97,8 @@ def eligible_source(run: dict, run_id: int) -> bool:
         or not re.fullmatch(r"[a-f0-9]{40}", run.get("head_sha", ""))
     ):
         return False
+    if run["path"] == SOURCE_CHECKS:
+        return current_source_checks(run)
     latest = api(REPOSITORY, "releases/latest")
     if latest.get("draft") is not False or latest.get("prerelease") is not False:
         return False
@@ -77,7 +132,10 @@ def inspect(run_id: int, *, apply: bool = False) -> dict:
     run = api(REPOSITORY, run_path)
     result = {"run_id": run_id, "eligible": False, "retried": False}
     if not eligible_source(run, run_id):
-        return {**result, "reason": "Not a first failed attempt of an eligible current release"}
+        return {
+            **result,
+            "reason": "Not a first failed attempt of eligible current checks or release",
+        }
     jobs = pages(run_path + "/attempts/1/jobs", "jobs")
     failed = []
     for job in jobs:

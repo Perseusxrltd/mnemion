@@ -250,7 +250,7 @@ for (const fresh of [2, 0, null, undefined]) test(`scheduled capture uses fresh 
   f.state.scans[0].finish(result); await f.flush()
   const submissions = measured.rows.filter(row => row.kind === 'submission')
   if (fresh === 2) {
-    assert.deepEqual(submissions, [{ kind: 'submission', workflow: 'capture.collect', surface: 'desktop' }])
+    assert.deepEqual(submissions, [{ kind: 'submission', workflow: 'capture.deliver', surface: 'desktop' }])
     const outcome = measured.rows.find(row => row.kind === 'outcome')
     assert.equal(outcome.work_items, 0)
     assert.equal(outcome.result_items, 2)
@@ -258,6 +258,24 @@ for (const fresh of [2, 0, null, undefined]) test(`scheduled capture uses fresh 
   const before = structuredClone(measured.rows)
   await f.manager.status(); await f.manager.status()
   assert.deepEqual(measured.rows, before, 'Reading saved activity must not replay a product observation')
+})
+
+for (const local of [0, 2]) test(`a partial capture cycle with ${local} collected items keeps its whole-cycle outcome`, async t => {
+  const f = await fixture(t), measured = measurements(), source = retainedDefinition()
+  f.options.telemetry = () => measured.store
+  await f.add(source); await f.manager.start(); await f.flush()
+  const result = backfillReport(true, false)
+  Object.assign(result.capture, { locally_accepted: local, newly_stored_events: 2 })
+  f.state.scans[0].finish(result); await f.flush()
+  const expected = local === 0 ? 'capture.deliver' : 'capture.collect'
+  assert.deepEqual(measured.rows.filter(row => row.kind === 'submission'), [{ kind: 'submission', workflow: expected, surface: 'desktop' }])
+  const outcome = measured.rows.find(row => row.kind === 'outcome')
+  assert.equal(outcome.workflow, expected)
+  assert.equal(outcome.outcome, 'deferred')
+  assert.equal(outcome.result_items, 2)
+  assert.equal(outcome.work_items, local)
+  assert.equal(JSON.stringify(measured.rows).includes(source.id), false)
+  assert.equal(JSON.stringify(measured.rows).includes(source.path), false)
 })
 
 const archiveReport = source => ({ format: 'mnemion-capture-archive-v1', created_at: '2026-10-21T04:00:00Z', name: source.name,

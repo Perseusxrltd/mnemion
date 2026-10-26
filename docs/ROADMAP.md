@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.23**.
+Reviewed source distribution: **4.46.24**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-26**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,18 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**26 October 2026, capture action ownership and CI capacity recovery:**
+[The source follow-up](validation/2026-10-26-telemetry-capture-actions.md) keeps
+one capture-cycle owner while distinguishing verified delivery-only work, and
+maps explicit conversation preview and standalone capture pause. Current coverage
+is 91 mapped/three unmeasured categories and 630 declared actions. Capture checks
+passed 109 distinct Python, 154 compiled desktop/store Node and 120 browser-source
+cases, with two Windows-only skips and both builds passing. The narrow latest-main
+CI capacity retry passed 41 separate mocked guard tests. Original failures and
+test corrections are retained. All 66 requirement states remain unchanged;
+V08 stays Building and inactive, with resource, provider privacy and installed
+acceptance open. These source results do not establish publication.
 
 **26 October 2026, automatic host-update telemetry source:**
 [The dedicated server updater](validation/2026-10-26-telemetry-host-updates.md)

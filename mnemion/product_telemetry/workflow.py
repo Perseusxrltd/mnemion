@@ -85,6 +85,56 @@ class Workflow:
         offer_recorded(self._root, self._revision, self._generation)
 
 
+class WorkflowChoice(Workflow):
+    """One owned operation whose fixed category is known only after its work."""
+
+    def __init__(self, choices: tuple[str, ...], surface: str, root: Path | None, current: dict):
+        super().__init__(choices[0], surface, root, current)
+        self._choices = choices
+
+    def finish_choice(
+        self, choice: str, outcome: str, reason: str = "none", **measurements: int | float
+    ) -> None:
+        if self._finished:
+            return
+        if type(choice) is not str or choice not in self._choices:
+            self.discard()
+            return
+        # Preserve the original time and privacy fence. Never begin a workflow
+        # after observing the result, or record the same work under both names.
+        self._workflow = choice
+        self.finish(outcome, reason, **measurements)
+
+
+def begin_choices(
+    choices: tuple[str, ...], surface: str, *, root: Path | None = None
+) -> WorkflowChoice | None:
+    if not policy.COLLECTION_AVAILABLE or policy.COLLECTOR_URL is None:
+        return None
+    if (
+        type(choices) is not tuple
+        or not 2 <= len(choices) <= 4
+        or any(type(name) is not str or name not in WORKFLOW_IDS for name in choices)
+        or len(set(choices)) != len(choices)
+        or type(surface) is not str
+        or surface not in SURFACES
+    ):
+        return None
+    try:
+        # Exhausting collection cannot hide a later delivery-only cycle. The
+        # final selected workflow still has its own atomic contribution limit.
+        if all(aggregate.workflow_exhausted(root, name, surface) for name in choices):
+            return None
+        current = policy.status(root)
+        if not current["effective_enabled"]:
+            if current["reason"] == "user_disabled":
+                aggregate.remember_disabled(root)
+            return None
+        return WorkflowChoice(choices, surface, root, current)
+    except Exception:
+        return None
+
+
 def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow | None:
     # Unavailable builds do no policy/disk work from an application workflow.
     if not policy.COLLECTION_AVAILABLE or policy.COLLECTOR_URL is None:
