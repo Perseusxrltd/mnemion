@@ -518,6 +518,18 @@ minimal locked runtime. Systemd supplies its sole listener; the service cannot
 connect outbound or bind another port. Isolated TLS/VPS checks establish those
 recorded boundaries, not provider/ingress privacy or a production deployment.
 
+The [aggregate privacy assessment](../validation/2026-10-27-telemetry-aggregate-privacy.md)
+adds a reusable offline check of the complete released document under known
+background information. All **46 scenarios across 23 views** preserve the
+conditional single-category likelihood-ratio bound of three; the rare fixture
+cells expose no point value or interval. Competing SQLite publishers retain one
+immutable week, and attempted filtered/difference routes are refused. **70
+distinct source tests** qualify this scope, including eight new attack checks.
+Exact linked-report calculations and explicit participation/policy-choice
+counterexamples prevent extending that bound to identity, lifetime or network
+anonymity. This source-only assessment changes no collection behavior or budget;
+full privacy, resource, platform, provider and useful-population acceptance remain open.
+
 ## Remaining acceptance gates
 
 The [27 October acceptance ledger](../validation/2026-10-27-telemetry-acceptance-ledger.md)

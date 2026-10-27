@@ -45,6 +45,16 @@ resource, installed or privacy acceptance.
 
 ## Aggregate utility at current settings
 
+The [aggregate privacy follow-up](2026-10-27-telemetry-aggregate-privacy.md)
+adds 46 exact known-background scenarios across 23 views, linked-report
+inference calculations and explicit unprotected participation/policy controls.
+Seventy distinct source tests include competing SQLite publisher connections
+and refused difference-query routes. Those checks substantiate the conditional
+single-category bound and missing rare-cell values in the stated fixtures;
+they do not establish participant/lifetime/network anonymity, useful-population
+statistics, actual provider privacy or the whole aggregate acceptance group.
+Production collection and the unchanged resource/platform gates remain open.
+
 The [configuration-bound analysis](2026-10-27-telemetry-aggregate-utility.md)
 preserves all 23 views and 280 aggregate categories. With all groups enabled,
 1,000 stores contributing the optimistic seven accepted reports each yield

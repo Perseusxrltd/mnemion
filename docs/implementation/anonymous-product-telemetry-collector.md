@@ -85,6 +85,17 @@ and rare-cell suppression, without qualifying real-population utility or
 statistical coverage. Thresholds, privacy budgets and production settings remain
 unchanged; the linked report records the next design decision and its limits.
 
+The [aggregate inference assessment](../validation/2026-10-27-telemetry-aggregate-privacy.md)
+qualifies 46 exact counterfactual document distributions across all 23 views,
+with the other packets known to the observer. It also exercises competing
+publisher connections and refused difference-query routes. The 70 distinct
+source tests preserve the single-category conditional bound and suppression
+in those fixtures. Linked-report inference, participation at a publication
+threshold and disjoint permitted groups demonstrate why this is not a
+participant, lifetime or network anonymity guarantee. The reusable offline
+command and its source-bound JSON are linked from the report; it performs no
+collection, deployment or resource experiment.
+
 The [selection correction](../validation/2026-10-26-telemetry-review-selection.md)
 declares `estimation_population: "automatic_reports_only"` and
 `reviewed_report_use: "coarse_global_volume_only"`. Categorical estimates require

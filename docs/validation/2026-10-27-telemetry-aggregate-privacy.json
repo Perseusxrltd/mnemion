@@ -1,0 +1,912 @@
+{
+  "schema_version": 1,
+  "method": "exact finite counterfactual distributions, fixed known background, no Monte Carlo or private inputs",
+  "protected_unit": "one automatic categorical replacement, conditional on view, permission and packet-independent inclusion",
+  "source_inputs": {
+    "deploy/assess_telemetry_privacy.py": "dbfa88df7c2cfb715b491cca80a4498a2926a92b545adecf5f5ae90c927c96b0",
+    "mnemion/product_telemetry/__init__.py": "d9e48147c9643741e63f3e7c5ff3080d63759625c5bf0d1b706b4c1be6664309",
+    "mnemion/product_telemetry/catalog.py": "0ac7dc2884460c5ad256bb6c3793bb5f3cfb5f666e5a45ff2fe7cc04398fa6ac",
+    "mnemion/product_telemetry/catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
+    "mnemion/product_telemetry/disclosure.json": "aa603b1a202744dd52e71d8f89a4c892c3bcba1867955658576735abb1e84e47",
+    "mnemion/product_telemetry/wire.py": "d7dec0c870e47d7759be32eb657050d071c3ec101446e015f2e3ec1d106c1056",
+    "mnemion/product_telemetry/wire-v2.json": "eeafd6206e10d45935654ebb7699b7ee5215e0737d9a8114161cdb42beb44147",
+    "mnemion/product_telemetry/reporting.py": "6baedb75aff4d3b599ff472725befb0212ea7d5294631c32a16d1b110e228b6e",
+    "mnemion/product_telemetry/publication.py": "bb6b93d1ebb954b355b37f65348eda5dbd0a4a91a0cad5daff46000691e30824",
+    "mnemion/product_telemetry/collector.py": "bc535388c9b561c9e28f5ede7f361aa49b3fddeb3584298475a617535c4852ca"
+  },
+  "views": 23,
+  "cases": [
+    {
+      "view": "feature_family",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "vault"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "feature_family",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "setup",
+        "workspace"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "feature",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "vault.export"
+      ],
+      "equiprobable_draws_per_hypothesis": 512,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "feature",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "setup.create",
+        "setup.configure"
+      ],
+      "equiprobable_draws_per_hypothesis": 512,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "surface",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "headless"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "surface",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "desktop",
+        "browser"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "outcome",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "unconfirmed"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "outcome",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "success",
+        "accepted"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "failure_reason",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "other_failure"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "failure_reason",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "invalid_input",
+        "authorization"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "latency_ms",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "120000+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "latency_ms",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0-9",
+        "10-49"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "result_items",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "10000+"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "result_items",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "work_items",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "10000+"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "work_items",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "queue_items",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "10000+"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "queue_items",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "rss_bytes",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "68719476737+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "rss_bytes",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-67108864"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "cpu_millicores",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "4001+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "cpu_millicores",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "resource_budget_bytes",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "68719476737+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "resource_budget_bytes",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-67108864"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "queue_drops",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "10000+"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "queue_drops",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "payload_bytes_sent",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "1073741825+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "payload_bytes_sent",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-1024"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "payload_bytes_received",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "1073741825+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "payload_bytes_received",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-1024"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "wire_bytes_sent",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "1073741825+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "wire_bytes_sent",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-1024"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "wire_bytes_received",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "1073741825+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "wire_bytes_received",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-1024"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "throughput_bytes_per_second",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "1073741825+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "throughput_bytes_per_second",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-1024"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "stored_bytes",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "1073741825+"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "stored_bytes",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1-1024"
+      ],
+      "equiprobable_draws_per_hypothesis": 64,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "reported_tokens",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "100000+"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "reported_tokens",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "0",
+        "1"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "platform",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "other"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "platform",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "windows",
+        "macos"
+      ],
+      "equiprobable_draws_per_hypothesis": 32,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "architecture",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "other"
+      ],
+      "equiprobable_draws_per_hypothesis": 16,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "architecture",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "x64",
+        "arm64"
+      ],
+      "equiprobable_draws_per_hypothesis": 16,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    },
+    {
+      "view": "release_family",
+      "scenario": "rare_category",
+      "hypotheses": [
+        "unobserved",
+        "5_plus"
+      ],
+      "equiprobable_draws_per_hypothesis": 16,
+      "distinct_released_documents": 2,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "withheld_values_absent": true,
+      "passed": true
+    },
+    {
+      "view": "release_family",
+      "scenario": "known_coincident_cohorts",
+      "hypotheses": [
+        "before_4",
+        "4"
+      ],
+      "equiprobable_draws_per_hypothesis": 16,
+      "distinct_released_documents": 4,
+      "same_output_support": true,
+      "same_probability_mass": true,
+      "maximum_likelihood_ratio": {
+        "numerator": 3,
+        "denominator": 1
+      },
+      "withheld_values_absent": null,
+      "passed": true
+    }
+  ],
+  "linked_report_inference": [
+    {
+      "linked_reports": 1,
+      "likelihood_ratio_maximum": 3,
+      "expected_bound": 3,
+      "equal_prior_optimal_inference_success": 0.625,
+      "rare_prior": {
+        "numerator": 1,
+        "denominator": 1000
+      },
+      "most_informative_output_posterior": {
+        "numerator": "1",
+        "denominator": "334"
+      },
+      "passed": true
+    },
+    {
+      "linked_reports": 7,
+      "likelihood_ratio_maximum": 2187,
+      "expected_bound": 2187,
+      "equal_prior_optimal_inference_success": 0.8327617645263672,
+      "rare_prior": {
+        "numerator": 1,
+        "denominator": 1000
+      },
+      "most_informative_output_posterior": {
+        "numerator": "81",
+        "denominator": "118"
+      },
+      "passed": true
+    },
+    {
+      "linked_reports": 56,
+      "likelihood_ratio_maximum": 523347633027360537213511521,
+      "expected_bound": 523347633027360537213511521,
+      "equal_prior_optimal_inference_success": 0.9972785908598496,
+      "rare_prior": {
+        "numerator": 1,
+        "denominator": 1000
+      },
+      "most_informative_output_posterior": {
+        "numerator": "19383245667680019896796723",
+        "denominator": "19383245667680019896796760"
+      },
+      "passed": true
+    }
+  ],
+  "negative_controls": {
+    "participation_can_change_publication": true,
+    "published_volume_bucket": {
+      "minimum": 64,
+      "maximum_exclusive": 128
+    },
+    "disjoint_permitted_groups_have_disjoint_view_support": true,
+    "participation_guarantee": false,
+    "policy_choice_guarantee": false,
+    "network_or_lifetime_guarantee": false
+  },
+  "scoped_checks_passed": true,
+  "full_telemetry_acceptance": false,
+  "resource_acceptance": false,
+  "production_ingress_qualified": false,
+  "real_population_utility_qualified": false,
+  "network_calls": 0
+}
