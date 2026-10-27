@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T02:09:22+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T02:10:33+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.29](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.29). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40436688638](https://github.com/Perseusxrltd/mnemion/actions/runs/40436688638) |
+| ci\.yml | main | success | [Run 40436688638](https://github.com/Perseusxrltd/mnemion/actions/runs/40436688638) |
 | public-updates\.yml | v4\.46\.29 | success | [Run 40423899386](https://github.com/Perseusxrltd/mnemion/actions/runs/40423899386) |
 | release\.yml | release/4\.46\.29 | success | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
 | release\.yml | release/4\.46\.33 | failure | [Run 40426432624](https://github.com/Perseusxrltd/mnemion/actions/runs/40426432624) |
@@ -27,13 +27,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40436688638](https://github.com/Perseusxrltd/mnemion/actions/runs/40436688638): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Verify wheel and source package include the matching web Studio.
-
 [Run 40433580410](https://github.com/Perseusxrltd/mnemion/actions/runs/40433580410): 19/21 jobs completed; 18 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Sign and verify the free macOS update archive.
+- native / macos-15-intel / x64: in\_progress — Packaged Mac update, restart guards and relaunch.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
