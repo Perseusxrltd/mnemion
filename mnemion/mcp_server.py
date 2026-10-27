@@ -1160,16 +1160,32 @@ def tool_product_telemetry(action="status", **choice):
 
 TOOLS = {
     "mnemion_telemetry": {
-        "description": "Local stdio privacy controls, usable offline. Product counts are optional, anonymous, default-enabled only after the visible disclosure, and exclude memories and credentials. Read schema/status; configure disables or re-enables. No analytics event is emitted by these controls.",
+        "description": "Local stdio privacy controls, usable offline. Product counts are optional, anonymous, default-enabled only after the visible disclosure, and exclude memories and credentials. Read schema/status for the current control fields. Configure disables or re-enables and selects the connection policy. Review status/mode, inspect, approve and discard control already-permitted reports. These controls never send statistics or emit an analytics event.",
         "input_schema": {
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "action": {"type": "string", "enum": ["status", "schema", "preview", "configure"]},
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "status",
+                        "schema",
+                        "preview",
+                        "configure",
+                        "review_status",
+                        "review_mode",
+                        "inspect_report",
+                        "approve_report",
+                        "discard_report",
+                    ],
+                },
                 "enabled": {"type": "boolean"},
-                "expected_revision": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+                "expected_revision": {"type": "integer", "minimum": 0, "maximum": 2147483646},
                 "expected_generation": {"type": ["string", "null"], "pattern": "^[0-9a-f]{32}$"},
-                "disclosure_version": {"type": "integer", "minimum": 1},
+                "disclosure_version": {"type": ["integer", "null"], "minimum": 0},
+                "connection_mode": {"type": "string", "enum": ["auto", "unmetered", "metered"]},
+                "expected_review_token": {"type": ["string", "null"], "pattern": "^[0-9a-f]{32}$"},
+                "mode": {"type": "string", "enum": ["automatic", "review"]},
             },
         },
         "handler": tool_product_telemetry,
@@ -1852,23 +1868,30 @@ def handle_request(request, *, local_stdio=False):
                 "id": req_id,
                 "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"},
             }
-        # Whitelist arguments to declared schema properties only.
-        # Prevents callers from injecting internal params (added_by, source_file, etc.)
-        # that could spoof the audit trail.
-        schema_props = TOOLS[tool_name]["input_schema"].get("properties", {})
-        tool_args = {k: v for k, v in tool_args.items() if k in schema_props}
-        # Coerce argument types based on input_schema.
-        # MCP JSON transport may deliver integers as floats or strings;
-        # ChromaDB and Python slicing require native int.
-        for key, value in list(tool_args.items()):
-            prop_schema = schema_props.get(key, {})
-            declared_type = prop_schema.get("type")
-            if declared_type == "integer" and not isinstance(value, int):
-                tool_args[key] = int(value)
-            elif declared_type == "number" and not isinstance(value, (int, float)):
-                tool_args[key] = float(value)
-        try:
+        if tool_name == "mnemion_telemetry":
+            # The shared privacy controller validates exact fields and strict
+            # revision types. Never discard or coerce a compare-and-set input.
+            if not isinstance(tool_args, dict):
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32602, "message": "Privacy arguments must be an object."},
+                }
+            tool_args = dict(tool_args)
+        else:
+            # Legacy memory tools keep their documented argument compatibility.
+            # Filtering prevents internal audit parameters from being injected.
+            schema_props = TOOLS[tool_name]["input_schema"].get("properties", {})
+            tool_args = {k: v for k, v in tool_args.items() if k in schema_props}
+            for key, value in list(tool_args.items()):
+                prop_schema = schema_props.get(key, {})
+                declared_type = prop_schema.get("type")
+                if declared_type == "integer" and not isinstance(value, int):
+                    tool_args[key] = int(value)
+                elif declared_type == "number" and not isinstance(value, (int, float)):
+                    tool_args[key] = float(value)
             tool_args.pop("wait_for_previous", None)
+        try:
             if local_stdio:
                 try:
                     from .mcp_measurement import invoke_legacy

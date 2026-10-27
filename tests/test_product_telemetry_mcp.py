@@ -438,3 +438,148 @@ def test_legacy_stdio_owner_is_not_inferred_from_imported_handlers_or_json_field
         }
     )
     assert "error" in denied and policy.status(installation)["effective_enabled"]
+
+
+def legacy_privacy(action="status", *, local=True, **values):
+    from mnemion import mcp_server
+
+    return mcp_server.handle_request(
+        {
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "mnemion_telemetry", "arguments": {"action": action, **values}},
+        },
+        local_stdio=local,
+    )
+
+
+def privacy_result(response):
+    assert "error" not in response, response.get("error")
+    return json.loads(response["result"]["content"][0]["text"])
+
+
+def test_legacy_privacy_discovery_covers_the_current_offline_control_contract():
+    from mnemion import mcp_server
+    from mnemion.product_telemetry import cli
+
+    listed = mcp_server.handle_request({"id": 1, "method": "tools/list"}, local_stdio=True)
+    schema = next(
+        tool["inputSchema"]
+        for tool in listed["result"]["tools"]
+        if tool["name"] == "mnemion_telemetry"
+    )
+    actions = cli.execute(None, {"action": "schema"})["actions"]
+    properties = schema["properties"]
+    assert set(actions) == set(properties["action"]["enum"])
+    for action in actions.values():
+        assert set(action["fields"]) <= properties.keys()
+    assert properties["disclosure_version"]["minimum"] == 0
+
+
+def test_legacy_privacy_connection_choice_is_applied_without_measurement(installation, monkeypatch):
+    from mnemion import mcp_server
+
+    monkeypatch.setattr(mcp_server, "_write_heartbeat", lambda *_: pytest.fail("Privacy heartbeat"))
+    current = privacy_result(legacy_privacy())
+    result = privacy_result(
+        legacy_privacy(
+            "configure",
+            enabled=True,
+            expected_revision=current["revision"],
+            expected_generation=current["store_generation"],
+            disclosure_version=current["disclosure_version"],
+            connection_mode="unmetered",
+        )
+    )
+    assert result["connection_mode"] == "unmetered"
+    assert cells(installation) == []
+
+
+def test_legacy_privacy_report_review_and_optout_preserve_shared_fences(installation, monkeypatch):
+    from mnemion import mcp_server
+    from mnemion.product_telemetry import inspection
+
+    monkeypatch.setattr(mcp_server, "_write_heartbeat", lambda *_: pytest.fail("Privacy heartbeat"))
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "transport_available", lambda: True)
+    monkeypatch.setattr(
+        inspection, "read_review_clock", lambda **_: {"epoch": "a" * 32, "elapsed_ms": 1000}
+    )
+
+    def request(action, state, **values):
+        return legacy_privacy(
+            action,
+            expected_revision=state["status"]["revision"],
+            expected_generation=state["status"]["store_generation"],
+            expected_review_token=state["review"]["token"],
+            **values,
+        )
+
+    initial = privacy_result(legacy_privacy("review_status"))
+    paused = privacy_result(request("review_mode", initial, mode="review"))
+    assert paused["review"]["outcome"] == "paused"
+    assert cells(installation) == []
+    assert aggregate.record(
+        installation,
+        {"kind": "submission", "workflow": "memory.recall", "surface": "headless"},
+        expected_revision=paused["status"]["revision"],
+        expected_generation=paused["status"]["store_generation"],
+    )
+    staged = privacy_result(request("inspect_report", paused))
+    assert staged["packet"]["body_bytes"] == 4
+    assert "error" in request("approve_report", staged, local=False)
+    approved = privacy_result(request("approve_report", staged))
+    assert approved["review"]["outcome"] == "approved"
+    repeated = privacy_result(request("inspect_report", approved))
+    assert repeated["packet"]["body_base64"] == staged["packet"]["body_base64"]
+    assert repeated["status"]["delivery_budget"]["attempts_in_rolling_week"] == 0
+    discarded = privacy_result(request("discard_report", repeated))
+    assert not discarded["review"]["report_available"]
+    assert "error" in request("approve_report", staged)
+    disabled = privacy_result(
+        legacy_privacy("configure", enabled=False, expected_revision=0, disclosure_version=0)
+    )
+    assert disabled["reason"] == "user_disabled"
+    assert disabled["pending_records"] == 0
+    assert disabled["delivery_budget"]["attempts_in_rolling_week"] == 0
+
+
+@pytest.mark.parametrize(
+    "invalid", ["fractional_revision", "string_revision", "unknown_field", "legacy_wait_field"]
+)
+def test_legacy_privacy_does_not_rewrite_invalid_choices(installation, invalid):
+    current = policy.status(installation)
+    request = {
+        "enabled": True,
+        "expected_revision": current["revision"],
+        "expected_generation": current["store_generation"],
+        "disclosure_version": current["disclosure_version"],
+    }
+    if invalid == "fractional_revision":
+        request["expected_revision"] += 0.9
+    elif invalid == "string_revision":
+        request["expected_revision"] = str(request["expected_revision"])
+    elif invalid == "legacy_wait_field":
+        request["wait_for_previous"] = True
+    else:
+        request["unexpected_choice"] = True
+    result = legacy_privacy("configure", **request)
+    assert "error" in result
+    assert policy.status(installation) == current
+
+
+@pytest.mark.parametrize("arguments", [None, [], "invalid", 1])
+def test_legacy_privacy_rejects_non_object_arguments(installation, arguments):
+    from mnemion import mcp_server
+
+    current = policy.status(installation)
+    response = mcp_server.handle_request(
+        {
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "mnemion_telemetry", "arguments": arguments},
+        },
+        local_stdio=True,
+    )
+    assert response["error"]["code"] == -32602
+    assert policy.status(installation) == current

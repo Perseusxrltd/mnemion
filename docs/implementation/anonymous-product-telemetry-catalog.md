@@ -1,6 +1,6 @@
 # Anonymous product telemetry catalog — V08
 
-**Building/source implementation, 26 October 2026.** This supplements the
+**Building/source implementation, 27 October 2026.** This supplements the
 [V08 contract](anonymous-product-telemetry.md). Catalog version 1 defines **94
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
@@ -29,14 +29,16 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The [current action inventory](../validation/2026-10-26-telemetry-workspace-selections.md)
+The [current action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 lists **632 actions and fixed variants: 360 mapped, 265 excluded,
 seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
-control contract, native action declarations, SDK class methods, legacy API
-declarations and desktop preload request channels before applying the reviewed
-maps. These are five interfaces. Other owners use source-route
-maps and do not gain independent call-site proof. A newly declared interface
+control contract, native action declarations, SDK class methods, legacy API,
+desktop preload request channels, maintained MCP registrations/invocation aliases
+and legacy MCP registry keys before applying the reviewed maps. These are
+**seven interfaces across six checked owner categories**; both MCP interfaces
+share `local_stdio`. Other owners use source-route maps and do not gain
+independent call-site proof. A newly declared interface
 action without a mapping appears as unmeasured even if its category has another
 owner. Fixed exclusion reasons and delegation are visible separately; none of
 these rows authorizes collection or represents activity history.
@@ -492,6 +494,14 @@ The local `mnemion_telemetry` tool exposes offline `status`, `schema`, `preview`
 absent from the ordinary HTTP gateway, and HTTP calls are refused even on a
 server configured with a stdio key. Privacy controls themselves never produce
 measurements. See the [local-tool guide](../guides/product-telemetry-controls.md#from-local-stdio-mcp).
+The [legacy schema follow-up](../validation/2026-10-27-telemetry-mcp-interfaces.md)
+now advertises all nine controls and their connection/review fields, including
+disclosure version zero. Exact privacy inputs reach strict backend validation;
+non-object arguments return bounded `-32602` errors. Other legacy memory
+arguments retain their compatibility behavior. Existing independent MCP-map
+tests remain; the static generator now makes both interfaces visible in the
+shipped coverage evidence without importing either server. Its 46 focused
+checks and 11 existing protocol/compatibility checks passed.
 Local `schema` now also returns `owned_origin_coverage` with the `desktop`,
 `studio`, `ui`, `mcp` and later `maintenance` maps, while retaining the CLI's
 `owned_control_coverage`.
@@ -750,9 +760,10 @@ A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not
 feature adoption. The explicit CLI, desktop and Studio maps do not finish the
 remaining action-by-action coverage reconciliation or qualify their producers.
-The local preview now has category and individual-action views. For its five
-independently enumerated interfaces, an action without a reviewed mapping is
-shown as unmeasured even when another action maps to the same category. Other
+The local preview now has category and individual-action views. For its seven
+independently enumerated interfaces, grouped under six checked owners, an action
+without a reviewed mapping is shown as unmeasured even when another action maps
+to the same category. Other
 owners are represented by their reviewed source-route maps; the preview does
 not prove every call site or discover all unlisted interfaces. The requirement
 to make every unmapped supported action visible remains in force, and the

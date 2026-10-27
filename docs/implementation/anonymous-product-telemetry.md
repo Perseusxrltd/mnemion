@@ -1,6 +1,6 @@
 # Anonymous product telemetry — V08
 
-**Building/source implementation; current checkpoint 26 October 2026.** V08
+**Building/source implementation; current checkpoint 27 October 2026.** V08
 retains the full scope in the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md);
 all requirement texts and the other 65 states are unchanged. The
 [shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
@@ -112,11 +112,12 @@ unmeasured as a separate category. It is
 available in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
-The [current action inventory](../validation/2026-10-26-telemetry-workspace-selections.md)
+The [current action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
 contains **632 declared actions and fixed variants: 360 mapped, 265 excluded,
 seven delegated and zero unmeasured among these declarations**. It independently
-reads five shipped-interface declarations, now including desktop preload request
-channels; other owners use reviewed source-route maps. Missing mappings in those
+reads **seven shipped interfaces across six checked owner categories**: the
+maintained and legacy MCP interfaces share `local_stdio`. Other owners use
+reviewed source-route maps. Missing mappings in those
 interfaces remain visible as unmeasured even
 when the category has another owner. Search, source/state filters and pages of
 50 rows inspect fixed metadata without invoking actions or adding a producer.
@@ -205,6 +206,13 @@ action. Generic SDK/remote MCP requests, derived server jobs, mixed-host totals,
 private operational rows, polling/replay, privacy controls and unavailable
 sensors are excluded. These privacy exclusions do not abandon product scope.
 The local stdio `mnemion_telemetry` tool works offline and refuses HTTP use.
+The [MCP interface follow-up](../validation/2026-10-27-telemetry-mcp-interfaces.md)
+aligns the legacy schema with all nine existing privacy controls and preserves
+exact arguments for strict backend validation. Non-object privacy arguments
+return bounded `-32602`; other legacy memory arguments retain compatibility.
+Both MCP interfaces now contribute static source evidence to the shipped
+inventory, building on existing independent map tests. The 46 focused checks
+and 11 existing protocol/compatibility checks passed.
 
 Native Python and Electron share private SQLite; the browser uses origin-local
 storage/Web Locks. **SQLite schema 6 / browser choice 5 / budget 2** fence older

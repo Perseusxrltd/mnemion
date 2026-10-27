@@ -874,7 +874,8 @@
       "native_commands",
       "studio_actions",
       "legacy_ui",
-      "desktop_ipc"
+      "desktop_ipc",
+      "local_stdio"
     ],
     "summary": {
       "total": 632,
@@ -5871,6 +5872,8 @@
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "5dab6820e3e24b873defa56558447ea85869dc1a6716d2e01f3b2424b23ca7a4",
     "studio/frontend/src/api/client.ts": "59ba6d0d469ef45667a33c4b914bbb801639b2039557b451083e7afcc1ea7f77",
-    "studio/electron/preload.ts": "603f97bde290a131677d158b19839f6d31aa837807e55f094a4608f94717fe13"
+    "studio/electron/preload.ts": "603f97bde290a131677d158b19839f6d31aa837807e55f094a4608f94717fe13",
+    "mnemion/service/mcp.py": "14e9a86847af610b3c9de178fb3b5d84282ea353921f2e1070322084873e1ac1",
+    "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6"
   }
 }
