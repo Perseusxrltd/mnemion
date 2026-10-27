@@ -23,46 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "626e25ea3e8084e788b5564db19f92663f29bf7d",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T03:29:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444411435",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 9,
-        "succeeded": 9,
-        "active": [
-          {
-            "id": 121992165742,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121992165777,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121992165911,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T04:01:41Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444411435"
     },
     {
       "id": 40444975984,
@@ -120,5 +84,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444972712"
     }
   ],
-  "observed_at": "2026-10-27T03:47:14+00:00"
+  "observed_at": "2026-10-27T04:02:13+00:00"
 }
