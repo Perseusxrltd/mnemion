@@ -30,8 +30,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
           {
             "id": 121945211392,
@@ -40,15 +40,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 121945211455,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Audit the installed Mac dependencies"
             ]
           },
           {
@@ -115,12 +106,6 @@
       "updated_at": "2026-10-27T01:05:16Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40426432624",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 18,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-2022 / x64",
@@ -144,7 +129,13 @@
             "Retain generated desktop-content secret scan receipt"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 18,
+        "active": []
+      }
     },
     {
       "id": 40430456976,
@@ -180,5 +171,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613"
     }
   ],
-  "observed_at": "2026-10-27T01:05:57+00:00"
+  "observed_at": "2026-10-27T01:06:39+00:00"
 }
