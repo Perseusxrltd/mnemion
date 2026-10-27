@@ -29,6 +29,7 @@ from mnemion.product_telemetry.collector import Collector
 from tests.test_product_telemetry_transport import certificates
 
 from .telemetry_memory_fixture import memory_workspace
+from .report_telemetry_renderer import verify_setup_controls
 
 
 def write_json(path, value):
@@ -168,8 +169,8 @@ async def run(
 ):
     if sum((attribution, comparison, review_journey)) > 1:
         raise ValueError("Choose comparison, allocation attribution or review as separate journeys")
-    if review_journey and sys.platform != "linux":
-        raise ValueError("The review journey is a separate Linux source-app check")
+    if sys.platform != "linux":
+        raise ValueError("The source-kernel renderer diagnostic is a Linux source-app check")
     output.mkdir(mode=0o700)
     executable = {
         "win32": "electron.exe",
@@ -313,24 +314,11 @@ async def run(
                                 source / "studio/electron/scripts/probe-telemetry-renderer.mjs",
                                 app / "probe-telemetry-renderer.mjs",
                             )
-                            engine = root / "absent-engine"
                             if review_journey:
                                 shutil.copyfile(
                                     source / "studio/electron/scripts/probe-telemetry-review.mjs",
                                     app / "probe-telemetry-review.mjs",
                                 )
-                                if any(character.isspace() for character in sys.executable):
-                                    raise ValueError("Use an interpreter path without whitespace")
-                                # Use the real source CLI behind the normal private-stdin
-                                # bridge. The installed engine is not replaced or qualified.
-                                engine = root / "source-engine"
-                                engine.write_text(
-                                    f"#!{sys.executable}\nimport sys\n"
-                                    f"sys.path.insert(0, {str(copy)!r})\n"
-                                    "from mnemion.service.cli import main\n"
-                                    "raise SystemExit(main())\n"
-                                )
-                                engine.chmod(0o700)
                             else:
                                 policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = (
                                     True,
@@ -348,6 +336,20 @@ async def run(
                                 )
                                 assert configured["effective_enabled"] is enabled
                                 policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = saved_policy
+                            if any(character.isspace() for character in sys.executable):
+                                raise ValueError("Use an interpreter path without whitespace")
+                            # Ordinary source journeys load privacy setup too. Use the
+                            # real kernel through its normal private-stdin bridge in all
+                            # modes; an absent engine cannot qualify those controls.
+                            # This does not replace or qualify the installed engine.
+                            engine = root / "source-engine"
+                            engine.write_text(
+                                f"#!{sys.executable}\nimport sys\n"
+                                f"sys.path.insert(0, {str(copy)!r})\n"
+                                "from mnemion.service.cli import main\n"
+                                "raise SystemExit(main())\n"
+                            )
+                            engine.chmod(0o700)
                             async with memory_workspace(root) as (memory, memory_counts):
                                 with socket.socket() as selection:
                                     selection.bind(("127.0.0.1", 0))
@@ -506,6 +508,15 @@ async def run(
                                     result["collector_body_matches_inspection"] = (
                                         reviewed_bodies == [result.get("approved_body_hex")]
                                     )
+                                else:
+                                    try:
+                                        result["setup_controls_verified"] = verify_setup_controls(
+                                            result, required=True
+                                        )
+                                    except ValueError:
+                                        # Preserve the failed native-control counters/replies
+                                        # and completed memory work before rejecting the run.
+                                        result["setup_controls_verified"] = False
                                 result["journey_completed"] = (
                                     result["memory_results_verified"]
                                     and result["memory_api"]["successful"]
@@ -523,6 +534,7 @@ async def run(
                                     and result["durable"]["lease_cleared"]
                                     and not result["page_errors"]
                                     and not result.get("allocation", {}).get("errors")
+                                    and (review_journey or result["setup_controls_verified"])
                                     and (
                                         review_journey
                                         or (
@@ -592,6 +604,7 @@ async def run(
             "attribution": attribution,
             "comparison": comparison,
             "review_journey": review_journey,
+            "setup_controls_required": not review_journey,
             "declared_case_order": [row[0] for row in cases],
             "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification.",
         },

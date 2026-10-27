@@ -10,6 +10,64 @@ def process_role(row):
     return row.get("role", row["type"])
 
 
+def verify_setup_controls(result, *, required=False):
+    """Require real native settings replies, separately from memory API success."""
+    controls = result.get("setup_controls")
+    if controls is None and not required:
+        return False
+    condition = result.get("condition", result.get("variant"))
+    if (
+        condition not in {"unavailable", "opted_out", "enabled"}
+        or not isinstance(controls, dict)
+        or set(controls)
+        != {
+            "schema_version",
+            "attempts",
+            "completed",
+            "failed",
+            "in_flight",
+            "overflow",
+            "replies",
+        }
+        or type(controls["schema_version"]) is not int
+        or controls["schema_version"] != 1
+        or controls["overflow"] is not False
+        or any(
+            type(controls[name]) is not int or not 0 <= controls[name] <= 16
+            for name in ("attempts", "completed", "failed", "in_flight")
+        )
+        or controls["failed"] != 0
+        or controls["in_flight"] != 0
+        or not isinstance(controls["replies"], list)
+        or controls["attempts"] != controls["completed"]
+        or controls["completed"] != len(controls["replies"])
+        or (controls["attempts"] == 0) != (condition == "unavailable")
+    ):
+        raise ValueError("Native setup control evidence is missing, failed or unfinished")
+    expected = {
+        "schema_version": 1,
+        "user_enabled": condition == "enabled",
+        "effective_enabled": condition == "enabled",
+        "collection_available": True,
+        "storage": "ready",
+        "reason": "enabled" if condition == "enabled" else "user_disabled",
+        "connection_mode": "unmetered",
+        "disclosure_acknowledged": True,
+        "store_generation_valid": True,
+    }
+    for reply in controls["replies"]:
+        if (
+            not isinstance(reply, dict)
+            or set(reply) != set(expected)
+            or any(
+                type(reply[name]) is not type(value) or reply[name] != value
+                for name, value in expected.items()
+            )
+        ):
+            raise ValueError("Native setup control did not confirm the declared privacy state")
+    return True
+
+
 def verify_process_ownership(samples, *, required=False):
     """Cross-check recorded owners against every process row, not a success flag."""
     if not samples or not any("ownership" in sample for sample in samples):
@@ -180,6 +238,9 @@ def summarize(directory: Path) -> dict:
             raise ValueError("Unprofiled comparison requires the complete declared six-case order")
     observations = []
     for result in receipt["results"]:
+        setup = verify_setup_controls(
+            result, required=receipt.get("setup_controls_required") is True
+        )
         ownership = verify_process_ownership(
             result["samples"], required=receipt.get("comparison") is True
         )
@@ -243,6 +304,7 @@ def summarize(directory: Path) -> dict:
                 else None,
                 "processes": rows,
                 "process_ownership_verified": ownership,
+                "setup_controls_verified": setup,
                 "new_electron_processes_seen": len(set(observed) - set(initial)),
                 "new_electron_processes_at_end": len(
                     [row for row in last["processes"] if row["pid"] not in initial]

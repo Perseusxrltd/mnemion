@@ -59,6 +59,40 @@ async function bootstrap() {
   }
   capture('bootstrap.before_telemetry_imports')
   const { DesktopTelemetryActivity } = await import('./dist/telemetry-activity.js')
+  const { ProductTelemetry } = await import('./dist/product-telemetry.js')
+  const setupControls = { schema_version: 1, attempts: 0, completed: 0, failed: 0,
+    in_flight: 0, overflow: false, replies: [] }
+  const controls = ProductTelemetry.prototype.execute
+  const flag = value => typeof value === 'boolean' ? value : null
+  const choice = (value, allowed) => allowed.includes(value) ? value : null
+  // Observe the real setup request, without replacing its response, changing
+  // consent, waiting before the first sample or recording local generations.
+  ProductTelemetry.prototype.execute = async function (action, ...args) {
+    if (action !== 'telemetry.status') return controls.call(this, action, ...args)
+    if (setupControls.attempts >= 16) {
+      setupControls.overflow = true
+      return controls.call(this, action, ...args)
+    }
+    setupControls.attempts++; setupControls.in_flight++
+    try {
+      const value = await controls.call(this, action, ...args)
+      setupControls.completed++
+      setupControls.replies.push({
+        schema_version: value?.schema_version === 1 ? 1 : null,
+        user_enabled: flag(value?.user_enabled), effective_enabled: flag(value?.effective_enabled),
+        collection_available: flag(value?.collection_available),
+        storage: choice(value?.storage, ['new', 'ready', 'unreadable']),
+        reason: choice(value?.reason, ['enabled', 'user_disabled', 'storage_unavailable',
+          'coordination_unavailable', 'browser_privacy', 'company_policy', 'disclosure_required', 'collection_unavailable']),
+        connection_mode: choice(value?.connection_mode, ['auto', 'unmetered', 'metered']),
+        disclosure_acknowledged: Number.isInteger(value?.required_disclosure_version) &&
+          value.required_disclosure_version > 0 && value.disclosure_version === value.required_disclosure_version,
+        store_generation_valid: typeof value?.store_generation === 'string' && /^[0-9a-f]{32}$/.test(value.store_generation),
+      })
+      return value
+    } catch (error) { setupControls.failed++; throw error }
+    finally { setupControls.in_flight-- }
+  }
   if (allocation.enabled) {
     const { NativeTelemetryStore } = await import('./dist/telemetry-store.js')
     const { NativeTelemetryDelivery } = await import('./dist/telemetry-delivery.js')
@@ -123,6 +157,8 @@ async function bootstrap() {
         metrics.filter(value => value.type === 'Browser').length === 1 &&
         metrics.some(value => value.type === 'Browser' && value.pid === process.pid) }
     return { name, at_ms: Date.now(), main: process.memoryUsage(), ownership,
+      setup_controls: { attempts: setupControls.attempts, completed: setupControls.completed,
+        failed: setupControls.failed, in_flight: setupControls.in_flight },
       processes: metrics.map(value => ({ pid: value.pid, type: value.type,
         role: value.pid === process.pid ? 'app_main' : value.pid === renderer ? 'app_renderer' : value.type,
         name: value.name, cpu_ms: Number.isFinite(value.cpu.cumulativeCPUUsage) ? value.cpu.cumulativeCPUUsage * 1000 : null,
@@ -132,6 +168,7 @@ async function bootstrap() {
   }
   globalThis.__mnemionOwnedProbe = {
     counts,
+    setupControls,
     allocation,
     sample: processSample,
     settle: async () => {
@@ -238,11 +275,13 @@ async function controller() {
         latency_p50_ms: sorted[Math.floor(sorted.length / 2)], latency_p99_ms: sorted[Math.floor(sorted.length * .99)] }
     })
     const counts = await electron.evaluate(() => ({ ...globalThis.__mnemionOwnedProbe.counts }))
+    const setupControls = await electron.evaluate(() => globalThis.__mnemionOwnedProbe.setupControls)
     const allocation = await electron.evaluate(() => globalThis.__mnemionOwnedProbe.allocation)
     const first = samples[0], last = samples.at(-1)
     const total = sample => sample.processes.reduce((sum, row) => sum + row.working_set_bytes, 0)
     writeFileSync(process.env.MNEMION_COST_RESULT, JSON.stringify({ schema_version: 1, variant: input.variant,
       ...result, ...counts, samples, bridge, connection, page_errors: pageErrors,
+      setup_controls: setupControls,
       condition: input.condition ?? input.variant, replicate: input.replicate ?? 1, allocation,
       comparison: input.comparison === true, devtools_auto_open: false,
       process_ownership_verified: samples.every(sample => sample.ownership.valid),

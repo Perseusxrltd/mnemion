@@ -95,6 +95,129 @@ def test_counterbalanced_results_use_their_own_baselines(tmp_path):
     assert result["resource_acceptance"] is False
 
 
+def setup_result(condition="enabled"):
+    enabled = condition == "enabled"
+    controls = {
+        "schema_version": 1,
+        "attempts": 1,
+        "completed": 1,
+        "failed": 0,
+        "in_flight": 0,
+        "overflow": False,
+        "replies": [
+            {
+                "schema_version": 1,
+                "user_enabled": enabled,
+                "effective_enabled": enabled,
+                "collection_available": True,
+                "storage": "ready",
+                "reason": "enabled" if enabled else "user_disabled",
+                "connection_mode": "unmetered",
+                "disclosure_acknowledged": True,
+                "store_generation_valid": True,
+            }
+        ],
+    }
+    if condition == "unavailable":
+        controls.update(attempts=0, completed=0, replies=[])
+    return {
+        "variant": condition,
+        "condition": condition,
+        "samples": samples([100, 110, 120], 10),
+        "elapsed_ms": 100,
+        "setup_controls": controls,
+    }
+
+
+def setup_summary(tmp_path, results, *, required=True):
+    for result in results:
+        (tmp_path / (result["variant"] + "-processes.json")).write_text("[]\n")
+    (tmp_path / "receipt.json").write_text(
+        json.dumps(
+            {
+                "setup_controls_required": required,
+                "results": results,
+            }
+        )
+    )
+    return summarize(tmp_path)
+
+
+def test_new_comparison_cannot_pass_with_missing_native_setup_reply(tmp_path):
+    current = setup_result()
+    del current["setup_controls"]
+    with pytest.raises(ValueError, match="setup control"):
+        setup_summary(tmp_path, [setup_result("unavailable"), current])
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"failed": 1},
+        {"in_flight": 1},
+        {"completed": 0},
+        {"attempts": True},
+        {"overflow": True},
+        {"replies": []},
+    ],
+)
+def test_failed_or_unsettled_setup_is_not_qualified(tmp_path, change):
+    current = setup_result()
+    current["setup_controls"].update(change)
+    with pytest.raises(ValueError, match="setup control"):
+        setup_summary(tmp_path, [setup_result("unavailable"), current])
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("user_enabled", False),
+        ("effective_enabled", False),
+        ("collection_available", False),
+        ("storage", "unreadable"),
+        ("reason", "disclosure_required"),
+        ("connection_mode", "auto"),
+        ("disclosure_acknowledged", False),
+        ("store_generation_valid", False),
+    ],
+)
+def test_setup_reply_must_match_the_actual_declared_case(tmp_path, field, value):
+    current = setup_result()
+    current["setup_controls"]["replies"][0][field] = value
+    with pytest.raises(ValueError, match="setup control"):
+        setup_summary(tmp_path, [setup_result("unavailable"), current])
+
+
+def test_unavailable_build_must_not_start_privacy_setup_control(tmp_path):
+    current = setup_result()
+    current.update(variant="unavailable", condition="unavailable")
+    with pytest.raises(ValueError, match="setup control"):
+        setup_summary(tmp_path, [current])
+
+
+def test_setup_proof_is_separate_from_resource_acceptance(tmp_path):
+    result = setup_summary(
+        tmp_path,
+        [
+            setup_result(name)
+            for name in [
+                "unavailable",
+                "opted_out",
+                "enabled",
+            ]
+        ],
+    )
+    assert all(row["setup_controls_verified"] for row in result["observations"])
+    assert result["resource_acceptance"] is False
+
+
+def test_old_results_remain_readable_without_inventing_control_proof(tmp_path):
+    current = setup_result("unavailable")
+    del current["setup_controls"]
+    result = setup_summary(tmp_path, [current], required=False)
+    assert result["observations"][0]["setup_controls_verified"] is False
+
+
 def owned_samples():
     result = samples([100, 110, 120], 10)
     for sample in result:
