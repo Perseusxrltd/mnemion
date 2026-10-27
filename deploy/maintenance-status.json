@@ -57,7 +57,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Verify both pinned local models on the actual Mac runtime"
             ]
           },
           {
@@ -79,46 +79,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.38",
       "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T12:37:23Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505169918",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 4,
-        "succeeded": 4,
-        "active": [
-          {
-            "id": 122192617990,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122192618035,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122192618078,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T12:48:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505169918"
     },
     {
       "id": 40496801738,
@@ -171,7 +135,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           },
           {
@@ -198,7 +162,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -239,5 +203,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505165922"
     }
   ],
-  "observed_at": "2026-10-27T12:46:57+00:00"
+  "observed_at": "2026-10-27T12:49:35+00:00"
 }
