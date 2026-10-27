@@ -429,7 +429,7 @@ async function createWindow() {
     } else {
       console.error('[main] No Vite dev server found on ports 5173-5179')
     }
-    mainWindow.webContents.openDevTools()
+    if (process.env.MNEMION_STUDIO_DEVTOOLS !== '0') mainWindow.webContents.openDevTools()
   } else {
     // Wait for backend to be alive, then load app
     try {

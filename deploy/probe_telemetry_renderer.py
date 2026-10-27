@@ -163,8 +163,12 @@ REVIEW_CHECKS = (
 )
 
 
-async def run(source, output, playwright, *, attribution=False, review_journey=False):
-    if review_journey and (attribution or sys.platform != "linux"):
+async def run(
+    source, output, playwright, *, attribution=False, comparison=False, review_journey=False
+):
+    if sum((attribution, comparison, review_journey)) > 1:
+        raise ValueError("Choose comparison, allocation attribution or review as separate journeys")
+    if review_journey and sys.platform != "linux":
         raise ValueError("The review journey is a separate Linux source-app check")
     output.mkdir(mode=0o700)
     executable = {
@@ -259,7 +263,7 @@ async def run(source, output, playwright, *, attribution=False, review_journey=F
                     ]
                     if review_journey:
                         cases = [("review", "review", True, True, 1)]
-                    if attribution:
+                    if attribution or comparison:
                         # Fixed before measurement. Never add another launch to
                         # select a favorable outcome from unchanged source.
                         cases = [
@@ -358,6 +362,7 @@ async def run(source, output, playwright, *, attribution=False, review_journey=F
                                     PYTHONPATH=str(source),
                                     MNEMION_BUILD_PYTHON=sys.executable,
                                     MNEMION_STUDIO_USER_DATA=str(root),
+                                    MNEMION_STUDIO_DEVTOOLS="0",
                                     MNEMION_LEGACY_STUDIO="0",
                                     MNEMION_AUTO_UPDATE="0",
                                     MNEMION_START_AT_LOGIN="0",
@@ -402,6 +407,7 @@ async def run(source, output, playwright, *, attribution=False, review_journey=F
                                             "condition": condition,
                                             "replicate": replicate,
                                             "attribution": attribution,
+                                            "comparison": comparison,
                                             "review_journey": review_journey,
                                             "memory": memory,
                                             "destination": destination,
@@ -518,6 +524,19 @@ async def run(source, output, playwright, *, attribution=False, review_journey=F
                                     and not result["page_errors"]
                                     and not result.get("allocation", {}).get("errors")
                                     and (
+                                        review_journey
+                                        or (
+                                            result.get("process_ownership_verified") is True
+                                            and result.get("devtools_auto_open") is False
+                                            and all(
+                                                sample.get("ownership", {}).get("valid") is True
+                                                for sample in result["samples"]
+                                            )
+                                            and len(result["samples"])
+                                            == (9 if attribution or comparison else 5)
+                                        )
+                                    )
+                                    and (
                                         not review_journey
                                         or (
                                             result["collector_body_matches_inspection"]
@@ -571,6 +590,7 @@ async def run(source, output, playwright, *, attribution=False, review_journey=F
             "sampling_interval_ms": 100,
             "resource_acceptance": False,
             "attribution": attribution,
+            "comparison": comparison,
             "review_journey": review_journey,
             "declared_case_order": [row[0] for row in cases],
             "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification.",
@@ -591,6 +611,11 @@ if __name__ == "__main__":
         help="Six fixed counterbalanced launches with bounded first-activation and OS counters",
     )
     parser.add_argument(
+        "--comparison",
+        action="store_true",
+        help="Six fixed counterbalanced launches without first-activation attribution",
+    )
+    parser.add_argument(
         "--review-journey",
         action="store_true",
         help="Two Linux source-app launches for actual manual review, TLS delivery and restart",
@@ -602,6 +627,7 @@ if __name__ == "__main__":
             args.output.resolve(),
             args.playwright_module.resolve(),
             attribution=args.attribution,
+            comparison=args.comparison,
             review_journey=args.review_journey,
         )
     )

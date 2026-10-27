@@ -18,7 +18,7 @@ const marker = value => {
 }
 
 async function bootstrap() {
-  const { app } = await import('electron')
+  const { app, BrowserWindow, webContents } = await import('electron')
   const allocation = { samples: [], calls: {}, errors: [], enabled: input.attribution === true }
   const heapStatistics = allocation.enabled ? (await import('node:v8')).getHeapStatistics : null
   const capture = name => {
@@ -105,15 +105,35 @@ async function bootstrap() {
     counts.reserved_attempts += Number(Boolean(report))
     return report
   }
-  globalThis.__mnemionOwnedProbe = {
-    counts,
-    allocation,
-    sample: name => ({ name, at_ms: Date.now(), main: process.memoryUsage(),
-      processes: app.getAppMetrics().map(value => ({ pid: value.pid, type: value.type,
+  const processSample = name => {
+    const windows = BrowserWindow.getAllWindows().filter(window => !window.isDestroyed())
+    const owned = windows.filter(window => window.webContents.getURL().startsWith(`http://127.0.0.1:${process.env.VITE_DEV_PORT}/`))
+    const renderer = owned.length === 1 ? owned[0].webContents.getOSProcessId() : null
+    const contents = webContents.getAllWebContents().filter(value => !value.isDestroyed())
+    const devtools = contents.some(value => value.isDevToolsOpened() || /^(?:chrome-)?devtools:/.test(value.getURL()))
+    const metrics = app.getAppMetrics()
+    const tabs = metrics.filter(value => value.type === 'Tab')
+    const ownership = { schema_version: 1, main_pid: process.pid, renderer_pid: renderer,
+      app_windows: owned.length, all_windows: windows.length, devtools_present: devtools,
+      web_contents: contents.map(value => ({ pid: value.getOSProcessId(), type: value.getType(),
+        app: owned.length === 1 && value === owned[0].webContents,
+        devtools: /^(?:chrome-)?devtools:/.test(value.getURL()) })),
+      renderer_processes: tabs.length, valid: windows.length === 1 && owned.length === 1 && !devtools &&
+        tabs.length === 1 && tabs[0].pid === renderer &&
+        metrics.filter(value => value.type === 'Browser').length === 1 &&
+        metrics.some(value => value.type === 'Browser' && value.pid === process.pid) }
+    return { name, at_ms: Date.now(), main: process.memoryUsage(), ownership,
+      processes: metrics.map(value => ({ pid: value.pid, type: value.type,
+        role: value.pid === process.pid ? 'app_main' : value.pid === renderer ? 'app_renderer' : value.type,
         name: value.name, cpu_ms: Number.isFinite(value.cpu.cumulativeCPUUsage) ? value.cpu.cumulativeCPUUsage * 1000 : null,
         working_set_bytes: value.memory.workingSetSize * 1024,
         peak_working_set_bytes: value.memory.peakWorkingSetSize * 1024 })),
-    }),
+    }
+  }
+  globalThis.__mnemionOwnedProbe = {
+    counts,
+    allocation,
+    sample: processSample,
     settle: async () => {
       while (writes.size) await Promise.all([...writes])
       await Promise.all([...stores].map(store => store.deliverySettled()))
@@ -124,6 +144,7 @@ async function bootstrap() {
 
 async function controller() {
   if (!process.env.MNEMION_PROBE_PLAYWRIGHT) throw new Error('Explicit Playwright module path required')
+  if (process.env.MNEMION_STUDIO_DEVTOOLS !== '0') throw new Error('Disable development DevTools before app startup')
   const { _electron } = await import(pathToFileURL(process.env.MNEMION_PROBE_PLAYWRIGHT).href)
   const environment = { ...process.env }
   delete environment.ELECTRON_RUN_AS_NODE
@@ -134,8 +155,8 @@ async function controller() {
   let page
   try {
     marker({ phase: 'starting', pid })
-    // Development mode also opens DevTools. Its window can win firstWindow(),
-    // so select the app's owned origin instead of racing window creation.
+    // Select the app's owned origin. Each measurement independently verifies
+    // the renderer PID and refuses any extra renderer or debugger window.
     const deadline = Date.now() + 30000
     while (!page && Date.now() < deadline) {
       page = electron.windows().find(value => value.url().startsWith(`http://127.0.0.1:${process.env.VITE_DEV_PORT}/`))
@@ -146,9 +167,6 @@ async function controller() {
     console.log(JSON.stringify({ stage: 'first_window', url: page.url() }))
     page.setDefaultTimeout(20000)
     await page.getByRole('heading', { name: 'Welcome to Mnemion' }).waitFor()
-    await electron.evaluate(({ webContents }) => {
-      for (const contents of webContents.getAllWebContents()) if (contents.isDevToolsOpened()) contents.closeDevTools()
-    })
     const initial = await page.locator('body').ariaSnapshot()
     writeFileSync(join(process.env.MNEMION_PROBE_ARTIFACTS, `${input.variant}-onboarding.txt`), initial)
     const bridge = await page.evaluate(() => ({
@@ -161,6 +179,7 @@ async function controller() {
       const value = await electron.evaluate((_electron, name) => globalThis.__mnemionOwnedProbe.sample(name), name)
       samples.push(value)
       marker({ phase: name, pid })
+      if (!value.ownership.valid) throw new Error('Resource sample has an unexpected or unowned app process')
     }
     // The interval includes first connection and cold telemetry work. No forced
     // GC, synthetic idle interval or resource-admission replacement is used.
@@ -205,7 +224,7 @@ async function controller() {
     await cycles(1)
     await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
     await sample('first_memory_cycle_and_delivery')
-    const remaining = input.attribution ? [[7, 8], [8, 16], [16, 32], [32, 64], [32, 96], [32, 128]] : [[31, 32], [96, 128]]
+    const remaining = input.attribution || input.comparison ? [[7, 8], [8, 16], [16, 32], [32, 64], [32, 96], [32, 128]] : [[31, 32], [96, 128]]
     for (const [number, completed] of remaining) {
       await cycles(number)
       await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
@@ -225,6 +244,8 @@ async function controller() {
     writeFileSync(process.env.MNEMION_COST_RESULT, JSON.stringify({ schema_version: 1, variant: input.variant,
       ...result, ...counts, samples, bridge, connection, page_errors: pageErrors,
       condition: input.condition ?? input.variant, replicate: input.replicate ?? 1, allocation,
+      comparison: input.comparison === true, devtools_auto_open: false,
+      process_ownership_verified: samples.every(sample => sample.ownership.valid),
       runtime: await electron.evaluate(() => ({ electron: process.versions.electron, node: process.versions.node,
         platform: process.platform, arch: process.arch, packaged: false })),
       elapsed_ms: last.at_ms - first.at_ms, rss_delta_bytes: total(last) - total(first),
@@ -234,7 +255,7 @@ async function controller() {
       production_collection_available: false, model_calls: 0,
     }, null, 2) + '\n', { flag: 'wx' })
   } catch (error) {
-    const failure = { url: page?.url(), page_errors: pageErrors, windows: electron.windows().map(value => value.url()) }
+    const failure = { url: page?.url(), page_errors: pageErrors, windows: electron.windows().map(value => value.url()), samples }
     try { failure.dom = await page?.locator('body').ariaSnapshot({ timeout: 3000 }) } catch { /* Retain the original failure. */ }
     writeFileSync(join(process.env.MNEMION_PROBE_ARTIFACTS, `${input.variant}-failure.json`), JSON.stringify(failure, null, 2) + '\n')
     throw error

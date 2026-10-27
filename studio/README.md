@@ -114,6 +114,12 @@ npm --prefix studio/electron test
 npm --prefix studio/electron run dev
 ```
 
+Development Electron opens DevTools automatically unless
+`MNEMION_STUDIO_DEVTOOLS=0` is set before launch. This option only controls
+development auto-opening; packaged startup is unchanged. The
+[resource diagnostic](../docs/validation/2026-10-27-telemetry-resource-roles.md)
+sets it explicitly and verifies the app renderer in every measurement sample.
+
 Prepare the locked client and engine environments and verified database archive
 using the [native packaging guide](../docs/implementation/native-desktop-packaging.md),
 then create installers with `npm --prefix studio/electron run dist` on the target

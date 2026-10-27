@@ -335,8 +335,17 @@ matched-phase differences **9,261,056 / 1,593,344 bytes**. Both maxima exceed
 role is ambiguous. All roles and both orders are retained. Profiled CPU is
 descriptive, and these observations do not establish a causal regression or
 production-only overhead. Resource acceptance remains false; prior failures,
-the 2 MiB / 0.5% ceilings and privacy/platform gates are unchanged. No new
-resource run or budget change is selected.
+the 2 MiB / 0.5% ceilings and privacy/platform gates are unchanged. At that
+checkpoint, no new resource run or budget change was selected.
+
+The [process-role diagnostic follow-up](../validation/2026-10-27-telemetry-resource-roles.md)
+disables development DevTools auto-opening before startup and verifies the app
+main/renderer identities in every sample. The old first enabled case recorded
+two `Tab` processes without their identities; the second is not proven to have
+been DevTools. A separate `--comparison` mode retains six counterbalanced cases
+and 128 real memory cycles per case without allocation attribution. Focused
+checks and the selected changed-source diagnostic remain pending; this source
+change establishes no RSS/CPU saving or resource acceptance.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
