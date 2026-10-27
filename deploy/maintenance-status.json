@@ -18,15 +18,94 @@
   ],
   "runs": [
     {
-      "id": 40440920428,
+      "id": 40444411435,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "e03513dfba4817025e9fe8b1a8428268b1671c6b",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T03:24:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40440920428"
+      "source_commit": "626e25ea3e8084e788b5564db19f92663f29bf7d",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-27T03:29:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444411435",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 4,
+        "succeeded": 4,
+        "active": [
+          {
+            "id": 121992124867,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify wheel and source package include the matching web Studio"
+            ]
+          },
+          {
+            "id": 121992165721,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 121992165739,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 121992165742,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 121992165769,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 121992165777,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 121992165795,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 121992165911,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40439538705,
@@ -58,21 +137,21 @@
       "source_commit": "051c9c8ac9beed7912321502ef50fbd8c2a1a4b9",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T02:40:49Z",
+      "updated_at": "2026-10-27T03:28:15Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40439256250",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 20,
-        "succeeded": 19,
+        "total": 22,
+        "completed": 21,
+        "succeeded": 20,
         "active": [
           {
-            "id": 121977198078,
-            "name": "native / windows-11-arm / arm64",
+            "id": 121991862739,
+            "name": "assemble",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
+              "Prepare or refresh the reviewable release draft"
             ]
           }
         ]
@@ -91,15 +170,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40438996406"
     },
     {
-      "id": 40440920343,
+      "id": 40444411460,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "e03513dfba4817025e9fe8b1a8428268b1671c6b",
+      "source_commit": "626e25ea3e8084e788b5564db19f92663f29bf7d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T02:52:29Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40440920343"
+      "updated_at": "2026-10-27T03:29:21Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444411460"
     },
     {
       "id": 40439536199,
@@ -113,5 +192,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40439536199"
     }
   ],
-  "observed_at": "2026-10-27T03:25:19+00:00"
+  "observed_at": "2026-10-27T03:30:02+00:00"
 }
