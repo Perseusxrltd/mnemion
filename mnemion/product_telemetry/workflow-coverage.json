@@ -883,10 +883,10 @@
       "local_stdio"
     ],
     "summary": {
-      "total": 636,
+      "total": 637,
       "mapped": 364,
       "excluded": 265,
-      "delegated": 7,
+      "delegated": 8,
       "unmeasured": 0
     },
     "reasons": {
@@ -3421,6 +3421,13 @@
       },
       {
         "owner": "desktop_ipc",
+        "action": "service:cancel",
+        "state": "delegated",
+        "workflows": [],
+        "reason": "desktop_ipc.delegated_alias"
+      },
+      {
+        "owner": "desktop_ipc",
         "action": "service:request",
         "state": "delegated",
         "workflows": [],
@@ -5900,7 +5907,7 @@
   "source_inputs": {
     "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
     "control-origins.json": "3e1b59bedf234585b00ce3a071011ddbba356d3f9e8a988fbc4d7e8d2b82a045",
-    "desktop-origins.json": "8e769b897e880f815c96047c66deaa0d5a2482c6610821e8caefebee175be444",
+    "desktop-origins.json": "a03490ce4fe0e70b94f4d72c9a5875a6744e759303c80492926d3da63a5604a7",
     "studio-methods.json": "36c4e2f9920f10243c52c1664a38efa46ee1de43bb91cc2a17d665a711e0b936",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
@@ -5908,8 +5915,8 @@
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "af0cb7aacf28f0884e4fecffb4a9a315cb57c0adeaeca836e7b83589b616c862",
-    "studio/frontend/src/api/client.ts": "59ba6d0d469ef45667a33c4b914bbb801639b2039557b451083e7afcc1ea7f77",
-    "studio/electron/preload.ts": "603f97bde290a131677d158b19839f6d31aa837807e55f094a4608f94717fe13",
+    "studio/frontend/src/api/client.ts": "14f4f284dea41e855e1691ee84035e4d8f273eb6a252fa3159e4015dbb3b59fe",
+    "studio/electron/preload.ts": "1963aa4773fcd6db0cb50deb6a2d26775760d8b9656bef989482285f184751c2",
     "mnemion/service/mcp.py": "14e9a86847af610b3c9de178fb3b5d84282ea353921f2e1070322084873e1ac1",
     "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6"
   }

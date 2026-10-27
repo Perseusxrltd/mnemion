@@ -30,8 +30,8 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 records the later preparation boundary and remaining gaps.
 
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-lists **636 actions and fixed variants: 364 mapped, 265 excluded,
-seven delegated and zero unmeasured among the represented declarations**. The
+lists **637 actions and fixed variants: 364 mapped, 265 excluded,
+eight delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API,
 desktop preload request channels, maintained MCP registrations/invocation aliases
@@ -45,6 +45,9 @@ these rows authorizes collection or represents activity history.
 The preceding update-verification checkpoint listed 634 rows, with 362 mapped;
 the two typed capture-administration methods add declarations without changing
 the 94 workflow categories.
+The [desktop cancellation hotfix](../validation/2026-10-27-desktop-request-cancellation.md)
+adds one delegated transport channel. Its local cancellation token is never a
+measurement; the enclosing Studio action retains ownership.
 
 Eight earlier evaluated observations and retained commands from actual Chrome
 verify the action view on changed compiled assets based on `93eb300`, using package

@@ -19,7 +19,8 @@ declare global {
       platform?: () => Promise<string>
       backendPort?: () => Promise<number>
       studioToken?: () => Promise<string | null>
-      serviceRequest?: (request: { url: string; method: string; headers: Record<string, string>; body?: string }) => Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>
+      serviceRequest?: (request: { requestId?: string; url: string; method: string; headers: Record<string, string>; body?: string }) => Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>
+      serviceRequestCancel?: (requestId: string) => Promise<boolean>
       workspaceStatus?: () => Promise<WorkspaceStatus>
       workspaceInspect?: (id: string) => Promise<WorkspaceInspection>
       workspaceRecoveryRefresh?: (sessionToken: string) => Promise<WorkspaceInspection>

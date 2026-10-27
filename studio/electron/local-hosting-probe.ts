@@ -11,6 +11,7 @@ import { verifyNativeCapturePolicy } from './native-capture-policy-probe.js'
 import { verifyNativeHeadlessCapture, verifyNativeHeadlessPreview } from './native-headless-capture-probe.js'
 import { workspaceOpenError } from './local-hosting-diagnostics.js'
 import { verifyNativeTelemetry } from './native-telemetry-probe.js'
+import { verifyNativeServiceRequests } from './native-service-request-probe.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
   const path = process.env.MNEMION_STUDIO_HOSTING_PROBE
@@ -23,7 +24,8 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-policy', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'capture-headless', 'capture-preview'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
       (!['create', 'capture-preview'].includes(config.phase) && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
-  if (config.phase === 'capture-preview') return { ...await verifyNativeHeadlessPreview(path), ...await verifyNativeTelemetry(window) }
+  if (config.phase === 'capture-preview') return { ...await verifyNativeHeadlessPreview(path),
+    ...await verifyNativeTelemetry(window), ...await verifyNativeServiceRequests(window) }
   if (config.phase.startsWith('capture-')) {
     // Packaged startup checks finish on Help. Capture needs the same explicit
     // workspace navigation already used by the backup and ordinary host probes.

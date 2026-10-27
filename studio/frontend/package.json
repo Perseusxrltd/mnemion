@@ -1,7 +1,7 @@
 {
   "name": "mnemion-studio",
   "private": true,
-  "version": "4.46.36",
+  "version": "4.46.37",
   "type": "module",
   "scripts": {
     "prebuild": "node ../branding/verify.mjs",
@@ -11,7 +11,8 @@
     "test:telemetry": "node --test scripts/test-product-telemetry.mjs scripts/test-telemetry-client.mjs scripts/test-telemetry-delivery.mjs scripts/test-telemetry-review-clock.mjs scripts/test-telemetry-inspection.mjs scripts/test-telemetry-conditions.mjs scripts/test-telemetry-activity.mjs",
     "build": "tsc && vite build",
     "build:electron": "tsc && cross-env ELECTRON_BUILD=1 vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:native": "node --test scripts/test-native-fetch.mjs"
   },
   "dependencies": {
     "@mnemion/client": "file:../../packages/client",

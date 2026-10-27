@@ -151,6 +151,7 @@
     "local:vault": {"action": "local.vault"},
     "local:vault-key": {"exclusion": "configuration_preview"},
     "service:request": {"exclusion": "delegated_alias"},
+    "service:cancel": {"exclusion": "delegated_alias"},
     "sources:backup": {"action": "source.backup"},
     "sources:backup-choose": {"exclusion": "configuration_preview"},
     "sources:backup-inspect": {"action": "source.backup.inspect"},

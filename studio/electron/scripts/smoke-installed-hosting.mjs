@@ -162,6 +162,8 @@ try {
   if (!['nativeTelemetryDisclosurePreview', 'nativeTelemetryAppAgentChoice', 'nativeTelemetryPreviewClearedOnRefresh',
     'nativeTelemetryNoAttemptDuringInspection', 'nativeTelemetryReviewBeforePermission',
     'nativeTelemetryReviewAppAgentChoice'].every(field => preview[field] === true)) throw new Error('Installed privacy controls did not complete')
+  if (!['nativeServiceCancelBeforeHeaders', 'nativeServiceCancelDuringBody', 'nativeServiceCancelTokenPrivate']
+    .every(field => preview[field] === true)) throw new Error('Installed service-request cancellation did not complete')
   await stop()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.nativeTelemetryOptOutSurvivesRestart) throw new Error('Installed telemetry opt-out did not survive restart')

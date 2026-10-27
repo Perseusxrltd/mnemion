@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.36**.
+Reviewed source distribution: **4.46.37**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-27**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,22 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**27 October 2026, desktop request cancellation; 4.46.37 hotfix selected:**
+[Two reproduced deadline/caller-abort failures](validation/2026-10-27-desktop-request-cancellation.md)
+remain retained. The source now settles cancelled callers promptly, bounds local
+request ownership and propagates cancellation to native I/O and renderer/app
+teardown. Cancellation cannot undo completed server work; session rotation and
+retry rules remain unchanged. All 32 focused checks and SDK/frontend/Electron
+builds passed. Three real Electron bridge checks passed on Linux x64 and are now
+required by the existing six-platform installed gate; installed release
+qualification remains pending.
+The release also carries the already-main
+[Python action-timing correction](validation/2026-10-27-telemetry-agent-timing.md).
+All 66 requirements and V08 Building remain unchanged, with collection disabled,
+destination/route null and release CAs empty. Resource and full telemetry
+acceptance remain open; no saving is established or new resource measurement
+selected.
 
 **27 October 2026, native telemetry wire observations:**
 [Seven component scenarios](validation/2026-10-27-telemetry-native-wire.md)

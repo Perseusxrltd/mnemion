@@ -141,8 +141,8 @@ in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-contains **636 declared actions and fixed variants: 364 mapped, 265 excluded,
-seven delegated and zero unmeasured among these declarations**. It independently
+contains **637 declared actions and fixed variants: 364 mapped, 265 excluded,
+eight delegated and zero unmeasured among these declarations**. It independently
 reads **seven shipped interfaces across six checked owner categories**: the
 maintained and legacy MCP interfaces share `local_stdio`. Other owners use
 reviewed source-route maps. Missing mappings in those
@@ -151,6 +151,9 @@ when the category has another owner. Search, source/state filters and pages of
 50 rows inspect fixed metadata without invoking actions or adding a producer.
 The earlier update-verification checkpoint contained 634 rows, with 362 mapped;
 the capture-administration additions do not change the 94 workflow categories.
+The [desktop cancellation hotfix](../validation/2026-10-27-desktop-request-cancellation.md)
+adds one delegated transport channel. Its local cancellation token is never a
+measurement; the enclosing Studio action retains ownership.
 Earlier [Chrome verification](../validation/2026-10-26-telemetry-action-preview.md)
 passed on changed compiled assets based on
 `93eb300`, with package 4.46.19 metadata before 4.46.20 preparation. It confirmed

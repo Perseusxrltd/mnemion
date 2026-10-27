@@ -12,6 +12,7 @@ import { WorkspacePasswordAuth, type SignInRequest } from './workspace-auth.js'
 import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
 import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
 import { workspaceFetch } from './workspace-fetch.js'
+import { ServiceRequests } from './service-requests.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import { localDiagnostic } from './local-diagnostics.js'
 import { LocalBackups, createRecoveryKey, readBackupDocument, recoveryKey } from './local-backups.js'
@@ -197,6 +198,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let agentSetup: DesktopAgents | undefined
   let hosts: HostProfiles | undefined
   let measurements: DesktopTelemetryActivity | undefined
+  const serviceRequests = new ServiceRequests()
+  const serviceOwners = new WeakSet<BrowserWindow['webContents']>()
   const telemetryPauses = new Set<string>()
   const telemetryConditions = new DesktopTelemetryConditions({ online: () => net.isOnline(),
     thermal: () => powerMonitor.getCurrentThermalState() })
@@ -972,7 +975,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   handle('service:request', async (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object') throw new Error('Invalid request')
-    const request = input as { url: unknown; method: string; headers: Record<string, string>; body?: string }
+    const request = input as { requestId?: unknown; url: unknown; method: string; headers: Record<string, string>; body?: string }
     if (typeof request.url !== 'string' || request.url.length > 4096) throw new Error('Invalid service URL')
     let url = new URL(request.url)
     if (!['GET', 'POST', 'PUT', 'DELETE'].includes(request.method)) throw new Error('Unsupported method')
@@ -984,25 +987,45 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       if (headers.has(name)) throw new Error('Duplicate request header')
       headers.set(name, value)
     }
-    const authorization = headers.get('authorization')
-    let currentAuthorization: (() => Promise<string>) | undefined
-    if (authorization && isWorkspaceSession(authorization)) {
-      currentAuthorization = () => workspaceConnections().authorization(url, authorization)
-      headers.set('authorization', await currentAuthorization())
-    } else {
-      url = allowedServiceUrl(request.url)
+    const contents = event.sender, owner = contents.id
+    if (!serviceOwners.has(contents)) {
+      serviceOwners.add(contents)
+      contents.once('destroyed', () => serviceRequests.closeOwner(owner))
+      contents.on('render-process-gone', () => serviceRequests.closeOwner(owner))
+      contents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => {
+        if (mainFrame && !inPlace) serviceRequests.closeOwner(owner)
+      })
     }
-    let rejected: string | null = null
-    const response = await workspaceFetch(async (address, options) => {
-      const credential = new Headers(options.headers).get('authorization')
-      const result = await net.fetch(address, options)
-      if (result.status === 401) rejected = credential
-      return result
-    }, url.toString(), { method: request.method, headers, body: request.body, signal: AbortSignal.timeout(60_000) }, currentAuthorization)
-    if (response.status === 401 && authorization && isWorkspaceSession(authorization) && rejected) {
-      await workspaceConnections().rejectedAuthorization(authorization, rejected)
-    }
-    return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
+    return serviceRequests.run(owner, request.requestId, async signal => {
+      signal.throwIfAborted()
+      const authorization = headers.get('authorization')
+      let currentAuthorization: (() => Promise<string>) | undefined
+      if (authorization && isWorkspaceSession(authorization)) {
+        currentAuthorization = () => workspaceConnections().authorization(url, authorization)
+        // Existing session rotation owns its durable credential result. Let
+        // that lookup settle, but never send memory work after cancellation.
+        headers.set('authorization', await currentAuthorization())
+      } else {
+        url = allowedServiceUrl(request.url)
+      }
+      signal.throwIfAborted()
+      let rejected: string | null = null
+      const response = await workspaceFetch(async (address, options) => {
+        const credential = new Headers(options.headers).get('authorization')
+        const result = await net.fetch(address, options)
+        if (result.status === 401) rejected = credential
+        return result
+      }, url.toString(), { method: request.method, headers, body: request.body, signal }, currentAuthorization)
+      if (response.status === 401 && authorization && isWorkspaceSession(authorization) && rejected) {
+        await workspaceConnections().rejectedAuthorization(authorization, rejected)
+      }
+      signal.throwIfAborted()
+      return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
+    })
+  })
+  handle('service:cancel', (event, requestId: unknown) => {
+    trusted(event)
+    return serviceRequests.cancel(event.sender.id, requestId)
   })
 
   handle('vault:choose', async event => {
@@ -1038,7 +1061,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     selections.clear()
     backupSelections.clear()
   })
-  app.on('will-quit', () => { measurements?.closeDelivery(); backups?.close(); void sources?.close(); void agentSetup?.close(); void hosts?.close(); void operator?.close() })
+  app.on('will-quit', () => { serviceRequests.close(); measurements?.closeDelivery(); backups?.close(); void sources?.close(); void agentSetup?.close(); void hosts?.close(); void operator?.close() })
   app.whenReady().then(() => {
     powerMonitor.on('suspend', () => pauseTelemetry('suspend'))
     powerMonitor.on('resume', () => resumeTelemetry('suspend'))
