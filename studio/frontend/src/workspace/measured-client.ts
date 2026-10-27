@@ -23,8 +23,8 @@ export function studioMeasurementSelection(method: string, arguments_: unknown[]
 async function observed<T>(client: MnemionClient, store: WorkflowStore, method: string, arguments_: unknown[], run: () => Promise<T>, surface: 'desktop' | 'browser'): Promise<T> {
   let selection: Selection | null = null, measurement: TelemetryWorkflow | null = null
   try {
-    selection = studioMeasurementSelection(method, arguments_)
-    if (selection && store.available) {
+    selection = store.available ? studioMeasurementSelection(method, arguments_) : null
+    if (selection) {
       const pending = TelemetryWorkflow.begin(store, selection.workflow, surface)
       if (pending !== null) {
         let timer: ReturnType<typeof setTimeout> | undefined
@@ -34,6 +34,10 @@ async function observed<T>(client: MnemionClient, store: WorkflowStore, method: 
       }
     }
   } catch { /* Optional collection cannot prevent the user's action. */ }
+  // A refused or expired observation has no reason to inspect the result,
+  // retry receipt or exception. Run outside the optional-work catch so a
+  // synchronous action failure cannot invoke the callback a second time.
+  if (!measurement || !selection) return run()
   let result: T
   try { result = await run() }
   catch (error) {

@@ -170,6 +170,18 @@ pagination, filters, delegation, on-demand loading and refresh clearing; the
 linked report preserves that browser scope separately from the 4.46.22 source
 additions, installed/native and production qualification.
 Payload-byte observations are not whole-wire traffic measurements.
+
+The [refused-result correction](../validation/2026-10-27-telemetry-refused-results.md)
+stops Studio and legacy UI telemetry from classifying results, retry receipts or
+errors when no observation was admitted. The action runs once outside the
+optional-work catch; refusal, unavailable collection, failed reads and a timed-out
+read preserve its original result or error. Late permission replies cannot revive
+the skipped observation. Four original inspection regressions were reproduced;
+all **53 owner/policy source tests** and the SDK/frontend builds passed. Existing
+admitted observations and original generation/replay fences remain. This removes
+known unnecessary local work without claiming a transmission defect, RSS/CPU
+saving, installed qualification or a resource-budget pass.
+
 Owners cover the control CLI, desktop/native operator, Studio/browser, explicit
 local stdio, selected fresh maintenance and explicit local model preparation.
 The control CLI classifies all

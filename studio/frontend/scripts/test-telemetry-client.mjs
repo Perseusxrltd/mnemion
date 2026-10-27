@@ -272,6 +272,80 @@ test('blocked privacy storage adds only a bounded startup wait and leaves the ac
   assert.deepEqual(instance.rows, [])
 })
 
+function refuse(store, mode) {
+  if (mode === 'unavailable') store.available = false
+  else if (mode === 'immediate') store.snapshot = () => null
+  else if (mode === 'asynchronous') store.snapshot = async () => null
+  else if (mode === 'failed') store.snapshot = async () => { throw new Error('PRIVATE_POLICY_FAILURE') }
+  else store.snapshot = () => new Promise(() => {})
+}
+
+test('refused telemetry leaves Studio results opaque on desktop and browser', async () => {
+  for (const surface of ['desktop', 'browser']) for (const mode of ['unavailable', 'immediate', 'asynchronous', 'failed', 'timeout']) {
+    const f = fixture(() => Response.json({}))
+    refuse(f.store, mode)
+    let calls = 0, inspected = 0
+    const result = { get hits() { inspected++; return [{ content: 'PRIVATE_RESULT' }] } }
+    f.raw.search = async input => { calls++; assert.equal(input.query, 'PRIVATE_QUERY'); return result }
+    f.raw.idempotencyOf = () => { inspected++; return 'new' }
+    const client = measuredStudioClient(f.raw, f.store, surface)
+    assert.equal(await client.search({ query: 'PRIVATE_QUERY' }), result)
+    assert.equal(calls, 1)
+    assert.equal(inspected, 0, `${surface}/${mode} inspected an unmeasured result`)
+    assert.deepEqual(f.rows, [])
+  }
+})
+
+test('refused telemetry leaves Studio errors opaque and never retries the callback', async () => {
+  for (const surface of ['desktop', 'browser']) for (const mode of ['unavailable', 'immediate', 'asynchronous', 'failed', 'timeout']) {
+    const f = fixture(() => Response.json({}))
+    refuse(f.store, mode)
+    let calls = 0, inspected = 0
+    const original = new Error('PRIVATE_ACTION_ERROR')
+    f.raw.save = () => { calls++; throw original }
+    f.raw.idempotencyOf = () => { inspected++; return 'new' }
+    const client = measuredStudioClient(f.raw, f.store, surface)
+    await assert.rejects(client.save('PRIVATE_SPACE', { content: 'PRIVATE_MEMORY' }), error => error === original)
+    assert.equal(calls, 1)
+    assert.equal(inspected, 0, `${surface}/${mode} classified an unmeasured error`)
+    assert.deepEqual(f.rows, [])
+  }
+})
+
+test('refused telemetry leaves legacy success flags opaque and preserves callback errors', async () => {
+  for (const surface of ['desktop', 'browser']) for (const mode of ['unavailable', 'immediate', 'asynchronous', 'failed', 'timeout']) {
+    const f = fixture(() => Response.json({}))
+    refuse(f.store, mode)
+    let calls = 0, inspected = 0
+    const result = { get success() { inspected++; return true } }
+    assert.equal(await measureUiAction('legacy', 'installConnector', () => { calls++; return result }, undefined, f.store, surface), result)
+    const original = new Error('PRIVATE_LEGACY_FAILURE')
+    await assert.rejects(measureUiAction('legacy', 'installConnector', () => { calls++; throw original }, undefined, f.store, surface), error => error === original)
+    assert.equal(calls, 2)
+    assert.equal(inspected, 0, `${surface}/${mode} inspected an unmeasured success flag`)
+    assert.deepEqual(f.rows, [])
+  }
+})
+
+test('refused telemetry is not revived by a snapshot that finishes after the action', async () => {
+  for (const owner of ['studio', 'legacy']) {
+    const f = fixture(() => Response.json({}))
+    let complete, calls = 0, inspected = 0
+    f.store.snapshot = () => new Promise(resolve => { complete = resolve })
+    const result = { get hits() { inspected++; return [] }, get success() { inspected++; return true } }
+    f.raw.search = async () => { calls++; return result }
+    f.raw.idempotencyOf = () => { inspected++; return 'new' }
+    const pending = owner === 'studio' ? f.client.search({ query: 'PRIVATE_QUERY' })
+      : measureUiAction('legacy', 'installConnector', () => { calls++; return result }, undefined, f.store, 'browser')
+    assert.equal(await pending, result)
+    complete({ revision: 1, store_generation: 'a'.repeat(32) })
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(calls, 1)
+    assert.equal(inspected, 0, `${owner} inspected an action after the measurement timed out`)
+    assert.deepEqual(f.rows, [])
+  }
+})
+
 test('a workflow finishes once and rejects private fields before counting a submission', async () => {
   const instance = fixture(() => Response.json({}))
   const first = await TelemetryWorkflow.begin(instance.store, 'memory.recall', 'browser')

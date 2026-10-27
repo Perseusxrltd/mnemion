@@ -27,6 +27,14 @@ required for full acceptance.
 
 ## Setup recovery follow-up
 
+The [refused observation follow-up](2026-10-27-telemetry-refused-results.md)
+reproduces four cases where the frontend still inspected result/error metadata
+without an admitted measurement. The corrected owners preserve the action and
+its outcome without that classification. All 53 focused owner/policy tests and
+SDK/frontend builds passed, including late permission replies and exact-once
+callbacks. Source evidence establishes no prior transmission, new resource
+saving, complete runtime coverage or installed/platform acceptance.
+
 The [current setup correction](2026-10-27-telemetry-setup-recovery.md) retains
 three reproduced UI failures and passes 11 actual compiled-browser recovery
 checks plus 29 policy-control tests. Failed current reads remove stale enable

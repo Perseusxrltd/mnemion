@@ -24,6 +24,9 @@ export async function measureUiAction<T>(
       }
     }
   } catch { /* Optional collection cannot prevent the original action. */ }
+  // No admitted observation means no success-flag or error classification.
+  // Keep the action outside the optional-work catch: it must run exactly once.
+  if (!measurement || !spec) return run()
   let result: T
   try { result = await run() }
   catch (error) {
