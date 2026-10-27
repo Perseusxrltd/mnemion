@@ -47,3 +47,34 @@ test('telemetry controls reject arbitrary action and payload before invoking a n
   await assert.rejects(control.execute('telemetry.status', { api_key: 'PRIVATE_SENTINEL' }), /unsupported input fields/)
   assert.equal(calls, 0)
 })
+
+test('a confirmed disabled control reply offers only a negative sampling hint', async () => {
+  const result = { schema_version: 1, user_enabled: false, private_result: 'PRIVATE_SENTINEL' }
+  let calls = 0, hints = 0
+  const control = new ProductTelemetry(async () => { calls++; return result }, () => { hints++ })
+  assert.equal(await control.execute('telemetry.status'), result)
+  assert.equal(calls, 1)
+  assert.equal(hints, 1)
+})
+
+test('only confirmed current user opt-outs can notify and hint failures preserve the result', async () => {
+  let hints = 0
+  for (const [action, result] of [
+    ['telemetry.status', { schema_version: 1, user_enabled: true }],
+    ['telemetry.status', { schema_version: 1, user_enabled: 'false' }],
+    ['telemetry.status', { schema_version: 1, effective_enabled: false }],
+    ['telemetry.status', { schema_version: 2, user_enabled: false }],
+    ['telemetry.schema', { schema_version: 1, user_enabled: false }],
+  ]) {
+    const control = new ProductTelemetry(async () => result, () => { hints++ })
+    assert.equal(await control.execute(action), result)
+  }
+  assert.equal(hints, 0)
+  const disabled = { schema_version: 1, user_enabled: false }, stop = new AbortController()
+  const late = new ProductTelemetry(async () => { stop.abort(); return disabled }, () => { hints++ })
+  assert.equal(await late.execute('telemetry.status', {}, stop.signal), disabled)
+  assert.equal(hints, 0)
+  const failedHint = new ProductTelemetry(async () => disabled, () => { hints++; throw new Error('PRIVATE_ERROR') })
+  assert.equal(await failedHint.execute('telemetry.configure', { enabled: false, expected_revision: 0 }), disabled)
+  assert.equal(hints, 1)
+})

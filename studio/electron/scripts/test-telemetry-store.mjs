@@ -85,9 +85,90 @@ test('inactive native collection reads no choice and creates no store', async t 
   t.after(() => rm(temporary, { recursive: true, force: true }))
   const root = join(temporary, 'absent'), definitions = nativeTelemetryDefinitions()
   const store = new NativeTelemetryStore(root, definitions.disclosure, definitions.catalog)
+  store.noteUserDisabled(performance.now() + 60000)
   assert.equal(await store.snapshot(), null)
   assert.equal(await store.record({ private: 'PRIVATE_SENTINEL' }, { revision: 0, store_generation: null }), false)
   await assert.rejects(access(root))
+})
+
+test('a known disabled reply avoids a duplicate SQLite read without changing the choice', async t => {
+  const { store, invoke, initial } = await fixture(t)
+  const disabled = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+  let opens = 0
+  const open = store.open.bind(store)
+  store.open = (...args) => { opens++; return open(...args) }
+  // Optional invocation also lets the original source expose its redundant
+  // database read instead of failing merely because the new method is absent.
+  store.noteUserDisabled?.(performance.now() + 60000)
+  assert.equal(await store.snapshot('memory.recall', 'desktop'), null)
+  assert.equal(opens, 0, 'The control process already confirmed this opt-out')
+  assert.deepEqual(invoke('status'), disabled)
+  assert.deepEqual(invoke('preview'), [])
+})
+
+test('control denial expires at its original deadline and cannot preserve authority', async t => {
+  const { store, invoke, initial } = await fixture(t)
+  let now = 1000, opens = 0
+  t.mock.method(performance, 'now', () => now)
+  const open = store.open.bind(store)
+  store.open = (...args) => { opens++; return open(...args) }
+  // Simulate a delayed disabled reply after another process already enabled
+  // collection. It may drop an optional sample, but cannot grant permission.
+  store.noteUserDisabled(1200)
+  assert.equal(await store.snapshot('memory.recall', 'desktop'), null)
+  assert.equal(opens, 0)
+  now = 1201
+  assert.deepEqual(await store.snapshot('memory.recall', 'desktop'), stampOf(initial))
+  assert.equal(opens, 1, 'A delayed hint must not acquire a fresh sixty-second lifetime')
+  invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+  assert.equal(await store.record(observation(), stampOf(initial), 20000), false)
+  assert.deepEqual(invoke('preview'), [])
+})
+
+test('another process re-enabling invalidates the hint at the existing file-check cadence', async t => {
+  const { store, invoke, initial } = await fixture(t)
+  const disabled = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+  let now = 1000, opens = 0
+  t.mock.method(performance, 'now', () => now)
+  const open = store.open.bind(store)
+  store.open = (...args) => { opens++; return open(...args) }
+  store.noteUserDisabled(61000)
+  assert.equal(await store.snapshot('memory.recall', 'desktop'), null)
+  assert.equal(opens, 0)
+  const enabled = invoke('configure', { choice: { enabled: true, expected_revision: disabled.revision,
+    expected_generation: disabled.store_generation, disclosure_version: 1 } })
+  now = 1251
+  assert.deepEqual(await store.snapshot('memory.recall', 'desktop'), stampOf(enabled))
+  assert.equal(opens, 1)
+})
+
+test('invalid denial lifetimes never replace a fresh policy read', async t => {
+  const { root, company, initial, definitions } = await fixture(t)
+  t.mock.method(performance, 'now', () => 1000)
+  for (const until of [NaN, Infinity, 999, 61001]) {
+    const store = new NativeTelemetryStore(root, { ...definitions.disclosure,
+      collection_available: true, destination: 'https://example.invalid/telemetry' }, definitions.catalog, company)
+    let opens = 0
+    const open = store.open.bind(store)
+    store.open = (...args) => { opens++; return open(...args) }
+    store.noteUserDisabled(until)
+    assert.deepEqual(await store.snapshot('memory.recall', 'desktop'), stampOf(initial))
+    assert.equal(opens, 1)
+  }
+})
+
+test('recreated private storage invalidates a prior control hint and old write stamps', async t => {
+  const { store, invoke, initial } = await fixture(t)
+  invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
+  let now = 1000
+  t.mock.method(performance, 'now', () => now)
+  store.noteUserDisabled(61000)
+  assert.equal(await store.snapshot('memory.recall', 'desktop'), null)
+  const recreated = invoke('recreate', { value: observation() })
+  now = 1251
+  assert.deepEqual(await store.snapshot('memory.recall', 'desktop'), stampOf(recreated))
+  assert.notEqual(recreated.store_generation, initial.store_generation)
+  assert.equal(await store.record(observation(), stampOf(initial), 20000), false)
 })
 
 test('store URI derivation is reused while the current choice remains fresh', async t => {

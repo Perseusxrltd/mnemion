@@ -58,6 +58,21 @@ export class NativeTelemetryStore {
 
   get available(): boolean { return this.disclosure.collection_available && Boolean(this.disclosure.destination) }
 
+  /** A local control reply may only deny optional sampling, never authorize it.
+   * Preserve its original monotonic expiry, including delayed owner creation.
+   * The existing negative cache still notices file changes and day rollover. */
+  noteUserDisabled(until: number): void {
+    const now = performance.now()
+    if (!this.available || !Number.isFinite(until) || !Number.isFinite(now) ||
+        until <= now || until > now + 60000) return
+    this.rememberExhausted([], Math.floor(Date.now() / 86400000), true)
+    const saved = this.saturated
+    if (saved?.userDisabled) {
+      saved.until = Math.min(saved.until, until)
+      saved.checkedUntil = Math.min(saved.checkedUntil, saved.until)
+    }
+  }
+
   private path(): string { return this.databasePath ??= join(this.root, 'product-telemetry.sqlite3') }
 
   private saturationFile() {

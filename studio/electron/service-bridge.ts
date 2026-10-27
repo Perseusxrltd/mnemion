@@ -198,6 +198,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let agentSetup: DesktopAgents | undefined
   let hosts: HostProfiles | undefined
   let measurements: DesktopTelemetryActivity | undefined
+  let telemetryDisabledUntil = 0
   const serviceRequests = new ServiceRequests()
   const serviceOwners = new WeakSet<BrowserWindow['webContents']>()
   const telemetryPauses = new Set<string>()
@@ -323,7 +324,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     const root = join(localBase(), 'mnemion-product-telemetry')
     const result = await new ProductTelemetry(sourceProcess({ executable: engineExecutable(), root,
       privateRoots: [], command: 'telemetry', environment: localEnvironment(process.env, root),
-      deadlineMs: 15000, messages: telemetryMessages })).execute(action, input, signal)
+      deadlineMs: 15000, messages: telemetryMessages }), () => {
+      telemetryDisabledUntil = performance.now() + 60000
+      measurements?.noteUserDisabled(telemetryDisabledUntil)
+    }).execute(action, input, signal)
     const inspection = result as unknown as Partial<TelemetryReview>
     if (action === 'telemetry.approve_report' && inspection.review?.outcome === 'approved' && inspection.status?.effective_enabled === true && !signal?.aborted) {
       const owner = telemetryStore()
@@ -338,6 +342,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       measurements = new DesktopTelemetryActivity(join(localBase(false), 'mnemion-product-telemetry'), disclosure, catalog,
         () => telemetryConditions.read(), undefined, undefined,
         { prepare: stop => telemetryConditions.prepare(stop), close: () => telemetryConditions.close() })
+      measurements.noteUserDisabled(telemetryDisabledUntil)
       for (const reason of telemetryPauses) measurements.pauseDelivery(reason)
     }
     return measurements

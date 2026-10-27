@@ -17,7 +17,7 @@ export const telemetryMessages: Record<string, string> = {
 
 /** App and native agent use the same offline kernel, independent of workspace state. */
 export class ProductTelemetry {
-  constructor(private readonly call: SourceCall) {}
+  constructor(private readonly call: SourceCall, private readonly userDisabled?: () => void) {}
 
   async execute(action: string, input: Record<string, unknown> = {}, signal?: AbortSignal) {
     if (!['telemetry.status', 'telemetry.configure', 'telemetry.schema', 'telemetry.preview', 'telemetry.review_status',
@@ -26,6 +26,13 @@ export class ProductTelemetry {
     }
     desktopAction(action, input)
     if (Buffer.byteLength(JSON.stringify(input)) > 8192) throw new Error(telemetryMessages.telemetry_invalid_request)
-    return this.call({ action: action.slice('telemetry.'.length), ...input }, signal)
+    const result = await this.call({ action: action.slice('telemetry.'.length), ...input }, signal)
+    if ((action === 'telemetry.status' || action === 'telemetry.configure') &&
+        result.schema_version === 1 && result.user_enabled === false && !signal?.aborted) {
+      // This notification can only suppress optional samples. It conveys no
+      // permission or private fields and must not alter the control result.
+      try { this.userDisabled?.() } catch { /* Optional negative hint. */ }
+    }
+    return result
   }
 }

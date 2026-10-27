@@ -410,6 +410,16 @@ and delivered nothing. Summary generation was skipped and qualification rejected
 the missing summary. Its cause remains unestablished; no app rerun or resource
 acceptance is credited.
 
+The [confirmed-opt-out follow-up](../validation/2026-10-27-telemetry-disabled-hint.md)
+forwards only a bounded negative hint from a successful current-schema status or
+configure reply with `user_enabled: false`. A later-created native owner receives
+the original monotonic expiry, avoiding a duplicate SQLite read without creating
+authorizing permission. No worker, timer, sideband file or network is added.
+Actual Electron component checks passed 116 of 118 cases, with two Windows-only
+skips and no failures; SDK/native builds passed and 623 runtime/test inputs were
+unchanged. No enabled-mode optimization, measured resource saving or new app/
+platform qualification is established.
+
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
 observations can be reused for **250 ms**, so a recent re-enable may lose optional
