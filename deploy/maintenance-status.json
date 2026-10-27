@@ -23,96 +23,94 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "4febe8e2964d81904a4a904c32c63a62cdad3c92",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T07:38:31Z",
+      "updated_at": "2026-10-27T07:38:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468322021",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 1,
-        "succeeded": 1,
+        "completed": 3,
+        "succeeded": 3,
         "active": [
-          {
-            "id": 122069038887,
-            "name": "lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Scan exact source with pinned rules and an archived-key rejection control"
-            ]
-          },
           {
             "id": 122069039020,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install uv==0.12.24"
+              "Run npm --prefix studio/frontend run test:telemetry"
             ]
           },
           {
             "id": 122069085335,
             "name": "service (3.13)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
           },
           {
             "id": 122069085359,
             "name": "legacy",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
           },
           {
             "id": 122069085374,
             "name": "service (3.12)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
           },
           {
             "id": 122069085379,
             "name": "supervision (macos-15-intel)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 122069085392,
-            "name": "dependency-audit",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
           },
           {
             "id": 122069085402,
             "name": "service (3.14)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
           },
           {
             "id": 122069085421,
             "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
           },
           {
             "id": 122069085444,
             "name": "container (ubuntu-22.04)",
-            "status": "queued",
-            "runner_assigned": null,
+            "status": "in_progress",
+            "runner_assigned": true,
             "steps": []
           },
           {
             "id": 122069086069,
             "name": "container (ubuntu-22.04-arm)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
           }
         ]
       },
@@ -173,7 +171,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
+              "Scan the exact downloaded distributions before publication"
             ]
           }
         ]
@@ -186,28 +184,10 @@
       "workflow": "website-release.yml",
       "branch": "main",
       "source_commit": "4febe8e2964d81904a4a904c32c63a62cdad3c92",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T07:38:26Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468321987",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 122069039053,
-            "name": "synchronize",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Validate and publish the Git-owned product documentation"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T07:38:43Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468321987"
     },
     {
       "id": 40456602936,
@@ -221,5 +201,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456602936"
     }
   ],
-  "observed_at": "2026-10-27T07:38:34+00:00"
+  "observed_at": "2026-10-27T07:39:18+00:00"
 }
