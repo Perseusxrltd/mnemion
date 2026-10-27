@@ -1,6 +1,6 @@
 # Dedicated product telemetry collector
 
-**Source implementation, with a 26 October selection follow-up.** The dedicated collector entrypoint
+**Source implementation, including the 27 October Linux crash guard.** The dedicated collector entrypoint
 and minimal deployment runtime are implemented. They are not a deployed or
 qualified production destination. Product collection remains disabled; the
 disclosed destination and release-owned route remain unset. See the
@@ -183,10 +183,20 @@ The standalone command below continues to create its own loopback listener.
 
 The service uses the separate account and sets 128 MiB memory, no swap, 25% of
 one CPU, 128 file descriptors and 16 tasks. It drops capabilities, discards
-stdout/stderr and disables core dumps; the private state directory is its
-writable persistent area. A finite [loopback-only VPS stage](../validation/2026-10-25-telemetry-collector-service.md#finite-vps-staging)
-verified the configured restrictions. Public ingress, provider privacy and
+stdout/stderr and sets `LimitCORE=0`; the private state directory is its
+writable persistent area. The earlier finite [loopback-only VPS stage](../validation/2026-10-25-telemetry-collector-service.md#finite-vps-staging)
+verified the then-configured restrictions. Public ingress, provider privacy and
 capacity remain unqualified.
+
+Linux can ignore `RLIMIT_CORE` when a core handler receives dumps through a
+pipe. The [current startup guard](../validation/2026-10-27-telemetry-crash-boundary.md)
+therefore sets both core limits to zero, clears process dumpability and verifies
+it before taking the inherited listener, opening aggregate state or initializing
+TLS. Unavailable or refused protection stops `serve` with a fixed configuration
+error. Report inspection and non-Linux execution skip this guard. Its 19 passing
+source tests include a real child kernel probe and separate real TLS checks;
+they do not qualify actual crash capture, privileged host/provider snapshots or
+an installed collector.
 
 To shut the collector down, stop both units so the listener cannot reactivate it:
 

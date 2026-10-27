@@ -44,6 +44,32 @@ class ConfigurationError(ValueError):
     pass
 
 
+def _disable_crash_dumps():
+    """Protect the dedicated Linux collector before loading private state."""
+    if sys.platform != "linux":
+        return
+    try:
+        import ctypes
+        import resource
+
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        # Linux ignores RLIMIT_CORE for piped crash handlers. Disable process
+        # dumpability as well, then verify the kernel accepted that setting.
+        prctl = ctypes.CDLL(None, use_errno=True).prctl
+        prctl.argtypes = [
+            ctypes.c_int,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+        ]
+        prctl.restype = ctypes.c_int
+        if prctl(4, 0, 0, 0, 0) != 0 or prctl(3, 0, 0, 0, 0) != 0:
+            raise ConfigurationError
+    except (AttributeError, ImportError, OSError, ValueError):
+        raise ConfigurationError from None
+
+
 class _Parser(argparse.ArgumentParser):
     def error(self, message):
         # argparse normally echoes invalid values. Operator errors, including
@@ -257,6 +283,7 @@ def main(argv=None):
             or not args.private_key.is_absolute()
         ):
             raise ConfigurationError
+        _disable_crash_dumps()
         if args.systemd_socket:
             listener = _systemd_listener(args.bind, args.port)
         store = ReportStore(args.state)

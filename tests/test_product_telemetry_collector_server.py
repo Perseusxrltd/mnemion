@@ -348,3 +348,116 @@ def test_cli_configuration_errors_do_not_echo_private_values(tmp_path, certifica
     assert result.stdout == b""
     assert json.loads(result.stderr) == {"error": "telemetry_collector_configuration_invalid"}
     assert not (tmp_path / "unused").exists()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux process dumpability")
+def test_linux_collector_disables_dumps_before_serving(tmp_path):
+    # The fresh child starts dumpable with a zero core-file limit, the policy
+    # that alone cannot stop a configured Linux piped core handler.
+    script = """
+import ctypes,json,resource,sys
+from pathlib import Path
+from mnemion.product_telemetry import server
+libc=ctypes.CDLL(None)
+libc.prctl.argtypes=[ctypes.c_int,ctypes.c_ulong,ctypes.c_ulong,ctypes.c_ulong,ctypes.c_ulong]
+libc.prctl.restype=ctypes.c_int
+assert libc.prctl(4,1,0,0,0)==0
+resource.setrlimit(resource.RLIMIT_CORE,(0,0))
+async def inspect(args,store,listener=None):
+    print(json.dumps({'dumpable':libc.prctl(3,0,0,0,0),
+                      'core_limits':list(resource.getrlimit(resource.RLIMIT_CORE))}))
+    return 0
+server._serve=inspect
+raise SystemExit(server.main(['serve','--state',sys.argv[1],
+    '--certificate',str(Path(sys.argv[1]).parent/'certificate.pem'),
+    '--private-key',str(Path(sys.argv[1]).parent/'private-key.pem')]))
+"""
+    result = subprocess.run(
+        [COLLECTOR_PYTHON, "-c", script, str(tmp_path / "collector")],
+        cwd=ROOT,
+        capture_output=True,
+        timeout=8,
+        check=True,
+    )
+    assert result.stderr == b""
+    assert json.loads(result.stdout) == {"dumpable": 0, "core_limits": [0, 0]}
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux process dumpability")
+@pytest.mark.parametrize("failure", ["load", "set", "read", "still_dumpable", "limit"])
+def test_linux_privacy_failure_refuses_state_and_listener(tmp_path, monkeypatch, capsys, failure):
+    import ctypes
+    import resource
+
+    from mnemion.product_telemetry import server
+
+    calls = []
+
+    class Prctl:
+        def __call__(self, option, *_unused):
+            calls.append(option)
+            if option == 4:
+                return -1 if failure == "set" else 0
+            return -1 if failure == "read" else 1 if failure == "still_dumpable" else 0
+
+    def library(*_args, **_kwargs):
+        if failure == "load":
+            raise OSError(CANARY.decode())
+        return SimpleNamespace(prctl=Prctl())
+
+    def limit(*_args):
+        if failure == "limit":
+            raise OSError(CANARY.decode())
+
+    async def unexpected_serve(*_args):
+        calls.append("serve")
+        return 0
+
+    monkeypatch.setattr(ctypes, "CDLL", library)
+    monkeypatch.setattr(resource, "setrlimit", limit)
+    monkeypatch.setattr(server, "_serve", unexpected_serve)
+    state = tmp_path / "must-not-exist"
+    assert (
+        server.main(
+            [
+                "serve",
+                "--state",
+                str(state),
+                "--certificate",
+                str(tmp_path / "certificate.pem"),
+                "--private-key",
+                str(tmp_path / "private-key.pem"),
+            ]
+        )
+        == 2
+    )
+    assert not state.exists() and "serve" not in calls
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert json.loads(output.err) == {"error": "telemetry_collector_configuration_invalid"}
+
+
+def test_linux_dump_protection_is_not_applied_to_other_platforms(monkeypatch):
+    import ctypes
+
+    from mnemion.product_telemetry import server
+
+    def unexpected(*_args, **_kwargs):
+        pytest.fail("Non-Linux collection attempted a Linux kernel operation")
+
+    monkeypatch.setattr(server.sys, "platform", "darwin")
+    monkeypatch.setattr(ctypes, "CDLL", unexpected)
+    server._disable_crash_dumps()
+
+
+def test_report_inspection_does_not_change_process_dump_policy(tmp_path, monkeypatch, capsys):
+    from mnemion.product_telemetry import server
+
+    def unexpected():
+        pytest.fail("Report inspection changed process dump policy")
+
+    state = tmp_path / "reports"
+    server.ReportStore(state)
+    monkeypatch.setattr(server, "_disable_crash_dumps", unexpected)
+    assert server.main(["reports", "--state", str(state)]) == 0
+    assert json.loads(capsys.readouterr().out) == {"schema_version": 1, "reports": []}
