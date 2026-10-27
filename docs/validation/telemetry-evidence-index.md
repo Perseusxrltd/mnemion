@@ -124,4 +124,7 @@ claim. Local tests, isolated synthetic inputs, real loopback TLS, compiled
 development apps and installed release targets have different scopes.
 Publication of disabled controls is not production telemetry activation.
 
-Release-gate evidence: [27 October scanner-boundary correction](2026-10-27-release-scan-boundary.md).
+Release-gate evidence: [27 October scanner-boundary correction and 4.46.29 publication](2026-10-27-release-scan-boundary.md).
+Corrected verifier 40423232306 passed; 4.46.29 was published at
+2026-10-27T00:03:26Z with all 38 original assets unchanged. The original rejection
+is retained; later-source and full telemetry qualification remain separate.

@@ -1,10 +1,13 @@
 # Release scan boundary correction — 27 October 2026
 
-The original 4.46.29 native run passed, but
+The original [4.46.29 native run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477)
+passed, but
 [artifact verification 40417189624](https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624)
 rejected one `square-access-token` match in the macOS x64 Electron Framework.
-That rejection blocked publication and remains retained. The cause is now
-established as a scanner-boundary false positive in public upstream data.
+That rejection initially blocked publication and remains retained. The cause
+was a scanner-boundary false positive in public upstream data. Corrected
+verification subsequently passed, and 4.46.29 was published with its original
+assets unchanged.
 
 ## Reproduction and provenance
 
@@ -47,9 +50,32 @@ has SHA-256
 `7a93b0a47518cf2e7385dd1c37a3f0f30985af5eda48551e5da183300474a95d`.
 No live credential validation was performed.
 
-Full remote verification of the original **38 release assets** and release
-qualification remain pending. No full local distribution scan was repeated;
-these focused checks do not establish publication. The correction changes no telemetry policy,
-resource ceiling or requirement state. All 66 requirements remain intact;
-V08 stays Building and production collection remains disabled. Existing
-resource, platform and provider/privacy gates remain open.
+## Completed verification and publication
+
+The corrected [verifier 40423232306](https://github.com/Perseusxrltd/mnemion/actions/runs/40423232306)
+completed successfully using trusted workflow source
+`da93e4c7163cded188bb00895ea6d0da27b08675`. It verified the original native
+run's source `39ed946a58b8a4dd10da2dd8f4b88bc71582df12` and all **38 original
+release assets**. Asset identities, sizes and digests remained unchanged after
+verification and at publication; the release tag matched the verified source.
+The full remote distribution scan passed with **zero findings**, using the
+reviewed rules and no filename exclusions or file-size skips. Its recorded scope
+does not include executable decompilation or encrypted-content decryption.
+
+[4.46.29 was published](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.29)
+at **2026-10-27T00:03:26Z**. The [publication receipt](releases/4.46.29-publication.json)
+and [verified asset inventory](releases/4.46.29-artifacts.json) are committed
+alongside this report. The retained publication evidence also includes
+`qualification.json`, SHA-256
+`fa79fd066d5c5f013e31d1408a970e22bdaac6d814e21e2499f80e015ca68f73`,
+and `publication.json`, SHA-256
+`13b1110f7d01144f869c189d6253fb9aeed039baa659f4ca7f8faa26d9522d8f`,
+alongside the completed-verifier, release-verification and secret-scan receipts.
+No full local distribution scan was repeated. The original failure and its
+upstream provenance remain retained.
+
+This qualifies publication of the original 4.46.29 artifacts, not the later
+4.46.33 implementation or full telemetry. The correction changes no telemetry
+policy, resource ceiling or requirement state. All 66 requirements remain
+intact; V08 stays Building and production collection remains unavailable.
+Telemetry resource, installed-platform and provider/privacy gates remain open.
