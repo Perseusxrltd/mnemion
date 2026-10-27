@@ -3,9 +3,12 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager, closing, suppress
 from datetime import datetime, timedelta, timezone
+import json
 import socket
 import sqlite3
 import ssl
+import subprocess
+import sys
 import time
 from types import SimpleNamespace
 
@@ -315,6 +318,119 @@ def test_unavailable_application_owner_does_not_change_lifespan_errors(tmp_path)
 
     asyncio.run(scenario())
     assert not (tmp_path / "absent").exists()
+
+
+@pytest.mark.parametrize("path", ["late_finish", "early_begin"])
+@pytest.mark.parametrize("ending", ["ready", "opted_out", "closed"])
+def test_queued_service_delivery_survives_collection_exhaustion(
+    installation, monkeypatch, path, ending
+):
+    from mnemion.product_telemetry import activity, workflow
+
+    f = installation
+    now = [0.0]
+    # Advance only the producer/owner clocks. Real TLS and asyncio deadlines
+    # keep their real monotonic clock; this is not a resource measurement.
+    monkeypatch.setattr(activity, "time", SimpleNamespace(monotonic=lambda: now[0]))
+    monkeypatch.setattr(workflow, "time", SimpleNamespace(monotonic=lambda: now[0]))
+    monkeypatch.setattr(
+        aggregate, "time", SimpleNamespace(monotonic=lambda: now[0], time=time.time)
+    )
+
+    async def scenario():
+        async with peer(f.context) as server:
+            f.prepare(server.endpoint, reserve=False)
+            ready, preparations = False, []
+
+            async def prepare():
+                preparations.append(None)
+                return ready
+
+            owner = activity.Activity(
+                f.root,
+                server.endpoint,
+                lambda: {"network": "unmetered", "constrained": False},
+                prepare=prepare,
+            )
+
+            async def settle():
+                await asyncio.sleep(0)
+                if owner._task is not None:
+                    await asyncio.wait_for(owner._task, 3)
+
+            with activity._registry_lock:
+                assert owner.root not in activity._owners
+                activity._owners[owner.root] = owner
+            try:
+                delayed = workflow.begin("memory.recall", "headless", root=f.root)
+                assert delayed is not None
+                for index in range(32):
+                    now[0] = index * 0.5
+                    active = workflow.begin("memory.recall", "headless", root=f.root)
+                    assert active is not None
+                    active.finish("success")
+                    await settle()
+                assert len(preparations) == 1 and server.requests == []
+                ready = True
+                if ending == "opted_out":
+                    policy.configure(f.root, {"enabled": False, "expected_revision": 0})
+                if ending == "closed":
+                    await owner.close()
+                now[0] = 60.001
+                if path == "late_finish":
+                    delayed.finish("success")
+                else:
+                    assert workflow.begin("memory.recall", "headless", root=f.root) is None
+                await settle()
+                expected = int(ending == "ready")
+                assert len(server.requests) == expected
+                assert len(preparations) == 1 + expected
+                with closing(sqlite3.connect(f.root / policy.DATABASE_NAME)) as db:
+                    assert db.execute("SELECT count(*) FROM delivery_attempts").fetchone() == (
+                        expected,
+                    )
+                    assert db.execute("SELECT lease_token FROM delivery_state").fetchone() == (
+                        None,
+                    )
+                delayed.finish("success")
+                later = workflow.begin("memory.recall", "headless", root=f.root)
+                if later is not None:
+                    later.finish("success")
+                await settle()
+                assert len(server.requests) == expected
+            finally:
+                with activity._registry_lock:
+                    del activity._owners[owner.root]
+                await owner.close()
+
+    asyncio.run(scenario())
+
+
+def test_standalone_collection_does_not_import_a_delivery_lifetime(tmp_path):
+    program = """
+import json,sys
+from pathlib import Path
+from mnemion.product_telemetry import aggregate,policy,workflow
+root=Path(sys.argv[1])/'private'
+policy.COLLECTION_AVAILABLE=True
+policy.COLLECTOR_URL='https://telemetry-fixture.invalid/v1/report'
+policy.company_policy_file=lambda:root.parent/'company.json'
+policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':1})
+before='mnemion.product_telemetry.activity' in sys.modules
+active=workflow.begin('memory.recall','headless',root=root)
+assert active is not None
+active.finish('success')
+print(json.dumps({'before':before,'after':'mnemion.product_telemetry.activity' in sys.modules,
+                  'recorded':bool(aggregate.preview(root))}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", program, str(tmp_path)],
+        text=True,
+        capture_output=True,
+        check=True,
+        timeout=20,
+    )
+    assert json.loads(completed.stdout) == {"before": False, "after": False, "recorded": True}
 
 
 @pytest.mark.parametrize("ending", ["success", "wait_deadline", "opt_out", "approved_review"])

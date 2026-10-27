@@ -516,9 +516,24 @@ policy, sensors, spending and final-send gates remain. No timer, contribution or
 wire allowance is added. Actual Electron component checks sent once after
 readiness returned and zero times after opt-out or close. This separately
 reproduced bug is not the established cause of the failed app comparison.
-One changed-source comparison using the same six cases, 128 memory cycles per
-case and strict controls is selected after integration. Its result remains
-pending; the original run is not replayed or retried.
+The [changed-source comparison](../validation/2026-10-27-telemetry-delivery-comparison.md),
+run **40483350394** on `29dcd70d`, completed all six functional journeys with
+2,143 matched source inputs each, actual setup/process controls and cleanup.
+Both enabled cases delivered one four-byte report. Resource acceptance still
+fails: enabled main-process matched RSS maxima were **3,768,320 / 3,129,344
+bytes**. Both orders, opted-out controls, renderer results and endings are
+retained in the report; CPU remains descriptive. Original run 40477197149 stays
+failed with cause unproved. No further app comparison is selected.
+
+The later [browser/Python owner follow-up](../validation/2026-10-27-telemetry-owner-saturation.md)
+reoffers prior committed work after browser Web Lock release and through Python
+completion/resource/early-exhaustion paths. Python keeps one immutable stamp
+under the existing lock and cadence, cleared on close; only an already-loaded,
+registered owner can receive a pulse. Standalone collection no longer imports
+activity/`asyncio` merely to offer work. Fresh permission and all budgets remain.
+Qualified source checks are 137 distinct Python and 96 browser-source cases,
+with SDK/frontend builds passing. Browser fetch/locks/admission are mocked;
+the earlier app comparison does not include these changes or qualify them.
 
 The managed updater can also offer an existing bounded queue or still-valid
 approved held report during its already scheduled five- or ten-second waits.

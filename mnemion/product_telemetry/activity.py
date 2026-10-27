@@ -26,6 +26,14 @@ def offer_recorded(root: Path | None, revision: int, generation: str) -> None:
         owner.offer(revision, generation)
 
 
+def offer_awake(root: Path | None) -> None:
+    """Existing work may revisit this owner's prior queue, not create a stamp."""
+    with _registry_lock:
+        owner = _owners.get(_root(root))
+    if owner is not None:
+        owner.awake()
+
+
 class Activity:
     def __init__(self, root: Path, endpoint, conditions, *, prepare=None, cleanup=None):
         from .delivery import DeliveryBudget
@@ -41,20 +49,34 @@ class Activity:
         self._closed = False
         self._next_check = 0.0
         self._task: asyncio.Task | None = None
+        self._last_recorded: tuple[int, str] | None = None
 
     def offer(self, revision: int, generation: str) -> None:
         if type(revision) is not int or not policy.valid_generation(generation):
             return
         with self._lock:
-            now = time.monotonic()
-            if self._closed or self._scheduled or now < self._next_check:
+            if self._closed:
                 return
-            self._scheduled = True
-            self._next_check = now + 60
-            try:
-                self.loop.call_soon_threadsafe(self._launch, revision, generation)
-            except RuntimeError:
-                self._scheduled = False
+            # One immutable stamp identifies committed work, not permission.
+            # Keep the latest even when an active attempt coalesces this offer.
+            self._last_recorded = (revision, generation)
+            self._schedule_locked(revision, generation)
+
+    def awake(self) -> None:
+        with self._lock:
+            if self._last_recorded is not None:
+                self._schedule_locked(*self._last_recorded)
+
+    def _schedule_locked(self, revision: int, generation: str) -> None:
+        now = time.monotonic()
+        if self._closed or self._scheduled or now < self._next_check:
+            return
+        self._scheduled = True
+        self._next_check = now + 60
+        try:
+            self.loop.call_soon_threadsafe(self._launch, revision, generation)
+        except RuntimeError:
+            self._scheduled = False
 
     def _launch(self, revision: int, generation: str) -> None:
         with self._lock:
@@ -96,6 +118,7 @@ class Activity:
     def stop(self):
         with self._lock:
             self._closed = True
+            self._last_recorded = None
             task = self._task
         if task is not None:
             task.cancel()

@@ -71,6 +71,7 @@ export class BrowserTelemetryActivity {
     }
   }
   offer(stamp: TelemetryStamp): void { this.activity.offer(stamp) }
+  awake(): void { this.activity.awake() }
   offerApproved(stamp: TelemetryStamp): void { this.activity.offer(stamp, true) }
   invalidate(): void { this.stop?.abort(); this.activity.pause('choice'); this.activity.resume('choice') }
   private release(): void { this.cleanup?.(); this.cleanup = undefined }

@@ -8,10 +8,10 @@ import ts from 'typescript'
 const path = new URL('../src/workspace/telemetry-policy.ts', import.meta.url)
 const modules = new Map()
 const jsonImports = new Set()
-function load(url) {
-  if (modules.has(url.href)) return modules.get(url.href)
+function load(url, cache = modules) {
+  if (cache.has(url.href)) return cache.get(url.href)
   const exported = {}
-  modules.set(url.href, exported)
+  cache.set(url.href, exported)
   const code = ts.transpileModule(readFileSync(url, 'utf8'), { compilerOptions: {
     target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
   } }).outputText
@@ -19,7 +19,7 @@ function load(url) {
   new Function('require', 'exports', code)(name => {
     if (name.endsWith('.json')) jsonImports.add(name)
     return name.startsWith('.') && !name.endsWith('.json')
-      ? load(new URL(name.replace(/\.js$/, '') + '.ts', url)) : local(name)
+      ? load(new URL(name.replace(/\.js$/, '') + '.ts', url), cache) : local(name)
   }, exported)
   return exported
 }
@@ -557,3 +557,85 @@ test('an unavailable browser lock drops a paired observation without retry or st
   assert.equal(await exported.recordBrowserTelemetry(measured({ secret: 'PRIVATE_SENTINEL' }), current), false)
   assert.equal(instance.attempts(), 1)
 }))
+
+for (const ending of ['ready', 'opted_out', 'page_exit']) test('queued browser delivery survives refused collection: ' + ending, async t => {
+  const instance = installation(), destination = 'https://telemetry-fixture.invalid/v1/report'
+  const original = { collection_available: contract.collection_available, destination: contract.destination }
+  const saved = Object.fromEntries(['window', 'document', 'navigator', 'fetch'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  const page = Object.assign(new EventTarget(), {
+    location: new URL('https://workspace-fixture.invalid/studio'), localStorage: instance.storage,
+  })
+  const document = Object.assign(new EventTarget(), { visibilityState: 'visible', querySelector: () => null })
+  // An immediate lock adapter exercises producer/owner admission here. Real
+  // browser coordination and sensor qualification retain their own evidence.
+  const navigator = { onLine: true, locks: { request: async (name, options, callback = options) => callback({ name }) } }
+  const requests = []
+  const fetch = async (url, options) => {
+    requests.push({ url, ...options, body: options.body ? [...options.body] : undefined })
+    let response
+    if (url === page.location.origin + '/studio/telemetry-policy') {
+      const body = JSON.stringify({ state: 'unmanaged', enabled: true, metric_groups: [...contract.metric_groups] })
+      response = new Response(body, { headers: { 'content-type': 'application/json',
+        'content-length': String(new TextEncoder().encode(body).length), 'cache-control': 'no-store' } })
+    } else {
+      assert.equal(url, destination)
+      response = new Response(null, { status: 204, headers: { 'content-length': '0' } })
+    }
+    Object.defineProperty(response, 'url', { value: url })
+    return response
+  }
+  for (const [key, value] of Object.entries({ window: page, document, navigator, fetch }))
+    Object.defineProperty(globalThis, key, { configurable: true, value })
+  Object.assign(contract, { collection_available: true, destination })
+  let owner, now = 0, ready = false, preparations = 0
+  t.mock.method(performance, 'now', () => now)
+  t.after(async () => {
+    if (owner) { owner.activity.close(); await owner.activity.settled() }
+    Object.assign(contract, original)
+    for (const [key, descriptor] of Object.entries(saved)) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else delete globalThis[key]
+    }
+  })
+  // A fresh module graph models a fresh page, including its genuine lifecycle
+  // listeners and owner, without reusing a prior test's permission or stamp.
+  const cache = new Map(), current = load(path, cache)
+  const { BrowserTelemetryActivity } = cache.get(new URL('../src/workspace/telemetry-activity.ts', import.meta.url).href)
+  const offer = BrowserTelemetryActivity.prototype.offer
+  t.mock.method(BrowserTelemetryActivity.prototype, 'offer', function (stamp) {
+    if (!owner) {
+      owner = this
+      t.mock.method(this.conditions, 'start', async () => { preparations++; return ready })
+      t.mock.method(this.conditions, 'read', () => ({ network: 'unmetered', constrained: false }))
+    }
+    return offer.call(this, stamp)
+  })
+  const status = await current.telemetryConfigure({ enabled: true, expected_revision: 0,
+    disclosure_version: contract.version, connection_mode: 'unmetered' })
+  const input = { kind: 'submission', workflow: 'memory.recall', surface: 'browser' }
+  for (let index = 0; index < 64; index++) {
+    now = index * 500
+    assert.equal(await current.recordBrowserTelemetry(input, status), true)
+    await owner.activity.settled()
+  }
+  assert.equal(preparations, 1)
+  assert.equal(requests.length, 0)
+  ready = true
+  if (ending === 'opted_out') await current.telemetryConfigure({ enabled: false, expected_revision: status.revision })
+  if (ending === 'page_exit') page.dispatchEvent(new Event('pagehide'))
+  now = 60001
+  assert.equal(await current.recordBrowserTelemetry(input, status), false)
+  await owner.activity.settled()
+  const reports = requests.filter(request => request.method === 'POST')
+  assert.equal(reports.length, ending === 'ready' ? 1 : 0)
+  assert.equal(preparations, ending === 'ready' ? 2 : 1)
+  if (reports.length) {
+    assert.equal(reports[0].body.length, 4)
+    assert.equal(reports[0].credentials, 'omit')
+    assert.equal(reports[0].referrerPolicy, 'no-referrer')
+  }
+  assert.equal(await current.recordBrowserTelemetry(input, status), false)
+  await owner.activity.settled()
+  assert.equal(requests.filter(request => request.method === 'POST').length, reports.length)
+  assert.equal((await current.telemetryStatus()).delivery_budget.attempts_in_rolling_week, reports.length)
+})

@@ -4,10 +4,22 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import sys
 import time
 
 from . import aggregate, policy
 from .catalog import METRICS, SURFACES, WORKFLOW_IDS, observation
+
+_ACTIVITY_MODULE = __package__ + ".activity"
+
+
+def _awake_delivery(root: Path | None) -> None:
+    # A live registered owner necessarily loaded its own module. A CLI with
+    # no such lifetime must not import asyncio or create one just to offer work.
+    if policy.COLLECTION_AVAILABLE and policy.COLLECTOR_URL is not None:
+        owner = sys.modules.get(_ACTIVITY_MODULE)
+        if owner is not None:
+            owner.offer_awake(root)
 
 
 class Workflow:
@@ -49,6 +61,8 @@ class Workflow:
             )
             if recorded:
                 self._offer_delivery()
+            else:
+                _awake_delivery(self._root)
         except Exception:
             return
 
@@ -87,14 +101,16 @@ class Workflow:
             )
             if recorded:
                 self._offer_delivery()
+            else:
+                _awake_delivery(self._root)
         except Exception:
             # Optional measurement never changes the user's operation or output.
             return
 
     def _offer_delivery(self) -> None:
-        from .activity import offer_recorded
-
-        offer_recorded(self._root, self._revision, self._generation)
+        owner = sys.modules.get(_ACTIVITY_MODULE)
+        if owner is not None:
+            owner.offer_recorded(self._root, self._revision, self._generation)
 
 
 class WorkflowChoice(Workflow):
@@ -149,6 +165,7 @@ def begin_choices(
         # Exhausting collection cannot hide a later delivery-only cycle. The
         # final selected workflow still has its own atomic contribution limit.
         if all(aggregate.workflow_exhausted(root, name, surface) for name in choices):
+            _awake_delivery(root)
             return None
         current = policy.status(root)
         if not current["effective_enabled"]:
@@ -171,6 +188,7 @@ def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow 
         if not math.isfinite(started):
             return None
         if aggregate.workflow_exhausted(root, workflow, surface):
+            _awake_delivery(root)
             return None
         current = policy.status(root)
         if not current["effective_enabled"]:

@@ -52,13 +52,17 @@ The earlier source qualification and runtime inventory remain preserved.
 
 The [original app comparison](2026-10-27-telemetry-catalog-comparison.md), run
 **40477197149**, remains **failed with five of six journeys completed**. This
-separately reproduced bug is **not its established cause**. No app rerun,
-RSS/CPU saving or resource acceptance is credited. All earlier failed evidence
+separately reproduced bug is **not its established cause**. No replay of that
+original, causal RSS/CPU saving or resource acceptance is credited. All earlier failed evidence
 and the strict **2 MiB / 0.5%** ceilings remain binding.
 
-Exactly one changed-source comparison is selected after integration, using the
-same six cases, 128 memory cycles per case and strict controls. It is pending
-without a run ID or result; the original run is not replayed or retried.
+The selected [changed-source comparison](2026-10-27-telemetry-delivery-comparison.md)
+completed as run **40483350394** on `29dcd70d`, with all six 128-cycle functional
+journeys, source bindings and cleanup qualified. Resource acceptance still fails
+2 MiB. The original run is not replayed or retried, and its cause remains
+unproved. No further app comparison is selected. The later
+[browser/Python source follow-up](2026-10-27-telemetry-owner-saturation.md) has
+separate checks and was not included in that app run.
 
 All 66 requirement states remain unchanged, V08 remains **Building**, collection/
 destination/route remain **false/null/null**, and release CAs are empty. The

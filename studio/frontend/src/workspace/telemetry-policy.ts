@@ -434,7 +434,7 @@ export async function telemetryReviewAction(action: TelemetryReviewAction, input
   }
 }
 
-/** Best effort and no lock waiting. Only an accepted count can offer delivery. */
+/** Best effort and no lock waiting. Only committed work can originate delivery. */
 export async function recordBrowserTelemetry(input: unknown, stamp: TelemetryStamp): Promise<boolean> {
   return recordBrowserTelemetryMany([input], stamp)
 }
@@ -452,6 +452,7 @@ export async function recordBrowserTelemetryMany(inputs: unknown[], stamp: Telem
     const recorded = await navigator.locks.request(choiceKey, { ifAvailable: true }, lock => lock ? browser.recordMany(values, expected) : false)
     // Wait for the actual Web Lock release before a reservation can compete.
     if (recorded) browserActivity.offer(expected)
+    else browserActivity.awake()
     return recorded
   } catch { return false }
 }
