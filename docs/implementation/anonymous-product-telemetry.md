@@ -384,6 +384,14 @@ case and confirmed all three recorded control states. The original receipts
 and failed workflow remain unchanged; full-workflow, resource, installed-platform
 and full privacy acceptance remain unqualified.
 
+The [catalog lookup follow-up](../validation/2026-10-27-telemetry-catalog-residency.md)
+reuses fixed release metadata without caching privacy, generation or queue
+state. Its 128-iteration fixture removes the measured recurring enumerations,
+family splits and bucket callbacks; native/browser-source parity checks and all
+builds passed. This establishes no RSS/CPU saving. One six-case comparison
+without allocation attribution is selected from main after integration;
+dispatch, exact source/run bindings and results remain pending.
+
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
 observations can be reused for **250 ms**, so a recent re-enable may lose optional

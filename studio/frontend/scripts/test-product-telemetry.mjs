@@ -30,6 +30,43 @@ const { TelemetrySnapshotReader } = load(new URL('../src/workspace/telemetry-ref
 const { needsTelemetrySetup, telemetrySetupChoice } = load(new URL('../src/workspace/telemetry-setup.ts', import.meta.url))
 const contract = createRequire(path)('../../../../mnemion/product_telemetry/disclosure.json')
 
+test('fixed catalog work reuses definitions instead of allocating lookup arrays per cell', t => {
+  const { TelemetryCatalog } = load(new URL('../../electron/telemetry-catalog.ts', import.meta.url))
+  const specification = structuredClone(telemetryCatalog.specification)
+  const counts = { metricEnumerations: 0, resourceEnumerations: 0, familySplits: 0, bucketCallbacks: 0 }
+  const bounds = new Set([...Object.values(specification.metrics), ...Object.values(specification.resource_metrics)]
+    .map(metric => metric.upper_bounds))
+  for (const [field, counter] of [['metrics', 'metricEnumerations'], ['resource_metrics', 'resourceEnumerations']]) {
+    specification[field] = new Proxy(specification[field], { ownKeys(target) {
+      counts[counter]++
+      return Reflect.ownKeys(target)
+    } })
+  }
+  const catalog = new TelemetryCatalog(specification)
+  for (const name of Object.keys(counts)) counts[name] = 0
+  const split = String.prototype.split, findIndex = Array.prototype.findIndex
+  t.mock.method(String.prototype, 'split', function (...args) {
+    if (String(this) === 'memory.recall' && args[0] === '.') counts.familySplits++
+    return split.apply(this, args)
+  })
+  // Node's MockTracker rejects Array.prototype as a mock target.
+  t.after(() => { Array.prototype.findIndex = findIndex })
+  Array.prototype.findIndex = function (...args) {
+    if (bounds.has(this)) counts.bucketCallbacks++
+    return findIndex.apply(this, args)
+  }
+  for (let index = 0; index < 128; index++) {
+    const observations = [
+      { kind: 'outcome', workflow: 'memory.recall', surface: 'desktop', outcome: 'success', latency_ms: index, result_items: 4 },
+      { kind: 'resource', metric: 'rss_bytes', value: 262144 },
+    ]
+    for (const observation of observations) for (const cell of catalog.observation(observation).cells) {
+      assert.equal(catalog.group(cell), catalog.describe(cell).group)
+    }
+  }
+  assert.deepEqual(counts, { metricEnumerations: 0, resourceEnumerations: 0, familySplits: 0, bucketCallbacks: 0 })
+})
+
 function installation() {
   const values = new Map()
   const storage = { getItem: key => values.get(key) ?? null,

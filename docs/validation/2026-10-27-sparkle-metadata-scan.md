@@ -3,8 +3,9 @@
 The original [4.46.37 native build](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553)
 passed. Its [artifact verifier](https://github.com/Perseusxrltd/mnemion/actions/runs/40468253346)
 then rejected one `generic-api-key` finding in the macOS Intel disk image.
-Publication remained blocked. The original artifact and redacted rejection are
-retained; no release asset was changed or rebuilt for this correction.
+That failure blocked publication until the corrected verification below.
+The original artifact and redacted rejection are retained; no release asset
+was changed or rebuilt for this correction.
 
 ## Located public metadata
 
@@ -51,14 +52,35 @@ Private evidence retains `upstream-qualification.json`,
 reproductions. The corrected policy has SHA-256
 `c946f178327fd5cf2d5cd51d9c993c3fe99ccf81860b038c196ff5dbfe3e8ad1`.
 
-## Publication boundary
+## Completed verification and publication
 
-The normal verifier must scan all **38 original assets** with this reviewed
-policy before publication can proceed. Local reproduction and unit tests do
-not replace that gate. The earlier
+The [corrected normal verifier](https://github.com/Perseusxrltd/mnemion/actions/runs/40473744894)
+passed using verifier source `8c7d5847b778b2f2bf643edae98497d04aaba9cc`
+and the reviewed scanner policy above. It checked all **38 original assets**,
+totalling **4,067,021,212 bytes**, with **zero scan findings**. The
+[artifact receipt](releases/4.46.37-artifacts.json) binds the unchanged asset
+IDs, sizes and digests to original native run **40462412553** and release source
+`629a7afc7938f87656ad05c2a38d5427ae5e35c8`. Its draft state records the
+verification stage before publication.
+
+[Mnemion 4.46.37](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.37)
+was published at **2026-10-27T08:34:37Z**. The
+[publication receipt](releases/4.46.37-publication.json) confirms that the tag
+matches the verified release source and all 38 original assets remained
+unchanged at publication. The original failed verifier and its evidence remain
+retained.
+
+The publication receipt preserves the initial follow-up dispatches. Later
+retained release-observer evidence confirms
+[website run 40474480217](https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217)
+completed successfully at **2026-10-27T08:35:19Z**, and
+[public-updates run 40474484566](https://github.com/Perseusxrltd/mnemion/actions/runs/40474484566)
+at **2026-10-27T08:46:37Z**. These normal release follow-ups do not establish an
+installation upgrade on a particular PC or VPS. The earlier
 [Electron metadata correction](2026-10-27-release-scan-boundary.md) remains
 separate evidence.
 
 This changes neither telemetry runtime nor its resource limits. V08 remains
-Building, production collection remains unavailable, and all 66 requirement
-states are preserved.
+Building; collection/destination/route remain **false/null/null**, with release
+CAs empty. All 66 requirement states and remaining full acceptance gates are
+preserved.

@@ -95,6 +95,7 @@ claims about the current packet format.
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
+| 27 October | [Fixed catalog lookup residency](2026-10-27-telemetry-catalog-residency.md) | A 128-iteration fixture reduced recurring metric/resource enumerations, family splits and bucket-callback searches from 128/384/640/384 to zero after construction. Only fixed release metadata is reused. Actual Electron passed 47 checks with two Windows permission skips; 30 browser-source checks, Python parity for 65,536 cells/six invalid inputs/981 observation and bucket cases, and all builds passed; 771 checked inputs retained. Initial fixture error and genuine original regression remain separate. No RSS/CPU saving or resource acceptance; one six-case comparison without allocation attribution is selected after main integration, not yet dispatched. |
 | 27 October | [Source-kernel controls and retained diagnostic failure](2026-10-27-telemetry-probe-controls.md) | Original run 40470335733 on `d56d578f` failed after three cases completed 128 memory cycles and 387/387 API requests each, with cleanup. Unavailable made no status call; opted-out/enabled each received one actual reply. Opt-out correctly had no acknowledgement, writes or reports; enabled sent one four-byte synthetic report to the isolated collector. Correcting the diagnostic expectation passed 35 report tests and Ruff. Independent retained analysis matched 2,130 source inputs per case and verified all three control states, with four additional private mutation assertions. Earlier 33 tests/19 assertions remain historical. No app rerun or original rewrite; the workflow remains failed and full-workflow/resource/installed/privacy acceptance remains unqualified. |
 | 27 October | [Resource process-role controls and completed comparison](2026-10-27-telemetry-resource-roles.md) | Run 40453953300, source `6ac77003`: six 128-cycle functional cases, 2,114 matched source files each, 2,322 successful fixture API requests, verified main/renderer identities and cleanup. Allocation attribution was disabled. Enabled main matched maxima were 3,579,904/3,366,912 bytes; renderer maxima were 5,664,768/5,193,728 enabled and 5,111,808/5,136,384 opted out. Both orders, opted-out main, endings and CPU deltas are retained in the report. Old run 40416923461's second `Tab` remains unidentified. Resource acceptance remains false; no causal saving or general CPU/platform/privacy qualification. All failures and budgets retained; no new run selected. |
 | 27 October | [Metadata-allocation resource result](2026-10-27-telemetry-metadata-allocation-results.md) | Source `192b0df9`, run 40416923461: six functional cases, 2,075 matched source inputs each and cleanup passed. Enabled main matched maxima 9,261,056/2,936,832 bytes and ending matched-phase differences 9,261,056/1,593,344; both maxima exceed 2 MiB. Both orders and all roles retained; first enabled renderer comparison is unavailable due to initial-role ambiguity. CPU remains descriptive. These profiled diagnostics establish no causal regression, production-only overhead or resource/platform/privacy acceptance. Prior failures and budgets retained; no new resource run selected. |
@@ -148,8 +149,16 @@ Corrected verifier 40423232306 passed; 4.46.29 was published at
 2026-10-27T00:03:26Z with all 38 original assets unchanged. The original rejection
 is retained; later-source and full telemetry qualification remain separate.
 
-The [Sparkle metadata correction](2026-10-27-sparkle-metadata-scan.md) retains
-the original 4.46.37 verifier failure and verifies the exact public fragment
-against official upstream metadata. All 41 scanner tests passed; release assets
-remain unchanged. The normal verifier must still check all 38 original assets
-before publication. No telemetry runtime or acceptance state changed.
+The [Sparkle metadata correction and 4.46.37 publication](2026-10-27-sparkle-metadata-scan.md)
+retain the original verifier failure. Corrected normal verifier **40473744894**,
+on source `8c7d5847`, passed with **zero scan findings**. Version 4.46.37 was
+published at **2026-10-27T08:34:37Z**, with all **38 original assets unchanged**
+and the tag matching release source `629a7afc`. The
+[artifact](releases/4.46.37-artifacts.json) and
+[publication](releases/4.46.37-publication.json) receipts retain the source and
+inventory bindings and their initial follow-up dispatches. The later retained
+release observer confirms website run **40474480217** succeeded at
+**2026-10-27T08:35:19Z** and public-updates run **40474484566** at
+**2026-10-27T08:46:37Z**. These workflow results do not establish an upgrade on a
+particular PC or VPS. Telemetry runtime, V08 Building and all requirement/
+acceptance states remain unchanged.
