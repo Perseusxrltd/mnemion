@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T08:29:12+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T08:34:12+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.36](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.36). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.46\.36 | success | [Run 40456607379](https://github.com/Perseusxrltd/mnemion/actions/runs/40456607379) |
 | release\.yml | release/4\.46\.36 | success | [Run 40451445143](https://github.com/Perseusxrltd/mnemion/actions/runs/40451445143) |
 | release\.yml | release/4\.46\.37 | success | [Run 40462412553](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553) |
-| verify-artifacts\.yml | main | in\_progress | [Run 40473744894](https://github.com/Perseusxrltd/mnemion/actions/runs/40473744894) |
+| verify-artifacts\.yml | main | success | [Run 40473744894](https://github.com/Perseusxrltd/mnemion/actions/runs/40473744894) |
 | website-release\.yml | main | success | [Run 40473146255](https://github.com/Perseusxrltd/mnemion/actions/runs/40473146255) |
 | website-release\.yml | v4\.46\.36 | success | [Run 40456602936](https://github.com/Perseusxrltd/mnemion/actions/runs/40456602936) |
 
@@ -31,10 +31,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 40473744894](https://github.com/Perseusxrltd/mnemion/actions/runs/40473744894): 0/1 jobs completed; 0 succeeded.
-
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
