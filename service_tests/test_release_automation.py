@@ -175,6 +175,77 @@ def test_dry_run_checks_evidence_without_mutating_or_dispatching(fixture):
     assert all(call[0] == "api" for call in fixture.calls)
 
 
+def test_delayed_job_metadata_settles_before_the_single_publication(fixture, monkeypatch):
+    original = subject.api
+    replies = [
+        {"jobs": []},
+        {"jobs": [{"name": "verify", "status": "in_progress", "conclusion": None}]},
+        fixture.jobs,
+    ]
+    clock = [0.0]
+    monkeypatch.setattr(subject, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(subject, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+
+    def api(repo, path):
+        if path.startswith("actions/runs/100/jobs?"):
+            assert fixture.release["draft"]
+            assert not fixture.calls
+            return replies.pop(0)
+        return original(repo, path)
+
+    monkeypatch.setattr(subject, "api", api)
+    result = subject.publish(REPO, fixture.receipt, 100)
+    assert not replies and clock[0] == 4
+    assert result["uploaded_inventory_unchanged_at_publication"]
+    assert sum(call[:2] == ("release", "edit") for call in fixture.calls) == 1
+
+
+@pytest.mark.parametrize("missing", [True, False])
+def test_unsettled_metadata_has_a_finite_read_only_wait(fixture, monkeypatch, missing):
+    fixture.jobs = {"jobs": [] if missing else [{"name": "verify", "status": "queued"}]}
+    clock = [0.0]
+    monkeypatch.setattr(subject, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(subject, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+    with pytest.raises(ValueError, match="verification job must have passed"):
+        subject.publish(REPO, fixture.receipt, 100)
+    assert clock[0] == 60
+    assert fixture.release["draft"] and not fixture.calls
+
+
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "skipped", "neutral"])
+def test_terminal_verification_rejection_never_waits_or_publishes(fixture, monkeypatch, conclusion):
+    fixture.jobs["jobs"][0]["conclusion"] = conclusion
+    monkeypatch.setattr(subject, "sleep", lambda _: pytest.fail("A rejection must not be retried"))
+    with pytest.raises(ValueError, match="verification job must have passed"):
+        subject.publish(REPO, fixture.receipt, 100)
+    assert fixture.release["draft"] and not fixture.calls
+
+
+def test_ambiguous_verification_jobs_never_choose_the_passing_one(fixture, monkeypatch):
+    fixture.jobs["jobs"].append({"name": "verify", "status": "in_progress", "conclusion": None})
+    monkeypatch.setattr(subject, "sleep", lambda _: pytest.fail("Ambiguous proof must be rejected"))
+    with pytest.raises(ValueError, match="verification job must have passed"):
+        subject.publish(REPO, fixture.receipt, 100)
+    assert fixture.release["draft"] and not fixture.calls
+
+
+def test_verification_api_failure_does_not_retry_or_publish(fixture, monkeypatch):
+    original = subject.api
+
+    def api(repo, path):
+        if path.startswith("actions/runs/100/jobs?"):
+            raise RuntimeError("unavailable")
+        return original(repo, path)
+
+    monkeypatch.setattr(subject, "api", api)
+    monkeypatch.setattr(
+        subject, "sleep", lambda _: pytest.fail("An API failure must not be retried")
+    )
+    with pytest.raises(RuntimeError, match="unavailable"):
+        subject.publish(REPO, fixture.receipt, 100)
+    assert fixture.release["draft"] and not fixture.calls
+
+
 @pytest.mark.parametrize(
     "distribution_separator",
     [

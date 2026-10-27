@@ -156,6 +156,13 @@ this follow-up is excluded from released 4.46.13. A present broken helper is
 never bypassed. Linux/macOS source installs without the helper still require an
 explicit unmetered choice to resolve unknown cost, subject to every other veto.
 
+The [native SQL-read follow-up](../validation/2026-10-27-telemetry-sql-reads.md)
+changes database row handling while retaining fresh saved-choice, company-policy
+and private-file checks. Its Node 22.22 Linux source group passed 123 tests,
+with two Windows-only skips. No RSS or CPU saving is established; one
+changed-source app comparison is planned but not dispatched. Existing failed
+resource evidence and installed/platform qualification remain open.
+
 The [producer-overhead source follow-up](../validation/2026-10-25-telemetry-producer-overhead.md)
 reduces repeated local database work when optional measurement is already denied
 or capped. It does not cache permission to collect or change your saved choice.

@@ -363,12 +363,13 @@ test('workspace restoration cannot reuse a result after a real cross-runtime opt
 })
 
 test('native transactions preserve every supported schema without migrating a producer store', async t => {
-  for (const version of [3, 4, 5, 6]) await t.test(`schema ${version}`, async t => {
+  for (const [version, extraChoice] of [[3, false], [4, false], [5, false], [6, false], [3, true], [4, true]])
+    await t.test(`schema ${version}${extraChoice ? ' with an unused newer column' : ''}`, async t => {
     const { root, store, initial } = await fixture(t)
     const path = join(root, 'product-telemetry.sqlite3'), database = new DatabaseSync(path)
     try {
       if (version < 6) database.exec('DROP TABLE report_review')
-      if (version < 5) database.exec('ALTER TABLE preferences DROP COLUMN connection_mode')
+      if (version < 5 && !extraChoice) database.exec('ALTER TABLE preferences DROP COLUMN connection_mode')
       else database.exec("UPDATE preferences SET connection_mode='unmetered'")
       if (version < 4) database.exec('DROP TABLE delivery_state; DROP TABLE delivery_attempts')
       database.exec(`PRAGMA user_version=${version}`)
@@ -391,9 +392,12 @@ test('native authority checks reject damaged metadata and lookalike pragma table
   const cases = [
     ['foreign application', 'PRAGMA application_id=1'],
     ['unknown format', 'PRAGMA user_version=7'],
+    ['unknown format without connection choice', 'PRAGMA user_version=7; ALTER TABLE preferences DROP COLUMN connection_mode'],
     ['unsafe journal', 'PRAGMA journal_mode=WAL'],
     ['invalid connection choice', "PRAGMA ignore_check_constraints=ON; UPDATE preferences SET connection_mode='unknown'"],
     ['missing current connection choice', 'ALTER TABLE preferences DROP COLUMN connection_mode'],
+    ['missing legacy authority field', 'PRAGMA user_version=4; ALTER TABLE preferences DROP COLUMN revision'],
+    ['version pragma impostor', 'PRAGMA user_version=7; CREATE TABLE pragma_user_version(user_version); INSERT INTO pragma_user_version VALUES(6)'],
     ['application pragma impostor', 'PRAGMA application_id=1; CREATE TABLE pragma_application_id(application_id); INSERT INTO pragma_application_id VALUES(1296979024)'],
     ['journal pragma impostor', "PRAGMA journal_mode=WAL; CREATE TABLE pragma_journal_mode(journal_mode); INSERT INTO pragma_journal_mode VALUES('delete')"],
   ]
@@ -406,6 +410,29 @@ test('native authority checks reject damaged metadata and lookalike pragma table
     const inspect = new DatabaseSync(path, { readOnly: true })
     try { assert.equal(inspect.prepare('SELECT count(*) AS count FROM pending').get().count, 0) }
     finally { inspect.close() }
+  })
+})
+
+test('a malformed pending snapshot cannot commit partial company filtering or a new observation', async t => {
+  for (const count of [0, 256, 'INVALID_COUNT']) await t.test(`count ${count}`, async t => {
+    const { root, store, initial, invoke } = await fixture(t)
+    invoke('company', { value: { schema_version: 1, enabled: true, metric_groups: ['usage'] } })
+    const cells = store.catalog.observation(observation({ latency_ms: 20 })).cells
+    const path = join(root, 'product-telemetry.sqlite3'), database = new DatabaseSync(path)
+    try {
+      database.exec('PRAGMA ignore_check_constraints=ON')
+      const insert = database.prepare('INSERT INTO pending VALUES (?, ?, 20000)')
+      for (const cell of cells) insert.run(cell, store.catalog.group(cell) === 'usage' ? count : 1)
+    } finally { database.close() }
+    const inspect = new DatabaseSync(path, { readOnly: true })
+    const before = inspect.prepare('SELECT cell, count, window_day FROM pending ORDER BY cell').all()
+    inspect.close()
+    assert.equal(await store.record(observation(), stampOf(initial), 20000), false)
+    const after = new DatabaseSync(path, { readOnly: true })
+    try {
+      assert.deepEqual(after.prepare('SELECT cell, count, window_day FROM pending ORDER BY cell').all(), before)
+      assert.equal(after.prepare('SELECT count(*) AS count FROM producer_budget').get().count, 0)
+    } finally { after.close() }
   })
 })
 

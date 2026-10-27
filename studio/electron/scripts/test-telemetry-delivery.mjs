@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { DatabaseSync } from 'node:sqlite'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryWire } from '../dist/telemetry-wire.js'
@@ -173,6 +174,32 @@ test('inactive delivery never creates a store or treats unknown networking as pe
   assert.equal(await f.store.reserve(f.stamp, { network: 'metered', constrained: false }), null)
   assert.equal(await f.store.reserve(f.stamp, { network: 'unmetered', constrained: true }), null)
   assert.equal(f.invoke('inspect').attempts, 0)
+})
+
+test('invalid and overflowing pending snapshots remain unspent and unchanged', async t => {
+  for (const damage of ['invalid count', 'overflow']) await t.test(damage, async t => {
+    const f = await fixture(t)
+    const path = join(f.root, 'product-telemetry.sqlite3'), database = new DatabaseSync(path)
+    let seeded = 0
+    try {
+      if (damage === 'overflow') database.exec('DROP TRIGGER pending_bound')
+      const insert = database.prepare('INSERT INTO pending VALUES (?, ?, ?)')
+      for (let cell = 0; cell < 65536 && seeded < (damage === 'overflow' ? 513 : 2); cell++) {
+        try { f.store.catalog.group(cell) } catch { continue }
+        insert.run(cell, damage === 'invalid count' && seeded === 1 ? 256 : 1, Math.floor(f.now() / 86400000))
+        seeded++
+      }
+    } finally { database.close() }
+    assert.equal(seeded, damage === 'overflow' ? 513 : 2)
+    assert.equal(await f.store.reserve(f.stamp, network), null)
+    const inspect = new DatabaseSync(path, { readOnly: true })
+    try {
+      assert.equal(inspect.prepare('SELECT count(*) AS count FROM pending').get().count, seeded)
+      assert.equal(inspect.prepare('SELECT count(*) AS count FROM delivery_attempts').get().count, 0)
+      assert.deepEqual({ ...inspect.prepare('SELECT clock_ms, next_ms, lease_token, lease_deadline_ms FROM delivery_state').get() },
+        { clock_ms: 0, next_ms: 0, lease_token: null, lease_deadline_ms: 0 })
+    } finally { inspect.close() }
+  })
 })
 
 test('native reservation consumes one shared attempt and survives restart, cancellation and reenable', async t => {

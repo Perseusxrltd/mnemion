@@ -2,7 +2,7 @@
 import { lstatSync, readFileSync, type Stats } from 'node:fs'
 import { dirname, isAbsolute, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync, StatementSync } from 'node:sqlite'
 import type { TelemetryConnectionMode, TelemetryDisclosure, TelemetryStamp } from '../shared/product-telemetry.js'
 import { TelemetryCatalog, type MeasurementCatalog } from './telemetry-catalog.js'
 import { windowsTelemetryPrivateStore } from './telemetry-private-store.js'
@@ -20,6 +20,14 @@ const generation = (value: unknown): value is string => typeof value === 'string
 const stampValid = (value: TelemetryStamp) => value && integer(value.revision, 2147483646) && generation(value.store_generation)
 const sameFile = (left: Stats, right: Stats) => left.dev === right.dev && left.ino === right.ino &&
   left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs && left.size === right.size
+const PREFERENCES_CURRENT = `SELECT revision, enabled, disclosure_version, store_generation, connection_mode,
+  (SELECT user_version FROM pragma_user_version()),
+  (SELECT application_id FROM pragma_application_id()),
+  (SELECT journal_mode FROM pragma_journal_mode()) FROM preferences WHERE singleton=1`
+const PREFERENCES_LEGACY = `SELECT revision, enabled, disclosure_version, store_generation, 'auto',
+  (SELECT user_version FROM pragma_user_version()),
+  (SELECT application_id FROM pragma_application_id()),
+  (SELECT journal_mode FROM pragma_journal_mode()) FROM preferences WHERE singleton=1`
 
 // One OS-account telemetry store is shared by every desktop owner. Acquire
 // before the first await: otherwise concurrent callers can all open SQLite
@@ -222,23 +230,31 @@ export class NativeTelemetryStore {
   }
 
   protected preferences(database: DatabaseSync): Preference {
-    const version = Number(database.prepare('PRAGMA user_version').get()?.user_version)
-    if (![3, 4, 5, 6].includes(version)) throw failure()
-    // This transaction owns one coherent authority read. Schema 3/4 predates
-    // connection_mode, so choose only between these two fixed expressions.
-    // No statement, row or positive permission survives the caller's close.
-    const mode = version >= 5 ? 'connection_mode' : "'auto'"
-    const row = database.prepare(`SELECT revision, enabled, disclosure_version, store_generation,
-      ${mode} AS connection_mode,
-      (SELECT application_id FROM pragma_application_id()) AS application_id,
-      (SELECT journal_mode FROM pragma_journal_mode()) AS journal_mode
-      FROM preferences WHERE singleton=1`).get()
-    if (!row || row.application_id !== 0x4D4E5450 || row.journal_mode !== 'delete' ||
-        !integer(row.revision, 2147483647) || ![0, 1].includes(row.enabled as number) ||
-        !integer(row.disclosure_version, this.disclosure.version) || !generation(row.store_generation) || row.revision === 2147483647) throw failure()
-    if (!['auto', 'unmetered', 'metered'].includes(row.connection_mode as string)) throw failure()
-    return { revision: row.revision, enabled: row.enabled, disclosure_version: row.disclosure_version,
-      store_generation: row.store_generation, connection_mode: row.connection_mode, schema_version: version } as Preference
+    // The current format needs one coherent read, with no column-name objects
+    // or separate version statement. Nothing survives this transaction's close.
+    let statement: StatementSync, legacy = false
+    try { statement = database.prepare(PREFERENCES_CURRENT) }
+    catch (error) {
+      // Schema 3/4 has no connection_mode column. Only a SQL compilation error
+      // can select the fixed legacy query; busy/corrupt/IO failures are not retried.
+      const sqlite = error as { code?: unknown; errcode?: unknown } | null
+      if (sqlite?.code !== 'ERR_SQLITE_ERROR' || sqlite.errcode !== 1) throw failure()
+      statement = database.prepare(PREFERENCES_LEGACY)
+      legacy = true
+    }
+    statement.setReturnArrays(true)
+    const row = statement.get() as unknown as unknown[] | undefined
+    if (!row) throw failure()
+    const [revision, enabled, disclosure_version, store_generation, mode, version, application, journal] = row
+    if (!integer(version, 6, 3) || (legacy && version >= 5) ||
+        application !== 0x4D4E5450 || journal !== 'delete' ||
+        !integer(revision, 2147483646) || ![0, 1].includes(enabled as number) ||
+        !integer(disclosure_version, this.disclosure.version) || !generation(store_generation)) throw failure()
+    // Legacy versions never interpret an extra connection_mode column as a
+    // setting, even if a damaged or partially upgraded file happens to have one.
+    const connection_mode = version < 5 ? 'auto' : mode
+    if (!['auto', 'unmetered', 'metered'].includes(connection_mode as string)) throw failure()
+    return { revision, enabled, disclosure_version, store_generation, connection_mode, schema_version: version } as Preference
   }
 
   private maintainReview(database: DatabaseSync, preference: Preference, company: Company): void {
@@ -313,14 +329,17 @@ export class NativeTelemetryStore {
       }
       database.prepare('DELETE FROM pending WHERE window_day < ? OR window_day > ?').run(day - 1, day)
       database.prepare('DELETE FROM producer_budget WHERE window_day != ?').run(day)
-      const rows = database.prepare('SELECT cell, count, window_day FROM pending LIMIT 513').all()
+      const pending = database.prepare('SELECT cell, count, window_day FROM pending LIMIT 513')
+      pending.setReturnArrays(true)
+      // Snapshot before deleting rows; iterating a mutating table can miss one.
+      const rows = pending.all() as unknown as [unknown, unknown, unknown][]
       if (rows.length > 512) throw failure()
       const occupied = new Set<number>()
       const remove = database.prepare('DELETE FROM pending WHERE cell=?')
-      for (const row of rows) {
-        if (!integer(row.cell, 65535) || !integer(row.count, 255, 1) || !integer(row.window_day, 1000000)) throw failure()
-        if (!company.groups.includes(this.catalog.group(row.cell))) remove.run(row.cell)
-        else occupied.add(row.cell)
+      for (const [cell, count, windowDay] of rows) {
+        if (!integer(cell, 65535) || !integer(count, 255, 1) || !integer(windowDay, 1000000)) throw failure()
+        if (!company.groups.includes(this.catalog.group(cell))) remove.run(cell)
+        else occupied.add(cell)
       }
       // Reuse this transaction's statements and capacity snapshot for the pair.
       // No connection, statements or settings survive the policy transaction.

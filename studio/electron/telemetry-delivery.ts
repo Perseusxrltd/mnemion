@@ -184,13 +184,17 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
         const day = Math.floor(now / DAY)
         database.prepare('DELETE FROM pending WHERE window_day < ? OR window_day > ?').run(day - 1, day)
         database.prepare('DELETE FROM producer_budget WHERE window_day != ?').run(day)
-        const rows = database.prepare('SELECT cell, count FROM pending LIMIT 513').all()
+        const pending = database.prepare('SELECT cell, count FROM pending LIMIT 513')
+        pending.setReturnArrays(true)
+        // Keep a complete bounded snapshot while removing disallowed groups.
+        const rows = pending.all() as unknown as [unknown, unknown][]
         if (rows.length > 512) throw invalid()
         const remove = database.prepare('DELETE FROM pending WHERE cell=?'), cells: [number, number][] = []
         for (const row of rows) {
-          if (!integer(row.cell, 65535) || !integer(row.count, 255) || row.count < 1) throw invalid()
-          if (company.groups.includes(this.catalog.group(row.cell))) cells.push([row.cell, row.count])
-          else remove.run(row.cell)
+          const [cell, count] = row
+          if (!integer(cell, 65535) || !integer(count, 255) || count < 1) throw invalid()
+          if (company.groups.includes(this.catalog.group(cell))) cells.push(row as [number, number])
+          else remove.run(cell)
         }
         if (!cells.length) return null
         body = this.wire().prepare(cells, company.groups, cohorts)

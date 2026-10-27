@@ -10,6 +10,7 @@ import sys
 import tomllib
 from datetime import datetime, timezone
 from pathlib import Path
+from time import monotonic, sleep
 
 from .verify_artifacts import inventory, release_run
 
@@ -300,6 +301,30 @@ def start(root: Path, repo: str, *, attempt: int = 1) -> dict:
     return {"version": version, "source_commit": commit, "branch": branch, "dispatched": True}
 
 
+def wait_for_verified_bytes(repo: str, verification_run: int) -> None:
+    """Allow job metadata to settle before publication, without replaying a write."""
+    deadline = monotonic() + 60
+    while True:
+        jobs = api(repo, f"actions/runs/{verification_run}/jobs?filter=latest&per_page=100")
+        verifiers = [job for job in jobs.get("jobs", []) if job.get("name") == "verify"]
+        if len(verifiers) == 1:
+            job = verifiers[0]
+            if job.get("status") == "completed" and job.get("conclusion") == "success":
+                return
+            if job.get("status") not in {"queued", "in_progress"}:
+                break
+        elif verifiers:
+            break
+        # A dependent publication job may start before the REST job list shows
+        # its predecessor's completion. Only missing/pending metadata may wait;
+        # failed/skipped/ambiguous evidence or an API error still stops here.
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            break
+        sleep(min(2, remaining))
+    raise ValueError("The uploaded-byte verification job must have passed")
+
+
 def publish(repo: str, receipt: dict, verification_run: int, *, dry_run=False) -> dict:
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or verification_run < 1:
         raise ValueError("A repository and verification run are required")
@@ -311,14 +336,7 @@ def publish(repo: str, receipt: dict, verification_run: int, *, dry_run=False) -
         or verifier.get("head_repository", {}).get("full_name") != repo
     ):
         raise ValueError("Verification must come from this repository's trusted workflow")
-    jobs = api(repo, f"actions/runs/{verification_run}/jobs?filter=latest&per_page=100")
-    if not any(
-        job.get("name") == "verify"
-        and job.get("status") == "completed"
-        and job.get("conclusion") == "success"
-        for job in jobs.get("jobs", [])
-    ):
-        raise ValueError("The uploaded-byte verification job must have passed")
+    wait_for_verified_bytes(repo, verification_run)
     if (
         receipt.get("repository") != repo
         or receipt.get("exact_source_production_validator_passed") is not True
