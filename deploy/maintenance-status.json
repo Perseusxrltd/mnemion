@@ -51,26 +51,27 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "62b9ab71e761a4e759e55d67ba9fc4e875e90eb8",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-27T15:13:48Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:28:52Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 11,
+        "completed": 12,
         "succeeded": 11,
-        "active": [
-          {
-            "id": 122275903785,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          }
-        ]
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15)",
+          "id": 122275903785,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 40528686080,
@@ -83,12 +84,6 @@
       "updated_at": "2026-10-27T15:28:07Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 8,
-        "succeeded": 7,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "macos / arm64 public upgrade",
@@ -98,7 +93,13 @@
           "steps_reported": 0,
           "steps": []
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 8,
+        "completed": 8,
+        "succeeded": 7,
+        "active": []
+      }
     },
     {
       "id": 40518115119,
@@ -172,5 +173,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T15:28:49+00:00"
+  "observed_at": "2026-10-27T15:29:41+00:00"
 }
