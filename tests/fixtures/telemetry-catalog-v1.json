@@ -1,0 +1,1127 @@
+{
+  "source": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
+  "catalog_sha256": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
+  "catalog": {
+    "version": 1,
+    "surfaces": [
+      "desktop",
+      "browser",
+      "native_agent",
+      "headless"
+    ],
+    "workflows": {
+      "setup": [
+        "create",
+        "configure",
+        "agent_install",
+        "agent_remove"
+      ],
+      "workspace": [
+        "connect",
+        "sign_in",
+        "open",
+        "switch",
+        "disconnect",
+        "forget"
+      ],
+      "memory": [
+        "list",
+        "read",
+        "recall",
+        "context",
+        "knowledge",
+        "core_read",
+        "save",
+        "revise",
+        "review",
+        "forget",
+        "core_write",
+        "import",
+        "export"
+      ],
+      "capture": [
+        "configure",
+        "preview",
+        "collect",
+        "deliver",
+        "pause",
+        "drain",
+        "remove"
+      ],
+      "sources": [
+        "configure",
+        "scan",
+        "sync",
+        "pause",
+        "resume",
+        "repair",
+        "remove"
+      ],
+      "librarian": [
+        "configure",
+        "run",
+        "cancel",
+        "accept",
+        "reject",
+        "undo"
+      ],
+      "models": [
+        "configure",
+        "prepare",
+        "reindex",
+        "pause",
+        "resume",
+        "cancel"
+      ],
+      "backup": [
+        "configure",
+        "create",
+        "list",
+        "verify",
+        "prune"
+      ],
+      "recovery": [
+        "inspect",
+        "restore",
+        "finish",
+        "discard"
+      ],
+      "update": [
+        "check",
+        "download",
+        "verify",
+        "apply",
+        "restart",
+        "rollback"
+      ],
+      "host": [
+        "adopt",
+        "enroll",
+        "inspect",
+        "start",
+        "stop",
+        "plan_upgrade",
+        "resolve",
+        "revoke"
+      ],
+      "evaluation": [
+        "create_dataset",
+        "run",
+        "cancel",
+        "assess",
+        "compare",
+        "export",
+        "remove_dataset"
+      ],
+      "journal": [
+        "configure",
+        "push",
+        "organize",
+        "backfill",
+        "recover"
+      ],
+      "access": [
+        "configure",
+        "invite",
+        "grant",
+        "revoke"
+      ],
+      "vault": [
+        "configure",
+        "read",
+        "write",
+        "delete",
+        "import",
+        "export"
+      ]
+    },
+    "outcomes": [
+      "success",
+      "accepted",
+      "deferred",
+      "cancelled",
+      "denied",
+      "unsupported",
+      "failed",
+      "unconfirmed"
+    ],
+    "reasons": [
+      "none",
+      "invalid_input",
+      "authorization",
+      "conflict",
+      "host_busy",
+      "resource_pressure",
+      "offline",
+      "network_timeout",
+      "readiness_timeout",
+      "integrity_check",
+      "recovery_required",
+      "other_failure"
+    ],
+    "metrics": {
+      "latency_ms": {
+        "group": "performance",
+        "unit": "monotonic_milliseconds",
+        "upper_bounds": [
+          9,
+          49,
+          199,
+          999,
+          4999,
+          29999,
+          119999,
+          900000
+        ],
+        "families": "all"
+      },
+      "result_items": {
+        "group": "usage",
+        "unit": "observed_items",
+        "upper_bounds": [
+          0,
+          1,
+          9,
+          99,
+          999,
+          9999,
+          1000000
+        ],
+        "families": [
+          "memory",
+          "capture",
+          "sources",
+          "librarian",
+          "backup",
+          "evaluation",
+          "journal"
+        ]
+      },
+      "work_items": {
+        "group": "usage",
+        "unit": "observed_items",
+        "upper_bounds": [
+          0,
+          1,
+          9,
+          99,
+          999,
+          9999,
+          1000000
+        ],
+        "families": [
+          "memory",
+          "capture",
+          "sources",
+          "librarian",
+          "models",
+          "backup",
+          "recovery",
+          "evaluation",
+          "journal"
+        ]
+      },
+      "queue_items": {
+        "group": "resources",
+        "unit": "observed_items",
+        "upper_bounds": [
+          0,
+          1,
+          9,
+          99,
+          999,
+          9999,
+          1000000
+        ],
+        "families": [
+          "capture",
+          "sources",
+          "librarian",
+          "models",
+          "backup",
+          "journal"
+        ]
+      },
+      "payload_bytes_sent": {
+        "group": "performance",
+        "unit": "application_bytes",
+        "upper_bounds": [
+          0,
+          1024,
+          16384,
+          262144,
+          4194304,
+          67108864,
+          1073741824,
+          17179869184
+        ],
+        "families": [
+          "memory",
+          "capture",
+          "sources",
+          "models",
+          "backup",
+          "recovery",
+          "evaluation",
+          "journal"
+        ]
+      },
+      "payload_bytes_received": {
+        "group": "performance",
+        "unit": "application_bytes",
+        "upper_bounds": [
+          0,
+          1024,
+          16384,
+          262144,
+          4194304,
+          67108864,
+          1073741824,
+          17179869184
+        ],
+        "families": [
+          "memory",
+          "capture",
+          "sources",
+          "models",
+          "backup",
+          "recovery",
+          "evaluation",
+          "journal"
+        ]
+      },
+      "reported_tokens": {
+        "group": "resources",
+        "unit": "model_reported_tokens",
+        "upper_bounds": [
+          0,
+          1,
+          99,
+          999,
+          9999,
+          99999,
+          1000000
+        ],
+        "families": [
+          "librarian",
+          "models"
+        ]
+      },
+      "stored_bytes": {
+        "group": "resources",
+        "unit": "stored_bytes",
+        "upper_bounds": [
+          0,
+          1024,
+          16384,
+          262144,
+          4194304,
+          67108864,
+          1073741824,
+          17179869184
+        ],
+        "families": [
+          "capture",
+          "sources",
+          "backup",
+          "recovery",
+          "journal"
+        ]
+      },
+      "wire_bytes_sent": {
+        "group": "performance",
+        "unit": "measured_wire_bytes",
+        "upper_bounds": [
+          0,
+          1024,
+          16384,
+          262144,
+          4194304,
+          67108864,
+          1073741824,
+          17179869184
+        ],
+        "families": [
+          "capture",
+          "sources",
+          "models",
+          "backup",
+          "recovery",
+          "update",
+          "journal"
+        ]
+      },
+      "wire_bytes_received": {
+        "group": "performance",
+        "unit": "measured_wire_bytes",
+        "upper_bounds": [
+          0,
+          1024,
+          16384,
+          262144,
+          4194304,
+          67108864,
+          1073741824,
+          17179869184
+        ],
+        "families": [
+          "capture",
+          "sources",
+          "models",
+          "backup",
+          "recovery",
+          "update",
+          "journal"
+        ]
+      },
+      "throughput_bytes_per_second": {
+        "group": "performance",
+        "unit": "measured_wire_bytes_per_second",
+        "upper_bounds": [
+          0,
+          1024,
+          16384,
+          262144,
+          4194304,
+          67108864,
+          1073741824,
+          17179869184
+        ],
+        "families": [
+          "capture",
+          "sources",
+          "models",
+          "backup",
+          "recovery",
+          "update",
+          "journal"
+        ]
+      }
+    },
+    "resource_metrics": {
+      "cpu_millicores": {
+        "group": "resources",
+        "unit": "process_cpu_milliseconds_per_elapsed_second",
+        "upper_bounds": [
+          0,
+          1,
+          10,
+          100,
+          500,
+          1000,
+          4000,
+          16000
+        ]
+      },
+      "rss_bytes": {
+        "group": "resources",
+        "unit": "process_resident_bytes",
+        "upper_bounds": [
+          0,
+          67108864,
+          268435456,
+          1073741824,
+          4294967296,
+          17179869184,
+          68719476736,
+          274877906944
+        ]
+      },
+      "resource_budget_bytes": {
+        "group": "resources",
+        "unit": "configured_memory_bytes",
+        "upper_bounds": [
+          0,
+          67108864,
+          268435456,
+          1073741824,
+          4294967296,
+          17179869184,
+          68719476736,
+          274877906944
+        ]
+      },
+      "queue_drops": {
+        "group": "resources",
+        "unit": "local_discarded_observations",
+        "upper_bounds": [
+          0,
+          1,
+          9,
+          99,
+          999,
+          9999,
+          1000000
+        ]
+      }
+    },
+    "limits": {
+      "observations_per_workflow_day": 64,
+      "resource_observations_per_day": 24,
+      "count_per_cell_day": 255,
+      "cells_per_observation": 16
+    },
+    "ownership": {
+      "measured": "One disclosed originating app, native agent or owned headless workflow; nested calls and transport retries are not separate uses.",
+      "exclusions": {
+        "unowned_remote_clients": "No product collection for direct API or remote MCP clients without their own disclosed local measurement owner. Authentication is not telemetry consent.",
+        "derived_server_jobs": "No server export or completion backfill for client-derived jobs. An absent origin leaves the terminal result unobserved.",
+        "mixed_host_resources": "No export of process or host totals containing other users' undisclosed activity.",
+        "private_operational_records": "Never export audit rows, diagnostics, evaluation cases, source histories or recovery receipts.",
+        "polling_and_replay": "No usage counts for automatic polling, retries, cached mutation receipts or inspection of earlier outcomes.",
+        "privacy_controls": "No events for telemetry choice, disclosure, preview, opt-out or shutdown.",
+        "unavailable_sensors": "Missing measurements stay unavailable; payload bytes are not substituted for wire bytes."
+      }
+    }
+  },
+  "wire": {
+    "version": 2,
+    "mechanism": "signed_hadamard_coordinate",
+    "truth_probability": {
+      "numerator": 3,
+      "denominator": 4
+    },
+    "protected_unit": "One automatically sampled categorical value in the chosen permitted view; reviewed packets carry no categorical value. Participation, policy choice and lifetime history are not protected.",
+    "packet": {
+      "bytes": 4,
+      "fields": [
+        "version",
+        "view",
+        "coordinate",
+        "flags"
+      ],
+      "flags": {
+        "positive_sign_bit": 1,
+        "reviewed_report_bit": 2,
+        "allowed_values": [
+          0,
+          1,
+          2
+        ]
+      },
+      "reviewed_body": {
+        "view": "first_permitted_view",
+        "coordinate": 0,
+        "flags": 2,
+        "measurement_category": "not_transmitted"
+      }
+    },
+    "maximum_rows": 512,
+    "maximum_cell_count": 255,
+    "maximum_report_bytes": 4,
+    "reporting": {
+      "schema_version": 3,
+      "minimum_reports_per_window": 64,
+      "minimum_reports_per_view": 4096,
+      "maximum_reports_per_window": 10000000,
+      "simultaneous_error_probability": 0.05,
+      "minimum_report_bucket": 4096,
+      "window_seconds": 604800,
+      "retained_windows": 8,
+      "estimation_population": "automatic_reports_only",
+      "reviewed_report_use": "coarse_global_volume_only"
+    },
+    "budget_proposal": {
+      "minimum_attempt_spacing_seconds": 86400,
+      "maximum_attempts_per_rolling_week": 7,
+      "privacy_loss_per_report": "ln(3)",
+      "privacy_loss_per_rolling_week_upper_bound": "7 * ln(3)",
+      "wire_reservation_per_attempt_bytes": 65536,
+      "status": "requires shared budget, transport and release qualification",
+      "privacy_bound_scope": "automatic_categorical_reports_with_packet_independent_inclusion"
+    },
+    "views": [
+      {
+        "id": 0,
+        "name": "feature_family",
+        "group": "usage",
+        "source": {
+          "metric": "submissions",
+          "field": "family"
+        },
+        "weight": 40,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "setup",
+          "workspace",
+          "memory",
+          "capture",
+          "sources",
+          "librarian",
+          "models",
+          "backup",
+          "recovery",
+          "update",
+          "host",
+          "evaluation",
+          "journal",
+          "access",
+          "vault"
+        ]
+      },
+      {
+        "id": 1,
+        "name": "feature",
+        "group": "usage",
+        "source": {
+          "metric": "submissions",
+          "field": "workflow"
+        },
+        "weight": 16,
+        "domain": 128,
+        "values": [
+          "unobserved",
+          "setup.create",
+          "setup.configure",
+          "setup.agent_install",
+          "setup.agent_remove",
+          "workspace.connect",
+          "workspace.sign_in",
+          "workspace.open",
+          "workspace.switch",
+          "workspace.disconnect",
+          "workspace.forget",
+          "memory.list",
+          "memory.read",
+          "memory.recall",
+          "memory.context",
+          "memory.knowledge",
+          "memory.core_read",
+          "memory.save",
+          "memory.revise",
+          "memory.review",
+          "memory.forget",
+          "memory.core_write",
+          "memory.import",
+          "memory.export",
+          "capture.configure",
+          "capture.preview",
+          "capture.collect",
+          "capture.deliver",
+          "capture.pause",
+          "capture.drain",
+          "capture.remove",
+          "sources.configure",
+          "sources.scan",
+          "sources.sync",
+          "sources.pause",
+          "sources.resume",
+          "sources.repair",
+          "sources.remove",
+          "librarian.configure",
+          "librarian.run",
+          "librarian.cancel",
+          "librarian.accept",
+          "librarian.reject",
+          "librarian.undo",
+          "models.configure",
+          "models.prepare",
+          "models.reindex",
+          "models.pause",
+          "models.resume",
+          "models.cancel",
+          "backup.configure",
+          "backup.create",
+          "backup.list",
+          "backup.verify",
+          "backup.prune",
+          "recovery.inspect",
+          "recovery.restore",
+          "recovery.finish",
+          "recovery.discard",
+          "update.check",
+          "update.download",
+          "update.verify",
+          "update.apply",
+          "update.restart",
+          "update.rollback",
+          "host.adopt",
+          "host.enroll",
+          "host.inspect",
+          "host.start",
+          "host.stop",
+          "host.plan_upgrade",
+          "host.resolve",
+          "host.revoke",
+          "evaluation.create_dataset",
+          "evaluation.run",
+          "evaluation.cancel",
+          "evaluation.assess",
+          "evaluation.compare",
+          "evaluation.export",
+          "evaluation.remove_dataset",
+          "journal.configure",
+          "journal.push",
+          "journal.organize",
+          "journal.backfill",
+          "journal.recover",
+          "access.configure",
+          "access.invite",
+          "access.grant",
+          "access.revoke",
+          "vault.configure",
+          "vault.read",
+          "vault.write",
+          "vault.delete",
+          "vault.import",
+          "vault.export"
+        ]
+      },
+      {
+        "id": 2,
+        "name": "surface",
+        "group": "usage",
+        "source": {
+          "metric": "submissions",
+          "field": "surface"
+        },
+        "weight": 8,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "desktop",
+          "browser",
+          "native_agent",
+          "headless"
+        ]
+      },
+      {
+        "id": 3,
+        "name": "outcome",
+        "group": "usage",
+        "source": {
+          "metric": "outcomes",
+          "field": "bucket"
+        },
+        "weight": 40,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "success",
+          "accepted",
+          "deferred",
+          "cancelled",
+          "denied",
+          "unsupported",
+          "failed",
+          "unconfirmed"
+        ]
+      },
+      {
+        "id": 4,
+        "name": "failure_reason",
+        "group": "reliability",
+        "source": {
+          "metric": "reasons",
+          "field": "bucket"
+        },
+        "weight": 16,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "invalid_input",
+          "authorization",
+          "conflict",
+          "host_busy",
+          "resource_pressure",
+          "offline",
+          "network_timeout",
+          "readiness_timeout",
+          "integrity_check",
+          "recovery_required",
+          "other_failure"
+        ]
+      },
+      {
+        "id": 5,
+        "name": "latency_ms",
+        "group": "performance",
+        "source": {
+          "metric": "latency_ms",
+          "field": "bucket"
+        },
+        "weight": 32,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0-9",
+          "10-49",
+          "50-199",
+          "200-999",
+          "1000-4999",
+          "5000-29999",
+          "30000-119999",
+          "120000+"
+        ],
+        "unit": "monotonic_milliseconds"
+      },
+      {
+        "id": 6,
+        "name": "result_items",
+        "group": "usage",
+        "source": {
+          "metric": "result_items",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "0",
+          "1",
+          "2-9",
+          "10-99",
+          "100-999",
+          "1000-9999",
+          "10000+"
+        ],
+        "unit": "observed_items"
+      },
+      {
+        "id": 7,
+        "name": "work_items",
+        "group": "usage",
+        "source": {
+          "metric": "work_items",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "0",
+          "1",
+          "2-9",
+          "10-99",
+          "100-999",
+          "1000-9999",
+          "10000+"
+        ],
+        "unit": "observed_items"
+      },
+      {
+        "id": 8,
+        "name": "queue_items",
+        "group": "resources",
+        "source": {
+          "metric": "queue_items",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "0",
+          "1",
+          "2-9",
+          "10-99",
+          "100-999",
+          "1000-9999",
+          "10000+"
+        ],
+        "unit": "observed_items"
+      },
+      {
+        "id": 9,
+        "name": "rss_bytes",
+        "group": "resources",
+        "source": {
+          "metric": "rss_bytes",
+          "field": "bucket"
+        },
+        "weight": 16,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-67108864",
+          "67108865-268435456",
+          "268435457-1073741824",
+          "1073741825-4294967296",
+          "4294967297-17179869184",
+          "17179869185-68719476736",
+          "68719476737+"
+        ],
+        "unit": "process_resident_bytes"
+      },
+      {
+        "id": 10,
+        "name": "cpu_millicores",
+        "group": "resources",
+        "source": {
+          "metric": "cpu_millicores",
+          "field": "bucket"
+        },
+        "weight": 16,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1",
+          "2-10",
+          "11-100",
+          "101-500",
+          "501-1000",
+          "1001-4000",
+          "4001+"
+        ],
+        "unit": "process_cpu_milliseconds_per_elapsed_second"
+      },
+      {
+        "id": 11,
+        "name": "resource_budget_bytes",
+        "group": "resources",
+        "source": {
+          "metric": "resource_budget_bytes",
+          "field": "bucket"
+        },
+        "weight": 8,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-67108864",
+          "67108865-268435456",
+          "268435457-1073741824",
+          "1073741825-4294967296",
+          "4294967297-17179869184",
+          "17179869185-68719476736",
+          "68719476737+"
+        ],
+        "unit": "configured_memory_bytes"
+      },
+      {
+        "id": 12,
+        "name": "queue_drops",
+        "group": "resources",
+        "source": {
+          "metric": "queue_drops",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "0",
+          "1",
+          "2-9",
+          "10-99",
+          "100-999",
+          "1000-9999",
+          "10000+"
+        ],
+        "unit": "local_discarded_observations"
+      },
+      {
+        "id": 13,
+        "name": "payload_bytes_sent",
+        "group": "performance",
+        "source": {
+          "metric": "payload_bytes_sent",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-1024",
+          "1025-16384",
+          "16385-262144",
+          "262145-4194304",
+          "4194305-67108864",
+          "67108865-1073741824",
+          "1073741825+"
+        ],
+        "unit": "application_bytes"
+      },
+      {
+        "id": 14,
+        "name": "payload_bytes_received",
+        "group": "performance",
+        "source": {
+          "metric": "payload_bytes_received",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-1024",
+          "1025-16384",
+          "16385-262144",
+          "262145-4194304",
+          "4194305-67108864",
+          "67108865-1073741824",
+          "1073741825+"
+        ],
+        "unit": "application_bytes"
+      },
+      {
+        "id": 15,
+        "name": "wire_bytes_sent",
+        "group": "performance",
+        "source": {
+          "metric": "wire_bytes_sent",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-1024",
+          "1025-16384",
+          "16385-262144",
+          "262145-4194304",
+          "4194305-67108864",
+          "67108865-1073741824",
+          "1073741825+"
+        ],
+        "unit": "measured_wire_bytes"
+      },
+      {
+        "id": 16,
+        "name": "wire_bytes_received",
+        "group": "performance",
+        "source": {
+          "metric": "wire_bytes_received",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-1024",
+          "1025-16384",
+          "16385-262144",
+          "262145-4194304",
+          "4194305-67108864",
+          "67108865-1073741824",
+          "1073741825+"
+        ],
+        "unit": "measured_wire_bytes"
+      },
+      {
+        "id": 17,
+        "name": "throughput_bytes_per_second",
+        "group": "performance",
+        "source": {
+          "metric": "throughput_bytes_per_second",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-1024",
+          "1025-16384",
+          "16385-262144",
+          "262145-4194304",
+          "4194305-67108864",
+          "67108865-1073741824",
+          "1073741825+"
+        ],
+        "unit": "measured_wire_bytes_per_second"
+      },
+      {
+        "id": 18,
+        "name": "stored_bytes",
+        "group": "resources",
+        "source": {
+          "metric": "stored_bytes",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 16,
+        "values": [
+          "unobserved",
+          "0",
+          "1-1024",
+          "1025-16384",
+          "16385-262144",
+          "262145-4194304",
+          "4194305-67108864",
+          "67108865-1073741824",
+          "1073741825+"
+        ],
+        "unit": "stored_bytes"
+      },
+      {
+        "id": 19,
+        "name": "reported_tokens",
+        "group": "resources",
+        "source": {
+          "metric": "reported_tokens",
+          "field": "bucket"
+        },
+        "weight": 4,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "0",
+          "1",
+          "2-99",
+          "100-999",
+          "1000-9999",
+          "10000-99999",
+          "100000+"
+        ],
+        "unit": "model_reported_tokens"
+      },
+      {
+        "id": 20,
+        "name": "platform",
+        "group": "resources",
+        "source": {
+          "cohort": "platform"
+        },
+        "weight": 8,
+        "domain": 8,
+        "values": [
+          "unobserved",
+          "windows",
+          "macos",
+          "linux",
+          "other"
+        ]
+      },
+      {
+        "id": 21,
+        "name": "architecture",
+        "group": "resources",
+        "source": {
+          "cohort": "architecture"
+        },
+        "weight": 4,
+        "domain": 4,
+        "values": [
+          "unobserved",
+          "x64",
+          "arm64",
+          "other"
+        ]
+      },
+      {
+        "id": 22,
+        "name": "release_family",
+        "group": "reliability",
+        "source": {
+          "cohort": "release_family"
+        },
+        "weight": 8,
+        "domain": 4,
+        "values": [
+          "unobserved",
+          "before_4",
+          "4",
+          "5_plus"
+        ]
+      }
+    ]
+  }
+}

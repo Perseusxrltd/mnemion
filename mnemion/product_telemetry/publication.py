@@ -69,9 +69,9 @@ def validate(result: object) -> dict:
     if type(result) is not dict:
         raise WireError
     version = result.get("schema_version")
-    if type(version) is not int or version not in (1, 2, WIRE["reporting"]["schema_version"]):
+    if type(version) is not int or version not in (1, 2, 3, WIRE["reporting"]["schema_version"]):
         raise WireError
-    constants = CONSTANTS if version == 3 else LEGACY_CONSTANTS
+    constants = CONSTANTS if version >= 3 else LEGACY_CONSTANTS
     fields = {*constants, "schema_version", "window_week", "views"}
     if version >= 2:
         fields.add("report_range")
@@ -117,9 +117,15 @@ def validate(result: object) -> dict:
                 raise WireError
             continue
         estimates = item["estimates"]
-        if type(estimates) is not list or len(estimates) != len(spec["values"]):
+        # Closed schema 1-3 reports used the original 94 feature coordinates
+        # plus unobserved. Their bytes and labels remain immutable after an
+        # append-only catalog expansion; only schema 4 adds the new labels.
+        values = (
+            spec["values"][:95] if version <= 3 and spec["name"] == "feature" else spec["values"]
+        )
+        if type(estimates) is not list or len(estimates) != len(values):
             raise WireError
-        for label, estimate in zip(spec["values"], estimates, strict=True):
+        for label, estimate in zip(values, estimates, strict=True):
             if (
                 type(estimate) is not dict
                 or set(estimate) != {"value", "state", "fraction", "interval"}

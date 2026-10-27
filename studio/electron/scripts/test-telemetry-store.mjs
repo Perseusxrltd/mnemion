@@ -91,6 +91,24 @@ test('inactive native collection reads no choice and creates no store', async t 
   await assert.rejects(access(root))
 })
 
+test('catalog extension preserves existing native SQLite cells across native and Python clients', async t => {
+  const f = await fixture(t)
+  const legacy = JSON.parse(await readFile(new URL('../../../tests/fixtures/telemetry-catalog-v1.json', import.meta.url), 'utf8'))
+  const active = { ...f.definitions.disclosure, collection_available: true, destination: 'https://example.invalid/telemetry' }
+  const prior = new NativeTelemetryStore(f.root, active, legacy.catalog, f.company)
+  const stamp = stampOf(f.initial)
+  assert.equal(await prior.record({ kind: 'submission', workflow: 'vault.export', surface: 'desktop' }, stamp, 20000), true)
+  const before = f.invoke('preview')
+  assert.equal(before.length, 1)
+  assert.equal(before[0].cell, 93 * 512)
+  for (const workflow of ['capture.split', 'models.test']) assert.equal(
+    await f.store.record({ kind: 'submission', workflow, surface: 'desktop' }, stamp, 20000), true)
+  const after = f.invoke('preview')
+  assert.deepEqual(after.find(row => row.cell === before[0].cell), before[0])
+  assert.deepEqual(after.map(row => row.cell).sort((left, right) => left - right), [93, 94, 95].map(index => index * 512))
+  assert.equal(f.invoke('status').revision, f.initial.revision)
+})
+
 test('a known disabled reply avoids a duplicate SQLite read without changing the choice', async t => {
   const { store, invoke, initial } = await fixture(t)
   const disabled = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })

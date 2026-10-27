@@ -1,0 +1,757 @@
+{
+  "schema_version": 3,
+  "window_week": 2900,
+  "window_seconds": 604800,
+  "report_range": {
+    "minimum": 4096,
+    "maximum_exclusive": 8192
+  },
+  "report_unit": "unverified_anonymous_report_not_a_user_or_device",
+  "sampling": "one_count_weighted_local_category_in_an_independently_chosen_permitted_view",
+  "confidence": 0.95,
+  "confidence_assumptions": "independent_randomization_and_packet_independent_inclusion_of_correctly_marked_automatic_reports_not_authenticated_clients_or_poisoning_resistance",
+  "estimation_population": "automatic_reports_only",
+  "reviewed_report_use": "coarse_global_volume_only",
+  "privacy_loss_per_report": "ln(3)",
+  "participation_or_lifetime_guarantee": false,
+  "views": [
+    {
+      "view": "feature_family",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "feature",
+      "unit": "categorical_observation",
+      "state": "estimated",
+      "report_range": {
+        "minimum": 4096,
+        "maximum_exclusive": 8192
+      },
+      "estimates": [
+        {
+          "value": "unobserved",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "setup.create",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "setup.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "setup.agent_install",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "setup.agent_remove",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "workspace.connect",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "workspace.sign_in",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "workspace.open",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "workspace.switch",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "workspace.disconnect",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "workspace.forget",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.list",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.read",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.recall",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.context",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.knowledge",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.core_read",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.save",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.revise",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.review",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.forget",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.core_write",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.import",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "memory.export",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.preview",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.collect",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.deliver",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.pause",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.drain",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "capture.remove",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.scan",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.sync",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.pause",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.resume",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.repair",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "sources.remove",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "librarian.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "librarian.run",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "librarian.cancel",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "librarian.accept",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "librarian.reject",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "librarian.undo",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "models.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "models.prepare",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "models.reindex",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "models.pause",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "models.resume",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "models.cancel",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "backup.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "backup.create",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "backup.list",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "backup.verify",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "backup.prune",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "recovery.inspect",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "recovery.restore",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "recovery.finish",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "recovery.discard",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "update.check",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "update.download",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "update.verify",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "update.apply",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "update.restart",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "update.rollback",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.adopt",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.enroll",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.inspect",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.start",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.stop",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.plan_upgrade",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.resolve",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "host.revoke",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.create_dataset",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.run",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.cancel",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.assess",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.compare",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.export",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "evaluation.remove_dataset",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "journal.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "journal.push",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "journal.organize",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "journal.backfill",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "journal.recover",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "access.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "access.invite",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "access.grant",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "access.revoke",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "vault.configure",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "vault.read",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "vault.write",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "vault.delete",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "vault.import",
+          "state": "insufficient_precision",
+          "fraction": null,
+          "interval": null
+        },
+        {
+          "value": "vault.export",
+          "state": "estimated",
+          "fraction": 1.0,
+          "interval": [
+            0.865,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "view": "surface",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "outcome",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "failure_reason",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "latency_ms",
+      "unit": "monotonic_milliseconds",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "result_items",
+      "unit": "observed_items",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "work_items",
+      "unit": "observed_items",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "queue_items",
+      "unit": "observed_items",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "rss_bytes",
+      "unit": "process_resident_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "cpu_millicores",
+      "unit": "process_cpu_milliseconds_per_elapsed_second",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "resource_budget_bytes",
+      "unit": "configured_memory_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "queue_drops",
+      "unit": "local_discarded_observations",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "payload_bytes_sent",
+      "unit": "application_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "payload_bytes_received",
+      "unit": "application_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "wire_bytes_sent",
+      "unit": "measured_wire_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "wire_bytes_received",
+      "unit": "measured_wire_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "throughput_bytes_per_second",
+      "unit": "measured_wire_bytes_per_second",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "stored_bytes",
+      "unit": "stored_bytes",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "reported_tokens",
+      "unit": "model_reported_tokens",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "platform",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "architecture",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    },
+    {
+      "view": "release_family",
+      "unit": "categorical_observation",
+      "state": "insufficient_reports",
+      "report_range": null,
+      "estimates": null
+    }
+  ]
+}

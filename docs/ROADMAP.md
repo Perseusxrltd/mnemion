@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.40**.
+Reviewed source distribution: **4.46.41**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-27**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,21 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**27 October 2026, telemetry catalog compatibility; source qualification:**
+The [catalog follow-up](validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds dedicated `capture.split` and `models.test` categories after the original
+94 numeric IDs, with saved-cell/budget compatibility and immutable older
+aggregate reports. Split preview remains excluded. Catalog v2 and closed-report
+schema 4 retain the existing four-byte wire v2, domains and weights. Generated
+coverage maps 96 categories and lists 701 actions: 398 mapped, 295 excluded,
+eight delegated and zero unmeasured declarations. All 322 focused checks passed
+(175 Python, 136 browser-source, ten native-wire and one native SQLite/Python
+upgrade case), with no failures or skips; Electron build and frontend typecheck
+passed. These are source/component results, not full runtime coverage. All 66
+requirements and V08 Building are unchanged; production
+collection/destination/route remain false/null/null with
+empty release CAs. Resource, platform, privacy and full acceptance remain open.
 
 **27 October 2026, desktop request cancellation; 4.46.37 hotfix selected:**
 [Two reproduced deadline/caller-abort failures](validation/2026-10-27-desktop-request-cancellation.md)

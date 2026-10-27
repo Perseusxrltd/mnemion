@@ -30,6 +30,35 @@ const { TelemetrySnapshotReader } = load(new URL('../src/workspace/telemetry-ref
 const { needsTelemetrySetup, telemetrySetupChoice } = load(new URL('../src/workspace/telemetry-setup.ts', import.meta.url))
 const contract = createRequire(path)('../../../../mnemion/product_telemetry/disclosure.json')
 
+test('old browser cells and spent budgets survive catalog expansion without relabeling or a read rewrite', () => {
+  const { TelemetryCatalog } = load(new URL('../../electron/telemetry-catalog.ts', import.meta.url))
+  const fixture = JSON.parse(readFileSync(new URL('../../../tests/fixtures/telemetry-catalog-v1.json', import.meta.url), 'utf8'))
+  const old = new TelemetryCatalog(fixture.catalog)
+  assert.deepEqual(telemetryCatalog.workflows.slice(0, old.workflows.length), old.workflows)
+  for (const workflow of old.workflows) for (const surface of fixture.catalog.surfaces) {
+    const value = { kind: 'submission', workflow, surface }
+    assert.deepEqual(telemetryCatalog.observation(value), old.observation(value))
+  }
+  const oldValue = { kind: 'submission', workflow: 'vault.export', surface: 'browser' }
+  const encoded = old.observation(oldValue)
+  const raw = JSON.stringify({ catalog_version: 1, entries: [{ cell: encoded.cells[0], count: 64, window_day: 20000 }],
+    contributions: [{ scope: encoded.scope, count: 64, window_day: 20000 }] })
+  const read = pendingState(raw)
+  assert.equal(JSON.stringify(read), raw)
+  assert.equal(collect(read, oldValue, 20000, ['usage']).recorded, false, 'Old spent capacity is not reset')
+  const added = { kind: 'submission', workflow: 'capture.split', surface: 'browser' }
+  const next = collect(read, added, 20000, ['usage'])
+  assert.equal(next.recorded, true)
+  assert.equal(next.state.catalog_version, 2)
+  assert.deepEqual(next.state.entries[0], JSON.parse(raw).entries[0])
+  assert.deepEqual(next.state.contributions[0], JSON.parse(raw).contributions[0])
+  assert.deepEqual(pendingState(JSON.stringify(next.state)), next.state)
+  const mislabeled = { ...next.state, catalog_version: 1 }
+  assert.throws(() => pendingState(JSON.stringify(mislabeled)), /telemetry_storage_unavailable/)
+  mislabeled.entries = [next.state.entries[0]]
+  assert.throws(() => pendingState(JSON.stringify(mislabeled)), /telemetry_storage_unavailable/, 'A new contribution cannot masquerade as an old budget slot')
+})
+
 test('fixed catalog work reuses definitions instead of allocating lookup arrays per cell', t => {
   const { TelemetryCatalog } = load(new URL('../../electron/telemetry-catalog.ts', import.meta.url))
   const specification = structuredClone(telemetryCatalog.specification)

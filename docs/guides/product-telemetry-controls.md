@@ -93,14 +93,19 @@ presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
 to inspect the source coverage and explicit privacy exclusions. New source
-provides a filterable [coverage inventory](../validation/2026-10-27-telemetry-capture-admin.md):
-all 94 categories have a declared measurement source, including observable
-`update.verify` boundaries. The 636 declared actions contain 364 mapped rows,
-265 exclusions and seven delegations.
+provides a filterable coverage inventory. The
+[catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds dedicated transcript-splitting and model-test categories. The current
+inventory has **96 mapped categories** and **701 action rows**: 398 mapped,
+295 excluded, eight delegated and zero unmeasured declarations.
+The earlier [capture-administration checkpoint](../validation/2026-10-27-telemetry-capture-admin.md)
+recorded 94 mapped categories, including observable `update.verify` boundaries,
+and 636 declared actions: 364 mapped rows, 265 exclusions and seven delegations.
 The preceding [update-verification checkpoint](../validation/2026-10-27-telemetry-update-verification.md)
 retains its earlier 634 rows and 362 mappings.
 These counts describe catalog mappings, not complete screens, sensors or active
-collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
+collection. Choose a feature family or **Unmeasured** to inspect declared gaps;
+the latter is currently empty. The
 inventory is generated from Git source maps and checked for staleness at release.
 Older versions that lack the inventory say so instead of implying full coverage.
 The native `schema` and `preview` responses expose the same `workflow_coverage`
@@ -438,12 +443,27 @@ the same OS account. Running a command does not enable sharing or acknowledge a
 disclosure. Saved opt-outs and company restrictions apply; unavailable or
 unreadable policy prevents the optional observation.
 
-The coverage preview now lists 32 mapped command variants and 29 exclusions.
-`split` and `llm test` remain unmeasured; other options and entrypoints still need
-review. Queries, paths, output and returned contents are not telemetry. Status
+The earlier CLI checkpoint listed 32 mapped command variants and 29 exclusions,
+with `split` and `llm test` unmeasured. The current
+[catalog follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+lists **64 classic CLI rows: 34 mapped and 30 excluded**, with none unmeasured.
+It adds `capture.split` for an applied split and `models.test` for the existing
+model test. Split dry-run remains excluded; an applied split retains an
+unconfirmed outcome. Model-test success requires the command's exact trimmed
+`MNEMION_OK` reply; failure remains a failed outcome. The optional owner uses
+that command outcome without sending prompts, replies, paths or model names.
+The focused source checks passed; other options, entrypoints and actual
+runtime boundaries still need review. Status
 and supported dry-run previews have explicit exclusions. New commands whose
 effects are not confirmed report an unconfirmed outcome. Nested work does not
 add another owner, and commands retain their normal output and errors.
+
+The compatibility change keeps existing saved counts and contribution limits
+under their original meanings. A valid browser v1 queue is read without an
+upgrade write and becomes v2 on its next collection write; new category
+coordinates cannot be disguised as v1 data. Older closed aggregate reports retain their
+original labels. These changes do not enable collection or alter the existing
+four-byte wire format.
 
 To suppress optional telemetry for one invocation, put `--no-telemetry` before
 the command, for example `mnemion --no-telemetry search "query"`. This does not

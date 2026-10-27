@@ -13,6 +13,18 @@ const specification = JSON.parse(readFileSync(new URL('../dist/telemetry-wire-v2
 const catalog = new TelemetryCatalog(JSON.parse(readFileSync(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8')))
 const wire = new TelemetryWire(specification, catalog)
 const draws = (...values) => () => values.shift()
+
+test('old feature coordinates encode identical packets after the catalog extension', () => {
+  const fixture = JSON.parse(readFileSync(new URL('../../../tests/fixtures/telemetry-catalog-v1.json', import.meta.url), 'utf8'))
+  const old = new TelemetryWire(fixture.wire, new TelemetryCatalog(fixture.catalog))
+  for (const view of fixture.wire.views) for (let category = 0; category < view.values.length; category++) {
+    for (let coin = 0; coin < 4; coin++) assert.deepEqual(
+      wire.encode(view.id, category, draws(view.domain - 1, coin)),
+      old.encode(view.id, category, draws(view.domain - 1, coin)))
+  }
+  assert.deepEqual(catalog.workflows.slice(94), ['capture.split', 'models.test'])
+  assert.equal(specification.views[1].domain, 128)
+})
 const python = source => {
   const child = spawnSync(process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'), ['-c', source], {
     cwd: root, env: { ...process.env, PYTHONPATH: root, PYTHONNOUSERSITE: '1' }, encoding: 'utf8', timeout: 20000,

@@ -10,6 +10,8 @@
     "consolidate": {"selector": "mode", "variants": {"apply": "librarian.run"}, "variant_exclusions": {"preview": "configuration_preview"}, "completion": "unconfirmed", "read_only": false},
     "repair": {"selector": "mode", "variants": {"apply": "sources.repair", "scan": "sources.scan"}, "variant_exclusions": {"preview": "configuration_preview", "status": "state_inspection"}, "completion": "unconfirmed", "read_only": false},
     "librarian": {"selector": "mode", "variants": {"apply": "librarian.run"}, "variant_exclusions": {"preview": "configuration_preview", "status": "state_inspection"}, "completion": "unconfirmed", "read_only": false},
+    "split": {"selector": "mode", "variants": {"apply": "capture.split"}, "variant_exclusions": {"preview": "configuration_preview"}, "completion": "unconfirmed", "read_only": false},
+    "llm test": {"workflow": "models.test", "completion": "success", "read_only": true},
     "llm setup": {"workflow": "models.configure", "completion": "unconfirmed", "read_only": false},
     "llm start": {"workflow": "models.resume", "completion": "unconfirmed", "read_only": false},
     "llm stop": {"workflow": "models.pause", "completion": "unconfirmed", "read_only": false},

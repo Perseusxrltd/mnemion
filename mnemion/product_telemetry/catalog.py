@@ -15,11 +15,15 @@ import math
 
 CATALOG = json.loads(files(__package__).joinpath("catalog.json").read_text())
 SURFACES = tuple(CATALOG["surfaces"])
-WORKFLOWS = tuple(
+# Append coordinates explicitly. Adding an operation inside a family must never
+# reinterpret already saved cells or consume another workflow's daily budget.
+WORKFLOWS = tuple(CATALOG["workflow_order"])
+assert len(set(WORKFLOWS)) == len(WORKFLOWS) == CATALOG["workflow_counts"][str(CATALOG["version"])]
+assert set(WORKFLOWS) == {
     f"{family}.{operation}"
     for family, operations in CATALOG["workflows"].items()
     for operation in operations
-)
+}
 WORKFLOW_IDS = {name: index for index, name in enumerate(WORKFLOWS)}
 OUTCOMES = tuple(CATALOG["outcomes"])
 REASONS = tuple(CATALOG["reasons"])

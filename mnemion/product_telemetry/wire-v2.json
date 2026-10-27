@@ -34,7 +34,7 @@
   "maximum_cell_count": 255,
   "maximum_report_bytes": 4,
   "reporting": {
-    "schema_version": 3,
+    "schema_version": 4,
     "minimum_reports_per_window": 64,
     "minimum_reports_per_view": 4096,
     "maximum_reports_per_window": 10000000,
@@ -189,7 +189,9 @@
         "vault.write",
         "vault.delete",
         "vault.import",
-        "vault.export"
+        "vault.export",
+        "capture.split",
+        "models.test"
       ]
     },
     {

@@ -294,7 +294,7 @@ def test_closed_volume_is_coarse_and_does_not_release_small_view_counts(count):
     if count < 64:
         assert result is None
     else:
-        assert result["schema_version"] == 3
+        assert result["schema_version"] == 4
         assert result["report_range"] == {
             "minimum": 1 << (count.bit_length() - 1),
             "maximum_exclusive": 1 << count.bit_length(),

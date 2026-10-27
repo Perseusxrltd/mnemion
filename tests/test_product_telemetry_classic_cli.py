@@ -67,14 +67,14 @@ def test_owned_source_add_has_one_unconfirmed_submission(installation, monkeypat
     assert "PRIVATE" not in json.dumps(rows)
 
 
-def test_classic_commands_are_visible_even_without_a_reviewed_owner():
+def test_classic_commands_include_the_two_new_reviewed_owners():
     root = Path(__file__).resolve().parents[1]
     view = telemetry_coverage.build(root)["action_coverage"]
     rows = {row["action"]: row for row in view["actions"] if row["owner"] == "classic_cli"}
     assert "search" in rows
     assert "wiki compile" in rows
-    assert rows["llm test"]["state"] == "unmeasured"
-    assert rows["llm test"]["workflows"] == []
+    assert rows["llm test"]["state"] == "mapped"
+    assert rows["llm test"]["workflows"] == ["models.test"]
 
 
 @pytest.mark.parametrize(
@@ -178,7 +178,7 @@ def test_command_completion_keeps_its_original_privacy_fence(installation, monke
         (["obsidian", "setup", "--dry-run"], "cmd_obsidian"),
         (["status"], "cmd_status"),
         (["instructions", "search"], "cmd_instructions"),
-        (["llm", "test"], "cmd_llm"),
+        (["split", "PRIVATE_PATH", "--dry-run"], "cmd_split"),
     ],
 )
 def test_preview_excluded_and_unmapped_commands_stay_unmeasured(
@@ -388,6 +388,76 @@ def test_new_classic_command_remains_visible_without_guessing_an_owner():
     )
     assert "future-action" in command_names(modified)
     assert "future-action" not in cli_measurement._origins()["operations"]
+
+
+@pytest.mark.parametrize(
+    "reply,exit_code", [("MNEMION_OK", 0), ("PRIVATE_WRONG_REPLY", 1), (None, 1), ("disabled", 2)]
+)
+def test_real_model_test_dispatch_records_only_the_exact_bounded_outcome(
+    installation, monkeypatch, reply, exit_code
+):
+    from types import SimpleNamespace
+    from mnemion import llm_backend
+
+    backend = (
+        llm_backend.NullBackend()
+        if reply == "disabled"
+        else SimpleNamespace(info=lambda: "synthetic", chat=lambda *_a, **_kw: reply)
+    )
+    monkeypatch.setattr(llm_backend, "get_backend", lambda _config: backend)
+    monkeypatch.setattr("sys.argv", ["mnemion", "llm", "test"])
+    if exit_code:
+        with pytest.raises(SystemExit) as stopped:
+            cli.main()
+        assert stopped.value.code == exit_code
+    else:
+        cli.main()
+    rows = cells(installation)
+    assert {row["workflow"] for row in rows} == {"models.test"}
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    assert next(row["bucket"] for row in rows if row["metric"] == "outcomes") == (
+        "failed" if exit_code else "success"
+    )
+    assert "PRIVATE" not in json.dumps(rows)
+
+
+@pytest.mark.parametrize("mode", ["apply", "preview", "suppressed"])
+def test_actual_splitter_preserves_files_and_measures_only_the_owned_application(
+    installation, tmp_path, monkeypatch, mode
+):
+    source = tmp_path / "PRIVATE_INPUT"
+    source.mkdir()
+    output = tmp_path / "PRIVATE_OUTPUT"
+    original = source / "PRIVATE_TRANSCRIPT.txt"
+    content = "".join(
+        "Claude Code v1.0\n> PRIVATE_SUBJECT\n" + "PRIVATE_CONTENT\n" * 14 for _ in range(2)
+    )
+    original.write_text(content, encoding="utf-8")
+    arguments = [
+        "mnemion",
+        *(["--no-telemetry"] if mode == "suppressed" else []),
+        "split",
+        str(source),
+        "--output-dir",
+        str(output),
+    ]
+    if mode == "preview":
+        arguments.append("--dry-run")
+    monkeypatch.setattr("sys.argv", arguments)
+    cli.main()
+    if mode == "preview":
+        assert original.read_text(encoding="utf-8") == content and not output.exists()
+    else:
+        assert len(list(output.glob("*.txt"))) == 2
+        assert len(list(source.glob(".mnemion-split-backup-*/PRIVATE_TRANSCRIPT.mega_backup"))) == 1
+    rows = cells(installation)
+    if mode != "apply":
+        assert rows == []
+    else:
+        assert {row["workflow"] for row in rows} == {"capture.split"}
+        assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+        assert next(row["bucket"] for row in rows if row["metric"] == "outcomes") == "unconfirmed"
+        assert "PRIVATE" not in json.dumps(rows)
 
 
 @pytest.mark.parametrize(

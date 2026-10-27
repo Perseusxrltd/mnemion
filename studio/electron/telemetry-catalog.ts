@@ -7,6 +7,8 @@ export type MeasurementCatalog = {
   version: number
   surfaces: string[]
   workflows: Record<string, string[]>
+  workflow_order?: string[]
+  workflow_counts?: Record<string, number>
   outcomes: string[]
   reasons: string[]
   metrics: Record<string, Metric>
@@ -28,12 +30,17 @@ export class TelemetryCatalog {
   constructor(readonly specification: MeasurementCatalog) {
     // These are release-owned definitions, not consent or measurement values.
     // Reuse their lookup arrays while policy and queue authority stay fresh.
-    this.workflows = []
-    this.workflowFamilies = []
-    for (const [family, operations] of Object.entries(specification.workflows)) for (const operation of operations) {
-      this.workflows.push(`${family}.${operation}`)
-      this.workflowFamilies.push(family)
-    }
+    if (![1, 2].includes(specification.version)) throw invalid()
+    this.workflows = specification.version === 1
+      ? Object.entries(specification.workflows).flatMap(([family, operations]) => operations.map(operation => `${family}.${operation}`))
+      : specification.workflow_order?.slice() || []
+    this.workflowFamilies = this.workflows.map(workflow => workflow.split('.')[0])
+    if (!this.workflows.length || new Set(this.workflows).size !== this.workflows.length ||
+        Object.values(specification.workflows).reduce((count, operations) => count + operations.length, 0) !== this.workflows.length ||
+        this.workflows.some(workflow => {
+          const parts = workflow.split('.')
+          return parts.length !== 2 || !specification.workflows[parts[0]]?.includes(parts[1])
+        }) || (specification.version === 2 && specification.workflow_counts?.['2'] !== this.workflows.length)) throw invalid()
     let offset = 1 + specification.outcomes.length + specification.reasons.length
     this.slots = Object.entries(specification.metrics).map(([name, metric]) => {
       const result: [string, number, Metric] = [name, offset, metric]
@@ -43,7 +50,7 @@ export class TelemetryCatalog {
     this.outcomeFields = ['kind', 'workflow', 'surface', 'outcome', 'reason', ...this.slots.map(([name]) => name)]
     this.resources = Object.entries(specification.resource_metrics)
     this.resourceNames = this.resources.map(([name]) => name)
-    if (specification.version !== 1 || specification.surfaces.length !== 4 || offset > 128 || this.workflows.length * 512 > 61440) throw invalid()
+    if (specification.surfaces.length !== 4 || offset > 128 || this.workflows.length * 512 > 61440) throw invalid()
   }
 
   bucket(value: unknown, bounds: number[]): number {

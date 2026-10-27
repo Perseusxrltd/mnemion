@@ -1,14 +1,14 @@
 {
-  "version": 1,
+  "version": 2,
   "surfaces": ["desktop", "browser", "native_agent", "headless"],
   "workflows": {
     "setup": ["create", "configure", "agent_install", "agent_remove"],
     "workspace": ["connect", "sign_in", "open", "switch", "disconnect", "forget"],
     "memory": ["list", "read", "recall", "context", "knowledge", "core_read", "save", "revise", "review", "forget", "core_write", "import", "export"],
-    "capture": ["configure", "preview", "collect", "deliver", "pause", "drain", "remove"],
+    "capture": ["configure", "preview", "collect", "deliver", "pause", "drain", "remove", "split"],
     "sources": ["configure", "scan", "sync", "pause", "resume", "repair", "remove"],
     "librarian": ["configure", "run", "cancel", "accept", "reject", "undo"],
-    "models": ["configure", "prepare", "reindex", "pause", "resume", "cancel"],
+    "models": ["configure", "prepare", "reindex", "pause", "resume", "cancel", "test"],
     "backup": ["configure", "create", "list", "verify", "prune"],
     "recovery": ["inspect", "restore", "finish", "discard"],
     "update": ["check", "download", "verify", "apply", "restart", "rollback"],
@@ -18,6 +18,8 @@
     "access": ["configure", "invite", "grant", "revoke"],
     "vault": ["configure", "read", "write", "delete", "import", "export"]
   },
+  "workflow_order": ["setup.create", "setup.configure", "setup.agent_install", "setup.agent_remove", "workspace.connect", "workspace.sign_in", "workspace.open", "workspace.switch", "workspace.disconnect", "workspace.forget", "memory.list", "memory.read", "memory.recall", "memory.context", "memory.knowledge", "memory.core_read", "memory.save", "memory.revise", "memory.review", "memory.forget", "memory.core_write", "memory.import", "memory.export", "capture.configure", "capture.preview", "capture.collect", "capture.deliver", "capture.pause", "capture.drain", "capture.remove", "sources.configure", "sources.scan", "sources.sync", "sources.pause", "sources.resume", "sources.repair", "sources.remove", "librarian.configure", "librarian.run", "librarian.cancel", "librarian.accept", "librarian.reject", "librarian.undo", "models.configure", "models.prepare", "models.reindex", "models.pause", "models.resume", "models.cancel", "backup.configure", "backup.create", "backup.list", "backup.verify", "backup.prune", "recovery.inspect", "recovery.restore", "recovery.finish", "recovery.discard", "update.check", "update.download", "update.verify", "update.apply", "update.restart", "update.rollback", "host.adopt", "host.enroll", "host.inspect", "host.start", "host.stop", "host.plan_upgrade", "host.resolve", "host.revoke", "evaluation.create_dataset", "evaluation.run", "evaluation.cancel", "evaluation.assess", "evaluation.compare", "evaluation.export", "evaluation.remove_dataset", "journal.configure", "journal.push", "journal.organize", "journal.backfill", "journal.recover", "access.configure", "access.invite", "access.grant", "access.revoke", "vault.configure", "vault.read", "vault.write", "vault.delete", "vault.import", "vault.export", "capture.split", "models.test"],
+  "workflow_counts": {"1": 94, "2": 96},
   "outcomes": ["success", "accepted", "deferred", "cancelled", "denied", "unsupported", "failed", "unconfirmed"],
   "reasons": ["none", "invalid_input", "authorization", "conflict", "host_busy", "resource_pressure", "offline", "network_timeout", "readiness_timeout", "integrity_check", "recovery_required", "other_failure"],
   "metrics": {

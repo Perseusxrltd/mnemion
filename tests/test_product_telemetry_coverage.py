@@ -17,7 +17,7 @@ def test_published_inventory_matches_sources_and_keeps_unmeasured_categories_vis
     telemetry_coverage.verify(ROOT)
     coverage = catalog.coverage_specification()
     assert coverage["scope"] == "declared_source_boundaries"
-    assert coverage["summary"] == {"total": 94, "mapped": 94, "unmeasured": 0}
+    assert coverage["summary"] == {"total": 96, "mapped": 96, "unmeasured": 0}
     assert [row["workflow"] for row in coverage["workflows"]] == list(catalog.WORKFLOWS)
     rows = {row["workflow"]: row for row in coverage["workflows"]}
     assert rows["memory.recall"]["state"] == "mapped"

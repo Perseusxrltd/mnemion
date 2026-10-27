@@ -45,13 +45,21 @@ def build(root: Path) -> dict:
     directory = root / OUTPUT.parent
     raw = {name: (directory / name).read_bytes() for name in INPUTS}
     documents = {name: json.loads(data) for name, data in raw.items()}
-    if any(document.get("version") != 1 for document in documents.values()):
+    if any(
+        document.get("version") != (2 if name == "catalog.json" else 1)
+        for name, document in documents.items()
+    ):
         raise ValueError("Review coverage generation for the new telemetry map version")
     catalog = documents["catalog.json"]
-    workflows = {
-        f"{family}.{operation}": set()
+    declared = [
+        f"{family}.{operation}"
         for family, operations in catalog["workflows"].items()
         for operation in operations
+    ]
+    order = catalog["workflow_order"]
+    # A newly declared, still-unregistered action remains visible for review.
+    workflows = {
+        name: set() for name in [*order, *(name for name in declared if name not in order)]
     }
 
     def add(owner: str, entry: dict) -> None:

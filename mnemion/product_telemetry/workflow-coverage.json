@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "catalog_version": 1,
+  "catalog_version": 2,
   "scope": "declared_source_boundaries",
   "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
   "summary": {
-    "total": 94,
-    "mapped": 94,
+    "total": 96,
+    "mapped": 96,
     "unmeasured": 0
   },
   "owners": {
@@ -890,6 +890,20 @@
         "studio_actions",
         "local_stdio"
       ]
+    },
+    {
+      "workflow": "capture.split",
+      "state": "mapped",
+      "owners": [
+        "classic_cli"
+      ]
+    },
+    {
+      "workflow": "models.test",
+      "state": "mapped",
+      "owners": [
+        "classic_cli"
+      ]
     }
   ],
   "action_coverage": {
@@ -905,11 +919,11 @@
       "classic_cli"
     ],
     "summary": {
-      "total": 700,
-      "mapped": 396,
-      "excluded": 294,
+      "total": 701,
+      "mapped": 398,
+      "excluded": 295,
       "delegated": 8,
-      "unmeasured": 2
+      "unmeasured": 0
     },
     "reasons": {
       "control_cli.configuration_preview": "Preview or intermediate authorization steps do not establish a completed setup, import or sign-in.",
@@ -2414,8 +2428,10 @@
       {
         "owner": "classic_cli",
         "action": "llm test",
-        "state": "unmeasured",
-        "workflows": []
+        "state": "mapped",
+        "workflows": [
+          "models.test"
+        ]
       },
       {
         "owner": "classic_cli",
@@ -2644,8 +2660,21 @@
       {
         "owner": "classic_cli",
         "action": "split",
-        "state": "unmeasured",
-        "workflows": []
+        "selector": "mode",
+        "variant": "apply",
+        "state": "mapped",
+        "workflows": [
+          "capture.split"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "split",
+        "selector": "mode",
+        "variant": "preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.configuration_preview"
       },
       {
         "owner": "classic_cli",
@@ -6452,14 +6481,14 @@
     ]
   },
   "source_inputs": {
-    "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
+    "catalog.json": "2b3f897ca15e951ea0636a947e3c708414dc84e6588fce7f717e682c3286ccbf",
     "control-origins.json": "3e1b59bedf234585b00ce3a071011ddbba356d3f9e8a988fbc4d7e8d2b82a045",
     "desktop-origins.json": "a03490ce4fe0e70b94f4d72c9a5875a6744e759303c80492926d3da63a5604a7",
     "studio-methods.json": "36c4e2f9920f10243c52c1664a38efa46ee1de43bb91cc2a17d665a711e0b936",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
     "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",
-    "cli-origins.json": "3f209a460afbca26fc20f65ef486b7a3d407b466de4f02376fb5dec1cdd6cc90",
+    "cli-origins.json": "421e3b12d6e1af9c405370cb3de3899c8cbe53afbabb016f41830690aa619808",
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "af0cb7aacf28f0884e4fecffb4a9a315cb57c0adeaeca836e7b83589b616c862",
