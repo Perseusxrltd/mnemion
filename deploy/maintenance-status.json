@@ -18,15 +18,105 @@
   ],
   "runs": [
     {
-      "id": 40513098239,
+      "id": 40517759157,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T14:03:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40513098239"
+      "source_commit": "56bb40a01f5736c742be0d95add5a54beb605971",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-27T14:05:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40517759157",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 1,
+        "succeeded": 1,
+        "active": [
+          {
+            "id": 122235687060,
+            "name": "studio",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 122235687507,
+            "name": "Select checks",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 122235687673,
+            "name": "lint",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 122235806977,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 122235807122,
+            "name": "container (ubuntu-22.04)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 122235807170,
+            "name": "service (3.14)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 122235807181,
+            "name": "service (3.13)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 122235807196,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 122235807312,
+            "name": "service (3.12)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 122235807349,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 122235807424,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40505169918,
@@ -62,6 +152,33 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40504681891"
     },
     {
+      "id": 40518115119,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.40",
+      "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-27T14:07:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 122237088243,
+            "name": "Release preflight",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
       "id": 40512666290,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -92,15 +209,15 @@
       }
     },
     {
-      "id": 40513098255,
+      "id": 40517759146,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
+      "source_commit": "56bb40a01f5736c742be0d95add5a54beb605971",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T13:35:54Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40513098255"
+      "updated_at": "2026-10-27T14:07:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40517759146"
     },
     {
       "id": 40505165922,
@@ -114,5 +231,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505165922"
     }
   ],
-  "observed_at": "2026-10-27T14:03:53+00:00"
+  "observed_at": "2026-10-27T14:07:42+00:00"
 }
