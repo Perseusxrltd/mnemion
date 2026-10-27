@@ -18,15 +18,114 @@
   ],
   "runs": [
     {
-      "id": 40453928241,
+      "id": 40456069954,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "6ac7700312e9c77a9793cd6e740419f1b39e2c5e",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T05:33:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40453928241"
+      "source_commit": "ed69de9abe0185b9def4923daf406b3cca2c1e21",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-27T05:34:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456069954",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 2,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 122029565957,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Check the lightweight native client before six-platform packaging"
+            ]
+          },
+          {
+            "id": 122029621369,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 122029621379,
+            "name": "dependency-audit",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 122029621404,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 122029621417,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 122029621422,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 122029621429,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 122029621460,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          },
+          {
+            "id": 122029621555,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 122029621702,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Set up job"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40444975984,
@@ -72,7 +171,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+              "Prepare or refresh the reviewable release draft"
             ]
           }
         ]
@@ -91,15 +190,23 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444539230"
     },
     {
-      "id": 40456006184,
+      "id": 40456069956,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "58bd6b7e01f49424fe93e2e07969fce7c864ca5d",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T05:33:58Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456006184"
+      "source_commit": "ed69de9abe0185b9def4923daf406b3cca2c1e21",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-27T05:34:24Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456069956",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 1,
+        "succeeded": 1,
+        "active": []
+      },
+      "failed_jobs": []
     },
     {
       "id": 40444972712,
@@ -113,5 +220,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444972712"
     }
   ],
-  "observed_at": "2026-10-27T05:34:04+00:00"
+  "observed_at": "2026-10-27T05:34:41+00:00"
 }
