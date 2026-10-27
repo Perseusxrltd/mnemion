@@ -67,58 +67,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.38",
       "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T12:30:42Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40496801738"
+    },
+    {
+      "id": 40504337244,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "20b7631fe4ad82abc5af19840746f8325c26a0fe",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T12:26:08Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40496801738",
+      "updated_at": "2026-10-27T12:30:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40504337244",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 22,
-        "completed": 21,
-        "succeeded": 20,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 122187554922,
-            "name": "assemble",
+            "id": 122189665442,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Prepare or refresh the reviewable release draft"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 40468253346,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "0984ca4ace157706380b27f8ef0dadb9f0baed7a",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-27T07:42:49Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468253346",
-      "job_details_schema": 2,
-      "failed_jobs": [
-        {
-          "name": "verify",
-          "id": 122068811545,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 16,
-          "steps": [
-            "Scan the exact downloaded distributions before publication"
-          ]
-        }
-      ],
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      }
     },
     {
       "id": 40501408889,
@@ -143,5 +124,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217"
     }
   ],
-  "observed_at": "2026-10-27T12:30:08+00:00"
+  "observed_at": "2026-10-27T12:31:16+00:00"
 }
