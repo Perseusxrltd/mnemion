@@ -85,18 +85,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 7,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 5,
+        "succeeded": 5,
         "active": [
-          {
-            "id": 122275375873,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
           {
             "id": 122275375907,
             "name": "macos / arm64 public upgrade",
@@ -189,5 +180,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T15:23:32+00:00"
+  "observed_at": "2026-10-27T15:24:17+00:00"
 }
