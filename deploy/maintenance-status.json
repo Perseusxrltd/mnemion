@@ -23,28 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "56bb40a01f5736c742be0d95add5a54beb605971",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T14:09:17Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40517759157",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 122235807312,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T14:39:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40517759157"
     },
     {
       "id": 40521216857,
@@ -52,80 +34,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.39",
       "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T14:27:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40521216857",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 122248523620,
-            "name": "select",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 122248649276,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122248649337,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122248649387,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122248649443,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 122248649524,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122248649692,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T14:39:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40521216857"
     },
     {
       "id": 40504681891,
@@ -144,30 +56,23 @@
       "workflow": "release.yml",
       "branch": "release/4.46.40",
       "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T14:13:23Z",
+      "updated_at": "2026-10-27T14:36:04Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119",
       "job_details_schema": 2,
       "job_progress": {
         "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "completed": 18,
+        "succeeded": 17,
         "active": [
           {
             "id": 122240702707,
             "name": "native / macos-15-intel / x64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 122240702850,
-            "name": "native / ubuntu-22.04 / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -176,16 +81,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 122240703053,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           },
           {
@@ -195,15 +91,6 @@
             "runner_assigned": true,
             "steps": [
               "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 122240704078,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -252,5 +139,5 @@
       "failed_jobs": []
     }
   ],
-  "observed_at": "2026-10-27T14:27:56+00:00"
+  "observed_at": "2026-10-27T14:40:03+00:00"
 }
