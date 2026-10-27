@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T14:40:03+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T14:40:46+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.39](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.39). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -28,7 +28,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 40518115119](https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119): 18/21 jobs completed; 17 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Sign and verify the free macOS update archive.
 - native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 

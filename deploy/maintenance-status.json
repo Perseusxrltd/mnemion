@@ -72,7 +72,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Sign and verify the free macOS update archive"
             ]
           },
           {
@@ -139,5 +139,5 @@
       "failed_jobs": []
     }
   ],
-  "observed_at": "2026-10-27T14:40:03+00:00"
+  "observed_at": "2026-10-27T14:40:46+00:00"
 }
