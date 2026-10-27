@@ -11,7 +11,9 @@ Distinguishes true session starts from mid-session context restores
 (which show "Ctrl+E to show X previous messages").
 
 Output files are written to --output-dir (default: same dir as source).
-Original files are renamed with .mega_backup extension (not deleted).
+Colliding output names receive a suffix; existing files are never overwritten.
+Each original is moved into a new backup folder beside its source, with the
+.mega_backup extension. Existing backups are preserved.
 
 Usage:
     python3 split_mega_files.py                          # scan ~/Desktop/transcripts
@@ -26,6 +28,7 @@ import argparse
 import json
 import os
 import re
+import tempfile
 from pathlib import Path
 
 HOME = Path.home()
@@ -176,13 +179,55 @@ def extract_subject(lines):
     return "session"
 
 
+def _session_output(out_dir, name, index, lines, dry_run, reserved):
+    """Reserve each output exclusively; a preview creates no filesystem state."""
+    base = Path(name)
+    for attempt in range(10000):
+        if attempt == 0:
+            candidate = out_dir / name
+        else:
+            counter = "" if attempt == 1 else f"_{attempt}"
+            candidate = out_dir / f"{base.stem}__part{index:02d}{counter}{base.suffix}"
+        if candidate in reserved or (dry_run and os.path.lexists(candidate)):
+            continue
+        if not dry_run:
+            try:
+                stream = candidate.open("x", encoding="utf-8")
+            except FileExistsError:
+                continue
+            # Retry only an exclusive-open collision. A failed write/close is
+            # uncertain work and must leave the original in place for recovery.
+            with stream:
+                stream.write("".join(lines))
+        reserved.add(candidate)
+        return candidate
+    raise FileExistsError(f"No unused output filename available for {name}")
+
+
+def _archive_original(path):
+    # A newly reserved directory gives rename an absent destination on every
+    # supported OS, without hard-link requirements or replacing an old backup.
+    directory = Path(tempfile.mkdtemp(prefix=".mnemion-split-backup-", dir=path.parent))
+    backup = directory / path.with_suffix(".mega_backup").name
+    try:
+        return path.rename(backup)
+    except BaseException:
+        # An uncertain rename may already have succeeded. Remove only an empty
+        # reservation; never recursively clean a directory that holds the data.
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
+        raise
+
+
 def split_file(filepath, output_dir, dry_run=False):
     """
     Split a single mega-file into per-session files.
     Returns list of output paths written (or would be written if dry_run).
     """
     path = Path(filepath)
-    lines = path.read_text(errors="replace").splitlines(keepends=True)
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
 
     boundaries = find_session_boundaries(lines)
     if len(boundaries) < 2:
@@ -193,6 +238,8 @@ def split_file(filepath, output_dir, dry_run=False):
 
     out_dir = Path(output_dir) if output_dir else path.parent
     written = []
+    reserved = set()
+    directory_ready = False
 
     for i, (start, end) in enumerate(zip(boundaries, boundaries[1:])):
         chunk = lines[start:end]
@@ -214,13 +261,15 @@ def split_file(filepath, output_dir, dry_run=False):
         name = re.sub(r"[^\w\.\-]", "_", name)
         name = re.sub(r"_+", "_", name)
 
-        out_path = out_dir / name
+        if not dry_run and not directory_ready:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            directory_ready = True
+        out_path = _session_output(out_dir, name, i + 1, chunk, dry_run, reserved)
 
         if dry_run:
-            print(f"  [{i + 1}/{len(boundaries) - 1}] {name}  ({len(chunk)} lines)")
+            print(f"  [{i + 1}/{len(boundaries) - 1}] {out_path.name}  ({len(chunk)} lines)")
         else:
-            out_path.write_text("".join(chunk))
-            print(f"  ✓ {name}  ({len(chunk)} lines)")
+            print(f"  ✓ {out_path.name}  ({len(chunk)} lines)")
 
         written.append(out_path)
 
@@ -267,7 +316,7 @@ def main():
 
     mega_files = []
     for f in files:
-        lines = f.read_text(errors="replace").splitlines(keepends=True)
+        lines = f.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
         boundaries = find_session_boundaries(lines)
         if len(boundaries) >= args.min_sessions:
             mega_files.append((f, len(boundaries)))
@@ -291,9 +340,8 @@ def main():
         total_written += len(written)
 
         if not args.dry_run and written:
-            backup = f.with_suffix(".mega_backup")
-            f.rename(backup)
-            print(f"  → Original renamed to {backup.name}\n")
+            backup = _archive_original(f)
+            print(f"  → Original archived at {backup}\n")
         else:
             print()
 
