@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T05:40:46+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T05:44:14+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.36](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.36). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -36,8 +36,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 - macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 

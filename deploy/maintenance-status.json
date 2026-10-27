@@ -113,7 +113,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -131,7 +131,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -192,5 +192,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456602936"
     }
   ],
-  "observed_at": "2026-10-27T05:40:46+00:00"
+  "observed_at": "2026-10-27T05:44:14+00:00"
 }
