@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T00:26:20+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T01:01:10+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.29](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.29). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,27 +16,33 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40426293665](https://github.com/Perseusxrltd/mnemion/actions/runs/40426293665) |
+| ci\.yml | main | queued | [Run 40430021395](https://github.com/Perseusxrltd/mnemion/actions/runs/40430021395) |
 | public-updates\.yml | v4\.46\.29 | success | [Run 40423899386](https://github.com/Perseusxrltd/mnemion/actions/runs/40423899386) |
 | release\.yml | release/4\.46\.29 | success | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
+| release\.yml | release/4\.46\.33 | in\_progress | [Run 40426432624](https://github.com/Perseusxrltd/mnemion/actions/runs/40426432624) |
 | verify-artifacts\.yml | main | failure | [Run 40417189624](https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624) |
-| website-release\.yml | main | success | [Run 40426293492](https://github.com/Perseusxrltd/mnemion/actions/runs/40426293492) |
+| website-release\.yml | main | queued | [Run 40430021427](https://github.com/Perseusxrltd/mnemion/actions/runs/40430021427) |
 | website-release\.yml | v4\.46\.29 | success | [Run 40423894613](https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613) |
 
 ## Active jobs
 
-[Run 40426293665](https://github.com/Perseusxrltd/mnemion/actions/runs/40426293665): 4/12 jobs completed; 4 succeeded.
+[Run 40430021395](https://github.com/Perseusxrltd/mnemion/actions/runs/40430021395): 0/3 jobs completed; 0 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
-- container \(ubuntu-22\.04-arm\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- studio: in\_progress — Set up job.
+- lint: queued.
+- Select checks: in\_progress.
+
+[Run 40426432624](https://github.com/Perseusxrltd/mnemion/actions/runs/40426432624): 20/21 jobs completed; 17 succeeded.
+
+- native / macos-15-intel / x64: in\_progress — Packaged Mac update, restart guards and relaunch.
+
+[Run 40430021427](https://github.com/Perseusxrltd/mnemion/actions/runs/40430021427): 0/1 jobs completed; 0 succeeded.
+
+- synchronize: in\_progress — Set up job.
 
 
 ## Unsuccessful jobs
 
+- [Run 40426432624](https://github.com/Perseusxrltd/mnemion/actions/runs/40426432624): native / windows-2022 / x64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
+- [Run 40426432624](https://github.com/Perseusxrltd/mnemion/actions/runs/40426432624): native / windows-11-arm / arm64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
 - [Run 40417189624](https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624): verify (failure). Steps: Scan the exact downloaded distributions before publication.
