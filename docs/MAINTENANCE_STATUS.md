@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T06:41:18+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T07:01:42+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.36](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.36). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40462490473](https://github.com/Perseusxrltd/mnemion/actions/runs/40462490473) |
+| ci\.yml | main | success | [Run 40462490473](https://github.com/Perseusxrltd/mnemion/actions/runs/40462490473) |
 | public-updates\.yml | v4\.46\.36 | success | [Run 40456607379](https://github.com/Perseusxrltd/mnemion/actions/runs/40456607379) |
 | release\.yml | release/4\.46\.36 | success | [Run 40451445143](https://github.com/Perseusxrltd/mnemion/actions/runs/40451445143) |
 | release\.yml | release/4\.46\.37 | in\_progress | [Run 40462412553](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553) |
@@ -26,20 +26,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40462490473](https://github.com/Perseusxrltd/mnemion/actions/runs/40462490473): 4/12 jobs completed; 4 succeeded.
+[Run 40462412553](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553): 15/21 jobs completed; 14 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/electron test.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- container \(ubuntu-22\.04-arm\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-
-[Run 40462412553](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553): 10/13 jobs completed; 9 succeeded.
-
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- native / native\_database / Database / macos / x64: in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / native\_database / Database / windows / x64: in\_progress — Relocate, initialize, verify TLS and RLS, restore backup and recover a crash.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
