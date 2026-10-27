@@ -69,6 +69,15 @@ report matching inspection, with fixture cleanup.
 Existing installed evidence and all remaining privacy, resource and release
 gates retain their original scope.
 
+The [setup recovery follow-up](../validation/2026-10-27-telemetry-setup-recovery.md)
+replaces hidden read failures and stale enable controls with visible retry,
+continue and privacy-page choices. Uncertain save replies trigger a status read,
+never an automatic write retry. The saved policy stays authoritative; a failed
+UI read alone does not prove an existing enabled preference is off. All 11 actual
+compiled-browser recovery checks, 29 policy-control tests and SDK/frontend builds
+passed. These controlled native-reply fixtures do not qualify installed storage,
+resources or full privacy acceptance.
+
 Read-only schema/status/format preview does not randomize or reserve reports,
 change queues, spending or consent, or make network requests. While unavailable,
 local aggregates are empty, the actual outbound body is null and inspected bytes

@@ -6,6 +6,8 @@ import { choiceKey, telemetryConfigure, telemetryStatus } from './telemetry-poli
 import { needsTelemetrySetup, telemetrySetupChoice } from './telemetry-setup'
 import './telemetry-setup.css'
 
+const readFailure = 'Privacy settings could not be checked. Retry or open Privacy controls before changing telemetry.'
+
 /** First-time disclosure is local, optional and independent of workspace access. */
 export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
   const [status, setStatus] = useState<TelemetryStatus>()
@@ -21,6 +23,15 @@ export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
   const pendingRead = useRef(false)
   const saving = useRef(false)
 
+  const acceptStatus = useCallback((value: TelemetryStatus, failure?: string) => {
+    setStatus(value)
+    if (value.storage === 'unreadable') setError(readFailure)
+    else {
+      setError(failure)
+      if (!needsTelemetrySetup(value)) onDone()
+    }
+  }, [onDone])
+
   const refresh = useCallback(async () => {
     // Focus/storage bursts share one in-flight read. A current-generation
     // compare-and-set remains mandatory when the user later saves a choice.
@@ -31,20 +42,20 @@ export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
     setChecking(true)
     try {
       const value = await telemetryStatus()
-      if (current === lifetime.current) {
-        setStatus(value)
-        if (!needsTelemetrySetup(value)) onDone()
-      }
+      if (current === lifetime.current) acceptStatus(value)
     } catch {
       if (current === lifetime.current) {
-        setError('Privacy settings could not be checked. Open privacy controls to review them.')
+        // A failed current read cannot leave the old disclosure usable. A
+        // fresh read is required before another choice can be submitted.
+        setStatus(undefined)
+        setError(readFailure)
       }
     } finally {
       reading.current = false
       if (current === lifetime.current) setChecking(false)
       if (pendingRead.current && mounted.current) { pendingRead.current = false; void refresh() }
     }
-  }, [onDone])
+  }, [acceptStatus])
 
   useEffect(() => {
     mounted.current = true
@@ -58,14 +69,15 @@ export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
     }
   }, [refresh])
 
-  const show = Boolean(status && needsTelemetrySetup(status))
+  const choiceReady = Boolean(status && needsTelemetrySetup(status))
+  const show = choiceReady || Boolean(error)
   useEffect(() => {
     const element = dialog.current
     if (!show || !element) return
     element.showModal()
     heading.current?.focus({ preventScroll: true })
     return () => element.close()
-  }, [show])
+  }, [show, choiceReady])
 
   async function choose(value: boolean) {
     if (!status || checking || reading.current || saving.current) return
@@ -78,19 +90,17 @@ export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
       // Only this explicit action acknowledges the disclosure. Opening,
       // dismissing or following the details link never creates a preference.
       const saved = await telemetryConfigure(input)
-      if (current === lifetime.current) {
-        setStatus(saved)
-        if (!needsTelemetrySetup(saved)) onDone()
-      }
+      if (current === lifetime.current) acceptStatus(saved)
     } catch {
       if (current === lifetime.current) {
-        setError('Your privacy choice could not be saved. Review the latest settings and try again.')
+        // A lost reply does not establish whether the change was saved. Read
+        // its actual state before offering another choice; never replay it.
+        const failure = 'Your privacy choice could not be confirmed. Review the latest settings before trying again.'
+        setStatus(undefined)
+        setError(failure)
         try {
           const latest = await telemetryStatus()
-          if (current === lifetime.current) {
-            setStatus(latest)
-            if (!needsTelemetrySetup(latest)) onDone()
-          }
+          if (current === lifetime.current) acceptStatus(latest, failure)
         } catch { /* Keep the explicit failure and the original privacy fence. */ }
       }
     } finally {
@@ -99,7 +109,22 @@ export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
     }
   }
 
-  if (!show || !status) return null
+  if (!show) return null
+  if (!choiceReady || !status) return <dialog ref={dialog} className="telemetry-setup-dialog" aria-labelledby="telemetry-setup-heading"
+    aria-describedby="telemetry-setup-problem" onCancel={event => { if (saving.current) event.preventDefault(); else onDone() }}>
+    <div className="telemetry-setup-brand"><BrandMark /><span>Mnemion · Perseus XR</span></div>
+    <h2 id="telemetry-setup-heading" ref={heading} tabIndex={-1}>Privacy settings unavailable</h2>
+    <p id="telemetry-setup-problem" role="alert">{error ?? readFailure}</p>
+    <div className="telemetry-setup-actions">
+      <button type="button" className="telemetry-setup-button primary" disabled={busy || checking} onClick={() => void refresh()}>
+        {checking ? 'Checking privacy settings…' : 'Retry privacy settings'}</button>
+      <button type="button" className="telemetry-setup-button" disabled={busy} onClick={onDone}>Continue to Mnemion</button>
+    </div>
+    <div className="telemetry-setup-footer">
+      <Link to="/privacy" aria-disabled={busy} onClick={event => { if (saving.current) event.preventDefault(); else onDone() }}>Open Privacy controls</Link>
+    </div>
+    <p className="telemetry-setup-note">Checking settings or continuing to Mnemion does not change your saved privacy choice.</p>
+  </dialog>
   return <dialog ref={dialog} className="telemetry-setup-dialog" aria-labelledby="telemetry-setup-heading"
     aria-describedby="telemetry-setup-purpose" onCancel={event => { if (saving.current) event.preventDefault(); else onDone() }}>
     <div className="telemetry-setup-brand"><BrandMark /><span>Mnemion · Perseus XR</span></div>

@@ -25,6 +25,15 @@ required for full acceptance.
 | Anonymity and useful aggregates | [Wire-v2/report-v3 selection rules](2026-10-26-telemetry-review-selection.md): randomized automatic categories, fixed manual body, bounded contributions and suppression. | Codec/selection checks support their stated conditional bounds. Manual reports contribute only to coarse volume; they establish no categorical, participation or network-anonymity guarantee. | Architecture/privacy and utility evidence for linkage, rare/coincident cohorts, repeated contributions, auxiliary information, suppression and difference attacks. Counts must remain sampled usage, not unique people or devices; no identifying workaround is permitted. |
 | Final release | Normal source, native, artifact-verification and public release gates. | [4.46.29 publication](2026-10-27-release-scan-boundary.md) verified 38 unchanged original assets. The [later source follow-up](2026-10-27-telemetry-mcp-interfaces.md#release-qualification-follow-up) passed 30 CI-scope checks and 40 actual Windows x64 storage checks. | Qualify the final implementation on Linux, Windows and macOS x64/ARM64 plus web, including supported restart/update and public distribution. Source-component tests do not qualify installed delivery, Windows ARM64 or provider/resource/privacy acceptance. |
 
+## Setup recovery follow-up
+
+The [current setup correction](2026-10-27-telemetry-setup-recovery.md) retains
+three reproduced UI failures and passes 11 actual compiled-browser recovery
+checks plus 29 policy-control tests. Failed current reads remove stale enable
+controls; uncertain saves read actual state without write retries. The saved
+policy remains authoritative, and the fixture's simulated native replies do not
+qualify installed storage, provider, resource or full telemetry acceptance.
+
 ## Action timing follow-up
 
 The [Python owner correction](2026-10-27-telemetry-agent-timing.md), prepared on

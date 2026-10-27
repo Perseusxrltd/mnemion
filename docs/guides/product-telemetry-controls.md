@@ -58,6 +58,24 @@ and browser Global Privacy Control remain authoritative; setup does not turn
 them back on. After a choice or dismissal, setup stops checking until the next
 app load. An unacknowledged disclosure can then be offered again.
 
+New source shows **Privacy settings unavailable** when setup cannot read the
+current settings, and removes any stale enable controls. You can choose:
+
+- **Retry privacy settings** to read the current status again without writing a
+  preference.
+- **Continue to Mnemion** to close setup and keep working without changing the
+  saved choice or acknowledging a disclosure.
+- **Open Privacy controls** to open the full privacy page and review your status.
+
+These recovery actions leave the saved policy unchanged. A failed status read
+does not confirm that an existing enabled preference has been disabled. If a
+save response fails, the app reads back status without automatically resending
+the choice. When confirmation remains unavailable, it says **Your privacy
+choice could not be confirmed**; review the latest settings before trying again.
+The [recovery follow-up](../validation/2026-10-27-telemetry-setup-recovery.md)
+retains three original compiled-UI failures and the 11 passing recovery checks.
+Installed storage and platform acceptance remain separate.
+
 The current unavailable release does not load this setup UI or request privacy
 state for it. Collection/destination/route remain **false/null/null**, with no
 release CAs. [Setup validation](../validation/2026-10-27-telemetry-setup-disclosure.md)
@@ -586,6 +604,11 @@ state. A failed save is not a successful opt-out or re-enable. There is no
 automatic settings repair or repair action yet. Do not erase settings as a
 generic repair: that can erase an explicit opt-out. After a transient storage
 or lock problem is resolved, refresh status and confirm the saved choice.
+
+A setup status-request error is different from a confirmed
+`storage_unavailable` result. The UI error alone does not show that the saved
+policy became unreadable or disabled. Use **Retry privacy settings** or
+**Open Privacy controls** to obtain the current status.
 
 On Windows, explicit native configuration creates a private settings directory
 and database. Native Python and the app both reject permissions that expose the
