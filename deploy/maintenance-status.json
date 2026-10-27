@@ -30,8 +30,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 5,
+        "succeeded": 5,
         "active": [
           {
             "id": 122192172612,
@@ -39,16 +39,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/frontend run test:map"
-            ]
-          },
-          {
-            "id": 122192236670,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run npm --prefix studio/electron test"
             ]
           },
           {
@@ -66,7 +57,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -115,23 +106,68 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.38",
       "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T12:37:03Z",
+      "updated_at": "2026-10-27T12:37:23Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505169918",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
+        "total": 7,
+        "completed": 1,
+        "succeeded": 1,
         "active": [
           {
-            "id": 122192524064,
-            "name": "select",
+            "id": 122192617911,
+            "name": "windows / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 122192617990,
+            "name": "linux / x64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 122192618035,
+            "name": "linux / arm64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 122192618078,
+            "name": "windows / arm64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 122192618154,
+            "name": "macos / arm64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 122192618225,
+            "name": "macos / x64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
             ]
           }
         ]
@@ -184,18 +220,10 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "20b7631fe4ad82abc5af19840746f8325c26a0fe",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T12:36:46Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40504337244",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 2,
-        "active": []
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T12:37:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40504337244"
     },
     {
       "id": 40492261245,
@@ -214,29 +242,11 @@
       "workflow": "website-release.yml",
       "branch": "v4.46.38",
       "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T12:37:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505165922",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 122192513282,
-            "name": "synchronize",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Validate and publish the Git-owned product documentation"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T12:37:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505165922"
     }
   ],
-  "observed_at": "2026-10-27T12:37:12+00:00"
+  "observed_at": "2026-10-27T12:37:54+00:00"
 }
