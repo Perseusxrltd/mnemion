@@ -32,6 +32,56 @@ def cells(root):
     ]
 
 
+@pytest.mark.parametrize("selected", [False, True])
+def test_action_latency_includes_optional_authority_reads(installation, monkeypatch, selected):
+    now = [10.0]
+    monkeypatch.setattr(workflow.time, "monotonic", lambda: now[0])
+    status = policy.status
+    exhausted = aggregate.workflow_exhausted
+
+    def contribution_read(*args, **kwargs):
+        now[0] += 0.400
+        return exhausted(*args, **kwargs)
+
+    def authority_read(*args, **kwargs):
+        now[0] += 0.250
+        return status(*args, **kwargs)
+
+    monkeypatch.setattr(aggregate, "workflow_exhausted", contribution_read)
+    monkeypatch.setattr(policy, "status", authority_read)
+    active = (
+        workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+        if selected
+        else workflow.begin("memory.recall", "headless")
+    )
+    assert active is not None
+    now[0] += 0.010
+    if selected:
+        active.finish_choice("capture.deliver", "success")
+    else:
+        active.finish("success")
+    rows = cells(installation)
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+    # The user waited 660 ms. Reporting only the final 10 ms conceals the
+    # optional telemetry overhead. Inspect the real persisted aggregate.
+    assert next(row["bucket"] for row in rows if row["metric"] == "latency_ms") == 3
+
+
+@pytest.mark.parametrize("completed", [float("nan"), float("inf"), float("-inf"), 9.0])
+def test_invalid_elapsed_clock_cannot_be_reported_as_zero_or_retried(
+    installation, monkeypatch, completed
+):
+    now = [10.0]
+    monkeypatch.setattr(workflow.time, "monotonic", lambda: now[0])
+    active = workflow.begin("memory.recall", "headless")
+    assert active is not None
+    now[0] = completed
+    active.finish("success")
+    now[0] = 20.0
+    active.finish("success")
+    assert cells(installation) == []
+
+
 def test_fixed_choices_keep_one_original_clock_and_complete_at_most_once(installation, monkeypatch):
     now = [10.0]
     monkeypatch.setattr(workflow.time, "monotonic", lambda: now[0])
@@ -403,4 +453,6 @@ def test_workflow_discards_invalid_primitives_and_finishes_at_most_once(installa
 def test_unavailable_build_does_not_read_policy(monkeypatch):
     assert not policy.COLLECTION_AVAILABLE
     monkeypatch.setattr(policy, "status", lambda *_: pytest.fail("unexpected policy read"))
+    monkeypatch.setattr(workflow.time, "monotonic", lambda: pytest.fail("unexpected clock read"))
     assert control_measurement.begin("retrieval.search", {}) is None
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None

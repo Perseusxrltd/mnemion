@@ -338,14 +338,16 @@ production-only overhead. Resource acceptance remains false; prior failures,
 the 2 MiB / 0.5% ceilings and privacy/platform gates are unchanged. At that
 checkpoint, no new resource run or budget change was selected.
 
-The [process-role diagnostic follow-up](../validation/2026-10-27-telemetry-resource-roles.md)
-disables development DevTools auto-opening before startup and verifies the app
-main/renderer identities in every sample. The old first enabled case recorded
-two `Tab` processes without their identities; the second is not proven to have
-been DevTools. A separate `--comparison` mode retains six counterbalanced cases
-and 128 real memory cycles per case without allocation attribution. Focused
-checks and the selected changed-source diagnostic remain pending; this source
-change establishes no RSS/CPU saving or resource acceptance.
+The [completed process-role comparison](../validation/2026-10-27-telemetry-resource-roles.md),
+run **40453953300** on `6ac77003`, passed six 128-cycle functional cases with
+2,114 matched source files each, 2,322 successful fixture API requests and
+cleanup. Development DevTools auto-opening was disabled, app main/renderer
+identities were verified and allocation attribution was off. Both enabled main
+and all enabled/opted-out renderer comparisons exceeded 2 MiB at matched phases;
+the report retains both orders, endings and descriptive CPU deltas. The old
+run's second `Tab` remains unidentified. No causal saving, general CPU or
+resource/platform/privacy acceptance follows. Prior failures and strict
+budgets remain; no new resource run is selected.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
@@ -381,6 +383,15 @@ All **91 Python host/service-update/coverage checks, 48 compiled Node controller
 workflow checks and 29 browser-source checks** passed, with no Node skips; the
 current SDK and Electron builds also passed. These source checks do not qualify
 installed updates, resource limits or production privacy.
+
+The [Python action-timing correction](../validation/2026-10-27-telemetry-agent-timing.md)
+likewise starts before optional contribution and privacy-policy reads. Controlled
+clock regressions through real SQLite queues reproduced an omitted 650 ms in
+both fixed and selected workflows; both now record the complete interval.
+Invalid/backward clocks drop the observation instead of reporting zero.
+All **135 focused Python owner checks** passed, including existing opt-out,
+receipt and original-generation fences. This is source measurement accuracy,
+not a resource saving, new collection authority or installed qualification.
 
 The [managed-host update follow-up](../validation/2026-10-26-telemetry-host-updates.md)
 owns fresh headless staging, compatible apply and rollback under the watcher's

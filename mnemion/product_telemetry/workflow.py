@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 import time
 
@@ -10,13 +11,21 @@ from .catalog import METRICS, SURFACES, WORKFLOW_IDS, observation
 
 
 class Workflow:
-    def __init__(self, workflow: str, surface: str, root: Path | None, current: dict):
+    def __init__(
+        self,
+        workflow: str,
+        surface: str,
+        root: Path | None,
+        current: dict,
+        *,
+        started: float | None = None,
+    ):
         self._workflow = workflow
         self._surface = surface
         self._root = root
         self._revision = current["revision"]
         self._generation = current["store_generation"]
-        self._started = time.monotonic()
+        self._started = time.monotonic() if started is None else started
         self._finished = False
 
     def discard(self) -> None:
@@ -50,13 +59,16 @@ class Workflow:
         try:
             if set(measurements) - (set(METRICS) - {"latency_ms"}):
                 return
+            elapsed = time.monotonic() - self._started
+            if not math.isfinite(elapsed) or elapsed < 0:
+                return
             value = {
                 "kind": "outcome",
                 "workflow": self._workflow,
                 "surface": self._surface,
                 "outcome": outcome,
                 "reason": reason,
-                "latency_ms": max(0, (time.monotonic() - self._started) * 1000),
+                "latency_ms": elapsed * 1000,
                 **measurements,
             }
             # Validate everything before admitting even the submission counter.
@@ -88,8 +100,16 @@ class Workflow:
 class WorkflowChoice(Workflow):
     """One owned operation whose fixed category is known only after its work."""
 
-    def __init__(self, choices: tuple[str, ...], surface: str, root: Path | None, current: dict):
-        super().__init__(choices[0], surface, root, current)
+    def __init__(
+        self,
+        choices: tuple[str, ...],
+        surface: str,
+        root: Path | None,
+        current: dict,
+        *,
+        started: float | None = None,
+    ):
+        super().__init__(choices[0], surface, root, current, started=started)
         self._choices = choices
 
     def finish_choice(
@@ -121,6 +141,11 @@ def begin_choices(
     ):
         return None
     try:
+        # Optional policy/contribution reads delay this same action. Keep its
+        # start before that work so the latency cannot conceal our own cost.
+        started = time.monotonic()
+        if not math.isfinite(started):
+            return None
         # Exhausting collection cannot hide a later delivery-only cycle. The
         # final selected workflow still has its own atomic contribution limit.
         if all(aggregate.workflow_exhausted(root, name, surface) for name in choices):
@@ -130,7 +155,7 @@ def begin_choices(
             if current["reason"] == "user_disabled":
                 aggregate.remember_disabled(root)
             return None
-        return WorkflowChoice(choices, surface, root, current)
+        return WorkflowChoice(choices, surface, root, current, started=started)
     except Exception:
         return None
 
@@ -142,6 +167,9 @@ def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow 
     if type(workflow) is not str or workflow not in WORKFLOW_IDS or surface not in SURFACES:
         return None
     try:
+        started = time.monotonic()
+        if not math.isfinite(started):
+            return None
         if aggregate.workflow_exhausted(root, workflow, surface):
             return None
         current = policy.status(root)
@@ -149,6 +177,6 @@ def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow 
             if current["reason"] == "user_disabled":
                 aggregate.remember_disabled(root)
             return None
-        return Workflow(workflow, surface, root, current)
+        return Workflow(workflow, surface, root, current, started=started)
     except Exception:
         return None
