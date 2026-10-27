@@ -16,7 +16,9 @@ import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-f
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
-const environment = { ...process.env, PYTHONPATH: repository, PYTHONNOUSERSITE: '1' }
+// Node writes UTF-8 JSON frames. Windows Python otherwise reads those bytes
+// with its ANSI code page and creates a different non-ASCII fixture path.
+const environment = { ...process.env, PYTHONPATH: repository, PYTHONNOUSERSITE: '1', PYTHONIOENCODING: 'utf-8' }
 const program = `
 import json,os,shutil,sqlite3,sys
 from pathlib import Path

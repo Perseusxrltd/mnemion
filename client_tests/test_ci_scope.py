@@ -14,6 +14,15 @@ from deploy.ci_scope import documentation, scope
         ("deploy/research-watch.json", True),
         ("deploy/research_watch.py", False),
         ("docs/validation/releases/4.30.2-status.json", True),
+        ("docs/validation/releases/4.46.29-publication.json", True),
+        ("docs/validation/releases/4.46.29-artifacts.json", True),
+        ("docs/validation/releases/4.46.29-unknown.json", False),
+        ("docs/validation/releases/latest-publication.json", False),
+        ("docs/validation/releases/4.46.29-publication.schema.json", False),
+        ("docs/validation/releases/4.46.29-artifacts.schema.json", False),
+        ("docs/validation/releases/fixtures/4.46.29-artifacts.json", False),
+        ("docs/validation/releases/4.46.29-publication.json.py", False),
+        ("docs/validation/releases/4.46.29-publication/records.json", False),
         ("docs/validation/2026-10-22-l1-release-native-acceptance.json", True),
         ("docs/validation/2026-10-13-v4_1_6-hosted-verification.json", True),
         ("docs/validation/current.json", False),
@@ -50,8 +59,12 @@ def test_real_push_diff_preserves_release_pr_and_renamed_source_checks(tmp_path)
     evidence = tmp_path / "docs/validation/2026-10-22-native-acceptance.json"
     evidence.parent.mkdir(parents=True)
     evidence.write_text('{"scope":"dated validation report"}\n')
-    git("add", "README.md", str(evidence.relative_to(tmp_path)))
-    git("commit", "--quiet", "-m", "Update the guide and its dated evidence")
+    receipts = tmp_path / "docs/validation/releases"
+    receipts.mkdir()
+    for suffix in ("status", "publication", "artifacts"):
+        (receipts / f"4.46.29-{suffix}.json").write_text('{"scope":"release receipt"}\n')
+    git("add", "README.md", "docs/validation")
+    git("commit", "--quiet", "-m", "Update the guide and its validation receipts")
     after = git("rev-parse", "HEAD")
     event = {"before": before, "after": after}
     assert scope(tmp_path, event, event_name="push") == {
