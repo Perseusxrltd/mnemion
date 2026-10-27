@@ -18,15 +18,105 @@
   ],
   "runs": [
     {
-      "id": 40477162974,
+      "id": 40483312151,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "bc4d6e0892af35e5952f14a4d18e35924c2a0157",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T09:27:08Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40477162974"
+      "source_commit": "29dcd70d79b763e274731a94a9b2948603df5250",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-27T09:46:33Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40483312151",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 122118762926,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend run test:native"
+            ]
+          },
+          {
+            "id": 122118845195,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 122118845261,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 122118845273,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 122118845302,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 122118845312,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 122118845313,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 122118845364,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 122118845366,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Compile and exercise the native network admission probe in Python and Node"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40474484566,
@@ -81,15 +171,15 @@
       }
     },
     {
-      "id": 40477163077,
+      "id": 40483312113,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "bc4d6e0892af35e5952f14a4d18e35924c2a0157",
+      "source_commit": "29dcd70d79b763e274731a94a9b2948603df5250",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T08:57:45Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40477163077"
+      "updated_at": "2026-10-27T09:46:29Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40483312113"
     },
     {
       "id": 40474480217,
@@ -103,5 +193,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217"
     }
   ],
-  "observed_at": "2026-10-27T09:27:41+00:00"
+  "observed_at": "2026-10-27T09:47:03+00:00"
 }
