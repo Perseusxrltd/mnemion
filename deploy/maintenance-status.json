@@ -23,100 +23,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T12:08:30Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40501408853",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 3,
-        "succeeded": 3,
-        "active": [
-          {
-            "id": 122179725560,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
-            ]
-          },
-          {
-            "id": 122179789026,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 122179789095,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 122179789097,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 122179789111,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
-          {
-            "id": 122179789155,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 122179789234,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 122179789272,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 122179789342,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Check release versions before building clients and running the service matrix"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T12:29:27Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40501408853"
     },
     {
       "id": 40483624017,
@@ -159,30 +69,21 @@
       "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T11:39:12Z",
+      "updated_at": "2026-10-27T12:26:08Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40496801738",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 19,
-        "succeeded": 18,
+        "total": 22,
+        "completed": 21,
+        "succeeded": 20,
         "active": [
           {
-            "id": 122167355163,
-            "name": "native / windows-11-arm / arm64",
+            "id": 122187554922,
+            "name": "assemble",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 122167355185,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Packaged Mac update, restart guards and relaunch"
+              "Prepare or refresh the reviewable release draft"
             ]
           }
         ]
@@ -242,5 +143,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217"
     }
   ],
-  "observed_at": "2026-10-27T12:09:06+00:00"
+  "observed_at": "2026-10-27T12:30:08+00:00"
 }

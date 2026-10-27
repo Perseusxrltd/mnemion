@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T12:09:06+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T12:30:08+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.37](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.37). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40501408853](https://github.com/Perseusxrltd/mnemion/actions/runs/40501408853) |
+| ci\.yml | main | success | [Run 40501408853](https://github.com/Perseusxrltd/mnemion/actions/runs/40501408853) |
 | database-cache\.yml | main | success | [Run 40483624017](https://github.com/Perseusxrltd/mnemion/actions/runs/40483624017) |
 | public-updates\.yml | v4\.46\.37 | success | [Run 40474484566](https://github.com/Perseusxrltd/mnemion/actions/runs/40474484566) |
 | release\.yml | release/4\.46\.37 | success | [Run 40462412553](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553) |
@@ -27,22 +27,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40501408853](https://github.com/Perseusxrltd/mnemion/actions/runs/40501408853): 3/12 jobs completed; 3 succeeded.
+[Run 40496801738](https://github.com/Perseusxrltd/mnemion/actions/runs/40496801738): 21/22 jobs completed; 20 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- container \(ubuntu-22\.04\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Run npm --prefix packages/client ci && npm --prefix packages/client test.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.14\): in\_progress — Check release versions before building clients and running the service matrix.
-
-[Run 40496801738](https://github.com/Perseusxrltd/mnemion/actions/runs/40496801738): 19/21 jobs completed; 18 succeeded.
-
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Packaged Mac update, restart guards and relaunch.
+- assemble: in\_progress — Prepare or refresh the reviewable release draft.
 
 
 ## Unsuccessful jobs
