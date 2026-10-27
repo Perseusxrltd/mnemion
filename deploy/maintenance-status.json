@@ -30,34 +30,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 7,
+        "succeeded": 7,
         "active": [
-          {
-            "id": 122069039020,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
-            ]
-          },
           {
             "id": 122069085335,
             "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 122069085359,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -66,7 +48,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -84,7 +66,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -93,23 +75,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 122069085444,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 122069086069,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Verify both pinned local models on the actual Mac runtime"
             ]
           }
         ]
@@ -155,28 +121,29 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "0984ca4ace157706380b27f8ef0dadb9f0baed7a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T07:37:45Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T07:42:49Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468253346",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 1,
-        "completed": 0,
+        "total": 2,
+        "completed": 2,
         "succeeded": 0,
-        "active": [
-          {
-            "id": 122068811545,
-            "name": "verify",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Scan the exact downloaded distributions before publication"
-            ]
-          }
-        ]
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "verify",
+          "id": 122068811545,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 16,
+          "steps": [
+            "Scan the exact downloaded distributions before publication"
+          ]
+        }
+      ]
     },
     {
       "id": 40468321987,
@@ -201,5 +168,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456602936"
     }
   ],
-  "observed_at": "2026-10-27T07:39:18+00:00"
+  "observed_at": "2026-10-27T07:43:26+00:00"
 }
