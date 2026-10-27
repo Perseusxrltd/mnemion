@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.34**.
+Reviewed source distribution: **4.46.35**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-27**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,18 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**27 October 2026, Python telemetry receive-window correction:**
+[The oversized-response follow-up](validation/2026-10-27-telemetry-receive-window.md)
+found that kernel buffering could exceed the reserved network allowance before
+the sender rejected response headers. Limiting and verifying the receive buffer
+before connection reduced the measured Linux loopback burst from 123,053 to
+23,110 frame bytes, below the unchanged 65,536-byte reservation. All 32 focused
+transport checks passed. The original failure is retained. This does not qualify
+other platforms/transports, retransmissions, resources or installed delivery.
+The [acceptance ledger](validation/2026-10-27-telemetry-acceptance-ledger.md)
+retains the remaining work; all 66 states are unchanged and V08 stays Building
+with production collection unavailable.
 
 **26 October 2026, V08 browser pressure:** [Bounded startup and OS-sample freshness](validation/2026-10-26-telemetry-browser-pressure.md) passed nine unit tests and the frontend build, but the final-source browser refused at 3,002.1 ms without a usable signal, so nominal-browser/full-app/resource acceptance remains open with no further trial selected, all 66 states unchanged and V08 Building/inactive.
 
@@ -79,8 +91,8 @@ lets explicit saved restore choose open or switch from the verified transition,
 using one original privacy snapshot and clock. Automatic resume remains excluded;
 explicit app/native backup inventory owns list success without backup-validity
 or cloud-delivery claims. Current coverage is 93 mapped/one unmeasured category
-and 632 declared action rows; independent `update.verify` stays inside the existing
-download cycle. Source checks passed 30 distinct Python cases, 69 compiled Node
+and 632 declared action rows; `update.verify` remains independently unmeasured,
+distinct from download/staging. Source checks passed 30 distinct Python cases, 69 compiled Node
 cases plus one Node/Python SQLite policy case, and 25 browser-source cases, with
 both builds passing and no Node skips. Two initial Python fixture failures and
 their test-only corrections are retained. All 66 requirement states remain

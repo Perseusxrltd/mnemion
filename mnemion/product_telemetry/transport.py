@@ -20,6 +20,7 @@ from .endpoint import Endpoint
 
 MAX_TLS_BYTES = 32768
 MAX_HEADERS = 2048
+RECEIVE_BUFFER_BYTES = 4096
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +105,18 @@ class _Channel:
         )
         self.raw = socket.socket(family, socket.SOCK_STREAM)
         self.raw.setblocking(False)
+        # Bound the kernel's receive window before connect. Limiting reads or
+        # TLS accounting alone still lets a burst fill an ambient large socket
+        # buffer before the oversized response is rejected. Linux reports twice
+        # the requested SO_RCVBUF for bookkeeping; decline if the OS cannot
+        # honor that bound. This does not bound retransmissions on the network.
+        self.raw.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RECEIVE_BUFFER_BYTES)
+        if (
+            not 0
+            < self.raw.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
+            <= (2 * RECEIVE_BUFFER_BYTES)
+        ):
+            raise _Stopped
         self.raw.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         # Explicit release roots replace the ambient/system/extra trust store.
         # create_default_context keeps Python's certificate/hostname safeguards;

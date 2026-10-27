@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-27T01:25:15.269819+00:00",
+  "scope": "Linux IPv4 loopback Python TLS transport component",
+  "runtime": {
+    "python": "3.12.3",
+    "openssl": "OpenSSL 3.0.13 30 Jan 2024"
+  },
+  "original_source_commit": "e18b495cdf554f682a4a2be0f1f2498e9d934fc4",
+  "corrected_base_commit": "b42a309fcffbf791197ae35b11604e98fb5d2882",
+  "corrected_source_files": {
+    "mnemion/product_telemetry/transport.py": "3cc524f480aef1b17451807069165b8514b1e1e8839b8952556e009d19f5abd2",
+    "tests/test_product_telemetry_transport.py": "dcaf4653132ab1a078f925874b6c7a1f0b2ee349c9b3beb16bfaa6dd1f098112"
+  },
+  "synthetic_peer_noise_bytes": 262144,
+  "interface_mtu": 1280,
+  "segmentation_offloads_disabled": true,
+  "aggregate_only_capture": true,
+  "raw_packets_or_request_metadata_retained": false,
+  "attempt_reservation_bytes": 65536,
+  "receive_buffer_requested_bytes": 4096,
+  "maximum_allowed_buffer_readback_bytes": 8192,
+  "original": {
+    "name": "tls_burst",
+    "outcome": "failed",
+    "tls_bytes_charged": 21683,
+    "requests": 1,
+    "report_body_bytes": 4,
+    "spent_attempt_retained_and_lease_cleared": true,
+    "capture": {
+      "tcp_frames": 113,
+      "frame_bytes": 123053,
+      "ipv4_tcp_bytes": 121471,
+      "maximum_observed_frame_bytes": 1294,
+      "kernel_packets": 113,
+      "kernel_drops": 0,
+      "unexpected_frames": 0
+    },
+    "interface_delta": {
+      "rx_bytes": 121471,
+      "rx_packets": 113,
+      "tx_bytes": 121471,
+      "tx_packets": 113
+    },
+    "two_independent_counters_agree": true,
+    "observed_loopback_frames_under_attempt_reservation": false
+  },
+  "corrected": {
+    "name": "tls_burst",
+    "outcome": "failed",
+    "tls_bytes_charged": 18394,
+    "requests": 1,
+    "report_body_bytes": 4,
+    "spent_attempt_retained_and_lease_cleared": true,
+    "capture": {
+      "tcp_frames": 34,
+      "frame_bytes": 23110,
+      "ipv4_tcp_bytes": 22634,
+      "maximum_observed_frame_bytes": 1294,
+      "kernel_packets": 34,
+      "kernel_drops": 0,
+      "unexpected_frames": 0
+    },
+    "interface_delta": {
+      "rx_bytes": 22634,
+      "rx_packets": 34,
+      "tx_bytes": 22634,
+      "tx_packets": 34
+    },
+    "two_independent_counters_agree": true,
+    "observed_loopback_frames_under_attempt_reservation": true
+  },
+  "evidence_sha256": {
+    "original": "f4442d9a467b1f03ea1175326bdfd0b06d3c55b7efde432a53e1721714d523a7",
+    "corrected": "1bc7ffc3c9f428d459b3be27db0b48909f9c95d157eef6a0b81f55fe56883cf6",
+    "same_diagnostic_script": "21a007e8b94b4f5159253f74f673c38c6535c10b9321d415555cc4c48c2e7ec9"
+  },
+  "focused_transport_tests_passed": 32,
+  "new_socket_refusal_tests": 4,
+  "temporary_fixtures_removed": true,
+  "production_disclosure_unchanged": true,
+  "production_collection_available": false,
+  "qualification": {
+    "linux_python_burst_component": true,
+    "whole_network_or_retransmissions": false,
+    "ipv6": false,
+    "other_platforms": false,
+    "electron_or_browser": false,
+    "resource_budget": false,
+    "collector_privacy": false,
+    "installed_delivery": false,
+    "full_telemetry_complete": false
+  }
+}

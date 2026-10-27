@@ -21,6 +21,18 @@ required for full acceptance.
 | Anonymity and useful aggregates | [Wire-v2/report-v3 selection rules](2026-10-26-telemetry-review-selection.md): randomized automatic categories, fixed manual body, bounded contributions and suppression. | Codec/selection checks support their stated conditional bounds. Manual reports contribute only to coarse volume; they establish no categorical, participation or network-anonymity guarantee. | Architecture/privacy and utility evidence for linkage, rare/coincident cohorts, repeated contributions, auxiliary information, suppression and difference attacks. Counts must remain sampled usage, not unique people or devices; no identifying workaround is permitted. |
 | Final release | Normal source, native, artifact-verification and public release gates. | [4.46.29 publication](2026-10-27-release-scan-boundary.md) verified 38 unchanged original assets. The [later source follow-up](2026-10-27-telemetry-mcp-interfaces.md#release-qualification-follow-up) passed 30 CI-scope checks and 40 actual Windows x64 storage checks. | Qualify the final implementation on Linux, Windows and macOS x64/ARM64 plus web, including supported restart/update and public distribution. Source-component tests do not qualify installed delivery, Windows ARM64 or provider/resource/privacy acceptance. |
 
+## Receive-window finding and scoped correction
+
+The [Python burst follow-up](2026-10-27-telemetry-receive-window.md) retained an
+original observation of **123,053 frame bytes** despite charging only **21,683
+TLS bytes**, exceeding the unchanged **65,536-byte** attempt reservation. With
+the pre-connect receive-buffer bound, the corrected case observed **23,110
+frame bytes**; 32 transport tests passed. Both observations refused
+the malformed response, retained spending and cleared the lease. This is a
+Linux IPv4/Python component result, with two agreeing counters and zero capture
+drops. The original five-case limits remain; total wire/retransmission, IPv6,
+other-platform, Electron/browser and rolling-day qualification remain required.
+
 ## Retained failed resource result
 
 Run **40416923461** matched **2,075 source inputs per case**. Enabled main

@@ -207,6 +207,52 @@ def test_absent_or_malformed_trust_never_connects(installation, monkeypatch, aut
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("failure", ["set_error", "read_error", "oversized", "zero"])
+def test_receive_buffer_refusal_never_connects_and_releases_the_reservation(
+    installation, monkeypatch, failure
+):
+    f = installation
+    sockets, connections = [], []
+    real_socket = socket.socket
+
+    class RefusingSocket(real_socket):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            sockets.append(self)
+
+        def setsockopt(self, level, option, value):
+            if (level, option) == (socket.SOL_SOCKET, socket.SO_RCVBUF):
+                if failure == "set_error":
+                    raise OSError("synthetic unavailable socket control")
+            return super().setsockopt(level, option, value)
+
+        def getsockopt(self, level, option, *args):
+            if (level, option) == (socket.SOL_SOCKET, socket.SO_RCVBUF):
+                if failure == "read_error":
+                    raise OSError("synthetic unavailable socket observation")
+                return 65536 if failure == "oversized" else 0
+            return super().getsockopt(level, option, *args)
+
+    async def scenario():
+        async def forbidden_connect(*args):
+            connections.append(True)
+            raise AssertionError("An unbounded receive buffer must not connect")
+
+        monkeypatch.setattr(socket, "socket", RefusingSocket)
+        monkeypatch.setattr(asyncio.get_running_loop(), "sock_connect", forbidden_connect)
+        target = transport.Endpoint(
+            "localhost", "127.0.0.1", 443, f.context.telemetry_test_authorities
+        )
+        report = f.prepare(target)
+        result = await transport.send(f.budget, report, target)
+        assert result.outcome in {"failed", "suppressed"}
+        assert result.encrypted_bytes_charged == 0 and connections == []
+        assert len(sockets) == 1 and sockets[0].fileno() == -1
+        f.cleaned(report)
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("ending", ["success", "shutdown", "pressure"])
 def test_existing_loop_accepts_threaded_workflow_and_owns_tls_cleanup(installation, ending):
     from mnemion.product_telemetry import activity, workflow

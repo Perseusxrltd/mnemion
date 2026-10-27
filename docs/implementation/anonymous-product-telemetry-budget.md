@@ -83,6 +83,16 @@ wire usage or installed sender cancellation.
 
 ## One private native/Python allowance
 
+The [27 October receive-window correction](../validation/2026-10-27-telemetry-receive-window.md)
+addresses an observed Python transport gap: rejecting oversized TLS/HTTP input
+did not prevent the kernel from receiving 123,053 frame bytes against a
+65,536-byte reservation. Python now requests a 4,096-byte receive buffer before
+connect and refuses failed or excessive readback (above 8,192 bytes, allowing
+Linux's doubled bookkeeping value). The same isolated burst measured 23,110
+frame bytes after this correction; 32 transport checks passed. Both results
+remain retained. This does not establish a general whole-network bound, qualify
+retransmissions or the Electron/browser transports, or change any allowance.
+
 [Policy storage version 6](../../mnemion/product_telemetry/policy.py) retains the
 seven-slot attempt ledger and delivery-state row introduced in version 4, and
 the version-5 `connection_mode` preference. Version 6 adds one bounded private
