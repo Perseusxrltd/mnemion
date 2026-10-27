@@ -151,7 +151,13 @@ def test_every_control_operation_has_reviewed_owner_mapping_or_visible_exclusion
         names = list(spec["variants"].values()) if "variants" in spec else [spec["workflow"]]
         assert all(name in catalog.WORKFLOW_IDS for name in names)
         assert spec["completion"] in {"success", "accepted"}
-        assert bool(spec.get("fresh_receipt")) == (item["retry"] == "idempotency_key")
+        if item["retry"] == "idempotency_key":
+            assert spec.get("fresh_receipt") is True
+        # Resource-bound capture mutations also publish fresh/replayed metadata
+        # without an Idempotency-Key. Their actual HTTP behavior is tested over
+        # PostgreSQL; retry policy alone cannot decide receipt availability.
+        if "fresh_receipt" in spec:
+            assert spec["fresh_receipt"] is True
         if "variants" in spec:
             section, field = spec["selector"]
             schema = item["input_schema"]["properties"][section]
@@ -162,6 +168,78 @@ def test_every_control_operation_has_reviewed_owner_mapping_or_visible_exclusion
                     schema = schema[part]
             schema = schema["properties"][field]
             assert set(spec["variants"]) == set(schema["enum"])
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        "capture.grant.configure",
+        "capture.grant.revoke",
+        "capture.policy.change",
+        "capture.source.configure",
+        "capture.source.revoke",
+    ],
+)
+@pytest.mark.parametrize("disposition", ["new", "replayed", None])
+def test_capture_controls_require_the_original_fresh_resource_receipt(
+    installation, tmp_path, monkeypatch, capsys, operation, disposition
+):
+    ids = {
+        name: str(uuid4()) for name in ("connector_id", "source_id", "grant_id", "transition_id")
+    }
+    if operation == "capture.grant.revoke":
+        request = {"parameters": {"grant_id": ids["grant_id"]}}
+    elif operation == "capture.grant.configure":
+        request = {
+            "parameters": {name: ids[name] for name in ("source_id", "grant_id")},
+            "body": {"device_key_id": str(uuid4())},
+        }
+    else:
+        request = {"parameters": {name: ids[name] for name in ("connector_id", "source_id")}}
+        if operation == "capture.source.configure":
+            request["body"] = {
+                "name": "PRIVATE_SOURCE",
+                "namespace": "PRIVATE_NAMESPACE",
+                "members": ["PRIVATE_MEMBER"],
+                "capture_mode": "messages",
+                "keep_accepted": True,
+            }
+        elif operation == "capture.policy.change":
+            request["parameters"]["transition_id"] = ids["transition_id"]
+            request["body"] = {
+                "expected_version": 1,
+                "review_token": "a" * 64,
+                "capture_policy": {
+                    "format": "mnemion-capture-policy-v1",
+                    "preset": "conversation",
+                    "capture_mode": "messages",
+                    "include": ["PRIVATE_PATH/*.jsonl"],
+                    "exclude": [],
+                    "retention": "until_deleted",
+                    "max_file_bytes": 1000000,
+                    "max_record_bytes": 10000,
+                },
+                "previous_grants": "retain",
+                "confirm": True,
+            }
+    calls = []
+
+    def reply(sent):
+        calls.append(sent)
+        return httpx.Response(
+            200,
+            headers={"X-Mnemion-Idempotency": disposition} if disposition else {},
+            json={"private": "PRIVATE_RESPONSE"},
+        )
+
+    assert cli(monkeypatch, tmp_path, operation, request, reply) == 0
+    assert "PRIVATE_RESPONSE" in capsys.readouterr().out
+    assert len(calls) == 1
+    rows = cells(installation)
+    submissions = sum(row["count"] for row in rows if row["metric"] == "submissions")
+    assert submissions == (1 if disposition == "new" else 0)
+    assert "PRIVATE" not in json.dumps(rows)
+    assert b"PRIVATE" not in (installation / policy.DATABASE_NAME).read_bytes()
 
 
 def test_read_retries_count_one_logical_use_and_never_store_private_values(

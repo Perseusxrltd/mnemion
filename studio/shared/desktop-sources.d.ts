@@ -1,3 +1,6 @@
+import type { CapturePolicy } from '../../packages/client/dist/capture.js'
+export type { CapturePolicy } from '../../packages/client/dist/capture.js'
+
 export type DesktopSource = {
   id: string; endpoint: string; tenant_id: string; connector_id: string; principal_id: string;
   name: string; provider: 'filesystem' | 'conversations' | 'slack' | 'gdrive'; path?: string; members: string[];
@@ -96,13 +99,6 @@ export type SourceConfigure = {
   expected_revision: string; source: Omit<DesktopSource, 'id'> & { id?: string }; credential?: string;
   provider_credential?: string;
   preview_hash?: string;
-}
-export type CapturePolicy = {
-  format: 'mnemion-capture-policy-v1' | 'mnemion-capture-policy-v2' | 'mnemion-capture-policy-v3'; preset: 'selected' | 'conversation' | 'detailed';
-  capture_mode: 'messages' | 'complete'; include: string[]; exclude: string[];
-  retention: 'source_mirror' | 'until_deleted' | 'expire_after'; max_file_bytes: number; max_record_bytes: number;
-  retention_days?: number; expiry_scope?: 'captured_fragment_family';
-  exclude_fields?: string[];
 }
 export type SourcePreviewSelection = {
   path: string; capture_mode: 'messages' | 'complete'; capture_policy?: CapturePolicy | null;

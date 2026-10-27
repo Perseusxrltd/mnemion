@@ -30,7 +30,7 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 records the later preparation boundary and remaining gaps.
 
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-lists **634 actions and fixed variants: 362 mapped, 265 excluded,
+lists **636 actions and fixed variants: 364 mapped, 265 excluded,
 seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API,
@@ -42,6 +42,9 @@ independent call-site proof. A newly declared interface
 action without a mapping appears as unmeasured even if its category has another
 owner. Fixed exclusion reasons and delegation are visible separately; none of
 these rows authorizes collection or represents activity history.
+The preceding update-verification checkpoint listed 634 rows, with 362 mapped;
+the two typed capture-administration methods add declarations without changing
+the 94 workflow categories.
 
 Eight earlier evaluated observations and retained commands from actual Chrome
 verify the action view on changed compiled assets based on `93eb300`, using package
@@ -340,7 +343,8 @@ duration and rechecks policy when recording. Optional measurement errors cannot
 change the ordinary call's result. Unavailable collection returns before local
 policy/queue access, so these hooks remain inactive in this build.
 
-For the ten mapped keyed-write operations, a successful response contributes
+For the 15 mapped mutations requiring fresh receipts (the earlier ten keyed
+writes plus five capture mutations), a successful response contributes
 only with **`X-Mnemion-Idempotency: new`**. Cached `replayed`, legacy/missing or
 unknown receipts discard both submission and outcome contributions; telemetry
 does not retry a mutation to obtain a fresh receipt. The
@@ -356,6 +360,36 @@ The [source follow-up](../validation/2026-10-24-telemetry-aggregates.md) preserv
 the initial schema-reference test failure and the corrected focused pass.
 Remaining surfaces, resource/privacy measurements and release acceptance remain open.
 
+The [27 October capture-administration source](../validation/2026-10-27-telemetry-capture-admin.md)
+adds response-local fresh/replayed metadata to five existing mapped mutations:
+`capture.source.configure`, `capture.source.revoke`, `capture.grant.configure`,
+`capture.grant.revoke` and `capture.policy.change`. Each map now requires
+`fresh_receipt`; a successful observation needs `X-Mnemion-Idempotency: new`.
+Replayed, missing or unknown metadata supplies no fresh use. Actual app buttons
+use SDK `changeCapturePolicy` and `revokeCaptureGrant` through the existing Studio
+owner, selecting `capture.configure` and `capture.remove`. The SDK preserves the
+ordinary request and adds no owner itself; policy contents, review tokens and
+source/device/grant identifiers are not telemetry inputs.
+
+The retained PostgreSQL reproduction showed the old grant-ID lookup could miss
+a concurrent insertion for another source. After `INSERT ... ON CONFLICT`, the
+source now checks the actual immutable source/device/policy binding and revoked
+state before returning authorization or recording freshness. Revocation rereads
+under the source lock, so a concurrent repeat is classified from current state.
+Generic SDK/HTTP, review/status reads and nested enrollment/recovery transport
+gain no owner. The agent command layer also forwards valid response metadata
+independently of `Idempotency-Key`; freshness does not authorize another attempt.
+
+Source qualification passed **106 distinct Python tests**: the initial 94 had
+89 passes and five CLI failures; the corrected 44-test selection passed with
+32 overlapping cases and 62 unchanged original checks not rerun. **22 SDK and
+49 Studio/policy source checks** passed without Node skips, along with SDK,
+frontend and Electron builds; **29 source inputs matched**. The original grant
+race, CLI failures and shared-type import build failure remain retained. These
+are isolated PostgreSQL and source-client results, without final installed,
+browser outbound, resource or provider/privacy qualification; earlier declaration
+counts remain historical.
+
 ## Owned desktop, native-operator and Studio coverage
 
 These hooks are implemented in source and remain inactive under the unavailable
@@ -366,7 +400,7 @@ collection contract. Their maps describe eligible boundaries, not proof that all
 | --- | --- |
 | Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 46 eligible and 31 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
 | Desktop preload requests | The same map's `ipc` section classifies **72 actual preload request channels**, including fixed `hosts:action` and `sources:control` variants. The runtime dispatcher and action inventory read these reviewed mappings; inspection, privacy, transport and automatic connection exclusions remain visible. The 4.46.22 source follow-up passed 54 distinct Python and 26 Node tests plus both source builds. |
-| Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **64 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. |
+| Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **66 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. The earlier 64-method map preceded the two standalone capture-administration methods. |
 | Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
 
 The [workspace ownership follow-up](../validation/2026-10-26-workspace-telemetry-ownership.md)

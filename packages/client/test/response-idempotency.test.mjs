@@ -2,6 +2,28 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { MnemionClient, MnemionError } from '../dist/index.js'
 
+test('capture action methods preserve reviewed bodies, escape path IDs and do not retry an unconfirmed write', async () => {
+  const requests = []
+  const input = { expected_version: 3, review_token: 'PRIVATE_REVIEW', capture_policy: { include: ['PRIVATE_PATH'] }, previous_grants: 'retain', confirm: true }
+  const failure = new Error('PRIVATE_LOST_REPLY')
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: 'fixture', fetch: async (url, options) => {
+    requests.push({ url, options })
+    if (requests.length === 1) return Response.json({ source: { name: 'PRIVATE_SOURCE' } }, { headers: { 'X-Mnemion-Idempotency': 'new' } })
+    throw failure
+  } })
+  const result = await client.changeCapturePolicy('connector/a', 'source?b', 'transition#c', input)
+  assert.equal(client.idempotencyOf(result), 'new')
+  assert.equal(requests[0].url, 'https://example.invalid/v1/connectors/connector%2Fa/capture-sources/source%3Fb/policy-transitions/transition%23c')
+  assert.equal(requests[0].options.method, 'PUT')
+  assert.deepEqual(JSON.parse(requests[0].options.body), input)
+  assert.equal(requests[0].options.headers['Idempotency-Key'], undefined)
+  await assert.rejects(client.revokeCaptureGrant('grant/a'), error => error === failure)
+  assert.equal(requests.length, 2)
+  assert.equal(requests[1].url, 'https://example.invalid/v1/capture-grants/grant%2Fa')
+  assert.equal(requests[1].options.method, 'DELETE')
+  assert.equal(requests[1].options.body, undefined)
+})
+
 test('fresh/replayed metadata belongs to the exact response, without changing its body', async () => {
   let index = 0
   const headers = ['new', 'replayed', 'PRIVATE_SENTINEL', null]

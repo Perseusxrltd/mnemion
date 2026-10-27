@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.35**.
+Reviewed source distribution: **4.46.36**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-27**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,26 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**27 October 2026, capture administration source; 4.46.36 hotfix selected:**
+[The follow-up](validation/2026-10-27-telemetry-capture-admin.md) routes policy
+approval and device revocation through typed SDK/app actions and the existing
+Studio owner. Five capture mutations now expose fresh/replayed metadata. A real
+PostgreSQL reproduction retained the original cross-source grant-ID race; source
+now rechecks the actual binding after insertion and reads revocation state under
+the source lock. This ordinary product defect selects a 4.46.36 hotfix, including
+the prior setup and update-verification changes. Source qualification passed
+106 distinct Python, 22 SDK and 49 Studio/policy checks, with no Node skips;
+SDK/frontend/Electron builds passed and 29 inputs matched. The agent command now
+forwards valid fresh/replayed response metadata without requiring an
+`Idempotency-Key`; retry rules are unchanged. Original grant-race, five CLI and
+shared-type build failures remain retained. Installed/browser outbound, resource,
+provider and aggregate acceptance remain open.
+The generator retains 94 mapped categories and lists 636 rows: 364 mapped, 265
+excluded, seven delegated and zero unmeasured. The earlier 634-row checkpoint is
+retained below. Generic SDK/HTTP and nested enrollment/recovery transport gain no
+owner. All 66 requirements and V08 Building remain unchanged; production
+collection is unavailable and full acceptance remains open.
 
 **27 October 2026, observable update verification source:**
 [Verification boundaries](validation/2026-10-27-telemetry-update-verification.md)

@@ -108,6 +108,32 @@ def test_read_backpressure_is_obeyed_and_unknown_mutations_are_not_retried(monke
         assert "private diagnostic" not in str(write.value)
 
 
+def test_resource_bound_receipt_metadata_does_not_authorize_a_retry(monkeypatch):
+    calls, delays = [], []
+    monkeypatch.setattr(control.time, "sleep", delays.append)
+
+    def reply(request):
+        calls.append(request)
+        return httpx.Response(
+            200 if len(calls) == 1 else 503,
+            headers={"X-Mnemion-Idempotency": "new"},
+            json={"private": "PRIVATE_SOURCE"},
+        )
+
+    with Client(
+        "http://mnemion.test", "fixture-key", retries=2, transport=httpx.MockTransport(reply)
+    ) as client:
+        request = {"parameters": {"grant_id": str(uuid4())}}
+        first = control.execute(client, "capture.grant.revoke", request)
+        assert first["idempotency"] == "new"
+        assert first["result"] == {"private": "PRIVATE_SOURCE"}
+        with pytest.raises(control.ControlError) as failed:
+            control.execute(client, "capture.grant.revoke", request)
+        assert not failed.value.retry_safe and not failed.value.retryable
+    assert len(calls) == 2 and delays == []
+    assert all("Idempotency-Key" not in call.headers for call in calls)
+
+
 def test_an_interrupted_idempotent_write_reuses_the_exact_validated_request(monkeypatch):
     calls = []
     monkeypatch.setattr(control.time, "sleep", lambda _: None)

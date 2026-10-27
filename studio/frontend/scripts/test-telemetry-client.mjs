@@ -150,6 +150,46 @@ test('generic SDK calls and automatic UI queries never acquire a telemetry owner
   assert.equal(instance.requests.length, 4)
 })
 
+test('capture admin actions count only their fresh response and preserve private request data', async () => {
+  for (const surface of ['desktop', 'browser']) for (const disposition of ['new', 'replayed', null, 'PRIVATE_UNKNOWN']) {
+    const instance = fixture(() => Response.json({ source: { name: 'PRIVATE_SOURCE' }, review_token: 'PRIVATE_REVIEW' }, {
+      headers: disposition ? { 'X-Mnemion-Idempotency': disposition } : {},
+    }))
+    const client = measuredStudioClient(instance.raw, instance.store, surface)
+    const input = { expected_version: 2, review_token: 'PRIVATE_REVIEW', capture_policy: { include: ['PRIVATE_PATH'] }, previous_grants: 'retain', confirm: true }
+    const result = await client.changeCapturePolicy('PRIVATE_CONNECTOR', 'PRIVATE_SOURCE', 'PRIVATE_TRANSITION', input)
+    await client.revokeCaptureGrant('PRIVATE_GRANT')
+    assert.equal(result.source.name, 'PRIVATE_SOURCE')
+    assert.deepEqual(JSON.parse(instance.requests[0].body), input)
+    assert.equal(instance.requests.length, 2)
+    const submissions = instance.rows.filter(row => row.metric === 'submissions')
+    assert.deepEqual(submissions.map(row => row.workflow).sort(), disposition === 'new' ? ['capture.configure', 'capture.remove'] : [])
+    assert.ok(instance.rows.every(row => row.surface === surface))
+    assert.ok(!JSON.stringify(instance.rows).includes('PRIVATE'))
+  }
+})
+
+test('capture admin opt-out, legacy replies and generic transport do not create an owner', async () => {
+  const instance = fixture(() => Response.json({ private: 'PRIVATE_CAPTURE' }, { headers: { 'X-Mnemion-Idempotency': 'new' } }))
+  await instance.raw.revokeCaptureGrant('PRIVATE_GRANT')
+  await instance.client.request('DELETE', '/v1/capture-grants/PRIVATE_GRANT')
+  assert.equal(instance.reads(), 0)
+  instance.disable()
+  await instance.client.revokeCaptureGrant('PRIVATE_GRANT')
+  assert.deepEqual(instance.rows, [])
+})
+
+test('capture admin completion cannot revive a choice disabled while its request was pending', async () => {
+  let resolve
+  const instance = fixture(() => new Promise(done => { resolve = done }))
+  const pending = instance.client.revokeCaptureGrant('PRIVATE_GRANT')
+  while (!resolve) await new Promise(done => setImmediate(done))
+  instance.disable()
+  resolve(Response.json({ revoked_at: 'PRIVATE_TIME' }, { headers: { 'X-Mnemion-Idempotency': 'new' } }))
+  assert.equal((await pending).revoked_at, 'PRIVATE_TIME')
+  assert.deepEqual(instance.rows, [])
+})
+
 test('an explicit Studio search measures fixed outcome and result-count buckets only', async () => {
   const instance = fixture(() => Response.json({ query: 'PRIVATE_SENTINEL', request_id: 'PRIVATE_ID', hits: [{ text: 'PRIVATE_MEMORY' }] }))
   const result = await instance.client.search({ query: 'PRIVATE_SENTINEL', all_accessible: true })

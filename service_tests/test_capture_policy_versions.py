@@ -465,9 +465,13 @@ def test_agent_operations_use_the_same_policy_review_transition_and_recovery(
             "parameters": {**parameters, "transition_id": str(uuid4())},
             "body": command.model_dump(mode="json"),
         }
-        result = agent_control.execute(client, "capture.policy.change", request)["result"]
+        first = agent_control.execute(client, "capture.policy.change", request)
+        result = first["result"]
+        assert first["idempotency"] == "new"
         assert result["source"]["policy_version"] == 2
-        assert agent_control.execute(client, "capture.policy.change", request)["result"] == result
+        repeated = agent_control.execute(client, "capture.policy.change", request)
+        assert repeated["idempotency"] == "replayed"
+        assert repeated["result"] == result
         history = agent_control.execute(
             client, "capture.policy.versions", {"parameters": parameters}
         )["result"]

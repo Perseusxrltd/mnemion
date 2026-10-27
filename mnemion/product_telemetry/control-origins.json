@@ -26,11 +26,13 @@
     },
     "capture.grant.configure": {
       "workflow": "capture.configure",
-      "completion": "success"
+      "completion": "success",
+      "fresh_receipt": true
     },
     "capture.grant.revoke": {
       "workflow": "capture.remove",
-      "completion": "success"
+      "completion": "success",
+      "fresh_receipt": true
     },
     "capture.grant.status": {
       "exclusion": "state_inspection"
@@ -46,7 +48,8 @@
     },
     "capture.policy.change": {
       "workflow": "capture.configure",
-      "completion": "success"
+      "completion": "success",
+      "fresh_receipt": true
     },
     "capture.policy.review": {
       "exclusion": "state_inspection"
@@ -59,14 +62,16 @@
     },
     "capture.source.configure": {
       "workflow": "capture.configure",
-      "completion": "success"
+      "completion": "success",
+      "fresh_receipt": true
     },
     "capture.source.list": {
       "exclusion": "state_inspection"
     },
     "capture.source.revoke": {
       "workflow": "capture.remove",
-      "completion": "success"
+      "completion": "success",
+      "fresh_receipt": true
     },
     "capture.source.status": {
       "exclusion": "state_inspection"

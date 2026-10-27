@@ -21,6 +21,8 @@ import type { JournalRecoveryInput, JournalRecoveryApply, JournalRecoveryPreview
 export * from './journal-recovery.js'
 import type { JournalUploadAdvance, JournalUploadChunk, JournalUploadChunkReceipt, JournalUploadDecisions, JournalUploadFiles, JournalUploadInput, JournalUploadStatus } from './journal-upload.js'
 export * from './journal-upload.js'
+import type { CaptureGrant, CapturePolicyChange, CapturePolicyChanged } from './capture.js'
+export * from './capture.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -448,6 +450,8 @@ export class MnemionClient {
   grant(space: string, principal: string, role: Role) { return this.request('PUT', `/v1/spaces/${encodeURIComponent(space)}/grants/${encodeURIComponent(principal)}`, { body: { role } }) }
   revokeGrant(space: string, principal: string) { return this.request('DELETE', `/v1/spaces/${encodeURIComponent(space)}/grants/${encodeURIComponent(principal)}`) }
   exportObsidian(space_ids: string[] = [], review = false, all_accessible = false) { return this.request<ArrayBuffer>('POST', '/v1/exports', { body: { space_ids, review, all_accessible }, binary: true }) }
+  changeCapturePolicy(connector: string, source: string, transition: string, input: CapturePolicyChange) { return this.request<CapturePolicyChanged>('PUT', `/v1/connectors/${encodeURIComponent(connector)}/capture-sources/${encodeURIComponent(source)}/policy-transitions/${encodeURIComponent(transition)}`, { body: input }) }
+  revokeCaptureGrant(grant: string) { return this.request<CaptureGrant>('DELETE', `/v1/capture-grants/${encodeURIComponent(grant)}`) }
   connectors() { return this.request<Page<Connector>>('GET', '/v1/connectors') }
   createConnector(input: Pick<Connector, 'name' | 'provider' | 'principal_id' | 'access_mode'>) { return this.request<Connector>('POST', '/v1/connectors', { body: input }) }
   disableConnector(id: string) { return this.request<Connector>('DELETE', `/v1/connectors/${encodeURIComponent(id)}`) }

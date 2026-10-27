@@ -141,7 +141,7 @@ in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-contains **634 declared actions and fixed variants: 362 mapped, 265 excluded,
+contains **636 declared actions and fixed variants: 364 mapped, 265 excluded,
 seven delegated and zero unmeasured among these declarations**. It independently
 reads **seven shipped interfaces across six checked owner categories**: the
 maintained and legacy MCP interfaces share `local_stdio`. Other owners use
@@ -149,6 +149,8 @@ reviewed source-route maps. Missing mappings in those
 interfaces remain visible as unmeasured even
 when the category has another owner. Search, source/state filters and pages of
 50 rows inspect fixed metadata without invoking actions or adding a producer.
+The earlier update-verification checkpoint contained 634 rows, with 362 mapped;
+the capture-administration additions do not change the 94 workflow categories.
 Earlier [Chrome verification](../validation/2026-10-26-telemetry-action-preview.md)
 passed on changed compiled assets based on
 `93eb300`, with package 4.46.19 metadata before 4.46.20 preparation. It confirmed
@@ -161,6 +163,29 @@ local stdio, selected fresh maintenance and explicit local model preparation.
 The control CLI classifies all
 **161 operations: 82 eligible and 79 excluded across five reasons**. The catalog
 records the detailed maps and remaining action-by-action coverage.
+
+The [27 October capture-administration follow-up](../validation/2026-10-27-telemetry-capture-admin.md)
+addresses two standalone app actions that used generic requests: approving a
+capture policy change and confirming device-authorization revocation. The actual
+buttons now use `changeCapturePolicy` and `revokeCaptureGrant` through the existing
+Studio owner, mapping to `capture.configure` and `capture.remove`. Five capture
+mutation boundaries expose response-local `new`/`replayed` metadata and require
+`fresh_receipt`; replayed, missing or unknown metadata supplies no fresh use.
+Generic SDK/HTTP remains unowned, and nested source enrollment/recovery keeps its
+existing outer owners. No server telemetry owner is added.
+
+The retained real PostgreSQL grant-ID race reproduction failed to reject a
+binding inserted concurrently for another source. Current code rechecks the
+actual source/device/policy binding and revoked state after insertion; revocation
+also rereads state under the source lock. Qualification passed **106 distinct
+Python tests, 22 SDK and 49 Studio/policy source checks**, with no Node skips;
+SDK/frontend/Electron builds passed and **29 source inputs matched**. The agent
+command layer now preserves valid response metadata without requiring an
+`Idempotency-Key`, with retry authorization unchanged. The original grant-race,
+five CLI and shared-type import build failures remain retained. The preceding
+94-category/634-row declaration inventory did not prove these app call sites were
+observed. Privacy, resource, wire, provider, aggregate and installed acceptance
+remain open.
 
 Explicit app/tray requests and standalone capture controls now have reviewed
 [action boundaries](../validation/2026-10-26-telemetry-action-coverage.md).

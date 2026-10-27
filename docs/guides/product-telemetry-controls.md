@@ -75,10 +75,12 @@ presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
 to inspect the source coverage and explicit privacy exclusions. New source
-provides a filterable [coverage inventory](../validation/2026-10-27-telemetry-update-verification.md):
+provides a filterable [coverage inventory](../validation/2026-10-27-telemetry-capture-admin.md):
 all 94 categories have a declared measurement source, including observable
-`update.verify` boundaries. The 634 declared actions contain 362 mapped rows,
+`update.verify` boundaries. The 636 declared actions contain 364 mapped rows,
 265 exclusions and seven delegations.
+The preceding [update-verification checkpoint](../validation/2026-10-27-telemetry-update-verification.md)
+retains its earlier 634 rows and 362 mappings.
 These counts describe catalog mappings, not complete screens, sensors or active
 collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
 inventory is generated from Git source maps and checked for staleness at release.
@@ -459,6 +461,19 @@ samples for you, but its content, paths and configuration hash are not telemetry
 Standalone capture pause owns one `capture.pause` acknowledgement. The separate
 `--inspect` path, status, key generation and telemetry's own privacy/format-preview
 controls remain unmeasured. Generic source pause/resume keeps its existing label.
+
+The [capture-administration source follow-up](../validation/2026-10-27-telemetry-capture-admin.md)
+routes **Approve policy change** and **Confirm revocation** through the existing
+Studio observer as capture configuration/removal. An optional observation requires
+the server to confirm a fresh change; replayed, missing or unknown receipts add
+no fresh use. Policy contents, source/device identities and review tokens remain
+outside telemetry. Review, history, polling and nested enrollment/recovery keep
+their existing exclusions or outer owners. Agent commands also preserve valid
+fresh/replayed response metadata when a request has no `Idempotency-Key`; retry
+rules are unchanged. The linked source checks and SDK/frontend/Electron builds
+passed, with the original grant-race, CLI and type-import failures retained.
+Collection stays inactive; final installed/browser outbound, resource and
+provider/privacy acceptance remain open.
 
 The reusable SDK does not collect product telemetry. Its response-bound receipt
 metadata lets the Studio wrapper exclude replayed or uncertain keyed writes;

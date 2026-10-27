@@ -175,6 +175,7 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                         "A retired or different capture policy needs reviewed migration.",
                     )
                 if row["name"] == command.name and set(row["members"]) == set(command.members):
+                    observed(True)
                     return self._source_value(conn, row)
                 if command.expected_version != row["version"]:
                     raise ServiceError(
@@ -235,6 +236,7 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                 source_id,
                 details={"connector_id": connector_id, "capture_mode": command.capture_mode},
             )
+            observed(False)
             return self._source_value(conn, row)
 
     def revoke_source(self, identity, connector_id, source_id):
@@ -242,6 +244,12 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
             require_administrator(conn)
             source_lock(conn, source_id)
             self.db._check_identity(conn, identity)
+            before = conn.execute(
+                "SELECT revoked_at FROM mnemion.capture_sources WHERE source_id=%s AND connector_id=%s",
+                (source_id, connector_id),
+            ).fetchone()
+            if not before:
+                raise not_found()
             row = conn.execute(
                 "UPDATE mnemion.capture_sources SET version=version+CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END,revoked_at=coalesce(revoked_at,now()) WHERE source_id=%s AND connector_id=%s RETURNING *",
                 (source_id, connector_id),
@@ -249,6 +257,7 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
             if not row:
                 raise not_found()
             audit(conn, identity, "capture.custody_revoked", source_id)
+            observed(before["revoked_at"] is not None)
             return self._source_value(conn, row)
 
     def grant(self, identity, source_id, grant_id, command):
@@ -296,10 +305,25 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                     "capture_grant_immutable",
                     "Use a new grant for a different or revoked device authorization.",
                 )
-            conn.execute(
-                "INSERT INTO mnemion.capture_grants(tenant_id,grant_id,source_id,device_key_id,policy_version) VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+            inserted = conn.execute(
+                "INSERT INTO mnemion.capture_grants(tenant_id,grant_id,source_id,device_key_id,policy_version) VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING RETURNING grant_id",
                 (identity.tenant_id, grant_id, source_id, command.device_key_id, policy_version),
-            )
+            ).fetchone()
+            granted = self._grant(conn, identity, grant_id, active=False)
+            # Different sources have different locks. A competing enrollment
+            # can win this unique ID after the earlier lookup; verify the actual
+            # row before returning its authorization or claiming a fresh intake.
+            if (
+                granted["source_id"] != str(source_id)
+                or granted["device_key_id"] != str(command.device_key_id)
+                or granted["policy_version"] != policy_version
+                or granted["revoked_at"] is not None
+            ):
+                raise ServiceError(
+                    409,
+                    "capture_grant_immutable",
+                    "Use a new grant for a different or revoked device authorization.",
+                )
             audit(
                 conn,
                 identity,
@@ -312,7 +336,8 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                     "previous_grant_id": command.previous_grant_id,
                 },
             )
-            return self._grant(conn, identity, grant_id, active=False)
+            observed(inserted is None)
+            return granted
 
     def _grant(self, conn, identity, grant_id, *, active=True):
         row = conn.execute(
@@ -369,10 +394,14 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
             source_lock(conn, row["source_id"])
             self.db._check_identity(conn, identity)
             if revoke:
+                # The first lookup found the lock key. Read its current state
+                # again under that lock so simultaneous revocations count once.
+                before = self._grant(conn, identity, grant_id, active=False)
                 conn.execute(
                     "SELECT mnemion.revoke_capture_grant(%s,%s)", (grant_id, identity.key_id)
                 )
                 audit(conn, identity, "capture.device_revoked", grant_id)
+                observed(before["revoked_at"] is not None)
             return self._grant(conn, identity, grant_id, active=False)
 
     def _receipt(self, conn, grant, page_id, ids):

@@ -16,6 +16,7 @@ from .db import require_administrator
 from .errors import ServiceError, not_found
 from .models import json_value
 from .repository import audit
+from .request_replay import observed
 
 
 def version_value(row):
@@ -167,6 +168,7 @@ class CapturePolicies:
                         "capture_transition_conflict",
                         "Keep the same reviewed request for this transition.",
                     )
+                observed(True)
                 return {
                     "source": self._source_value(conn, source),
                     "transition": version_value(previous),
@@ -235,4 +237,5 @@ class CapturePolicies:
                     "affected_grants": review["unrevoked_grants"],
                 },
             )
+            observed(False)
             return {"source": self._source_value(conn, source), "transition": version_value(row)}

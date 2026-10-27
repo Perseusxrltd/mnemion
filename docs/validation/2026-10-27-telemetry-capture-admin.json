@@ -1,0 +1,96 @@
+{
+  "at": "2026-10-27T03:57:06.547757+00:00",
+  "source_base": "626e25ea3e8084e788b5564db19f92663f29bf7d",
+  "source_input_verification": {
+    "passed": true,
+    "digest": "81bf15ed27924d240a0c16a36a8ac3b35f55d8a2abef4d0047dffc3f96276d2f",
+    "files": 29,
+    "changed": []
+  },
+  "distinct_python_tests_passed": 106,
+  "original_python_selection": {
+    "selected": 94,
+    "passed": 89,
+    "failed": 5,
+    "original_failure_retained": true
+  },
+  "corrected_python_selection": {
+    "passed": 44,
+    "original_selection_overlap": 32,
+    "unchanged_original_tests_not_repeated": 62,
+    "all_original_failures_requalified": true
+  },
+  "sdk_tests_passed": 22,
+  "studio_source_tests_passed": 49,
+  "node_skips": 0,
+  "sdk_frontend_and_electron_builds_passed": true,
+  "capture_grant_race_reproduced_and_fixed": true,
+  "five_capture_mutation_receipts_qualified": true,
+  "freshness_does_not_authorize_retries": true,
+  "production_contracts_unchanged": {
+    "disclosure.json": "aa603b1a202744dd52e71d8f89a4c892c3bcba1867955658576735abb1e84e47",
+    "transport-route.json": "c2fd0a179743b81459e265add12e8425e48ba59ff0036e57fb1a94b97e4b0d73",
+    "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
+    "wire-v1.json": "8a8ed84cd7ea19b7db83719bbb6bb419059c44f2f7775489eb462af4a5b5a81e",
+    "wire-v2.json": "eeafd6206e10d45935654ebb7699b7ee5215e0737d9a8114161cdb42beb44147"
+  },
+  "coverage": {
+    "total": 94,
+    "mapped": 94,
+    "unmeasured": 0
+  },
+  "actions": {
+    "total": 636,
+    "mapped": 364,
+    "excluded": 265,
+    "delegated": 7,
+    "unmeasured": 0
+  },
+  "late_changed_recorded_inputs": [
+    "service_tests/test_capture_policy_versions.py",
+    "studio/shared/desktop-sources.d.ts"
+  ],
+  "late_added_recorded_inputs": [
+    "mnemion/agent_control.py",
+    "service_tests/test_agent_control.py"
+  ],
+  "passed": true,
+  "production_collection_available": false,
+  "full_telemetry_complete": false,
+  "native_installed_acceptance": false,
+  "resource_acceptance": false,
+  "production_privacy_acceptance": false,
+  "new_native_release_requested": false,
+  "planned_hotfix_version": "4.46.36",
+  "model_calls": 0,
+  "private_qualification_sha256": "6ac7433eee502d1048a091a541ceabc7a9865eb167926dad668912eabad484c9",
+  "original_evidence_sha256": {
+    "implementation-plan.json": "1081f1372565dfab4047c89f2a59c242e58505187908a7012fd4e07898f3af2d",
+    "release-scope-refinement.json": "34912afb6a084f0460cb4a445fb7ed153f2a959e4fc38c9e8ea402dbece11aae",
+    "dependency-reuse.json": "061aec50d6749ec20f2e72acfab36df6b9f8a7acdd070d7a74c53bca69f4afe7",
+    "reproduction-plan.json": "f8ff810ece36f0b3e10cca5539848f6a36eaf3b1cd577496ead582294a5a67a7",
+    "reproduction/grant-race.log": "a7b1277a76ac863bbff0bc40f6b1dacffcd9657d2170a152689b807e96804b8e",
+    "reproduction/capture-grant-race-reproduction.json": "e3587dc7d9731dee69dfa4b75376b46d849834bcc2cc37d9f19600deb4746ec7",
+    "source-check-plan.json": "880b0f1bda19fc25b2420d63643b545da58c5967916a862bd18fe15e589a4a87",
+    "checks/capture-admin-source.json": "9ae8598807018096fad66ce1d004801af8470008201b31b1f41a4f355b7ee520",
+    "checks/capture-http-and-ownership.log": "6c7dec5e0e88a3146da4aa78cea8934b85e69ebe359ed4ee34fce9a9820bc3ff",
+    "control-metadata-refinement.json": "f0d55a30c4d9ce8cbe2e2f072972dc8bed49aa4b385bc0e07daf4e1faa58d07c",
+    "completion-check-plan.json": "72d8c3470c2590fd9edfdaf5095f3248309e06249e29b5586926da83bd2004e4",
+    "completion-checks/capture-admin-completion.json": "c47e08a27989a7f48f5b335f2a2cb1407f06ef223ce0caaf908c4a4969294c22",
+    "completion-checks/corrected-control-ownership.log": "61363d47e3f1083320e5b3b0d939b449fab3dcd2843207fb902ccc802f78c43b",
+    "completion-checks/client-regression.log": "81d6643852c3a9d3a87d9b2a45138ea96c8551f3b7e01715b59c66bd38a2a666",
+    "completion-checks/client-sdk.log": "d5ba3155d8d3e732a7d221d9a3a79a48fad890a2690adfe70e4a02215b08f5ab",
+    "completion-checks/frontend-build.log": "4137da6b235e11aec5bb57a0cd302c861d9789d723d0094cf3cc41bf8c83eb05",
+    "shared-type-refinement.json": "4bd4adeebb3fce62fdf9d5e682fede64930b62779b4c1de405002b86fc0c9106",
+    "app-check-plan.json": "8417e26f0a3ddc5e9f3c7d90dd31a79faa68ca2746ff4b18dbe7b513f6a40db4",
+    "app-checks/capture-admin-app-builds.json": "e34d8fe0e185afa2da6574766e8df0a7fbc993b5d05d773e374aa15a30f360db",
+    "app-checks/frontend-build.log": "728453f7ae482b540bf394c3b7a7e38ba8f48354db7998f007f0e322671d0714",
+    "app-checks/electron-build.log": "5a51fd2d01b47bd89c6d9c42597d88594567cbf2b79eda6f6e426748eedc7280",
+    "app-checks/studio-ownership.log": "b40ce6bb8347e192486cc27e7154919906597017b0072c8a1175d44164b772a1",
+    "checked-inputs.json": "655427e4d671d7c3ba143a4c1ace8fa26e8ebdbe8286d4560b7bd6ba8a58d195",
+    "checked-inputs-final.json": "0d4e88afaa34ceb571e3f29ea3cf302f13d3d516f7adf02ae95dc81a6a5a3145",
+    "checked-inputs-qualified.json": "de879195ff1f713b75730dabc61df57e914f69ada63af08c1dbff19e96515a6a",
+    "python-test-counts.json": "a5d6f2b9404570e5ad8ba3dad1937d28ee33279857de10ff583999a50f3bf1e2",
+    "python-test-collection.log": "c0bd3097c51dca2726f67765316c80128b22f079bcd2f041e24b7060b53d6902"
+  }
+}

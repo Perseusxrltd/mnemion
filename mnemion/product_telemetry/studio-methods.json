@@ -57,6 +57,8 @@
     "grant": "grants.set",
     "revokeGrant": "grants.revoke",
     "exportObsidian": "obsidian.export",
+    "changeCapturePolicy": "capture.policy.change",
+    "revokeCaptureGrant": "capture.grant.revoke",
     "createConnector": "connectors.create",
     "disableConnector": "connectors.disable",
     "enableConnector": "connectors.enable",

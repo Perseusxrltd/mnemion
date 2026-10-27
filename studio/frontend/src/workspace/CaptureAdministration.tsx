@@ -110,7 +110,7 @@ function SourcePolicy({ source, client, connection, endpoint, retentionSupported
     {retiring && <div className="ws-notice">
       <p>Revoke authorization <code>{retiring}</code>? Its server deliveries will stop. Offline evidence stays on its device; recovering it requires a newly approved authorization.</p>
       <div className="ws-actions"><button className="ws-button" disabled={busy} onClick={() => void act(async () => {
-        await client.request('DELETE', `/v1/capture-grants/${retiring}`);
+        await client.revokeCaptureGrant(retiring);
         setRetiring(undefined); setCandidate(undefined); setConfirmed(false); await refresh();
         setNotice('Device authorization revoked. Existing server memories are retained.');
       })}>Confirm revocation</button><button className="ws-button" disabled={busy} onClick={() => setRetiring(undefined)}>Cancel</button></div>
@@ -162,7 +162,7 @@ function SourcePolicy({ source, client, connection, endpoint, retentionSupported
         <p>This approval does not immediately erase captured memories. Its expiry rule applies when a fragment is accepted under this policy. Deletion records, the source identity and its mapped audience are preserved.</p>
         <label className="ws-checkbox"><input type="checkbox" data-update-safe disabled={busy} checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />I approve these rules and this treatment of existing authorizations.</label>
         <div className="ws-actions"><button className="ws-button ws-primary" disabled={busy || !confirmed} onClick={() => void act(async () => {
-          const result = await client.request<{ source: Source; transition: PolicyVersion }>('PUT', route + `/policy-transitions/${candidate.id}`, { body: candidate.command });
+          const result = await client.changeCapturePolicy(connection.id, source.source_id, candidate.id, candidate.command);
           setCandidate(undefined); setConfirmed(false); setDirty(false); setPolicy(policyFor(result.source));
           await refresh(); setNotice(`Policy ${result.transition.policy_version} approved. Existing authorizations were ${result.transition.previous_grants === 'revoke' ? 'revoked' : 'retained on their original policies'}.`);
         })}>Approve policy change</button><button className="ws-button" disabled={busy} onClick={() => { setCandidate(undefined); setConfirmed(false); }}>Cancel review</button></div>

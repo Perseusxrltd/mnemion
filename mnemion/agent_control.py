@@ -349,8 +349,7 @@ def execute(
                     "elapsed_ms": round((time.monotonic() - started) * 1000),
                     "idempotency": (
                         response.headers.get("X-Mnemion-Idempotency")
-                        if prepared["key"] is not None
-                        and response.headers.get("X-Mnemion-Idempotency") in {"new", "replayed"}
+                        if response.headers.get("X-Mnemion-Idempotency") in {"new", "replayed"}
                         else None
                     ),
                 }
