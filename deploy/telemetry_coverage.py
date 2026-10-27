@@ -22,10 +22,12 @@ INPUTS = (
     "ui-origins.json",
     "mcp-origins.json",
     "maintenance-origins.json",
+    "cli-origins.json",
 )
 OUTPUT = Path("mnemion/product_telemetry/workflow-coverage.json")
 OWNERS = {
     "control_cli": "Local command line",
+    "classic_cli": "Classic local command line",
     "native_commands": "Native app and agent commands",
     "desktop_ipc": "Desktop app request channels",
     "studio_actions": "Studio app actions",
@@ -66,6 +68,8 @@ def build(root: Path) -> dict:
     controls = documents["control-origins.json"]["operations"]
     for entry in controls.values():
         add("control_cli", entry)
+    for entry in documents["cli-origins.json"]["operations"].values():
+        add("classic_cli", entry)
     for entry in documents["desktop-origins.json"]["operations"].values():
         add("native_commands", entry)
     for operation in documents["studio-methods.json"]["methods"].values():

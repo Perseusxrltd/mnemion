@@ -16,6 +16,7 @@ export class TelemetryActivity<Report> {
   private nextCheck = 0
   private nextApprovalCheck = 0
   private pendingApproval?: TelemetryStamp
+  private lastAutomatic?: TelemetryStamp
   constructor(private readonly port: Port<Report>, private readonly now = () => performance.now()) {}
   private available(): boolean { try { return this.port.available() === true } catch { return false } }
 
@@ -23,7 +24,14 @@ export class TelemetryActivity<Report> {
    * One explicit approval may also ask immediately, without granting delivery.
    * Only its policy stamp can wait for active cleanup; no report or timer is kept. */
   offer(stamp: TelemetryStamp, explicitApproval = false): void {
-    if (this.closed || this.pauses.size || (this.active && explicitApproval !== true) || !this.available()) return
+    if (this.closed || this.pauses.size || !this.available()) return
+    // One stamp identifies previously committed local work. It is not cached
+    // permission: every later reservation still checks current private state.
+    if (explicitApproval !== true && (this.lastAutomatic?.revision !== stamp.revision ||
+        this.lastAutomatic?.store_generation !== stamp.store_generation)) {
+      this.lastAutomatic = { revision: stamp.revision, store_generation: stamp.store_generation }
+    }
+    if (this.active && explicitApproval !== true) return
     const now = this.now()
     if (!Number.isFinite(now) || now < (explicitApproval === true ? this.nextApprovalCheck : this.nextCheck)) return
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
@@ -33,6 +41,10 @@ export class TelemetryActivity<Report> {
     }
     this.start(expected)
   }
+
+  /** Already-awake work may revisit a deferred queue without creating an event,
+   * timer, new contribution or permission. The same minute limit still applies. */
+  awake(): void { if (this.lastAutomatic) this.offer(this.lastAutomatic) }
 
   private start(expected: TelemetryStamp): void {
     if (this.closed || this.pauses.size || this.active || !this.available()) return
@@ -65,7 +77,7 @@ export class TelemetryActivity<Report> {
 
   pause(reason = 'lifecycle'): void { this.pauses.add(reason); this.pendingApproval = undefined; this.active?.stop.abort() }
   resume(reason = 'lifecycle'): void { if (!this.closed) { this.pauses.delete(reason); this.nextCheck = 0 } }
-  close(): void { this.closed = true; this.pause() }
+  close(): void { this.closed = true; this.lastAutomatic = undefined; this.pause() }
   /** Lifecycle owners/tests may await cleanup; no shutdown report is created. */
   async settled(): Promise<void> { while (this.active) await this.active.done }
 }

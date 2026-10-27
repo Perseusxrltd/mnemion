@@ -43,11 +43,24 @@ export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
     })
   }
 
+  override snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> | null {
+    const pending = super.snapshot(workflow, surface)
+    // A saturated workflow can stop before recordMany. Its already-awake
+    // owner may revisit an older queue without admitting a new observation.
+    // Unscoped inspection and unknown categories remain strictly read-only.
+    if (pending === null && this.available && workflow !== undefined && surface !== undefined &&
+        this.catalog.workflows.includes(workflow) && this.catalog.specification.surfaces.includes(surface)) this.activity.awake()
+    return pending
+  }
+
   override async recordMany(inputs: unknown[], stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): Promise<boolean> {
     const expected = { revision: stamp?.revision, store_generation: stamp?.store_generation }
     const recorded = await super.recordMany(inputs, expected, day)
     // super has committed and closed its SQLite transaction before offering.
     if (recorded) this.activity.offer(expected)
+    // Saturated collection must not strand earlier authorized queue contents.
+    // Only a previously committed stamp can be offered; current policy wins.
+    else this.activity.awake()
     return recorded
   }
   pauseDelivery(reason?: string): void { this.activity.pause(reason) }

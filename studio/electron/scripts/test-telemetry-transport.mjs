@@ -12,6 +12,7 @@ import dns from 'node:dns'
 import { setTimeout as delay } from 'node:timers/promises'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { DesktopTelemetryActivity } from '../dist/telemetry-activity.js'
+import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { sendNativeTelemetry, TelemetryEndpoint } from '../dist/telemetry-transport.js'
 import { parseTelemetryRoute, validCertificateAuthorities } from '../dist/telemetry-route.js'
@@ -323,6 +324,69 @@ test('desktop OS gauges never start during cooldown and close after the actual T
   await f.store.deliverySettled()
   assert.equal(preparations, 1); assert.equal(server.connections(), 1)
   assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 1 })
+})
+
+for (const transition of ['ready', 'opted_out', 'closed']) test('queued desktop delivery after collection saturation: ' + transition, async t => {
+  let now = 0, ready = false, preparations = 0
+  t.mock.method(performance, 'now', () => now)
+  const server = await peer(t), f = await installation(t, server.endpoint, { activity: true,
+    gauges: { prepare: async () => { preparations++; return ready }, close: () => {} } })
+  const observation = { kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }
+  for (let index = 0; index < 64; index++) {
+    assert.equal(await f.store.record(observation, f.stamp), true)
+    await f.store.deliverySettled()
+  }
+  assert.equal(preparations, 1)
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 0 })
+  assert.equal(server.connections(), 0)
+  ready = true
+  if (transition === 'opted_out') f.invoke('off')
+  if (transition === 'closed') f.store.closeDelivery()
+  now = 60001
+  // Existing awake work can revisit queued data; it cannot buy another
+  // collection contribution, override opt-out or flush a closed owner.
+  assert.equal(await f.store.record(observation, f.stamp), false)
+  await f.store.deliverySettled()
+  assert.equal(server.requests.length, transition === 'ready' ? 1 : 0)
+  assert.equal(preparations, transition === 'ready' ? 2 : 1)
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: transition === 'ready' ? 1 : 0 })
+  assert.equal(await f.store.record(observation, f.stamp), false)
+  await f.store.deliverySettled()
+  assert.equal(server.requests.length, transition === 'ready' ? 1 : 0)
+})
+
+for (const transition of ['ready', 'opted_out', 'closed']) test('queued desktop delivery survives an exhausted workflow snapshot: ' + transition, async t => {
+  let now = 0, ready = false, preparations = 0
+  t.mock.method(performance, 'now', () => now)
+  const server = await peer(t), f = await installation(t, server.endpoint, { activity: true,
+    gauges: { prepare: async () => { preparations++; return ready }, close: () => {} } })
+  const observation = { kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }
+  for (let index = 0; index < 64; index++) {
+    now = index * 500
+    assert.equal(await f.store.record(observation, f.stamp), true)
+    await f.store.deliverySettled()
+  }
+  assert.equal(preparations, 1)
+  assert.equal(server.connections(), 0)
+  ready = true
+  if (transition === 'opted_out') f.invoke('off')
+  if (transition === 'closed') f.store.closeDelivery()
+  now = 60001 // Delivery is due; the last collection hint is still live.
+  // Unscoped inspection and invalid workflow names never offer old work.
+  await f.store.snapshot()
+  await f.store.snapshot('unknown.private.workflow', 'desktop')
+  await f.store.deliverySettled()
+  assert.equal(server.connections(), 0)
+  const work = await TelemetryWorkflow.begin(f.store, 'memory.recall', 'desktop')
+  assert.equal(work, null, 'A cached refusal must still avoid a new observation')
+  await f.store.deliverySettled()
+  assert.equal(server.requests.length, transition === 'ready' ? 1 : 0)
+  assert.equal(preparations, transition === 'ready' ? 2 : 1)
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: transition === 'ready' ? 1 : 0 })
+  const later = await TelemetryWorkflow.begin(f.store, 'memory.recall', 'desktop')
+  if (later) await later.finish('success')
+  await f.store.deliverySettled()
+  assert.equal(server.requests.length, transition === 'ready' ? 1 : 0)
 })
 
 test('an opt-out during OS preparation is rechecked before any budget or socket is used', async t => {

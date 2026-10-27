@@ -39,6 +39,31 @@ test('unavailable owners and a shutdown before dispatch create no reservation', 
   assert.equal(reservations, 0)
 })
 
+test('awake work retains only the latest committed stamp and the existing cadence', async () => {
+  let now = 0, reservations = 0
+  const seen = []
+  const owner = new TelemetryActivity({ available: () => true,
+    reserve: async expected => { reservations++; seen.push({ ...expected }); expected.revision = 99; return null },
+    send: async () => assert.fail('No report was reserved'), cancel: async () => {} }, () => now)
+  owner.awake(); await owner.settled()
+  assert.equal(reservations, 0, 'Activity alone cannot invent an originating stamp')
+  const first = { ...stamp }
+  owner.offer(first); await owner.settled()
+  first.revision = 20
+  const second = { ...stamp, revision: 2 }
+  owner.offer(second); second.revision = 30
+  for (let index = 0; index < 100; index++) owner.awake()
+  await owner.settled()
+  assert.equal(reservations, 1)
+  now = 60001
+  owner.pause('suspend'); owner.awake(); await owner.settled()
+  assert.equal(reservations, 1)
+  owner.resume('suspend'); owner.awake(); await owner.settled()
+  assert.deepEqual(seen, [stamp, { ...stamp, revision: 2 }])
+  owner.close(); now = 120002; owner.awake(); await owner.settled()
+  assert.equal(reservations, 2)
+})
+
 test('an active send receives cancellation without replay or a shutdown flush', async () => {
   let entered, signals = 0, attempts = 0
   const started = new Promise(resolve => { entered = resolve })

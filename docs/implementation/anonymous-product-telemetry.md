@@ -150,9 +150,9 @@ in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-contains **637 declared actions and fixed variants: 364 mapped, 265 excluded,
-eight delegated and zero unmeasured among these declarations**. It independently
-reads **seven shipped interfaces across six checked owner categories**: the
+contains **688 declared actions and fixed variants: 373 mapped, 278 excluded,
+eight delegated and 29 unmeasured among these declarations**. It independently
+reads **eight shipped interfaces across seven checked owner categories**: the
 maintained and legacy MCP interfaces share `local_stdio`. Other owners use
 reviewed source-route maps. Missing mappings in those
 interfaces remain visible as unmeasured even
@@ -163,6 +163,13 @@ the capture-administration additions do not change the 94 workflow categories.
 The [desktop cancellation hotfix](../validation/2026-10-27-desktop-request-cancellation.md)
 adds one delegated transport channel. Its local cancellation token is never a
 measurement; the enclosing Studio action retains ownership.
+The [classic CLI follow-up](../validation/2026-10-27-telemetry-cli-coverage.md)
+adds 49 literal `argparse` leaf paths / 51 rows, with nine mapped command paths,
+13 exclusions and 29 unmeasured paths. Hand-parsed options and other entrypoints
+still need reconciliation. The preceding 637-row inventory (364 mapped,
+265 excluded, eight delegated, zero unmeasured) remains historical. Source checks
+passed with the shared installation policy; there is no new CLI sender or
+keepalive and no installed acceptance.
 Earlier [Chrome verification](../validation/2026-10-26-telemetry-action-preview.md)
 passed on changed compiled assets based on
 `93eb300`, with package 4.46.19 metadata before 4.46.20 preparation. It confirmed
@@ -388,9 +395,13 @@ The [catalog lookup follow-up](../validation/2026-10-27-telemetry-catalog-reside
 reuses fixed release metadata without caching privacy, generation or queue
 state. Its 128-iteration fixture removes the measured recurring enumerations,
 family splits and bucket callbacks; native/browser-source parity checks and all
-builds passed. This establishes no RSS/CPU saving. One six-case comparison
-without allocation attribution is selected from main after integration;
-dispatch, exact source/run bindings and results remain pending.
+builds passed. This establishes no RSS/CPU saving. Its
+[original six-case comparison](../validation/2026-10-27-telemetry-catalog-comparison.md),
+run **40477197149** on `bc4d6e08`, completed with failure. All six cases completed
+memory work, but only five journeys completed; the second enabled case reserved
+and delivered nothing. Summary generation was skipped and qualification rejected
+the missing summary. Its cause remains unestablished; no app rerun or resource
+acceptance is credited.
 
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
@@ -493,6 +504,21 @@ identifiers, and reject late cancelled results with freshness measured from
 query start. Linux/macOS aggregate CPU admission avoids per-core enumeration;
 changed/reset counters require comparable readings and preserve the **20% CPU
 admission threshold**. Windows retains the existing fallback.
+
+The [delivery-opportunity correction](../validation/2026-10-27-telemetry-delivery-opportunity.md)
+lets later awake desktop work reoffer one prior committed policy stamp when new
+collection is refused, at both valid scoped workflow snapshots and recording
+boundaries. Snapshot refusal remains unchanged; unscoped inspection and unknown
+categories do not offer delivery. This addresses both separately reproduced
+paths that could strand an earlier deferred queue after saturation.
+Defensive copies retain no authorizing permission; existing cadence and fresh
+policy, sensors, spending and final-send gates remain. No timer, contribution or
+wire allowance is added. Actual Electron component checks sent once after
+readiness returned and zero times after opt-out or close. This separately
+reproduced bug is not the established cause of the failed app comparison.
+One changed-source comparison using the same six cases, 128 memory cycles per
+case and strict controls is selected after integration. Its result remains
+pending; the original run is not replayed or retried.
 
 The managed updater can also offer an existing bounded queue or still-valid
 approved held report during its already scheduled five- or ten-second waits.

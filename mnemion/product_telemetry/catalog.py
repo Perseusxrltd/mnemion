@@ -60,6 +60,7 @@ def origin_specification() -> dict:
             ("ui", "ui-origins.json"),
             ("mcp", "mcp-origins.json"),
             ("maintenance", "maintenance-origins.json"),
+            ("classic_cli", "cli-origins.json"),
         )
     }
 

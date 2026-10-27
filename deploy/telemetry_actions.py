@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import re
 
+from .telemetry_cli_actions import command_names
 
 INPUTS = (
     "mnemion/service/agent_contract.json",
@@ -21,6 +22,7 @@ INPUTS = (
     "studio/electron/preload.ts",
     "mnemion/service/mcp.py",
     "mnemion/mcp_server.py",
+    "mnemion/cli.py",
 )
 STUDIO_EXCLUSIONS = {
     "automatic_query": "Automatic queries, polling and saved state do not own a new action.",
@@ -177,6 +179,7 @@ def build(root: Path, documents: dict) -> tuple[dict, dict]:
         ),
         "local_stdio": {"gateway." + name for name in _gateway_names(raw[INPUTS[5]].decode())}
         | {"legacy." + name for name in _legacy_names(raw[INPUTS[6]].decode())},
+        "classic_cli": command_names(raw[INPUTS[7]].decode()),
     }
     reasons = {}
     rows = []
@@ -245,7 +248,9 @@ def build(root: Path, documents: dict) -> tuple[dict, dict]:
     ui = documents["ui-origins.json"]
     mcp = documents["mcp-origins.json"]
     maintenance = documents["maintenance-origins.json"]
+    classic = documents["cli-origins.json"]
     group("control_cli", controls["operations"], controls["exclusions"])
+    group("classic_cli", classic["operations"], classic["exclusions"])
     group("native_commands", native["operations"], native["exclusions"])
     ipc = native.get("ipc", {})
     if set(ipc) - interfaces["desktop_ipc"]:

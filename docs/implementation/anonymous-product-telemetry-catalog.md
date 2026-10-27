@@ -5,7 +5,8 @@
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
 and browser queues, revision/generation fencing, local controls and exact manual
-report review are implemented. Source owners cover `mnemion-control call`, selected
+report review are implemented. Source owners cover nine reviewed classic CLI
+command paths, `mnemion-control call`, selected
 desktop/native-operator actions, Studio clients, browser connection/legacy UI,
 explicitly configured local stdio, fresh local source/capture work and automatic
 desktop updater cycles, explicit local model preparation and the dedicated
@@ -30,18 +31,24 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 records the later preparation boundary and remaining gaps.
 
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-lists **637 actions and fixed variants: 364 mapped, 265 excluded,
-eight delegated and zero unmeasured among the represented declarations**. The
+lists **688 actions and fixed variants: 373 mapped, 278 excluded,
+eight delegated and 29 unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API,
 desktop preload request channels, maintained MCP registrations/invocation aliases
-and legacy MCP registry keys before applying the reviewed maps. These are
-**seven interfaces across six checked owner categories**; both MCP interfaces
-share `local_stdio`. Other owners use source-route maps and do not gain
+and legacy MCP registry keys, plus literal classic CLI `argparse` paths, before
+applying the reviewed maps. These are **eight interfaces across seven checked
+owner categories**; both MCP interfaces share `local_stdio`. Other owners use
+source-route maps and do not gain
 independent call-site proof. A newly declared interface
 action without a mapping appears as unmeasured even if its category has another
 owner. Fixed exclusion reasons and delegation are visible separately; none of
 these rows authorizes collection or represents activity history.
+The [classic CLI follow-up](../validation/2026-10-27-telemetry-cli-coverage.md)
+adds 51 rows from 49 leaf paths: nine mapped, 13 excluded and 29 unmeasured.
+Hand-parsed options, other entrypoints and actual runtime coverage remain open.
+The preceding 637-row checkpoint (364 mapped, 265 excluded, eight delegated and
+zero unmeasured) remains historical.
 The preceding update-verification checkpoint listed 634 rows, with 362 mapped;
 the two typed capture-administration methods add declarations without changing
 the 94 workflow categories.
@@ -310,6 +317,20 @@ authorized observations exist; see the [review controls](../guides/product-telem
 Local `schema` also exposes `transport_catalog`. Source delivery owners already
 connect eligible queues to encoding and shared reservations; reading schema or
 preview neither reserves a packet nor enables transport.
+
+## Owned classic CLI coverage
+
+The [classic CLI observer](../../mnemion/cli_measurement.py) owns only the
+[reviewed command paths](../../mnemion/product_telemetry/cli-origins.json), using
+the shared OS-account policy and original revision/generation fence. Search,
+context, reconstruction, restore, source list/read/search and Obsidian sync/setup
+use existing memory categories; Obsidian dry-run previews are excluded. Private
+arguments, output and result contents remain outside telemetry. Direct handlers
+and `telemetry_owner=False` calls add no owner. Recorded work may notify an
+existing eligible local delivery owner; there is no new CLI keepalive, send or
+shutdown flush. The [source report](../validation/2026-10-27-telemetry-cli-coverage.md)
+retains both original failures, 66 passing Python checks and one source-preview
+check; it does not qualify all CLI paths or installed behavior.
 
 ## Owned headless control coverage
 
@@ -687,6 +708,7 @@ how it was invoked; it is not a user, installation or request identifier.
 | Legacy Studio UI | Selected methods of the [legacy client](../../studio/frontend/src/api/client.ts), using the same app/browser policy and explicit UI-origin map. | Automatic queries and external-app handoffs are excluded; callbacks retain private inputs/results. |
 | Native agent controlling the desktop | Fresh mapped execution at the [desktop dispatcher](../../studio/electron/service-bridge.ts), with the fixed `native_agent` surface and the same private OS-account store. | The agent pipe, cached reply and renderer do not add another measurement. No operation UUID enters telemetry. Typed host mutations require a verified new intake; replayed, readback and legacy replies remain unmeasured. |
 | Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
+| Reviewed classic CLI commands | [Explicit command dispatch](../../mnemion/cli_measurement.py), under the shared local policy and [command map](../../mnemion/product_telemetry/cli-origins.json). | Handlers and calls with `telemetry_owner=False` add no owner; private arguments/output and unreviewed paths are not fallback feeds. |
 | Local stdio-MCP | Explicit source owner at the [maintained gateway](../../mnemion/service/mcp.py) or [legacy stdio loop](../../mnemion/mcp_server.py), under local OS-account policy. | HTTP context, imported handlers and JSON arguments cannot acquire this owner. Aliases and nested SDK calls do not add another count. Other headless entrypoints still need review. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
 | Fresh local maintenance | The selected desktop/standalone source and automatic updater owners described above, under their own local policy. | Empty scans, explicit Sync continuations, reusable helpers and remote/managed source work do not acquire another owner. The dedicated host updater has a separate explicit boundary. |
@@ -818,8 +840,8 @@ A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not
 feature adoption. The explicit CLI, desktop and Studio maps do not finish the
 remaining action-by-action coverage reconciliation or qualify their producers.
-The local preview now has category and individual-action views. For its seven
-independently enumerated interfaces, grouped under six checked owners, an action
+The local preview now has category and individual-action views. For its eight
+independently enumerated interfaces, grouped under seven checked owners, an action
 without a reviewed mapping is shown as unmeasured even when another action maps
 to the same category. Other
 owners are represented by their reviewed source-route maps; the preview does

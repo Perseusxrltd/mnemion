@@ -10,6 +10,7 @@
   },
   "owners": {
     "control_cli": "Local command line",
+    "classic_cli": "Classic local command line",
     "native_commands": "Native app and agent commands",
     "desktop_ipc": "Desktop app request channels",
     "studio_actions": "Studio app actions",
@@ -124,6 +125,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "local_stdio"
       ]
     },
@@ -132,6 +134,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "studio_actions",
         "local_stdio"
       ]
@@ -141,6 +144,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "studio_actions",
         "legacy_ui",
         "local_stdio"
@@ -151,6 +155,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "studio_actions",
         "local_stdio"
       ]
@@ -160,6 +165,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "local_stdio"
       ]
     },
@@ -225,6 +231,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "studio_actions",
         "local_stdio"
       ]
@@ -234,6 +241,7 @@
       "state": "mapped",
       "owners": [
         "control_cli",
+        "classic_cli",
         "studio_actions",
         "legacy_ui",
         "local_stdio"
@@ -880,14 +888,15 @@
       "studio_actions",
       "legacy_ui",
       "desktop_ipc",
-      "local_stdio"
+      "local_stdio",
+      "classic_cli"
     ],
     "summary": {
-      "total": 637,
-      "mapped": 364,
-      "excluded": 265,
+      "total": 688,
+      "mapped": 373,
+      "excluded": 278,
       "delegated": 8,
-      "unmeasured": 0
+      "unmeasured": 29
     },
     "reasons": {
       "control_cli.configuration_preview": "Preview or intermediate authorization steps do not establish a completed setup, import or sign-in.",
@@ -895,6 +904,11 @@
       "control_cli.producer_transport": "Substeps belong to the originating capture or source producer; measuring this transport would double-count and infer ownership.",
       "control_cli.recovery_transport": "Upload chunks and continuation/status calls belong to the enclosing recovery controller, not separate recoveries.",
       "control_cli.session_maintenance": "Credential refresh is background session maintenance, not a new sign-in.",
+      "classic_cli.derived_hook": "Agent hooks and their derived ingestion have no inferred product telemetry owner.",
+      "classic_cli.instructions": "Displaying static instructions does not establish use of the described workflow.",
+      "classic_cli.state_inspection": "Inspecting configuration or previously stored status does not establish fresh work.",
+      "classic_cli.external_application": "Opening Obsidian does not observe another application's use.",
+      "classic_cli.configuration_preview": "A dry-run preview is not a completed export or configuration change.",
       "native_commands.configuration_preview": "Internal setup validation and secret previews are not product usage observations.",
       "native_commands.state_inspection": "Status, discovery and polling do not identify a new user workflow.",
       "native_commands.recovery_transport": "Inspecting, archiving or cancelling a recovery receipt does not repeat the original operation.",
@@ -2219,6 +2233,351 @@
         "state": "excluded",
         "workflows": [],
         "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "capture",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "compress",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "consolidate",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "eval moat",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "hook run",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.derived_hook"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "init",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "instructions help",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.instructions"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "instructions init",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.instructions"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "instructions mine",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.instructions"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "instructions search",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.instructions"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "instructions status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.instructions"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "librarian",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "llm setup",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "llm start",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "llm status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.state_inspection"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "llm stop",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "llm test",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "memory-guard quarantine",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "memory-guard review",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "memory-guard scan",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "memory-guard status",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "mine",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "obsidian open",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.external_application"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "obsidian setup",
+        "selector": "mode",
+        "variant": "apply",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "obsidian setup",
+        "selector": "mode",
+        "variant": "preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.configuration_preview"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "obsidian status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.state_inspection"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "obsidian sync",
+        "selector": "mode",
+        "variant": "apply",
+        "state": "mapped",
+        "workflows": [
+          "memory.export"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "obsidian sync",
+        "selector": "mode",
+        "variant": "preview",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.configuration_preview"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "reconstruct",
+        "state": "mapped",
+        "workflows": [
+          "memory.knowledge"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "repair",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "restore",
+        "state": "mapped",
+        "workflows": [
+          "memory.import"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "source add",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "source list",
+        "state": "mapped",
+        "workflows": [
+          "memory.list"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "source read",
+        "state": "mapped",
+        "workflows": [
+          "memory.read"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "source search",
+        "state": "mapped",
+        "workflows": [
+          "memory.recall"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "source status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.state_inspection"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "split",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "status",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "classic_cli.state_inspection"
+      },
+      {
+        "owner": "classic_cli",
+        "action": "sweep",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wake-up",
+        "state": "mapped",
+        "workflows": [
+          "memory.context"
+        ]
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki apply",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki blast-radius",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki compile",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki context-pack",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki diff",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki export-obsidian",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki lint",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki open",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki query",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "classic_cli",
+        "action": "wiki status",
+        "state": "unmeasured",
+        "workflows": []
       },
       {
         "owner": "native_commands",
@@ -5912,12 +6271,14 @@
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
     "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",
+    "cli-origins.json": "40cf1e921958df2dc699b11e2b99729baa1d550375e7072c6327322f953e9e55",
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "af0cb7aacf28f0884e4fecffb4a9a315cb57c0adeaeca836e7b83589b616c862",
     "studio/frontend/src/api/client.ts": "14f4f284dea41e855e1691ee84035e4d8f273eb6a252fa3159e4015dbb3b59fe",
     "studio/electron/preload.ts": "1963aa4773fcd6db0cb50deb6a2d26775760d8b9656bef989482285f184751c2",
     "mnemion/service/mcp.py": "14e9a86847af610b3c9de178fb3b5d84282ea353921f2e1070322084873e1ac1",
-    "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6"
+    "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6",
+    "mnemion/cli.py": "508a179e0f6bbe7dc6887a06c213270c302632c77d832d36b53f6220a8f47e76"
   }
 }

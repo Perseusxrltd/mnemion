@@ -1307,7 +1307,7 @@ def cmd_compress(args):
         print("  (dry run -- nothing stored)")
 
 
-def main():
+def main(*, telemetry_owner: bool = True):
     _configure_stdio()
     parser = argparse.ArgumentParser(
         description="Mnemion — Give your AI a memory. No API key required.",
@@ -1745,26 +1745,38 @@ def main():
         parser.print_help()
         return
 
+    def run(command, action):
+        try:
+            from .cli_measurement import invoke
+        except Exception:
+            return action()
+        return invoke(
+            command,
+            action,
+            owned=telemetry_owner,
+            preview=getattr(args, "dry_run", False) is True,
+        )
+
     # Handle two-level subcommands
     if args.command == "llm":
         if not getattr(args, "llm_action", None):
             p_llm.print_help()
             return
-        cmd_llm(args)
+        run("llm " + args.llm_action, lambda: cmd_llm(args))
         return
 
     if args.command == "obsidian":
         if getattr(args, "obsidian_action", None) not in {"setup", "sync", "open", "status"}:
             p_obsidian.print_help()
             return
-        cmd_obsidian(args)
+        run("obsidian " + args.obsidian_action, lambda: cmd_obsidian(args))
         return
 
     if args.command == "source":
         if getattr(args, "source_action", None) not in {"add", "list", "read", "search", "status"}:
             p_source.print_help()
             return
-        cmd_source(args)
+        run("source " + args.source_action, lambda: cmd_source(args))
         return
 
     if args.command == "wiki":
@@ -1782,18 +1794,18 @@ def main():
         }:
             p_wiki.print_help()
             return
-        cmd_wiki(args)
+        run("wiki " + args.wiki_action, lambda: cmd_wiki(args))
         return
 
     if args.command == "capture":
-        cmd_capture(args)
+        run("capture", lambda: cmd_capture(args))
         return
 
     if args.command == "hook":
         if not getattr(args, "hook_action", None):
             p_hook.print_help()
             return
-        cmd_hook(args)
+        run("hook run", lambda: cmd_hook(args))
         return
 
     if args.command == "instructions":
@@ -1802,7 +1814,7 @@ def main():
             p_instructions.print_help()
             return
         args.name = name
-        cmd_instructions(args)
+        run("instructions " + name, lambda: cmd_instructions(args))
         return
 
     if args.command == "memory-guard":
@@ -1814,14 +1826,14 @@ def main():
         }:
             p_guard.print_help()
             return
-        cmd_memory_guard(args)
+        run("memory-guard " + args.memory_guard_action, lambda: cmd_memory_guard(args))
         return
 
     if args.command == "eval":
         if getattr(args, "eval_action", None) != "moat":
             p_eval.print_help()
             return
-        cmd_moat_eval(args)
+        run("eval moat", lambda: cmd_moat_eval(args))
         return
 
     dispatch = {
@@ -1844,7 +1856,7 @@ def main():
         "capture": cmd_capture,
         "librarian": cmd_librarian,
     }
-    dispatch[args.command](args)
+    run(args.command, lambda: dispatch[args.command](args))
 
 
 if __name__ == "__main__":

@@ -429,6 +429,22 @@ after its fake workspace shut down. Its local counters were enabled only in the
 isolated test process; source collection remains unavailable and native release
 acceptance remains open. The local schema now includes five ownership maps.
 
+## Classic command-line actions
+
+The [classic CLI source follow-up](../validation/2026-10-27-telemetry-cli-coverage.md)
+uses the same installation privacy choice as the desktop and native agent under
+the same OS account. Running a command does not enable sharing or acknowledge a
+disclosure. Saved opt-outs and company restrictions apply; unavailable or
+unreadable policy prevents the optional observation.
+
+Nine reviewed paths have source hooks: `search`, `wake-up`, `reconstruct`,
+`restore`, `source list`, `source read`, `source search`, `obsidian sync` and
+`obsidian setup`. Their queries, paths, output and returned contents are not
+telemetry. Obsidian dry-run previews are excluded. The coverage preview also
+shows 29 unmeasured classic command paths; other options and entrypoints still
+need review. Commands retain their normal output and errors and do not stay
+running to send telemetry. Collection remains unavailable in this build.
+
 ## Owned headless API calls
 
 The source [agent-control CLI](../service/agent-control.md) now has optional hooks

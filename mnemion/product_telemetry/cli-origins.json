@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "ownership": "Reviewed classic command-line invocations under this OS account's disclosed choice. Command handlers, imported calls without ownership, help, private output and unresolved command paths are not fallback feeds.",
+  "operations": {
+    "search": {"workflow": "memory.recall", "completion": "success", "read_only": true},
+    "wake-up": {"workflow": "memory.context", "completion": "success", "read_only": true},
+    "reconstruct": {"workflow": "memory.knowledge", "completion": "success", "read_only": true},
+    "restore": {"workflow": "memory.import", "completion": "success", "read_only": false},
+    "source list": {"workflow": "memory.list", "completion": "success", "read_only": true},
+    "source read": {"workflow": "memory.read", "completion": "success", "read_only": true},
+    "source search": {"workflow": "memory.recall", "completion": "success", "read_only": true},
+    "obsidian sync": {"selector": "mode", "variants": {"apply": "memory.export"}, "variant_exclusions": {"preview": "configuration_preview"}, "completion": "success", "read_only": false},
+    "obsidian setup": {"selector": "mode", "variants": {"apply": "memory.export"}, "variant_exclusions": {"preview": "configuration_preview"}, "completion": "success", "read_only": false},
+    "status": {"exclusion": "state_inspection"},
+    "source status": {"exclusion": "state_inspection"},
+    "obsidian status": {"exclusion": "state_inspection"},
+    "obsidian open": {"exclusion": "external_application"},
+    "llm status": {"exclusion": "state_inspection"},
+    "instructions init": {"exclusion": "instructions"},
+    "instructions search": {"exclusion": "instructions"},
+    "instructions mine": {"exclusion": "instructions"},
+    "instructions help": {"exclusion": "instructions"},
+    "instructions status": {"exclusion": "instructions"},
+    "hook run": {"exclusion": "derived_hook"}
+  },
+  "exclusions": {
+    "state_inspection": "Inspecting configuration or previously stored status does not establish fresh work.",
+    "configuration_preview": "A dry-run preview is not a completed export or configuration change.",
+    "external_application": "Opening Obsidian does not observe another application's use.",
+    "instructions": "Displaying static instructions does not establish use of the described workflow.",
+    "derived_hook": "Agent hooks and their derived ingestion have no inferred product telemetry owner."
+  }
+}

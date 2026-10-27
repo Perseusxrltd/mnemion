@@ -48,10 +48,13 @@ RSS/CPU saving. The [earlier resource overages](2026-10-27-telemetry-resource-ro
 and [original failed control diagnostic](2026-10-27-telemetry-probe-controls.md)
 remain retained.
 
-One declared **six-case comparison without allocation attribution** is selected
-from the immutable main commit after integration. It has **not yet been
-dispatched** at this checkpoint; source/run bindings and results remain pending.
-No resource pass or measured improvement is credited in advance.
+The declared [six-case comparison without allocation attribution](2026-10-27-telemetry-catalog-comparison.md),
+original run **40477197149** on `bc4d6e0892af35e5952f14a4d18e35924c2a0157`,
+completed with **failure**. All six cases completed their memory work, but the
+second enabled case recorded 65 telemetry writes without reserving or sending
+a report. Five journeys completed; the summary step was skipped and qualification
+stopped on the missing summary. The delivery cause remains unestablished. No
+RSS/CPU saving or resource acceptance is inferred, and no app rerun is used here.
 
 The [canonical contract](../implementation/anonymous-product-telemetry.md#required-acceptance-evidence)
 and [acceptance ledger](2026-10-27-telemetry-acceptance-ledger.md) retain the full
