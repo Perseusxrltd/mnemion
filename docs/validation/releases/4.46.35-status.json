@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "checked_at": "2026-10-27T04:01:55+00:00",
+  "tag_name": "v4.46.35",
+  "source_commit": "051c9c8ac9beed7912321502ef50fbd8c2a1a4b9",
+  "published_at": "2026-10-27T03:34:59Z",
+  "release_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.35",
+  "availability": "published",
+  "release_checks": "passed",
+  "asset_count": 38,
+  "checksum_digest": "sha256:044aaf1988a67fd784db11b8c3c90c8dc35bbfcf7b8ba8ca4f70039fe6a4b464",
+  "platforms": [
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.35/Mnemion-Studio-4.46.35-windows-x64.exe"
+    },
+    {
+      "platform": "windows",
+      "arch": "arm64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.35/Mnemion-Studio-4.46.35-windows-arm64.exe"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.35/Mnemion-Studio-4.46.35-macos-x64.dmg"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.35/Mnemion-Studio-4.46.35-macos-arm64.dmg"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.35/Mnemion-Studio-4.46.35-linux-x86_64.AppImage"
+    },
+    {
+      "platform": "linux",
+      "arch": "arm64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.35/Mnemion-Studio-4.46.35-linux-arm64.AppImage"
+    }
+  ],
+  "gates": [
+    {
+      "name": "Product checks on the release source",
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40433638960",
+      "run_id": 40433638960,
+      "updated_at": "2026-10-27T02:07:07Z",
+      "event": "push",
+      "conclusion": "success"
+    },
+    {
+      "name": "Native packages and installed-workspace release gates",
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40439256250",
+      "run_id": 40439256250,
+      "updated_at": "2026-10-27T03:30:24Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
+    },
+    {
+      "name": "Independent uploaded-byte and signature verification",
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444539230",
+      "run_id": 40444539230,
+      "updated_at": "2026-10-27T03:35:10Z",
+      "event": "workflow_run",
+      "conclusion": "success"
+    },
+    {
+      "name": "Automatic upgrades from public installers",
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444975984",
+      "run_id": 40444975984,
+      "updated_at": "2026-10-27T03:46:45Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success",
+      "targets_passed": 6
+    },
+    {
+      "name": "Live website downloads, version, notes and guides",
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444972712",
+      "run_id": 40444972712,
+      "updated_at": "2026-10-27T03:35:20Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
+    }
+  ],
+  "requirements": {
+    "total": 66,
+    "Shipped": 17,
+    "Partial": 42,
+    "Building": 1,
+    "Planned": 2,
+    "Ongoing": 3,
+    "External": 1
+  }
+}
