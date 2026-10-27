@@ -18,15 +18,96 @@
   ],
   "runs": [
     {
-      "id": 40492261240,
+      "id": 40496643913,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T11:29:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40492261240"
+      "source_commit": "149a384a97a8cc0aeded31cfb987fa0a9bbc6ecd",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-27T11:30:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40496643913",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 4,
+        "succeeded": 4,
+        "active": [
+          {
+            "id": 122163670108,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify wheel and source package include the matching web Studio"
+            ]
+          },
+          {
+            "id": 122163744036,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 122163744068,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --locked --python 3.14 --group dev"
+            ]
+          },
+          {
+            "id": 122163744069,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 122163744082,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 122163744140,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 122163744203,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
+          },
+          {
+            "id": 122163744213,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40483624017,
@@ -92,15 +173,15 @@
       }
     },
     {
-      "id": 40492261245,
+      "id": 40496644043,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "3f06d70b70f86365307e5837622ee594574d5025",
+      "source_commit": "149a384a97a8cc0aeded31cfb987fa0a9bbc6ecd",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T10:56:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40492261245"
+      "updated_at": "2026-10-27T11:30:41Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40496644043"
     },
     {
       "id": 40474480217,
@@ -114,5 +195,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217"
     }
   ],
-  "observed_at": "2026-10-27T11:29:44+00:00"
+  "observed_at": "2026-10-27T11:31:14+00:00"
 }
