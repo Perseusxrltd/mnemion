@@ -548,6 +548,15 @@ and capture budget where available. These are not whole-host totals or proof of
 the telemetry component's overhead. The same saved choice and generation fence
 govern them, and collection remains unavailable in the current build.
 
+[Seven native sender checks](../validation/2026-10-27-telemetry-native-wire.md)
+passed without skips in Electron 44.9.3 Node mode on Linux x64. Two counters
+agreed; the largest observed burst was 53,683 frame bytes against a 65,536-byte
+reservation. The synthetic loopback peer shared the test process. This is
+component evidence: installed delivery, physical networks, IPv6, retransmissions,
+browser transport, rolling-day totals, resources and provider privacy remain
+unqualified. Production collection stays disabled and earlier failures remain
+retained.
+
 ## Company restriction and damaged settings
 
 The native policy reads an optional administrator file:

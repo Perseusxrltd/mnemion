@@ -458,6 +458,17 @@ drains its own watcher before the mandatory fresh handoff check, then resumes
 watching; the five-second deadline, opt-out, one storage handle and final cleanup
 remain enforced. Full installed cancellation/resource qualification is still open.
 
+The [27 October native wire measurement](../validation/2026-10-27-telemetry-native-wire.md)
+passed **seven component scenarios without skips** in Electron **44.9.3** Node
+mode (**24.22.0**, Linux x64), including ordinary-owner delivery, Python opt-out
+and response refusal. Two IPv4/TCP counters agreed with zero capture drops; the
+maximum burst was **53,683 frame bytes**, below the **65,536-byte** reservation.
+All **2,111 source and 92 compiled inputs** matched. The client and synthetic
+loopback TLS peer shared one process. These observations do not establish a
+universal wire bound or installed, physical-link, IPv6, retransmission, browser,
+rolling-day, resource or provider acceptance. Earlier failed resource results
+and the **2 MiB / 0.5%** limits remain unchanged.
+
 Current **wire v2/report v3** retains four-byte packets. Automatic reports use
 the randomized encoder; manual reports use the first permitted view, coordinate
 zero and flags two, without category data or a random draw. Reviewed reports

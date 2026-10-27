@@ -501,6 +501,20 @@ lease. The original coalesced observation and setup failures remain retained.
 This does not qualify physical-link/retransmission, other transports/platforms,
 the rolling-day whole-system limit, resources or production ingress.
 
+The [27 October native wire observations](../validation/2026-10-27-telemetry-native-wire.md)
+passed **seven tests without skips** in Electron **44.9.3** Node mode
+(**24.22.0**, Linux x64), with **2,111 source and 92 compiled inputs matched**.
+The peer was synthetic and shared the client process. On isolated IPv4 loopback
+at MTU 1,280 with TSO/GSO/GRO disabled, IPv4/TCP packet and interface counters
+agreed without drops. The largest burst charged **20,565 TLS bytes** but observed
+**53,683 frame bytes**, below the unchanged **65,536-byte reservation**. Spending
+was retained and active leases cleared; no raw packets were retained. The
+ordinary recording-owner case made its real send without a manual reservation.
+These measurements establish no universal bound or installed/physical-link,
+IPv6/retransmission, browser, shared rolling-day, resource or provider-privacy
+acceptance. The original Python burst failure, failed resource results,
+**256 KiB rolling-day ceiling** and **2 MiB / 0.5%** limits remain binding.
+
 ## Source validation
 
 These results cover the preceding **native/Python** batch, before the browser

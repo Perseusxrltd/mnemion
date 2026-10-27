@@ -1,0 +1,257 @@
+{
+  "source": "7bc322b2088080a5cc06ce69c99a6f21ee53f3a5",
+  "scope": "Linux x64 native Electron/Node TLS transport component",
+  "plan_sha256": "11936508d094acb820f13f7cfac4c50400648cf80e1eb9e72a67aae724c23b30",
+  "test_source_sha256": "2291da9e3825b53988b67b2f7264e78b2dd9b25169148cf6b05b278c7ffde5c8",
+  "counter_sha256": "21a007e8b94b4f5159253f74f673c38c6535c10b9321d415555cc4c48c2e7ec9",
+  "controller_sha256": "07ca2ad13e80e18bc9c048e99600238c8a6bb29ad8640600eb6a68b90bba205c",
+  "runtime_binary_sha256": "7b7916ef94fa3380de130f8f1bff79fb339b9caafe134cd9dcb52d83b39ed299",
+  "interface_mtu": 1280,
+  "private_interface_offloads": {
+    "tcp-segmentation-offload": "off",
+    "generic-segmentation-offload": "off",
+    "generic-receive-offload": "off"
+  },
+  "cases": [
+    {
+      "name": "native TLS sends one fixed four-byte request without DNS or ambient credentials",
+      "attempts": [
+        {
+          "outcome": "delivered",
+          "encrypted_bytes_charged": 3484
+        }
+      ],
+      "capture": {
+        "tcp_frames": 19,
+        "frame_bytes": 4754,
+        "ipv4_tcp_bytes": 4488,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 19,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 4488,
+        "rx_packets": 19,
+        "tx_bytes": 4488,
+        "tx_packets": 19
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "ordinary desktop recording owns a real TLS send without a manual reserve or sender call",
+      "attempts": [],
+      "capture": {
+        "tcp_frames": 19,
+        "frame_bytes": 4752,
+        "ipv4_tcp_bytes": 4486,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 19,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 4486,
+        "rx_packets": 19,
+        "tx_bytes": 4486,
+        "tx_packets": 19
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "Python opt-out cancels a native stall_handshake attempt",
+      "attempts": [
+        {
+          "outcome": "suppressed",
+          "encrypted_bytes_charged": 1434
+        }
+      ],
+      "capture": {
+        "tcp_frames": 11,
+        "frame_bytes": 2176,
+        "ipv4_tcp_bytes": 2022,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 11,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 2022,
+        "rx_packets": 11,
+        "tx_bytes": 2022,
+        "tx_packets": 11
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "Python opt-out cancels a native hold attempt",
+      "attempts": [
+        {
+          "outcome": "suppressed",
+          "encrypted_bytes_charged": 3373
+        }
+      ],
+      "capture": {
+        "tcp_frames": 18,
+        "frame_bytes": 4589,
+        "ipv4_tcp_bytes": 4337,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 18,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 4337,
+        "rx_packets": 18,
+        "tx_bytes": 4337,
+        "tx_packets": 18
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "native redirect responses fail without another request",
+      "attempts": [
+        {
+          "outcome": "failed",
+          "encrypted_bytes_charged": 3501
+        }
+      ],
+      "capture": {
+        "tcp_frames": 19,
+        "frame_bytes": 4771,
+        "ipv4_tcp_bytes": 4505,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 19,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 4505,
+        "rx_packets": 19,
+        "tx_bytes": 4505,
+        "tx_packets": 19
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "native large_headers responses fail without another request",
+      "attempts": [
+        {
+          "outcome": "failed",
+          "encrypted_bytes_charged": 7552
+        }
+      ],
+      "capture": {
+        "tcp_frames": 23,
+        "frame_bytes": 9086,
+        "ipv4_tcp_bytes": 8764,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 23,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 8764,
+        "rx_packets": 23,
+        "tx_bytes": 8764,
+        "tx_packets": 23
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "native tls_burst response is refused with spending retained",
+      "attempts": [
+        {
+          "outcome": "failed",
+          "encrypted_bytes_charged": 20565
+        }
+      ],
+      "capture": {
+        "tcp_frames": 55,
+        "frame_bytes": 53683,
+        "ipv4_tcp_bytes": 52913,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 55,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 52913,
+        "rx_packets": 55,
+        "tx_bytes": 52913,
+        "tx_packets": 55
+      },
+      "two_independent_counters_agree": true,
+      "observed_frames_under_attempt_reservation": true
+    }
+  ],
+  "raw_packets_or_request_metadata_retained": false,
+  "model_calls": 0,
+  "full_telemetry_accepted": false,
+  "resource_acceptance": false,
+  "production_collection_available": false,
+  "staged_test_sha256": "b256041aa33dc710d87c22b5d264c2154516487097f9fcdc2997f10adb367139",
+  "staged_syntax_exit_code": 0,
+  "runtime": {
+    "node": "24.22.0",
+    "electron": "44.9.3",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "node_exit_code": 0,
+  "functional_cases_passed": true,
+  "all_counters_agree": true,
+  "all_observed_frames_under_reservation": true,
+  "completed": true,
+  "temporary_fixture_removed": true,
+  "production_disclosure_unchanged": true,
+  "wall_seconds": 3.299,
+  "qualification": {
+    "at": "2026-10-27T04:30:36.918685+00:00",
+    "source": "7bc322b2088080a5cc06ce69c99a6f21ee53f3a5",
+    "qualified_cases": 7,
+    "source_inputs_matched": 2111,
+    "built_inputs_matched": 92,
+    "runtime": {
+      "node": "24.22.0",
+      "electron": "44.9.3",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "full_receipt_sha256": "1c8e10cc83a5ab303ba3be521eae335ec1d2fbb9ab9033850d3282150ad4b9b1",
+    "node_log_sha256": "8c94fc2640045d7a41f627afe9e9c45fa67e073c1f40e2ec81538598c32b3e76",
+    "staged_controller_sha256": "b256041aa33dc710d87c22b5d264c2154516487097f9fcdc2997f10adb367139",
+    "passed": true,
+    "original_fixture_assertions_preserved": true,
+    "packet_records_retained": false,
+    "no_node_skips": true,
+    "limits": {
+      "native_transport_component_only": true,
+      "same_process_loopback_peer": true,
+      "physical_link_or_ipv6_or_retransmission_qualified": false,
+      "rolling_day_qualified": false,
+      "installed_platform_qualified": false,
+      "resource_acceptance": false,
+      "provider_privacy_qualified": false,
+      "production_collection_available": false,
+      "full_telemetry_accepted": false
+    },
+    "evidence": {
+      "measurement-plan.json": "11936508d094acb820f13f7cfac4c50400648cf80e1eb9e72a67aae724c23b30",
+      "measurement/staged-test.mjs": "b256041aa33dc710d87c22b5d264c2154516487097f9fcdc2997f10adb367139",
+      "measurement/measurement.json": "1c8e10cc83a5ab303ba3be521eae335ec1d2fbb9ab9033850d3282150ad4b9b1",
+      "measurement/original-node.log": "8c94fc2640045d7a41f627afe9e9c45fa67e073c1f40e2ec81538598c32b3e76",
+      "measurement/staged-syntax.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution.log": "82f36ff0592dba30c606cf2f0be74ce68c06f8113213902ab3b9fcafb308641f"
+    }
+  },
+  "source_inputs_matched": 2111,
+  "built_inputs_matched": 92,
+  "qualification_sha256": "8f446e29c631b9650fd29d3b255d949211968240ea637fb40b95882e307824ae"
+}

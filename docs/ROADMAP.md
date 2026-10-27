@@ -25,6 +25,16 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**27 October 2026, native telemetry wire observations:**
+[Seven component scenarios](validation/2026-10-27-telemetry-native-wire.md)
+passed without skips in Electron 44.9.3 Node mode on Linux x64; 2,111 source and
+92 compiled inputs matched. Two IPv4/TCP counters agreed, with a maximum burst
+of 53,683 frame bytes below the unchanged 65,536-byte reservation. The synthetic
+loopback peer shared the test process. This does not qualify installed delivery,
+physical networks, IPv6, retransmissions, browser transport, rolling-day totals,
+resources or provider privacy. All 66 requirements and V08 Building remain
+unchanged, with production collection disabled and prior failed evidence retained.
+
 **27 October 2026, capture administration source; 4.46.36 hotfix selected:**
 [The follow-up](validation/2026-10-27-telemetry-capture-admin.md) routes policy
 approval and device revocation through typed SDK/app actions and the existing
