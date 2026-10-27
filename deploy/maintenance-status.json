@@ -30,25 +30,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 5,
-        "succeeded": 5,
+        "completed": 6,
+        "succeeded": 6,
         "active": [
-          {
-            "id": 122029565957,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
           {
             "id": 122029621369,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Verify the collector with only its locked HTTP runtime"
             ]
           },
           {
@@ -66,7 +57,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv sync --locked --python 3.12 --group dev"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -128,39 +119,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.36",
       "source_commit": "7bc322b2088080a5cc06ce69c99a6f21ee53f3a5",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T05:35:53Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40451445143"
+    },
+    {
+      "id": 40456226983,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "54bd972c62312110fdf35297542ba14833f8cf81",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T05:33:23Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40451445143",
+      "updated_at": "2026-10-27T05:35:59Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456226983",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 22,
-        "completed": 21,
-        "succeeded": 20,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 122029263472,
-            "name": "assemble",
+            "id": 122030063881,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Prepare or refresh the reviewable release draft"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 40444539230,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "e3a7c4a0c8bbb9bea1c72fe58a8f92a87ac9f57d",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T03:35:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444539230"
     },
     {
       "id": 40456069956,
@@ -185,5 +176,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40444972712"
     }
   ],
-  "observed_at": "2026-10-27T05:35:23+00:00"
+  "observed_at": "2026-10-27T05:36:29+00:00"
 }
