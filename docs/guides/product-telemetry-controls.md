@@ -257,8 +257,9 @@ printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 
 `schema` describes the available local actions, disclosure and `measurement_catalog`,
 including fixed numeric buckets, contribution limits and exclusions. It also
-returns `owned_control_coverage`, the full owned-CLI operation map, and
-`owned_origin_coverage` for the desktop, Studio, UI, MCP and maintenance boundaries.
+returns `owned_control_coverage`, the `mnemion-control call` operation map, and
+six `owned_origin_coverage` maps for desktop, Studio, UI, MCP, maintenance and
+classic CLI boundaries.
 It exposes the source delivery format as `transport_catalog`.
 `transport_available` means that this build has a valid configured collector
 route; it is separate from consent, current sending and successful delivery.
@@ -427,23 +428,30 @@ Imported legacy handlers and a caller-supplied `local_stdio` field do not grant
 ownership. A **22-check actual stdio fixture journey passed**, including opt-out
 after its fake workspace shut down. Its local counters were enabled only in the
 isolated test process; source collection remains unavailable and native release
-acceptance remains open. The local schema now includes five ownership maps.
+acceptance remains open. The current local schema includes six origin maps.
 
 ## Classic command-line actions
 
-The [classic CLI source follow-up](../validation/2026-10-27-telemetry-cli-coverage.md)
+The [classic CLI source follow-up](../validation/2026-10-27-telemetry-cli-outcomes.md)
 uses the same installation privacy choice as the desktop and native agent under
 the same OS account. Running a command does not enable sharing or acknowledge a
 disclosure. Saved opt-outs and company restrictions apply; unavailable or
 unreadable policy prevents the optional observation.
 
-Nine reviewed paths have source hooks: `search`, `wake-up`, `reconstruct`,
-`restore`, `source list`, `source read`, `source search`, `obsidian sync` and
-`obsidian setup`. Their queries, paths, output and returned contents are not
-telemetry. Obsidian dry-run previews are excluded. The coverage preview also
-shows 29 unmeasured classic command paths; other options and entrypoints still
-need review. Commands retain their normal output and errors and do not stay
-running to send telemetry. Collection remains unavailable in this build.
+The coverage preview now lists 32 mapped command variants and 29 exclusions.
+`split` and `llm test` remain unmeasured; other options and entrypoints still need
+review. Queries, paths, output and returned contents are not telemetry. Status
+and supported dry-run previews have explicit exclusions. New commands whose
+effects are not confirmed report an unconfirmed outcome. Nested work does not
+add another owner, and commands retain their normal output and errors.
+
+To suppress optional telemetry for one invocation, put `--no-telemetry` before
+the command, for example `mnemion --no-telemetry search "query"`. This does not
+change your saved preference. Automatic hook-generated mining already uses this
+option. The default `mnemion repair --dry-run` now stops after reading the
+collection count, before extracting, backing up, deleting or rewriting drawers.
+Commands do not stay running to send telemetry. Collection remains unavailable;
+resource, privacy, platform and release qualification remain unfinished.
 
 ## Owned headless API calls
 

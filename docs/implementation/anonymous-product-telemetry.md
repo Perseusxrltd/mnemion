@@ -150,8 +150,8 @@ in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-contains **688 declared actions and fixed variants: 373 mapped, 278 excluded,
-eight delegated and 29 unmeasured among these declarations**. It independently
+contains **700 declared actions and fixed variants: 396 mapped, 294 excluded,
+eight delegated and two unmeasured among these declarations**. It independently
 reads **eight shipped interfaces across seven checked owner categories**: the
 maintained and legacy MCP interfaces share `local_stdio`. Other owners use
 reviewed source-route maps. Missing mappings in those
@@ -163,13 +163,20 @@ the capture-administration additions do not change the 94 workflow categories.
 The [desktop cancellation hotfix](../validation/2026-10-27-desktop-request-cancellation.md)
 adds one delegated transport channel. Its local cancellation token is never a
 measurement; the enclosing Studio action retains ownership.
-The [classic CLI follow-up](../validation/2026-10-27-telemetry-cli-coverage.md)
-adds 49 literal `argparse` leaf paths / 51 rows, with nine mapped command paths,
-13 exclusions and 29 unmeasured paths. Hand-parsed options and other entrypoints
-still need reconciliation. The preceding 637-row inventory (364 mapped,
-265 excluded, eight delegated, zero unmeasured) remains historical. Source checks
-passed with the shared installation policy; there is no new CLI sender or
-keepalive and no installed acceptance.
+The [current CLI follow-up](../validation/2026-10-27-telemetry-cli-outcomes.md)
+has 63 fixed rows: 32 mapped, 29 excluded and two unmeasured (`split`, `llm test`).
+Fixed preview/status/review/apply variants preserve opaque inputs and results;
+selected new mutative or possibly early-return commands report unconfirmed completion.
+`--no-telemetry` suppresses one invocation without changing saved policy, and
+both automatic hook-mine subprocesses use it. Nested work adds no second owner.
+The default `repair --dry-run` now stops after the collection count, before
+extraction, backup, deletion or rewriting. Source qualification is 128 distinct
+Python cases plus one browser-source preview check; SDK/frontend builds passed.
+This creates no CLI sender, keepalive or installed acceptance. Hand-parsed
+options, other entrypoints and actual call sites still need reconciliation.
+The [earlier CLI checkpoint](../validation/2026-10-27-telemetry-cli-coverage.md)
+retains its 688 total rows / 29 unmeasured and 51 classic rows; the preceding
+637-row inventory also remains historical.
 Earlier [Chrome verification](../validation/2026-10-26-telemetry-action-preview.md)
 passed on changed compiled assets based on
 `93eb300`, with package 4.46.19 metadata before 4.46.20 preparation. It confirmed

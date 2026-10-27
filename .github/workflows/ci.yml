@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 2
     outputs:
       runtime: ${{ steps.scope.outputs.runtime }}
+      telemetry: ${{ steps.scope.outputs.telemetry }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -100,7 +101,7 @@ jobs:
 
   supervision-macos:
     needs: scope
-    if: needs.scope.outputs.runtime == 'true'
+    if: needs.scope.outputs.runtime == 'true' || needs.scope.outputs.telemetry == 'true'
     name: supervision (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
@@ -129,10 +130,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - run: python -m pip install uv==0.12.24
+        if: needs.scope.outputs.runtime == 'true'
       - name: Build the current Intel cryptography runtime with static OpenSSL
-        if: matrix.runner == 'macos-15-intel'
+        if: needs.scope.outputs.runtime == 'true' && matrix.runner == 'macos-15-intel'
         run: python -m deploy.build_intel_crypto --output "$RUNNER_TEMP/mnemion-runtime-wheels"
       - name: Install the native service without building on a managed host
+        if: needs.scope.outputs.runtime == 'true'
         run: |
           if [ "${{ matrix.runner }}" = "macos-15-intel" ]; then
             uv sync --locked --python 3.12 --group dev --no-install-package cryptography
@@ -141,19 +144,21 @@ jobs:
             uv sync --locked --python 3.12 --group dev
           fi
       - name: Verify managed installation, host recovery, signed updates and rollback with real processes
+        if: needs.scope.outputs.runtime == 'true'
         env:
           MNEMION_TEST_MANAGED_INSTALL: '1'
           MNEMION_TEST_RUNTIME_WHEELS: ${{ runner.temp }}/mnemion-runtime-wheels
           MNEMION_TEST_PROCESS_DIAGNOSTICS: '1'
         run: uv run --no-sync python -m pytest service_tests/test_model_broker.py service_tests/test_supervision.py service_tests/test_supervised_capture.py service_tests/test_managed_service.py service_tests/test_managed_connectors.py service_tests/test_passwords.py service_tests/test_host_recovery.py service_tests/test_application_key_recovery.py service_tests/test_keepass_portability.py -q
       - name: Verify both pinned local models on the actual Mac runtime
+        if: needs.scope.outputs.runtime == 'true'
         env:
           MNEMION_TEST_LOCAL_MODEL: '1'
           MNEMION_MODEL_CACHE: ${{ runner.temp }}/mnemion-model-cache
           MNEMION_TEST_MODEL_REPORT_DIR: ${{ runner.temp }}/mnemion-model-idle
         run: uv run --no-sync python -m pytest service_tests/test_local_model.py -q
       - name: Preserve measured Mac model cleanup and reload results
-        if: always()
+        if: always() && needs.scope.outputs.runtime == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: model-idle-${{ matrix.runner }}
@@ -161,10 +166,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - name: Audit the installed Mac dependencies
+        if: needs.scope.outputs.runtime == 'true'
         run: uvx pip-audit --path .venv/lib/python3.12/site-packages
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         # A complete same-source main run may supply this tested wheel to a release.
-        if: matrix.runner == 'macos-15-intel'
+        if: needs.scope.outputs.runtime == 'true' && matrix.runner == 'macos-15-intel'
         with:
           name: release-service-macos-x64
           retention-days: 1
@@ -211,7 +217,7 @@ jobs:
 
   legacy:
     needs: scope
-    if: needs.scope.outputs.runtime == 'true'
+    if: needs.scope.outputs.runtime == 'true' || needs.scope.outputs.telemetry == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -254,7 +260,7 @@ jobs:
 
   dependency-audit:
     needs: scope
-    if: needs.scope.outputs.runtime == 'true'
+    if: needs.scope.outputs.runtime == 'true' || needs.scope.outputs.telemetry == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

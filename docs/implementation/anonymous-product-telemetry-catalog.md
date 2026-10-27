@@ -5,8 +5,8 @@
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
 and browser queues, revision/generation fencing, local controls and exact manual
-report review are implemented. Source owners cover nine reviewed classic CLI
-command paths, `mnemion-control call`, selected
+report review are implemented. Source owners cover reviewed classic CLI
+command variants, `mnemion-control call`, selected
 desktop/native-operator actions, Studio clients, browser connection/legacy UI,
 explicitly configured local stdio, fresh local source/capture work and automatic
 desktop updater cycles, explicit local model preparation and the dedicated
@@ -31,8 +31,8 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 records the later preparation boundary and remaining gaps.
 
 The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-lists **688 actions and fixed variants: 373 mapped, 278 excluded,
-eight delegated and 29 unmeasured among the represented declarations**. The
+lists **700 actions and fixed variants: 396 mapped, 294 excluded,
+eight delegated and two unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API,
 desktop preload request channels, maintained MCP registrations/invocation aliases
@@ -44,9 +44,12 @@ independent call-site proof. A newly declared interface
 action without a mapping appears as unmeasured even if its category has another
 owner. Fixed exclusion reasons and delegation are visible separately; none of
 these rows authorizes collection or represents activity history.
-The [classic CLI follow-up](../validation/2026-10-27-telemetry-cli-coverage.md)
-adds 51 rows from 49 leaf paths: nine mapped, 13 excluded and 29 unmeasured.
-Hand-parsed options, other entrypoints and actual runtime coverage remain open.
+The [current CLI follow-up](../validation/2026-10-27-telemetry-cli-outcomes.md)
+has 63 fixed rows: 32 mapped, 29 excluded and two unmeasured. `split` and
+`llm test` remain without a reviewed category/boundary. The
+[earlier CLI checkpoint](../validation/2026-10-27-telemetry-cli-coverage.md)
+retains 51 classic rows (nine mapped, 13 excluded, 29 unmeasured) and 688 total
+rows. Hand-parsed options, other entrypoints and actual runtime coverage remain open.
 The preceding 637-row checkpoint (364 mapped, 265 excluded, eight delegated and
 zero unmeasured) remains historical.
 The preceding update-verification checkpoint listed 634 rows, with 362 mapped;
@@ -322,15 +325,25 @@ preview neither reserves a packet nor enables transport.
 
 The [classic CLI observer](../../mnemion/cli_measurement.py) owns only the
 [reviewed command paths](../../mnemion/product_telemetry/cli-origins.json), using
-the shared OS-account policy and original revision/generation fence. Search,
-context, reconstruction, restore, source list/read/search and Obsidian sync/setup
-use existing memory categories; Obsidian dry-run previews are excluded. Private
-arguments, output and result contents remain outside telemetry. Direct handlers
-and `telemetry_owner=False` calls add no owner. Recorded work may notify an
-existing eligible local delivery owner; there is no new CLI keepalive, send or
-shutdown flush. The [source report](../validation/2026-10-27-telemetry-cli-coverage.md)
-retains both original failures, 66 passing Python checks and one source-preview
-check; it does not qualify all CLI paths or installed behavior.
+the shared OS-account policy and original revision/generation fence. The current
+63 rows include explicit dry-run, quarantine-default-preview, librarian/repair
+status, repair scan and wiki review/apply variants. Private arguments, output and
+result contents remain outside telemetry. Selected new mutative or early-return
+commands finish as `unconfirmed`; return alone does not prove their effects.
+Status, saved-diff/impact inspection and path display have explicit exclusions.
+`split` and `llm test` remain unmeasured, with no arbitrary fallback category.
+
+`--no-telemetry` suppresses one invocation without changing the saved choice;
+both automatic hook-mine subprocesses use it. Direct handlers and
+`telemetry_owner=False` calls add no owner, and nested work stays within the
+enclosing invocation. Recorded work may notify an existing eligible local
+delivery owner; there is no new CLI keepalive, send or shutdown flush. The
+[current source report](../validation/2026-10-27-telemetry-cli-outcomes.md)
+records 128 distinct Python passes, one source-preview pass and SDK/frontend
+builds, preserving the two defect reproductions and three corrected fixture
+failures. It also records the default repair dry-run fix, which stops before
+extraction/backup/delete/rewrite. Earlier checks remain historical; installed
+behavior and full acceptance remain open.
 
 ## Owned headless control coverage
 
@@ -560,9 +573,9 @@ arguments retain their compatibility behavior. Existing independent MCP-map
 tests remain; the static generator now makes both interfaces visible in the
 shipped coverage evidence without importing either server. Its 46 focused
 checks and 11 existing protocol/compatibility checks passed.
-Local `schema` now also returns `owned_origin_coverage` with the `desktop`,
-`studio`, `ui`, `mcp` and later `maintenance` maps, while retaining the CLI's
-`owned_control_coverage`.
+Local `schema` returns six `owned_origin_coverage` maps: `desktop`, `studio`,
+`ui`, `mcp`, `maintenance` and `classic_cli`. The separate
+`owned_control_coverage` remains the `mnemion-control call` operation map.
 An optional observer import failure falls back to exactly one original action;
 the fallback does not retry an action that already ran.
 The collection gate remains false and the destination null. The earlier isolated

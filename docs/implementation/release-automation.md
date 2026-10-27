@@ -295,3 +295,21 @@ adds dated JSON reports to this classification. Its real six-file documentation
 diff selected the documentation checks, while the same input selected every
 runtime check when evaluated as a release. This avoids re-running the service
 matrix merely to publish its already qualified evidence.
+
+## Telemetry component push checks
+
+The [27 October source selection](../validation/2026-10-27-telemetry-check-selection.md)
+adds a fixed allowlist for isolated telemetry component changes. Ordinary pushes
+limited to those files and documentation retain lint/source scanning, the full
+legacy Python and collector tests, dependency auditing, Studio/client builds and
+tests, and the Python/Node native network probes on both Mac architectures.
+They do not reserve the service/container matrix or repeat managed-host/model
+qualification and Intel cryptography packaging. Unknown files, shared app or
+service code, disclosure activation, catalog/wire definitions, release routes,
+dependencies and workflow changes still select the full suite.
+
+These targeted runs cannot qualify as reusable release checks: five service and
+container jobs are skipped and the required Intel runtime artifact is absent.
+The existing release verifier rejects that inventory even if a stray artifact
+were supplied. Release, pull-request and manual invocations retain the full
+suite. This changes development feedback, not the release acceptance contract.

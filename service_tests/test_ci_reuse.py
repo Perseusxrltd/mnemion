@@ -123,6 +123,26 @@ def test_complete_current_workflow_and_digest_qualify(evidence):
     assert len(evidence.calls) == 3
 
 
+def test_telemetry_component_push_is_not_full_release_evidence(evidence):
+    # These jobs are absent from component-only pushes. Even a successful run
+    # with every other job green and an apparent runtime artifact cannot be
+    # reused as full release qualification.
+    contract = yaml.safe_load(WORKFLOW.read_text())["jobs"]
+    for name in ("service", "container"):
+        assert contract[name]["if"] == "needs.scope.outputs.runtime == 'true'"
+    skipped = []
+    for row in evidence.jobs["jobs"]:
+        if row["name"].startswith(("service (", "container (")):
+            row["conclusion"] = "skipped"
+            row["steps"] = []
+            skipped.append(row["name"])
+    assert len(skipped) == 5
+    report = select(evidence)
+    assert report["reusable"] is False
+    assert report["reason"] == "required_checks_not_successful"
+    assert len(evidence.calls) == 2
+
+
 @pytest.mark.parametrize("change", ["source", "foreign", "pull_request", "branch", "workflow"])
 def test_other_sources_and_untrusted_run_origins_do_not_qualify(evidence, change):
     if change == "source":

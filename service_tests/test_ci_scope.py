@@ -4,7 +4,7 @@ import subprocess
 
 import pytest
 
-from deploy.ci_scope import scope
+from deploy.ci_scope import TELEMETRY_PATHS, scope
 
 
 def changed_repository(root, paths):
@@ -63,3 +63,62 @@ def test_missing_comparison_history_keeps_all_checks(tmp_path):
         "runtime": True,
         "reason": "unavailable_diff",
     }
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "mnemion/product_telemetry/workflow.py",
+        "studio/electron/telemetry-owner.ts",
+        "studio/frontend/src/workspace/telemetry-policy.ts",
+        "tests/test_product_telemetry_transport.py",
+    ],
+)
+def test_reviewed_components_select_telemetry_checks_only_for_pushes(tmp_path, path):
+    event = changed_repository(tmp_path, [path, "docs/telemetry.md"])
+    assert scope(tmp_path, event, event_name="push") == {
+        "runtime": False,
+        "telemetry": True,
+        "reason": "telemetry_components_only",
+    }
+    for event_name, release in [
+        ("push", True),
+        ("workflow_call", False),
+        ("workflow_dispatch", False),
+        ("pull_request", False),
+    ]:
+        selected = scope(tmp_path, event, event_name=event_name, release=release)
+        assert selected["runtime"] is True and not selected.get("telemetry", False)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "mnemion/cli.py",
+        "mnemion/service/api.py",
+        "studio/frontend/src/App.tsx",
+        "mnemion/product_telemetry/unknown.py",
+        "studio/electron/telemetry-new.ts",
+        "mnemion/product_telemetry/disclosure.json",
+        "mnemion/product_telemetry/transport-route.json",
+        "mnemion/product_telemetry/catalog.json",
+        "mnemion/product_telemetry/wire-v2.json",
+        "pyproject.toml",
+        "uv.lock",
+        "studio/frontend/package-lock.json",
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        "deploy/ci_scope.py",
+    ],
+)
+def test_telemetry_mixed_with_shared_or_unknown_source_keeps_full_checks(tmp_path, path):
+    event = changed_repository(tmp_path, ["mnemion/product_telemetry/workflow.py", path])
+    selected = scope(tmp_path, event, event_name="push")
+    assert selected["runtime"] is True and not selected.get("telemetry", False)
+
+
+def test_allowlist_only_names_existing_isolated_components():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    assert TELEMETRY_PATHS and all((root / path).is_file() for path in TELEMETRY_PATHS)

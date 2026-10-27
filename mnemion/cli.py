@@ -350,6 +350,10 @@ def cmd_repair(args):
         print("  Nothing to repair.")
         return
 
+    if getattr(args, "dry_run", False):
+        print(f"\n  Would rebuild {total} drawers (dry run -- nothing changed).")
+        return
+
     # Extract all drawers in batches
     print("\n  Extracting drawers...")
     batch_size = 5000
@@ -1316,6 +1320,11 @@ def main(*, telemetry_owner: bool = True):
     )
     parser.add_argument("--version", action="version", version=f"mnemion {__version__}")
     parser.add_argument(
+        "--no-telemetry",
+        action="store_true",
+        help="Do not record product telemetry for this invocation; keep the saved choice",
+    )
+    parser.add_argument(
         "--palace",  # kept for backward compat; controls anaktoron_path
         default=None,
         help="Where the Anaktoron lives (default: from ~/.mnemion/config.json or ~/.mnemion/anaktoron)",
@@ -1750,11 +1759,24 @@ def main(*, telemetry_owner: bool = True):
             from .cli_measurement import invoke
         except Exception:
             return action()
+        preview = getattr(args, "dry_run", False) is True
+        variant = None
+        if command == "repair":
+            variant = (
+                args.mode if args.mode in {"status", "scan"} else "preview" if preview else "apply"
+            )
+        elif command == "librarian" and args.status:
+            variant = "status"
+        elif command == "memory-guard quarantine":
+            preview = preview or not args.apply
+        elif command == "wiki compile":
+            variant = "preview" if preview else "apply" if args.apply else "review"
         return invoke(
             command,
             action,
-            owned=telemetry_owner,
-            preview=getattr(args, "dry_run", False) is True,
+            owned=telemetry_owner is True and not args.no_telemetry,
+            preview=preview,
+            variant=variant,
         )
 
     # Handle two-level subcommands

@@ -1,4 +1,4 @@
-"""Keep documentation and isolated diagnostics out of native/service push queues."""
+"""Select reviewed push checks; releases and unknown changes keep the full matrix."""
 
 from __future__ import annotations
 
@@ -29,6 +29,109 @@ RENDERER_DIAGNOSTICS = {
     "deploy/telemetry_memory_fixture.py",
     "studio/electron/scripts/probe-telemetry-renderer.mjs",
     "studio/frontend/scripts/build-telemetry-probe.mjs",
+}
+
+# Only these existing component boundaries may use telemetry push checks.
+# Unknown files, shared app/service code, dependencies, release routes,
+# disclosure activation and wire/catalog definitions still run the full matrix.
+# This is a fixed source allowlist, never a directory scan of the changed tree.
+TELEMETRY_COMPONENTS = {
+    "mnemion/product_telemetry": {
+        "activity.py",
+        "aggregate.py",
+        "catalog.py",
+        "cli.py",
+        "conditions.py",
+        "delivery.py",
+        "inspection.py",
+        "network.py",
+        "network_system.py",
+        "policy.py",
+        "review.py",
+        "review_clock.py",
+        "review_clock_system.py",
+        "review_storage.py",
+        "transport.py",
+        "workflow.py",
+        "workflow-coverage.json",
+    },
+    "studio/electron": {
+        "telemetry-activity.ts",
+        "telemetry-catalog.ts",
+        "telemetry-conditions.ts",
+        "telemetry-cpu.ts",
+        "telemetry-delivery.ts",
+        "telemetry-network.ts",
+        "telemetry-owner.ts",
+        "telemetry-private-store.ts",
+        "telemetry-resources.ts",
+        "telemetry-review.ts",
+        "telemetry-review-clock.ts",
+        "telemetry-review-lifetime.ts",
+        "telemetry-store.ts",
+        "telemetry-transport.ts",
+        "telemetry-workflow.ts",
+    },
+    "studio/frontend/src/workspace": {
+        "telemetry-activity.ts",
+        "telemetry-aggregate.ts",
+        "telemetry-budget.ts",
+        "telemetry-capability.ts",
+        "telemetry-company.ts",
+        "telemetry-conditions.ts",
+        "telemetry-delivery.ts",
+        "telemetry-policy.ts",
+        "telemetry-refusals.ts",
+        "telemetry-review.ts",
+        "telemetry-review-clock.ts",
+        "telemetry-setup.ts",
+        "telemetry-transport.ts",
+    },
+    "studio/electron/scripts": {
+        "test-product-telemetry.mjs",
+        "test-telemetry-cold-start.mjs",
+        "test-telemetry-delivery.mjs",
+        "test-telemetry-network.mjs",
+        "test-telemetry-owner.mjs",
+        "test-telemetry-private-store.mjs",
+        "test-telemetry-resources.mjs",
+        "test-telemetry-store.mjs",
+        "test-telemetry-transport.mjs",
+        "test-telemetry-wire.mjs",
+    },
+    "studio/frontend/scripts": {
+        "test-product-telemetry.mjs",
+        "test-telemetry-activity.mjs",
+        "test-telemetry-client.mjs",
+        "test-telemetry-conditions.mjs",
+        "test-telemetry-delivery.mjs",
+        "test-telemetry-inspection.mjs",
+        "test-telemetry-review-clock.mjs",
+    },
+    "tests": {
+        "test_product_telemetry_aggregate.py",
+        "test_product_telemetry_classic_cli.py",
+        "test_product_telemetry_coverage.py",
+        "test_product_telemetry_delivery.py",
+        "test_product_telemetry_endpoint.py",
+        "test_product_telemetry_inspection.py",
+        "test_product_telemetry_maintenance.py",
+        "test_product_telemetry_mcp.py",
+        "test_product_telemetry_mcp_inventory.py",
+        "test_product_telemetry_network.py",
+        "test_product_telemetry_network_system.py",
+        "test_product_telemetry_policy.py",
+        "test_product_telemetry_preview.py",
+        "test_product_telemetry_privacy_attacks.py",
+        "test_product_telemetry_review_clock_system.py",
+        "test_product_telemetry_review_lifetime.py",
+        "test_product_telemetry_transport.py",
+        "test_product_telemetry_wire.py",
+        "test_product_telemetry_workflows.py",
+    },
+}
+TELEMETRY_PATHS = {
+    f"{directory}/{name}" for directory, names in TELEMETRY_COMPONENTS.items() for name in names
 }
 
 
@@ -83,6 +186,12 @@ def scope(root: Path, event: dict, *, event_name: str, release: bool = False) ->
     only_diagnostics = bool(paths) and all(
         documentation(path) or path in RENDERER_DIAGNOSTICS for path in paths
     )
+    if (
+        not only_diagnostics
+        and paths
+        and all(documentation(path) or path in TELEMETRY_PATHS for path in paths)
+    ):
+        return {"runtime": False, "telemetry": True, "reason": "telemetry_components_only"}
     return {
         "runtime": not only_diagnostics,
         "reason": "documentation_only"
@@ -107,6 +216,7 @@ def main() -> None:
         release=os.environ.get("MNEMION_CI_RELEASE", "false") != "false",
     )
     print("runtime=" + str(result["runtime"]).lower())
+    print("telemetry=" + str(result.get("telemetry", False)).lower())
     print("reason=" + result["reason"])
 
 

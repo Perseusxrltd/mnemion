@@ -13,17 +13,20 @@ def _origins():
     return json.loads(files("mnemion.product_telemetry").joinpath("cli-origins.json").read_text())
 
 
-def invoke(command, action, *, owned, preview=False):
+def invoke(command, action, *, owned, preview=False, variant=None):
     active, spec = None, None
     if owned is True and availability.COLLECTION_AVAILABLE and availability.COLLECTOR_URL:
         try:
             spec = _origins()["operations"].get(command) if type(command) is str else None
             if spec and "exclusion" not in spec:
-                name = (
-                    spec["variants"].get("preview" if preview else "apply")
-                    if "variants" in spec
-                    else spec.get("workflow")
+                key = (
+                    ("preview" if preview is True else "apply")
+                    if variant is None
+                    else variant
+                    if type(variant) is str
+                    else None
                 )
+                name = spec["variants"].get(key) if "variants" in spec else spec.get("workflow")
                 if name:
                     from .product_telemetry import workflow
 

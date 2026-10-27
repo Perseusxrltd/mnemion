@@ -55,14 +55,26 @@ def test_classic_search_owns_one_invocation_without_arguments_or_output(
     assert "PRIVATE" not in json.dumps(rows)
 
 
+def test_owned_source_add_has_one_unconfirmed_submission(installation, monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli, "cmd_source", lambda args: calls.append(args.path_or_url))
+    monkeypatch.setattr("sys.argv", ["mnemion", "source", "add", "PRIVATE_PATH"])
+    cli.main()
+    assert calls == ["PRIVATE_PATH"]
+    rows = cells(installation)
+    assert {row["workflow"] for row in rows} == {"memory.save"}
+    assert next(row["bucket"] for row in rows if row["metric"] == "outcomes") == "unconfirmed"
+    assert "PRIVATE" not in json.dumps(rows)
+
+
 def test_classic_commands_are_visible_even_without_a_reviewed_owner():
     root = Path(__file__).resolve().parents[1]
     view = telemetry_coverage.build(root)["action_coverage"]
     rows = {row["action"]: row for row in view["actions"] if row["owner"] == "classic_cli"}
     assert "search" in rows
     assert "wiki compile" in rows
-    assert rows["wiki compile"]["state"] == "unmeasured"
-    assert rows["wiki compile"]["workflows"] == []
+    assert rows["llm test"]["state"] == "unmeasured"
+    assert rows["llm test"]["workflows"] == []
 
 
 @pytest.mark.parametrize(
@@ -166,7 +178,7 @@ def test_command_completion_keeps_its_original_privacy_fence(installation, monke
         (["obsidian", "setup", "--dry-run"], "cmd_obsidian"),
         (["status"], "cmd_status"),
         (["instructions", "search"], "cmd_instructions"),
-        (["wiki", "compile"], "cmd_wiki"),
+        (["llm", "test"], "cmd_llm"),
     ],
 )
 def test_preview_excluded_and_unmapped_commands_stay_unmeasured(
@@ -219,6 +231,120 @@ def test_optional_finisher_failure_cannot_hide_a_result_or_replay(installation, 
         is result
     )
     assert calls == [True] and cells(installation) == []
+
+
+@pytest.mark.parametrize(
+    "arguments,handler,expected",
+    [
+        (["source", "add", "PRIVATE_PATH", "--dry-run"], "cmd_source", None),
+        (["mine", "PRIVATE_PATH", "--dry-run", "--consolidate"], "cmd_mine", None),
+        (["memory-guard", "quarantine", "--drawer-id", "PRIVATE_ID"], "cmd_memory_guard", None),
+        (
+            ["memory-guard", "quarantine", "--drawer-id", "PRIVATE_ID", "--apply", "--dry-run"],
+            "cmd_memory_guard",
+            None,
+        ),
+        (
+            ["memory-guard", "quarantine", "--drawer-id", "PRIVATE_ID", "--apply"],
+            "cmd_memory_guard",
+            "memory.revise",
+        ),
+        (["wiki", "compile"], "cmd_wiki", "librarian.run"),
+        (["wiki", "compile", "--review"], "cmd_wiki", "librarian.run"),
+        (["wiki", "compile", "--apply"], "cmd_wiki", "librarian.run"),
+        (["wiki", "compile", "--apply", "--dry-run"], "cmd_wiki", None),
+        (["repair", "--mode", "status"], "cmd_repair", None),
+        (["repair", "--mode", "scan"], "cmd_repair", "sources.scan"),
+        (["repair", "--dry-run"], "cmd_repair", None),
+        (["librarian", "--status"], "cmd_librarian", None),
+        (["librarian", "--dry-run"], "cmd_librarian", None),
+        (["librarian"], "cmd_librarian", "librarian.run"),
+    ],
+)
+def test_effective_cli_modes_control_observation_without_inspecting_results(
+    installation, monkeypatch, arguments, handler, expected
+):
+    calls = []
+
+    class PrivateResult:
+        def __bool__(self):
+            pytest.fail("The CLI observation inspected a private command result")
+
+    def action(args):
+        calls.append(args)
+        return PrivateResult()
+
+    monkeypatch.setattr(cli, handler, action)
+    monkeypatch.setattr("sys.argv", ["mnemion", *arguments])
+    assert cli.main() is None
+    assert len(calls) == 1
+    rows = cells(installation)
+    if expected is None:
+        assert rows == []
+    else:
+        assert {row["workflow"] for row in rows} == {expected}
+        assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
+        assert next(row["bucket"] for row in rows if row["metric"] == "outcomes") == "unconfirmed"
+
+
+def test_command_suppression_does_not_read_or_change_saved_permission(installation, monkeypatch):
+    saved = policy.status(installation)
+    calls = []
+    monkeypatch.setattr(cli, "cmd_search", lambda args: calls.append(args.query))
+    monkeypatch.setattr("sys.argv", ["mnemion", "--no-telemetry", "search", "PRIVATE_QUERY"])
+    with monkeypatch.context() as inner:
+        inner.setattr(policy, "status", lambda *_a, **_k: pytest.fail("Suppression read policy"))
+        inner.setattr(cli_measurement, "_origins", lambda: pytest.fail("Suppression read origins"))
+        cli.main()
+    assert calls == ["PRIVATE_QUERY"]
+    assert cells(installation) == []
+    assert policy.status(installation) == saved
+
+
+@pytest.mark.parametrize("mode", ["background", "precompact"])
+def test_automatic_hook_ingestion_has_no_inferred_owner(installation, tmp_path, monkeypatch, mode):
+    from mnemion import hooks_cli
+
+    target = tmp_path / "PRIVATE_SOURCE"
+    target.mkdir()
+    state = tmp_path / "hook-state"
+    state.mkdir()
+    monkeypatch.setenv("MNEMION_DIR", str(target))
+    monkeypatch.setattr(hooks_cli, "STATE_DIR", state)
+    monkeypatch.setattr(hooks_cli, "_output", lambda _value: None)
+    calls, children = [], []
+    monkeypatch.setattr(cli, "cmd_mine", lambda args: calls.append(args.dir))
+
+    def child(command, **_kwargs):
+        # Exercise the actual CLI dispatch of the child command, with mining
+        # replaced by an opaque original action. No background process escapes.
+        children.append(command)
+        assert command[:3] == [sys.executable, "-m", "mnemion"]
+        with monkeypatch.context() as inner:
+            inner.setattr("sys.argv", command[2:])
+            inner.setattr(policy, "status", lambda *_a, **_k: pytest.fail("Hook read policy"))
+            cli.main()
+
+    monkeypatch.setattr(hooks_cli.subprocess, "Popen", child)
+    monkeypatch.setattr(hooks_cli.subprocess, "run", child)
+    if mode == "background":
+        hooks_cli._maybe_auto_ingest()
+    else:
+        hooks_cli.hook_precompact({"session_id": "PRIVATE_SESSION"}, "claude-code")
+    assert len(children) == 1 and calls == [str(target)]
+    assert cells(installation) == []
+
+
+def test_llm_normal_return_does_not_claim_a_running_model(installation, monkeypatch):
+    from mnemion import llm_backend
+
+    monkeypatch.setattr(cli, "MnemionConfig", lambda: None)
+    monkeypatch.setattr(llm_backend, "get_backend", lambda _config: llm_backend.NullBackend())
+    monkeypatch.setattr("sys.argv", ["mnemion", "llm", "start"])
+    cli.main()
+    rows = cells(installation)
+    assert {row["workflow"] for row in rows} == {"models.resume"}
+    assert next(row["bucket"] for row in rows if row["metric"] == "outcomes") == "unconfirmed"
 
 
 def test_static_command_inventory_matches_the_actual_argparse_tree(monkeypatch):

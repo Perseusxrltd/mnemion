@@ -95,7 +95,7 @@ def _maybe_auto_ingest():
             log_path = STATE_DIR / "hook.log"
             with open(log_path, "a") as log_f:
                 subprocess.Popen(
-                    [sys.executable, "-m", "mnemion", "mine", mnemion_dir],
+                    [sys.executable, "-m", "mnemion", "--no-telemetry", "mine", mnemion_dir],
                     stdout=log_f,
                     stderr=log_f,
                 )
@@ -192,7 +192,7 @@ def hook_precompact(data: dict, harness: str):
             log_path = STATE_DIR / "hook.log"
             with open(log_path, "a") as log_f:
                 subprocess.run(
-                    [sys.executable, "-m", "mnemion", "mine", mnemion_dir],
+                    [sys.executable, "-m", "mnemion", "--no-telemetry", "mine", mnemion_dir],
                     stdout=log_f,
                     stderr=log_f,
                     timeout=60,
