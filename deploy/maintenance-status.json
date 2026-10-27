@@ -18,15 +18,33 @@
   ],
   "runs": [
     {
-      "id": 40433638960,
+      "id": 40436688638,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "051c9c8ac9beed7912321502ef50fbd8c2a1a4b9",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T02:07:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40433638960"
+      "source_commit": "05a9d8d19637a11f0aca9480e2ef928c18574424",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-27T02:08:29Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40436688638",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 121966922986,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify wheel and source package include the matching web Studio"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40423899386,
@@ -114,7 +132,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Sign and verify the free macOS update archive"
             ]
           },
           {
@@ -142,15 +160,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40430456976"
     },
     {
-      "id": 40433638922,
+      "id": 40436688490,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "051c9c8ac9beed7912321502ef50fbd8c2a1a4b9",
+      "source_commit": "05a9d8d19637a11f0aca9480e2ef928c18574424",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T01:37:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40433638922"
+      "updated_at": "2026-10-27T02:08:43Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40436688490"
     },
     {
       "id": 40423894613,
@@ -164,5 +182,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613"
     }
   ],
-  "observed_at": "2026-10-27T02:07:53+00:00"
+  "observed_at": "2026-10-27T02:09:22+00:00"
 }
