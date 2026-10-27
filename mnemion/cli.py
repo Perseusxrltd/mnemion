@@ -978,6 +978,10 @@ def cmd_llm(args):
         print(f"\n  LLM backend: {backend_name}")
         backend = get_backend(config)
         print(f"  Details:     {backend.info()}")
+        from .llm_backend import ManagedBackend
+
+        if isinstance(backend, ManagedBackend):
+            print(f"  Native custody: {'verified' if backend._owns_server() else 'not verified'}")
         if isinstance(backend, NullBackend):
             print("  Status:      disabled — contradiction detection off")
             print("\n  Run 'mnemion llm setup' to configure a backend.\n")
@@ -999,12 +1003,12 @@ def cmd_llm(args):
         backend = get_backend(config)
         if isinstance(backend, NullBackend):
             print("\n  No LLM configured. Run: mnemion llm setup\n")
-            return
+            raise SystemExit(2)
         if not isinstance(backend, ManagedBackend):
             print(f"\n  {backend.info()}")
             print("  No start_script configured — start this backend manually.")
             print("  To enable auto-start, run: mnemion llm setup\n")
-            return
+            raise SystemExit(2)
         if backend.ping():
             print(f"\n  Already running: {backend.info()}\n")
             return
@@ -1013,7 +1017,10 @@ def cmd_llm(args):
         if backend.ensure_running():
             print("  Server ready.\n")
         else:
-            print("  Startup timed out. Check the start_script and try again.\n")
+            print(
+                "  Startup could not be verified. Check the start_script and saved model custody.\n"
+            )
+            raise SystemExit(1)
 
     elif args.llm_action == "stop":
         from .llm_backend import ManagedBackend
@@ -1022,28 +1029,35 @@ def cmd_llm(args):
         if isinstance(backend, NullBackend) or not isinstance(backend, ManagedBackend):
             print("\n  No managed LLM configured — nothing to stop.\n")
             return
-        if not backend.ping():
-            print("\n  Already stopped.\n")
-            return
-        backend.stop()
+        if not backend.stop():
+            print(
+                "\n  No verified model shutdown. Use the original process manager, or start a foreground script through Mnemion before managing it here.\n"
+            )
+            raise SystemExit(2)
+        if backend.ping():
+            print(
+                "\n  The endpoint is still reachable after the recorded process stopped. Verify its process manager.\n"
+            )
+            raise SystemExit(1)
         print(f"\n  Stopped {backend.info()}\n")
 
     elif args.llm_action == "test":
         backend = get_backend(config)
         if isinstance(backend, NullBackend):
             print("\n  No LLM configured. Run: mnemion llm setup\n")
-            return
+            raise SystemExit(2)
         print(f"\n  Testing {backend.info()} ...")
         messages = [
             {"role": "system", "content": "You are a helpful assistant. Be brief."},
             {"role": "user", "content": "Say exactly: MNEMION_OK"},
         ]
         result = backend.chat(messages, max_tokens=20)
-        if result:
+        if type(result) is str and result.strip() == "MNEMION_OK":
             print(f"  Response: {result}")
             print("  Test PASSED\n")
         else:
-            print("  Test FAILED — no response. Check the backend is running.\n")
+            print("  Test FAILED — expected MNEMION_OK. Check the backend and selected model.\n")
+            raise SystemExit(1)
 
     elif args.llm_action == "setup":
         _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS)

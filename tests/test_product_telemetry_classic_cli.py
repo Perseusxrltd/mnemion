@@ -335,13 +335,17 @@ def test_automatic_hook_ingestion_has_no_inferred_owner(installation, tmp_path, 
     assert cells(installation) == []
 
 
-def test_llm_normal_return_does_not_claim_a_running_model(installation, monkeypatch):
+def test_llm_disabled_start_reports_failure_without_claiming_a_running_model(
+    installation, monkeypatch
+):
     from mnemion import llm_backend
 
     monkeypatch.setattr(cli, "MnemionConfig", lambda: None)
     monkeypatch.setattr(llm_backend, "get_backend", lambda _config: llm_backend.NullBackend())
     monkeypatch.setattr("sys.argv", ["mnemion", "llm", "start"])
-    cli.main()
+    with pytest.raises(SystemExit) as stopped:
+        cli.main()
+    assert stopped.value.code == 2
     rows = cells(installation)
     assert {row["workflow"] for row in rows} == {"models.resume"}
     assert next(row["bucket"] for row in rows if row["metric"] == "outcomes") == "unconfirmed"

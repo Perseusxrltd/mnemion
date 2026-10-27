@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.46.39"
+version = "4.46.40"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -101,7 +101,7 @@ dml = ["onnxruntime-directml>=1.20.1; platform_system == 'Windows'"]
 coreml = ["onnxruntime>=1.20.1; python_version >= '3.10' and platform_system == 'Darwin'"]
 
 [dependency-groups]
-native-build = ["pyinstaller==6.22.3"]
+native-build = ["pyinstaller==6.22.3", "pytest==9.1.1"]
 dev = [
     "supervisor==4.3.0; platform_system != 'Windows'",
     "pytest>=7.0",

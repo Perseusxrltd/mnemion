@@ -30,15 +30,17 @@ Configuration lives in ~/.mnemion/config.json under the "llm" key:
   }
 
 start_script formats:
-  wsl:///home/user/run_vllm.sh      → run in default WSL distro (Windows)
+  wsl:///home/user/run_vllm.sh      → run in configured WSL distro (default Ubuntu)
   wsl://Ubuntu//home/user/script.sh → run in named WSL distro (Windows)
   /home/user/run_vllm.sh            → run directly (Linux / macOS)
+  C:\\models\\start.ps1 or server.exe → run natively on Windows
 """
 
 import json
 import logging
 import os
-import subprocess
+import hashlib
+from pathlib import Path
 import sys
 import threading
 import time as _time
@@ -47,11 +49,6 @@ import urllib.error
 from typing import List, Dict, Optional
 
 logger = logging.getLogger("mnemion.llm")
-
-# ── Windows process flags for fully detached child processes ──────────────────
-_DETACHED_FLAGS: int = 0
-if sys.platform == "win32":
-    _DETACHED_FLAGS = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
 
 _IDLE_CHECK_INTERVAL = 30  # seconds between idle watcher ticks
 _MAX_FAILURES = 3  # consecutive chat failures before auto-restart attempt
@@ -280,6 +277,8 @@ class ManagedBackend(OpenAICompatBackend):
         self._consecutive_failures: int = 0
         self._lock = threading.Lock()
         self._idle_thread: Optional[threading.Thread] = None
+        self._idle_launch = None
+        self._model_controller = None
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -290,7 +289,25 @@ class ManagedBackend(OpenAICompatBackend):
         response_format: Optional[Dict] = None,
     ) -> Optional[str]:
         self._last_used = _time.monotonic()
-        result = super().chat(messages, max_tokens, response_format)
+        controller, activity = None, None
+        try:
+            if not self.start_script.startswith("wsl://"):
+                controller = self._controller()
+                activity = controller.begin_activity()
+        except Exception:
+            logger.warning("Model custody is busy or unavailable; the request was not started")
+            return None
+        try:
+            result = super().chat(messages, max_tokens, response_format)
+        finally:
+            self._last_used = _time.monotonic()
+            if controller is not None:
+                try:
+                    controller.end_activity(activity)
+                except Exception:
+                    # Retaining a lease prevents idle teardown while an old
+                    # caller is still alive. Never clear another launch's lease.
+                    logger.warning("Model activity custody could not be finalized")
         if result is None:
             self._consecutive_failures += 1
             if self._consecutive_failures >= _MAX_FAILURES:
@@ -311,13 +328,18 @@ class ManagedBackend(OpenAICompatBackend):
         """
         if self.ping():
             self._last_used = _time.monotonic()
-            self._start_idle_watcher()
+            if self._owns_server():
+                self._start_idle_watcher()
             return True
         if not self.start_script:
             logger.debug(f"[{self.name}] unreachable and no start_script configured")
             return False
         logger.info(f"[{self.name}] server down — launching {self.start_script}")
-        self._launch()
+        try:
+            self._launch()
+        except Exception:
+            logger.warning("Model launch failed; verify the private custody state and start script")
+            return False
         deadline = _time.monotonic() + self.startup_timeout
         while _time.monotonic() < deadline:
             _time.sleep(3)
@@ -330,38 +352,48 @@ class ManagedBackend(OpenAICompatBackend):
         logger.warning(f"[{self.name}] startup timed out after {self.startup_timeout}s")
         return False
 
-    def stop(self):
-        """Stop the server."""
-        logger.info(f"[{self.name}] stopping server")
+    def _controller(self):
+        if self._model_controller is None:
+            from .managed_model_process import ModelController
+
+            # Private local custody, never an analytics or network identifier.
+            configuration = [self.base_url, self.model, self._launch_command()]
+            key = hashlib.sha256(json.dumps(configuration, ensure_ascii=True).encode()).hexdigest()
+            self._model_controller = ModelController(
+                Path.home() / ".mnemion" / "managed-models" / key
+            )
+        return self._model_controller
+
+    def _owns_server(self):
+        if self.start_script.startswith("wsl://"):
+            return False
         try:
-            if self.start_script.startswith("wsl://"):
-                wsl_exe = self._wsl_exe()
-                subprocess.run(
-                    [wsl_exe, "-d", self.wsl_distro, "-e", "bash", "-c", "pkill -f 'vllm serve'"],
-                    capture_output=True,
-                    timeout=10,
-                )
-            elif sys.platform == "win32":
-                cmd = (
-                    "Get-CimInstance Win32_Process | "
-                    "Where-Object { $_.CommandLine -like '*vllm serve*' } | "
-                    "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
-                )
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-Command", cmd],
-                    capture_output=True,
-                    timeout=10,
-                )
-            else:
-                subprocess.run(["pkill", "-f", "vllm serve"], capture_output=True, timeout=10)
-        except Exception as e:
-            logger.warning(f"[{self.name}] stop error: {e}")
+            return self._controller().owned()
+        except Exception:
+            return False
+
+    def stop(self, *, automatic=False):
+        """Stop only a verified native launch; external/guest custody is separate."""
+        if self.start_script.startswith("wsl://"):
+            logger.warning("WSL guest ownership is unverified; use its original process manager")
+            return False
+        try:
+            return self._controller().stop(only_unused=automatic)
+        except Exception:
+            logger.warning("Model shutdown could not be verified; custody was retained")
+            return False
 
     def info(self) -> str:
         base = super().info()
+        if self.start_script.startswith("wsl://"):
+            return f"{base}  WSL guest control requires its original process manager"
         if self.start_script:
             idle_min = self.idle_timeout // 60
-            return f"{base}  auto-stop={idle_min}m"
+            return (
+                f"{base}  owned-model idle stop={idle_min}m"
+                if self.idle_timeout > 0
+                else f"{base}  idle stop disabled"
+            )
         return base
 
     # ── Internal ───────────────────────────────────────────────────────────────
@@ -380,45 +412,60 @@ class ManagedBackend(OpenAICompatBackend):
         candidate = r"C:\Windows\System32\wsl.exe"
         return candidate if os.path.exists(candidate) else "wsl.exe"
 
-    def _launch(self):
-        """Launch the start_script as a fully detached background process."""
+    def _launch_command(self):
+        """Resolve the actual target once per controller, without shell text."""
         if self.start_script.startswith("wsl://"):
             wsl_path = self._wsl_script_path()
             wsl_exe = self._wsl_exe()
-            # Strip Windows CRLF line endings before executing — scripts edited
-            # on Windows are often saved with \r\n which causes bash to fail
-            # with "$'\r': command not found" errors in WSL.
-            cmd = f"sed -i 's/\\r//' {wsl_path} && bash {wsl_path}"
-            if sys.platform == "win32":
-                # wsl.exe with DETACHED_PROCESS creates an independent Windows
-                # process; it keeps WSL alive for as long as vLLM runs.
-                subprocess.Popen(
-                    [wsl_exe, "-d", self.wsl_distro, "-e", "bash", "-c", cmd],
-                    creationflags=_DETACHED_FLAGS,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    close_fds=True,
-                )
-            else:
-                subprocess.Popen(
-                    [wsl_exe, "-d", self.wsl_distro, "-e", "bash", "-c", cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    start_new_session=True,
-                )
+            target = self.start_script[6:]
+            distro = self.wsl_distro if target.startswith("/") else target.partition("/")[0]
+            if not wsl_path.startswith("/") or not distro:
+                raise ValueError("Choose an absolute WSL script path and a distribution")
+            # A guest path is one argument, never shell text or permission to
+            # rewrite the user's script. Guest scripts must use LF line endings.
+            command = [wsl_exe, "-d", distro, "-e", "bash", wsl_path]
         else:
-            subprocess.Popen(
-                ["bash", self.start_script],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
+            script = str(Path(self.start_script).expanduser().absolute())
+            if sys.platform == "win32" and Path(script).suffix.lower() == ".ps1":
+                powershell = (
+                    Path(os.environ.get("SystemRoot", r"C:\Windows"))
+                    / "System32"
+                    / "WindowsPowerShell"
+                    / "v1.0"
+                    / "powershell.exe"
+                )
+                command = [
+                    str(powershell),
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-File",
+                    script,
+                ]
+            elif sys.platform == "win32" and Path(script).suffix.lower() == ".exe":
+                command = [script]
+            else:
+                command = ["bash", script]
+        return command
+
+    def _launch(self):
+        """Launch one recorded, detached foreground-script process."""
+        return self._controller().launch(self._launch_command())
 
     def _restart(self):
         """Stop then re-start the server."""
-        self.stop()
-        _time.sleep(2)
-        self._launch()
+        if self.start_script.startswith("wsl://"):
+            return False
+        try:
+            # Keep the controlled stop and relaunch atomic against another
+            # operator. Never revive a model after a verified explicit stop.
+            if not self._controller().restart(
+                self._launch_command(), may_start=lambda: not self.ping()
+            ):
+                return False
+        except Exception:
+            logger.warning("Model restart could not acquire launch custody")
+            return False
         deadline = _time.monotonic() + self.startup_timeout
         while _time.monotonic() < deadline:
             _time.sleep(3)
@@ -426,35 +473,47 @@ class ManagedBackend(OpenAICompatBackend):
                 logger.info(f"[{self.name}] restart successful")
                 self._consecutive_failures = 0
                 self._start_idle_watcher()
-                return
+                return True
         logger.error(f"[{self.name}] restart failed after {self.startup_timeout}s")
+        return False
 
     def _start_idle_watcher(self):
         """Start the idle-timeout watcher daemon thread (no-op if already running)."""
+        if self.idle_timeout <= 0 or not self._owns_server():
+            return
+        try:
+            launch = self._controller().launch_identity()
+        except Exception:
+            return
+        if launch is None:
+            return
         with self._lock:
-            if self._idle_thread and self._idle_thread.is_alive():
+            if self._idle_thread and self._idle_thread.is_alive() and self._idle_launch == launch:
                 return
             t = threading.Thread(
                 target=self._idle_loop,
+                args=(launch,),
                 daemon=True,
                 name=f"llm_idle_{self.name}",
             )
             self._idle_thread = t
+            self._idle_launch = launch
             t.start()
             logger.debug(f"[{self.name}] idle watcher started (timeout={self.idle_timeout}s)")
 
-    def _idle_loop(self):
+    def _idle_loop(self, launch):
         """Daemon loop: stop the server once it has been idle for idle_timeout seconds."""
         while True:
             _time.sleep(_IDLE_CHECK_INTERVAL)
-            if not self.ping():
-                logger.debug(f"[{self.name}] server gone — idle watcher exiting")
-                break
-            idle = _time.monotonic() - self._last_used
-            if idle >= self.idle_timeout:
-                logger.info(f"[{self.name}] idle {idle:.0f}s ≥ {self.idle_timeout}s — stopping")
-                self.stop()
-                break
+            try:
+                controller = self._controller()
+                if not controller.owned(launch=launch) or controller.stop(
+                    launch=launch, idle_seconds=self.idle_timeout
+                ):
+                    break
+            except Exception:
+                # Busy, unreadable or uncertain custody cannot authorize a kill.
+                continue
 
 
 # ── Factory ───────────────────────────────────────────────────────────────────

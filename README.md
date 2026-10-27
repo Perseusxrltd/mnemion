@@ -310,6 +310,9 @@ information to review.
 For concatenated Claude Code transcripts, the [transcript-splitting guide](docs/guides/transcript-splitting.md)
 covers preview, collision handling, original archives and recovery before mining.
 
+The [legacy LLM backend guide](docs/guides/llm-backend-management.md) explains
+model tests, verified native process control and the limits of WSL management.
+
 Automated Git array/SQL merging is retired because it could resurrect deleted
 records. Use the service for shared memory and explicit local vault refresh for
 Obsidian. The original v3 guide and changelog remain in

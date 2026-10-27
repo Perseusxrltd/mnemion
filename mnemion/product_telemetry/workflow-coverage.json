@@ -6467,6 +6467,6 @@
     "studio/electron/preload.ts": "1963aa4773fcd6db0cb50deb6a2d26775760d8b9656bef989482285f184751c2",
     "mnemion/service/mcp.py": "14e9a86847af610b3c9de178fb3b5d84282ea353921f2e1070322084873e1ac1",
     "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6",
-    "mnemion/cli.py": "b37733c96a3c3d6ab642eebe10c753f80088d61c9e9a4fa587fa0a8bb06e57b8"
+    "mnemion/cli.py": "997636687c8a6179895acf71b42a5df9f3db6080ef15ae30bcea0f9ef6afdfc0"
   }
 }

@@ -168,6 +168,8 @@ jobs:
           architecture: ${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
       - name: Locked native service build dependencies
         run: uv sync --locked --no-default-groups --group native-build --python "${{ steps.engine_python.outputs.python-path }}" --no-managed-python
+      - name: Verify model custody with real native child processes
+        run: uv run --no-sync python -m pytest native_tests/test_managed_model_process.py -q
       - name: Verify Argon2id support in each native service build runtime
         shell: bash
         run: |
