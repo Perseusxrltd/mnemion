@@ -30,8 +30,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
           {
             "id": 122192236739,
@@ -52,21 +52,12 @@
             ]
           },
           {
-            "id": 122192236751,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
             "id": 122192236790,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -95,18 +86,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 7,
-        "completed": 1,
-        "succeeded": 1,
+        "completed": 4,
+        "succeeded": 4,
         "active": [
-          {
-            "id": 122192617911,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
           {
             "id": 122192617990,
             "name": "linux / x64 public upgrade",
@@ -128,24 +110,6 @@
           {
             "id": 122192618078,
             "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122192618154,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122192618225,
-            "name": "macos / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -173,9 +137,9 @@
       "workflow": "release.yml",
       "branch": "release/4.46.39",
       "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T12:39:17Z",
+      "updated_at": "2026-10-27T12:41:19Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40504681891",
       "job_details_schema": 2,
       "job_progress": {
@@ -189,7 +153,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -198,7 +162,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -207,7 +171,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv sync --project studio/client --locked --python \"C:\\hostedtoolcache\\windows\\Python\\3.13.17\\arm64\\python.exe\" --no-managed-python"
+              "Run npm --prefix studio/electron test"
             ]
           },
           {
@@ -216,7 +180,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Locked native service build dependencies"
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           },
           {
@@ -225,15 +189,17 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Download this commit's verified x64 Windows service engine"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
             "id": 122193513224,
             "name": "native / macos-15 / arm64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
           }
         ]
       },
@@ -273,5 +239,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40505165922"
     }
   ],
-  "observed_at": "2026-10-27T12:40:03+00:00"
+  "observed_at": "2026-10-27T12:46:57+00:00"
 }
