@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T00:04:09+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T00:04:45+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.29](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.29). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.29 | success | [Run 40403384477](https://github.com/Perseusxrltd/mnemion/actions/runs/40403384477) |
 | verify-artifacts\.yml | main | failure | [Run 40417189624](https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624) |
 | website-release\.yml | main | success | [Run 40398877004](https://github.com/Perseusxrltd/mnemion/actions/runs/40398877004) |
-| website-release\.yml | v4\.46\.29 | in\_progress | [Run 40423894613](https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613) |
+| website-release\.yml | v4\.46\.29 | success | [Run 40423894613](https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613) |
 
 ## Active jobs
 
@@ -34,12 +34,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 40423899386](https://github.com/Perseusxrltd/mnemion/actions/runs/40423899386): 1/7 jobs completed; 1 succeeded.
 
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- linux / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- windows / arm64 public upgrade: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- windows / x64 public upgrade: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- macos / x64 public upgrade: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- macos / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
 
 ## Unsuccessful jobs

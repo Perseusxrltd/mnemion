@@ -95,7 +95,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -104,7 +104,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -113,7 +113,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -122,7 +122,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -131,7 +131,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -140,7 +140,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           }
         ]
@@ -169,12 +169,6 @@
       "updated_at": "2026-10-26T23:09:54Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40417189624",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
@@ -186,7 +180,13 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
       "id": 40398877004,
@@ -205,19 +205,11 @@
       "workflow": "website-release.yml",
       "branch": "v4.46.29",
       "source_commit": "39ed946a58b8a4dd10da2dd8f4b88bc71582df12",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T00:03:53Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 1,
-        "succeeded": 1,
-        "active": []
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T00:04:05Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40423894613"
     }
   ],
-  "observed_at": "2026-10-27T00:04:09+00:00"
+  "observed_at": "2026-10-27T00:04:45+00:00"
 }
