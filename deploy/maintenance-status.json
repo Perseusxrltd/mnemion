@@ -18,32 +18,23 @@
   ],
   "runs": [
     {
-      "id": 40468322021,
+      "id": 40470332906,
       "attempt": 1,
       "workflow": "ci.yml",
-      "branch": "main",
-      "source_commit": "4febe8e2964d81904a4a904c32c63a62cdad3c92",
+      "branch": "codex/telemetry-probe-controls-20261027",
+      "source_commit": "d56d578f7c9791fc43c64cc8178dca255682dc5d",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T07:38:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468322021",
+      "updated_at": "2026-10-27T07:58:17Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40470332906",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
           {
-            "id": 122069085335,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 122069085374,
+            "id": 122075704727,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -52,16 +43,16 @@
             ]
           },
           {
-            "id": 122069085379,
-            "name": "supervision (macos-15-intel)",
+            "id": 122075704790,
+            "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
-            "id": 122069085402,
+            "id": 122075704832,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -70,17 +61,28 @@
             ]
           },
           {
-            "id": 122069085421,
-            "name": "supervision (macos-15)",
+            "id": 122075704914,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify both pinned local models on the actual Mac runtime"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           }
         ]
       },
       "failed_jobs": []
+    },
+    {
+      "id": 40468322021,
+      "attempt": 1,
+      "workflow": "ci.yml",
+      "branch": "main",
+      "source_commit": "4febe8e2964d81904a4a904c32c63a62cdad3c92",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T08:06:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468322021"
     },
     {
       "id": 40456607379,
@@ -126,12 +128,6 @@
       "updated_at": "2026-10-27T07:42:49Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468253346",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
@@ -143,7 +139,13 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
       "id": 40468321987,
@@ -168,5 +170,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40456602936"
     }
   ],
-  "observed_at": "2026-10-27T07:43:26+00:00"
+  "observed_at": "2026-10-27T08:06:55+00:00"
 }
