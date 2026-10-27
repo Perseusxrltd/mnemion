@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T15:29:41+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T15:38:47+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.40](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.40). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -20,20 +20,14 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | ci\.yml | main | failure | [Run 40524093039](https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039) |
 | public-updates\.yml | v4\.46\.40 | failure | [Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080) |
 | release\.yml | release/4\.46\.40 | success | [Run 40518115119](https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119) |
-| release\.yml | release/4\.46\.41 | queued | [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699) |
-| verify-artifacts\.yml | main | skipped | [Run 40530379999](https://github.com/Perseusxrltd/mnemion/actions/runs/40530379999) |
+| release\.yml | release/4\.46\.41 | failure | [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699) |
+| verify-artifacts\.yml | main | skipped | [Run 40532935630](https://github.com/Perseusxrltd/mnemion/actions/runs/40532935630) |
 | website-release\.yml | main | success | [Run 40513098255](https://github.com/Perseusxrltd/mnemion/actions/runs/40513098255) |
 | website-release\.yml | v4\.46\.40 | success | [Run 40528680423](https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423) |
-
-## Active jobs
-
-[Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699): 13/14 jobs completed; 12 succeeded.
-
-- native / native\_database / Database / macos / arm64: queued.
-
 
 ## Unsuccessful jobs
 
 - [Run 40523497882](https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40524093039](https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080): macos / arm64 public upgrade (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
+- [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699): native / native\_database / Database / macos / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
