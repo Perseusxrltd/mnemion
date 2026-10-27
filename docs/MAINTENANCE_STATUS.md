@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T15:17:47+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T15:23:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.40](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.40). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.46\.40 | queued | [Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080) |
 | release\.yml | release/4\.46\.40 | success | [Run 40518115119](https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119) |
 | release\.yml | release/4\.46\.41 | queued | [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699) |
-| verify-artifacts\.yml | main | success | [Run 40527649322](https://github.com/Perseusxrltd/mnemion/actions/runs/40527649322) |
+| verify-artifacts\.yml | main | skipped | [Run 40530379999](https://github.com/Perseusxrltd/mnemion/actions/runs/40530379999) |
 | website-release\.yml | main | success | [Run 40513098255](https://github.com/Perseusxrltd/mnemion/actions/runs/40513098255) |
 | website-release\.yml | v4\.46\.40 | success | [Run 40528680423](https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423) |
 
@@ -31,13 +31,11 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 - supervision \(macos-15\): queued.
 
-[Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080): 2/7 jobs completed; 2 succeeded.
+[Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080): 4/7 jobs completed; 4 succeeded.
 
 - linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - macos / arm64 public upgrade: queued.
 - linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
 [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699): 13/14 jobs completed; 12 succeeded.
 

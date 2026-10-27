@@ -28,12 +28,6 @@
       "updated_at": "2026-10-27T15:16:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 12,
-        "succeeded": 11,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "supervision (macos-15)",
@@ -43,7 +37,13 @@
           "steps_reported": 0,
           "steps": []
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
+      }
     },
     {
       "id": 40524093039,
@@ -85,8 +85,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 7,
-        "completed": 2,
-        "succeeded": 2,
+        "completed": 4,
+        "succeeded": 4,
         "active": [
           {
             "id": 122275375873,
@@ -112,24 +112,6 @@
             "steps": [
               "Install public release and observe its automatic update"
             ]
-          },
-          {
-            "id": 122275376016,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 122275376108,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
           }
         ]
       },
@@ -148,13 +130,13 @@
     },
     {
       "id": 40523707699,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "release.yml",
       "branch": "release/4.46.41",
       "source_commit": "56bb40a01f5736c742be0d95add5a54beb605971",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-27T15:07:43Z",
+      "updated_at": "2026-10-27T15:23:06Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699",
       "job_details_schema": 2,
       "job_progress": {
@@ -163,10 +145,10 @@
         "succeeded": 12,
         "active": [
           {
-            "id": 122272306847,
+            "id": 122281385486,
             "name": "native / native_database / Database / macos / arm64",
             "status": "queued",
-            "runner_assigned": false,
+            "runner_assigned": null,
             "steps": []
           }
         ]
@@ -174,15 +156,15 @@
       "failed_jobs": []
     },
     {
-      "id": 40527649322,
+      "id": 40530379999,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "8285d1fd412140b3a48d10dcaa258950f90b2e72",
+      "source_commit": "890c60264e8031317614259046a1e8fcf069631d",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T15:12:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40527649322"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-27T15:22:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40530379999"
     },
     {
       "id": 40513098255,
@@ -207,5 +189,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T15:17:47+00:00"
+  "observed_at": "2026-10-27T15:23:32+00:00"
 }
