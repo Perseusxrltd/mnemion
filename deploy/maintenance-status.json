@@ -78,35 +78,27 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.40",
       "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-27T15:12:56Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:28:07Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 7,
-        "completed": 5,
-        "succeeded": 5,
-        "active": [
-          {
-            "id": 122275375907,
-            "name": "macos / arm64 public upgrade",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 122275375968,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
+        "total": 8,
+        "completed": 8,
+        "succeeded": 7,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "macos / arm64 public upgrade",
+          "id": 122275375907,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 40518115119,
@@ -180,5 +172,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T15:24:17+00:00"
+  "observed_at": "2026-10-27T15:28:49+00:00"
 }
