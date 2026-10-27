@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T08:35:12+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T08:35:58+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.37](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.37). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,11 +17,11 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 40473146299](https://github.com/Perseusxrltd/mnemion/actions/runs/40473146299) |
-| public-updates\.yml | v4\.46\.37 | queued | [Run 40474484566](https://github.com/Perseusxrltd/mnemion/actions/runs/40474484566) |
+| public-updates\.yml | v4\.46\.37 | in\_progress | [Run 40474484566](https://github.com/Perseusxrltd/mnemion/actions/runs/40474484566) |
 | release\.yml | release/4\.46\.37 | success | [Run 40462412553](https://github.com/Perseusxrltd/mnemion/actions/runs/40462412553) |
 | verify-artifacts\.yml | main | failure | [Run 40468253346](https://github.com/Perseusxrltd/mnemion/actions/runs/40468253346) |
 | website-release\.yml | main | success | [Run 40459387005](https://github.com/Perseusxrltd/mnemion/actions/runs/40459387005) |
-| website-release\.yml | v4\.46\.37 | in\_progress | [Run 40474480217](https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217) |
+| website-release\.yml | v4\.46\.37 | success | [Run 40474480217](https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217) |
 
 ## Active jobs
 
@@ -34,16 +34,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 40474484566](https://github.com/Perseusxrltd/mnemion/actions/runs/40474484566): 1/7 jobs completed; 1 succeeded.
 
-- macos / x64 public upgrade: queued.
-- linux / x64 public upgrade: in\_progress.
-- linux / arm64 public upgrade: queued.
-- windows / arm64 public upgrade: in\_progress.
-- macos / arm64 public upgrade: queued.
-- windows / x64 public upgrade: queued.
-
-[Run 40474480217](https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217): 0/1 jobs completed; 0 succeeded.
-
-- synchronize: in\_progress — Validate and publish the Git-owned product documentation.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
 
 ## Unsuccessful jobs

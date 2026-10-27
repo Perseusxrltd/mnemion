@@ -79,9 +79,9 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.37",
       "source_commit": "629a7afc7938f87656ad05c2a38d5427ae5e35c8",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-27T08:35:07Z",
+      "updated_at": "2026-10-27T08:35:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474484566",
       "job_details_schema": 2,
       "job_progress": {
@@ -92,44 +92,56 @@
           {
             "id": 122089363474,
             "name": "macos / x64 public upgrade",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
           },
           {
             "id": 122089363486,
             "name": "linux / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
           },
           {
             "id": 122089363505,
             "name": "linux / arm64 public upgrade",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
           },
           {
             "id": 122089363537,
             "name": "windows / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
           },
           {
             "id": 122089363562,
             "name": "macos / arm64 public upgrade",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
           },
           {
             "id": 122089363669,
             "name": "windows / x64 public upgrade",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
           }
         ]
       },
@@ -157,12 +169,6 @@
       "updated_at": "2026-10-27T07:42:49Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40468253346",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
@@ -174,7 +180,13 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
       "id": 40459387005,
@@ -193,29 +205,11 @@
       "workflow": "website-release.yml",
       "branch": "v4.46.37",
       "source_commit": "629a7afc7938f87656ad05c2a38d5427ae5e35c8",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T08:35:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 122089332296,
-            "name": "synchronize",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Validate and publish the Git-owned product documentation"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T08:35:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217"
     }
   ],
-  "observed_at": "2026-10-27T08:35:12+00:00"
+  "observed_at": "2026-10-27T08:35:58+00:00"
 }
