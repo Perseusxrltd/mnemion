@@ -1,0 +1,78 @@
+{
+  "at": "2026-10-27T03:24:00.078234+00:00",
+  "source_base": "e03513dfba4817025e9fe8b1a8428268b1671c6b",
+  "checked_source_inputs": {
+    "passed": true,
+    "digest": "72eb2e725619530ede39b8adf05ec560b02a74b57d37d1d2b3b2e05a3706c4ed",
+    "files": 17,
+    "changed": []
+  },
+  "python_tests_passed": 91,
+  "compiled_node_tests_passed": 48,
+  "browser_source_tests_passed": 29,
+  "node_skips": 0,
+  "sdk_and_electron_builds_passed": true,
+  "coverage": {
+    "total": 94,
+    "mapped": 94,
+    "unmeasured": 0
+  },
+  "actions": {
+    "total": 634,
+    "mapped": 362,
+    "excluded": 265,
+    "delegated": 7,
+    "unmeasured": 0
+  },
+  "unchanged_contracts": {
+    "disclosure.json": "aa603b1a202744dd52e71d8f89a4c892c3bcba1867955658576735abb1e84e47",
+    "transport-route.json": "c2fd0a179743b81459e265add12e8425e48ba59ff0036e57fb1a94b97e4b0d73",
+    "catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
+    "wire-v1.json": "8a8ed84cd7ea19b7db83719bbb6bb419059c44f2f7775489eb462af4a5b5a81e",
+    "wire-v2.json": "eeafd6206e10d45935654ebb7699b7ee5215e0737d9a8114161cdb42beb44147"
+  },
+  "passed": true,
+  "production_collection_available": false,
+  "native_installed_acceptance": false,
+  "resource_acceptance": false,
+  "production_privacy_acceptance": false,
+  "full_telemetry_complete": false,
+  "new_native_release_requested": false,
+  "model_calls": 0,
+  "completion_timing_reproduction": {
+    "original_reported_ms": 230,
+    "actual_phase_ms": 40,
+    "corrected_test_passed": true,
+    "original_failure_retained": true
+  },
+  "unchanged_qualified_python_and_browser_inputs": true,
+  "node_inputs_changed_after_first_checks": [
+    "studio/electron/maintenance-measurement.ts",
+    "studio/electron/scripts/test-update-controller.mjs",
+    "studio/electron/telemetry-workflow.ts"
+  ],
+  "private_qualification_sha256": "0e8400f32d193affe382e6c4bc97fdf705dfaa0ae23556c59360333c3001cd74",
+  "earlier_private_qualification_sha256": "69ac5817ab9e82b40bbd727ac43d8a688808202e5712beda5668901b9ad5d9e9",
+  "original_evidence_sha256": {
+    "implementation-plan.json": "da4eba4f8e6f2ca566bcd20dab8c7128babdcedebc4826826a533bb443b116c9",
+    "linux-boundary-refinement.json": "b8efa9c70f9ec97161d6f29d69fac96a3dbaf30244feb458ea130b227cba16b8",
+    "dependency-reuse.json": "6c175b41385dc7f7fa88fd7596fb89f7281afa5fb04ce86c1534bad053dc82c4",
+    "checked-inputs.json": "e6a5fbf585cbdc3f142cf98581046417623e60bb70b55e4eea0e71fcdc666257",
+    "source-check-plan.json": "31847be3702b50ea0f2dab3203a69df5dcfde84b71fdc9c60a0b19828d82e62f",
+    "checks/update-verification-source.json": "b795d29249c4f79a041ba3fcd2d57c0bef58b74d62b2ef49a36d0135c001ef7a",
+    "checks/python-style.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "checks/host-and-coverage.log": "19ddbce2019ee49d35b5de7784da237477ac0b627a4878ec5cacc355b3635a57",
+    "checks/client-sdk.log": "d5ba3155d8d3e732a7d221d9a3a79a48fad890a2690adfe70e4a02215b08f5ab",
+    "checks/electron-build.log": "1a821f1d2260f98e6b51ec9b6932c1f52527e7715f904d2813422fb9202fd2ea",
+    "checks/desktop-update-observations.log": "7387f4399888823640ef8a886a74129681c118a74d54fe1f0eb7088b28eb2ebb",
+    "checks/browser-coverage.log": "9fd4c51a57d1e17f8256d5a0f1072a07d383f94fdc11f38364b67a5ebb08de26",
+    "checked-inputs-final.json": "6ad17f228599a41883a3149c8f149f47d1cdcd24adf189f0f5bdebbd0eda1e0e",
+    "timing-reproduction-plan.json": "3b4015d9276a586e3c9ae38a90f9113554478d5cb1115cdd4efd5a3c5dd35564",
+    "timing-reproduction/completion-timing-reproduction.json": "6214011737aef0c2e49d95f18b6ec1dcde021073fb8e2acf246739a79a9ff0c4",
+    "timing-reproduction/completion-before-policy.log": "1671bc50b0338d6fd6f93b22de93e11567416bc38da6792f1bac2272cf1e8432",
+    "timing-fix-plan.json": "2feeeccb4337f1028a87afa43d5336466393cc3dd9955aa714612317b08209cd",
+    "timing-fix/completion-timing-fix.json": "0fe3301c82e7e24c552663bce3684f73303df61cdbd15c117378bff9723ef8dc",
+    "timing-fix/electron-build.log": "1a821f1d2260f98e6b51ec9b6932c1f52527e7715f904d2813422fb9202fd2ea",
+    "timing-fix/desktop-update-observations.log": "cb6b5b789923a3ade7a1f93e430534dbb028221f94a4377eabcc086807f60595"
+  }
+}

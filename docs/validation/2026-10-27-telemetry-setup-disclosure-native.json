@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-27T03:12:31.120101+00:00",
+  "source": "e03513dfba4817025e9fe8b1a8428268b1671c6b",
+  "source_files_matched": 2100,
+  "source_input_digest": "0e6df806d2456617684d37251fb4f00b5c4617b69e182f8149100085f256cf18",
+  "review_checks": {
+    "disclosure_required": true,
+    "setup_disclosure_deferred_without_permission": true,
+    "manual_choice_before_permission": true,
+    "app_disclosure_acknowledged": true,
+    "exact_review_preserved": true,
+    "native_optout_invalidates_review": true,
+    "reenable_starts_empty": true,
+    "discard_does_not_spend": true,
+    "approved_attempt_uses_inspected_body": true,
+    "optout_and_review_survive_restart": true
+  },
+  "app_launches": 2,
+  "memory_cycles": 3,
+  "memory_api_operations": 9,
+  "memory_api": {
+    "requests": 12,
+    "successful": 12
+  },
+  "collector": {
+    "reports": 1,
+    "accepted": 1,
+    "body_bytes": 4,
+    "forbidden_metadata": 0
+  },
+  "durable": {
+    "attempts": [
+      1,
+      65536
+    ],
+    "lease_cleared": true,
+    "queue_cells": 0,
+    "database_bytes": 28672,
+    "maximum_producer_count": 0
+  },
+  "collector_body_matches_inspection": true,
+  "fixture_content_absent_from_queue": true,
+  "runtime": {
+    "electron": "44.9.3",
+    "node": "24.22.0",
+    "platform": "linux",
+    "arch": "x64",
+    "packaged": false
+  },
+  "cleanup": {
+    "isolated_profiles_removed": true,
+    "collector_stopped": true,
+    "certificate_profile_removed": true,
+    "production_disclosure_unchanged": true
+  },
+  "page_errors": 0,
+  "passed": true,
+  "native_installed_acceptance": false,
+  "resource_acceptance": false,
+  "production_privacy_acceptance": false,
+  "production_collection_available": false,
+  "model_calls": 0,
+  "full_telemetry_complete": false,
+  "private_qualification_sha256": "b63c3e6398a2171c83294a2068131b794ab9c1632621eda37b6bfed1c7f48bb2"
+}

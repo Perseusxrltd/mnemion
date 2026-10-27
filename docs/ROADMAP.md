@@ -25,13 +25,32 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**27 October 2026, observable update verification source:**
+[Verification boundaries](validation/2026-10-27-telemetry-update-verification.md)
+now distinguish Windows/macOS validation stages, Linux completion only after
+fresh download progress in the current attempt and `update-downloaded`, and final
+package/runtime-wheel checks during fresh automatic managed-host staging. Cached
+Linux readiness alone does not count; Linux adds no verification duration or
+opaque-error classification. Download remains one cycle across retries; stage outcomes are
+not additional unique user actions. All 91 Python, 48 compiled Node controller/
+workflow and 29 browser-source checks passed, with no Node skips; current SDK and
+Electron builds passed. Regenerated coverage maps all 94 categories, with zero
+unmeasured; its 634 action rows are 362 mapped, 265 excluded, seven delegated and
+zero unmeasured. Earlier counts of 93 mapped categories and 632 rows remain
+historical. All 66 requirements, V08 Building,
+false/null/null production settings, empty release CAs and the existing resource,
+privacy and installed acceptance gates remain unchanged.
+
 **27 October 2026, first-time telemetry disclosure source:**
 [App setup](validation/2026-10-27-telemetry-setup-disclosure.md) now offers the
 current disclosure with a checked default saved only by explicit action, direct
 disable and dismissal without acknowledgement. Existing privacy restrictions
 remain authoritative; unavailable releases load no setup UI or status request,
 and decisions add no polling. The current SDK/frontend builds, 29 policy checks
-and ten compiled-browser UI checks passed. All 66 requirements and
+and ten compiled-browser UI checks passed. A subsequent actual Linux x64 Electron
+source-app review passed ten checks across two launches, binding 2,100 source
+files, 12 successful fixture API calls and one exact four-byte loopback TLS report,
+with cleanup. It does not qualify installed releases or resources. All 66 requirements and
 V08 Building remain unchanged, with collection/destination/route false/null/null,
 empty release CAs and privacy/resource/installed acceptance still open.
 
@@ -107,8 +126,8 @@ off and resource/provider privacy gates open.
 lets explicit saved restore choose open or switch from the verified transition,
 using one original privacy snapshot and clock. Automatic resume remains excluded;
 explicit app/native backup inventory owns list success without backup-validity
-or cloud-delivery claims. Current coverage is 93 mapped/one unmeasured category
-and 632 declared action rows; `update.verify` remains independently unmeasured,
+or cloud-delivery claims. At that 4.46.25 checkpoint, coverage was 93 mapped/one
+unmeasured category and 632 declared action rows; `update.verify` remained independently unmeasured,
 distinct from download/staging. Source checks passed 30 distinct Python cases, 69 compiled Node
 cases plus one Node/Python SQLite policy case, and 25 browser-source cases, with
 both builds passing and no Node skips. Two initial Python fixture failures and

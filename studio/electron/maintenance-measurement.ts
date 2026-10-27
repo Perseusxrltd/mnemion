@@ -2,7 +2,7 @@
 import { TelemetryWorkflow, TelemetryWorkflowChoice, type WorkflowStore } from './telemetry-workflow.js'
 
 export type MaintenanceStore = () => WorkflowStore
-const workflows = new Set(['sources.scan', 'capture.collect', 'update.download', 'update.apply'])
+const workflows = new Set(['sources.scan', 'capture.collect', 'update.download', 'update.verify', 'update.apply'])
 
 export async function beginMaintenance(store: MaintenanceStore | undefined, workflow: string): Promise<TelemetryWorkflow | null> {
   if (!store || !workflows.has(workflow)) return null
@@ -55,20 +55,59 @@ export function finishSource(measurement: TelemetryWorkflow | null, report: Sour
   } catch { measurement.discard() }
 }
 
-/** A download including its retry/verification steps has one terminal outcome. */
+/** One download cycle; validation attempts retain their own observable boundary. */
 export class UpdateMeasurement {
   private download?: Promise<TelemetryWorkflow | null>
-  constructor(private readonly store?: MaintenanceStore) {}
-  downloading(): void { this.download ??= beginMaintenance(this.store, 'update.download') }
+  private verification?: Promise<TelemetryWorkflow | null>
+  private transferred = false
+  private closed = false
+  constructor(private readonly store?: MaintenanceStore, private readonly verificationMode: 'stage' | 'completion' = 'stage') {}
+  downloading(): void {
+    if (this.closed) return
+    this.download ??= beginMaintenance(this.store, 'update.download')
+    // Linux's updater proves successful integrity completion but exposes no
+    // separate start. Keep its policy now; never create permission after success.
+    if (this.verificationMode === 'completion') this.verifying()
+  }
+  verifying(): void {
+    if (!this.closed) this.verification ??= beginMaintenance(this.store, 'update.verify')
+  }
+  downloadProgress(): void {
+    if (!this.closed && this.verificationMode === 'completion' && this.verification) this.transferred = true
+  }
+  verified(): void { this.finishVerification('success') }
+  verificationFailed(): void { this.finishVerification('failed') }
+  discardVerification(): void { this.finishVerification(null) }
+  private finishVerification(outcome: 'success' | 'failed' | 'cancelled' | null): void {
+    const pending = this.verification
+    const transferred = this.transferred
+    this.verification = undefined
+    this.transferred = false
+    if (!pending) return
+    const completedAt = performance.now()
+    void pending.then(value => {
+      if (!value) return
+      // Same-session Linux cache reuse checks existence, not integrity again.
+      // A real transfer signal plus successful completion is the narrow proof.
+      if (outcome === null || (this.verificationMode === 'completion' && (outcome !== 'success' || !transferred))) value.discard()
+      else if (this.verificationMode === 'completion') return value.finishObserved(outcome)
+      else return value.finishAt(completedAt, outcome, outcome === 'failed' ? 'other_failure' : 'none')
+    }).catch(() => {})
+  }
   finish(outcome: 'success' | 'failed' | 'cancelled'): void {
+    if (outcome !== 'success') this.finishVerification(outcome)
     const pending = this.download
     this.download = undefined
-    void pending?.then(value => value?.finish(outcome, outcome === 'failed' ? 'other_failure' : 'none')).catch(() => {})
+    if (!pending) return
+    const completedAt = performance.now()
+    void pending.then(value => value?.finishAt(completedAt, outcome, outcome === 'failed' ? 'other_failure' : 'none')).catch(() => {})
   }
   discard(): void {
+    this.closed = true
+    this.discardVerification()
     const pending = this.download
     this.download = undefined
     void pending?.then(value => value?.discard()).catch(() => {})
   }
-  applying(): Promise<TelemetryWorkflow | null> { return beginMaintenance(this.store, 'update.apply') }
+  applying(): Promise<TelemetryWorkflow | null> { return this.closed ? Promise.resolve(null) : beginMaintenance(this.store, 'update.apply') }
 }

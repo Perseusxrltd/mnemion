@@ -6,7 +6,7 @@ import { desktopIpcOrigins, desktopIpcSelection, desktopTelemetryOrigins, deskto
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { windowsTelemetryPrivateExecutable } from '../dist/telemetry-private-store.js'
-import { TelemetryWorkflow } from '../dist/telemetry-workflow.js'
+import { TelemetryWorkflow, TelemetryWorkflowChoice } from '../dist/telemetry-workflow.js'
 import { markWorkspaceSelection, takeWorkspaceSelection } from '../dist/workspace-selection.js'
 import { desktopUpdateMenu } from '../dist/update-menu.js'
 import { desktopAppAction } from '../dist/desktop-app-actions.js'
@@ -20,6 +20,25 @@ function fixture() {
   }
   return { store, values, reads }
 }
+
+test('delayed privacy admission cannot erase time already spent in the observed work', async () => {
+  for (const selected of [false, true]) {
+    const f = fixture(), rows = []
+    let now = 10, release
+    f.store.snapshot = () => new Promise(resolve => { release = resolve })
+    f.store.recordMany = async values => { rows.push(...values); return true }
+    const pending = selected
+      ? TelemetryWorkflowChoice.choose(f.store, ['workspace.open', 'workspace.switch'], 'desktop', () => now)
+      : TelemetryWorkflow.begin(f.store, 'update.verify', 'desktop', () => now)
+    now = 400
+    release({ revision: 1, store_generation: 'a'.repeat(32) })
+    const active = await pending
+    now = 650
+    if (selected) await active.finishChoice('workspace.switch', 'success')
+    else await active.finish('success')
+    assert.equal(rows.find(row => row.kind === 'outcome').latency_ms, 640)
+  }
+})
 
 test('a synchronous refusal starts the original action without a timer or an await boundary', async t => {
   const f = fixture(), result = { private: 'PRIVATE_ACTION_RESULT' }

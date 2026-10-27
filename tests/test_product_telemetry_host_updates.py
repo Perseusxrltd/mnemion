@@ -82,9 +82,12 @@ def test_operations_keep_only_fixed_outcomes_and_do_not_infer_interrupted_work(
 
 
 @pytest.mark.parametrize("policy_change", ["opt_out", "company_off", "new_generation"])
-def test_host_observation_rechecks_its_original_authority(installation, monkeypatch, policy_change):
+@pytest.mark.parametrize("action", ["apply", "verify"])
+def test_host_observation_rechecks_its_original_authority(
+    installation, monkeypatch, policy_change, action
+):
     with measured.automatic_watcher():
-        with measured.operation("apply") as attempt:
+        with measured.operation(action) as attempt:
             assert attempt is not None
             if policy_change == "opt_out":
                 policy.configure(installation, {"enabled": False, "expected_revision": 0})

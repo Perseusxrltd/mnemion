@@ -69,6 +69,7 @@ class Attempt:
 def operation(action: str):
     """Only a fixed action enters telemetry; operational values stay at the caller."""
     attempt = None
+    failure_outcome = "unconfirmed"
     try:
         if _owner.get() is not None and _available() and type(action) is str:
             from ..product_telemetry import workflow
@@ -76,6 +77,8 @@ def operation(action: str):
 
             spec = maintenance_specification()["host_updates"].get(action)
             if spec is not None and "workflow" in spec:
+                if spec.get("failure") == "failed":
+                    failure_outcome = "failed"
                 active = workflow.begin(spec["workflow"], "headless")
                 if active is not None:
                     attempt = Attempt(active)
@@ -85,8 +88,9 @@ def operation(action: str):
         yield attempt
     except Exception:
         if attempt is not None:
-            # A lost reply/evidence write does not prove that the work failed.
-            attempt.finish("unconfirmed", "other_failure")
+            # Read-only integrity checks can fail conclusively. A lost reply
+            # or evidence write during a mutation still leaves it unconfirmed.
+            attempt.finish(failure_outcome, "other_failure")
         raise
     except BaseException:
         if attempt is not None:

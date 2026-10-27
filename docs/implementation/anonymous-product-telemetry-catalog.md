@@ -16,21 +16,21 @@ establish production qualification. **Collection remains unavailable; destinatio
 and release route address are null.** No production product analytics is active.
 All 66 requirement texts and the other 65 states remain unchanged; V08 stays Building.
 
-The [generated source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-now makes all 94 categories visible in app/browser and native format inspection:
-93 have mapped source boundaries. `update.verify` remains deliberately unmeasured
-as a separate category: verification belongs to the existing `update.download`
-cycle, including managed-host staging (`host_updates.stage`). No independent
-verification action is currently declared. The inventory is generated from these
-maps and verified by the release checker. This reconciles catalog
+The regenerated [source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+maps **all 94 categories, with zero unmeasured**, including the observable
+[27 October verification boundaries](../validation/2026-10-27-telemetry-update-verification.md).
+The preceding checkpoint had 93 mapped categories and an independently
+unmeasured `update.verify`; its 632 action rows comprised 360 mapped, 265 excluded
+and seven delegated. These earlier counts remain historical. The inventory is generated
+from reviewed maps and verified by the release checker. This reconciles catalog
 references without claiming complete per-action, sensor or installed coverage;
 the [initial coverage report](../validation/2026-10-26-telemetry-coverage.md)
 preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The [current action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-lists **632 actions and fixed variants: 360 mapped, 265 excluded,
+The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+lists **634 actions and fixed variants: 362 mapped, 265 excluded,
 seven delegated and zero unmeasured among the represented declarations**. The
 [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API,
@@ -407,8 +407,8 @@ passed 30 distinct Python cases, 69 compiled Node cases plus one Node/Python
 SQLite policy case, and 25 browser-source cases. Both builds passed; the 70 Node
 cases had no skips. The original two Python coverage-fixture failures and their
 test-only corrections remain recorded. Resource, provider privacy and installed
-acceptance stay open. `update.verify` stays within the existing download cycle,
-with its independent category visibly unmeasured.
+acceptance stay open. At that 4.46.25 checkpoint, `update.verify` remained
+independently unmeasured; later observable stages are described below.
 
 The top-level desktop exclusions are 14 state inspections, five configuration
 previews, nine privacy controls and three recovery transports. Typed
@@ -516,8 +516,8 @@ delivery still require acceptance.
 ## Fresh local maintenance coverage
 
 The [maintenance-origin map](../../mnemion/product_telemetry/maintenance-origins.json)
-is the fifth schema map: **six source/updater origins, 13 capture-control
-classifications, two preparation kinds, six managed-updater classifications,
+is the fifth schema map: **seven source/updater origins, 13 capture-control
+classifications, two preparation kinds, seven managed-updater classifications,
 five sensor descriptions and 14 exclusions**. These are selected local owners under the same disclosure,
 generation/revision and company policy; collection is still unavailable. Existing
 [desktop](../../studio/electron/telemetry-activity.ts) and
@@ -531,9 +531,30 @@ CLI keepalive or new measurement owner for nested work.
 | Standalone source/capture | The [connector entrypoint](../../mnemion/connectors/runner.py) owns its fresh local execution. Reusable sync calls, remote-requested work and host-managed child processes do not inherit this owner. |
 | Standalone capture controls | The [connector entrypoint](../../mnemion/connectors/runner.py) separately observes eleven eligible actions, including `capture.preview` and one `capture.pause` acknowledgement. Status and key generation are excluded; the separate `--inspect` path stays unowned. Managed/reporting children and reusable control helpers acquire no owner. |
 | Explicit model preparation | The [service CLI](../../mnemion/service/cli.py) owns direct `prepare-model` and `librarian-models --prepare` invocations as `models.prepare`. The observer receives only `embedding` or `librarian_tokenizer`; model/profile identifiers and normal output remain outside telemetry. |
-| Desktop update download | The [updater](../../studio/electron/updates.ts) keeps download, verification and bounded retries in one cycle with one terminal success, failure or cancellation. Current-version and safe-restart polls add no use. Unfinished cycles are discarded on quit. |
+| Desktop update download | The [updater](../../studio/electron/updates.ts) keeps the enclosing download and bounded retries in one cycle with one terminal success, failure or cancellation. Separately observed verification stages are not additional unique user actions. Current-version and safe-restart polls add no use. Unfinished cycles are discarded on quit. |
+| Desktop update verification | `update.verify` observes explicit Windows/macOS validation stages; macOS includes extraction. Linux requires fresh download progress in the current attempt followed by `update-downloaded`, with policy captured at download start. Cached readiness alone adds no verification; no separate phase latency or opaque-error classification is inferred. |
 | Installer handoff | `update.apply` records only an **accepted handoff**, if observed. Its optional snapshot has a 25 ms wait budget before the original guarded action. It does not assert an installed version or completed restart, and there is no shutdown flush or wait for telemetry. |
-| Automatic managed-host updater | Both dedicated watch entrypoints own fresh stage/apply/rollback under the host OS account's acknowledged policy. Ready-runtime reuse, held/incompatible apply and ordinary checks add no use. The surviving updater observes service readiness and fresh rollback completion. Interrupted apply is discarded, never reconstructed from a private journal; a remote operator's preference supplies no consent. |
+| Automatic managed-host updater | Both dedicated watch entrypoints own fresh stage/verify/apply/rollback under the host OS account's acknowledged policy. Verification wraps final installed-package and runtime-wheel checks in fresh staging. Ready-runtime reuse, manual helpers, held/incompatible apply and ordinary checks add no use. The surviving updater observes service readiness and fresh rollback completion. Interrupted apply is discarded, never reconstructed from a private journal; a remote operator's preference supplies no consent. |
+
+The [27 October verification follow-up](../validation/2026-10-27-telemetry-update-verification.md)
+uses the Windows validation event through ready/error/cancellation for publisher
+and final installer checks. The macOS verifying event begins extraction, so its
+duration includes that work. Linux requires fresh `download-progress` in the
+current attempt followed by `update-downloaded`. The pinned updater can report
+same-session cached readiness after an existence-only check, so that signal alone
+does not count verification. The qualifying completion has no observable
+verification start; only its success is recorded, without latency. Opaque Linux errors/cancellation
+discard the verification observation. Each Windows/macOS stage may finish before
+a retry while download retains its enclosing cycle; never sum stage counts as
+unique user actions. Native `TelemetryWorkflow` starts timing before its
+asynchronous policy read and captures the actual end in the completion callback
+before awaiting that policy. It also provides an explicit untimed completion path.
+Managed-host verification failures are conclusive check failures, while uncertain
+mutations retain their existing unconfirmed outcomes. All **91 Python host/service-update/
+coverage checks, 48 compiled Node controller/workflow checks and 29 browser-source
+checks** passed, with no Node skips; current SDK and Electron builds passed.
+The regenerated category/action totals are recorded above. No installed, resource
+or production privacy acceptance follows.
 
 The [capture-action follow-up](../validation/2026-10-26-telemetry-capture-actions.md)
 maps explicit native `source.preview`, app IPC `sources:preview` and standalone

@@ -42,7 +42,7 @@ export class DesktopUpdates {
   constructor(private window: () => BrowserWindow | null, private busy: () => boolean,
     private beforeRestart: () => boolean | Promise<boolean>, private changed: () => void,
     private restartCancelled: () => void = () => {}, telemetry?: MaintenanceStore) {
-    this.measurements = new UpdateMeasurement(telemetry)
+    this.measurements = new UpdateMeasurement(telemetry, process.platform === 'linux' ? 'completion' : 'stage')
     const firstLaunch = !existsSync(this.path)
     try {
       const text = readFileSync(this.path, 'utf8')
@@ -89,12 +89,17 @@ export class DesktopUpdates {
         this.setStatus({ state: 'Downloading update', version: info.version })
       })
       autoUpdater.on('update-not-available', () => {
+        this.measurements.discardVerification()
         this.measurements.finish('success')
         this.clearRetry()
         this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
       })
-      autoUpdater.on('download-progress', progress => this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) }))
+      autoUpdater.on('download-progress', progress => {
+        this.measurements.downloadProgress()
+        this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) })
+      })
       autoUpdater.on('update-downloaded', info => {
+        this.measurements.verified()
         this.measurements.finish('success')
         this.clearRetry()
         this.downloaded = true
@@ -167,6 +172,7 @@ export class DesktopUpdates {
   private platformEvent(event: MacUpdateEvent | WindowsUpdateEvent) {
     if (event.state === 'ready') {
       if (!this.enabled) { void (this.mac || this.windows)?.cancel(); return }
+      this.measurements.verified()
       this.measurements.finish('success')
       this.clearRetry()
       this.downloaded = true
@@ -176,8 +182,12 @@ export class DesktopUpdates {
       if (this.enabled && !this.downloaded) this.measurements.downloading()
       if (this.enabled) this.setStatus({ state: 'Downloading update', version: event.version, percent: event.percent })
     } else if (event.state === 'verifying') {
-      if (this.enabled) this.setStatus({ state: 'Verifying update' })
+      if (this.enabled) {
+        this.measurements.verifying()
+        this.setStatus({ state: 'Verifying update' })
+      }
     } else if (event.state === 'current') {
+      this.measurements.discardVerification()
       this.measurements.finish('success')
       this.clearRetry()
       this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
@@ -257,6 +267,7 @@ export class DesktopUpdates {
     if (resetAttempts) this.retryAttempts = 0
   }
   private scheduleRetry() {
+    this.measurements.verificationFailed()
     if (!this.enabled || this.downloaded || this.stopped || this.retryTimer) return
     const base = retryDelays[this.retryAttempts]
     if (base === undefined) {

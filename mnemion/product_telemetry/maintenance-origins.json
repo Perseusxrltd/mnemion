@@ -7,6 +7,7 @@
     "headless.standalone_source": { "workflow": "sources.scan", "surface": "headless", "exclude_empty_success": true },
     "headless.standalone_capture": { "selector": "fresh_cycle_work", "variants": { "collected": "capture.collect", "delivered_only": "capture.deliver" }, "surface": "headless", "exclude_empty_success": true },
     "desktop.update_download": { "workflow": "update.download", "surface": "desktop", "retries": "one cycle including verification and bounded retries" },
+    "desktop.update_verify": { "workflow": "update.verify", "surface": "desktop", "scope": "Windows/macOS validation attempts use explicit verifying through ready/error/cancelled events; macOS includes extraction. Linux requires fresh transfer progress and successful completion with the original attempt policy, without phase latency; cached readiness and opaque failures do not establish a validation outcome." },
     "desktop.update_apply": { "workflow": "update.apply", "surface": "desktop", "success": "accepted installer handoff only; installed version is unobserved" }
   },
   "capture_controls": {
@@ -30,6 +31,7 @@
   },
   "host_updates": {
     "stage": { "workflow": "update.download", "completion": "success", "scope": "fresh staging including artifact verification; a reused ready runtime contributes nothing" },
+    "verify": { "workflow": "update.verify", "completion": "success", "failure": "failed", "scope": "final installed-package and runtime-wheel integrity checks in fresh staging; only the standalone automatic watcher owns them" },
     "apply": { "workflow": "update.apply", "completion": "success", "scope": "the automatic updater remains alive to observe process readiness and completed cutover; recovered candidate failure is recorded only after rollback returns" },
     "rollback": { "workflow": "update.rollback", "completion": "success", "scope": "fresh rollback performed now, including by a new watcher; no backfilled interrupted apply result" },
     "check": { "exclusion": "updater_poll" },
@@ -54,7 +56,7 @@
     "control_nested": "Only the standalone command owns a control. Reusable perform calls, managed/reporting children and remote-requested work do not inherit its choice.",
     "model_nested": "Deployment/startup calls explicitly decline preparation ownership. Registry helpers and model-list inspection acquire no owner; model/profile names and output stay private.",
     "updater_poll": "Scheduled current-version checks, progress messages and safe-restart readiness checks are not separate uses.",
-    "updater_internal_stage": "Signature verification and download retries belong to the original download cycle, not extra workflow submissions.",
+    "updater_internal_stage": "The download cycle retains its original outcome. Only observable validation attempts have a separate verify outcome; repeated progress events, polling and unobserved internal checks do not. Verification stages and download cycles are different units and must not be summed as unique user actions.",
     "updater_quit": "Unfinished update observations are discarded on quit. No shutdown flush or inferred post-restart success.",
     "host_updater_unowned": "Manual/API/library update calls do not acquire the standalone automatic watcher's owner or inherit a remote operator's telemetry choice.",
     "mixed_host": "Shared service workers, their queues and host-wide CPU/RAM totals are not observed."

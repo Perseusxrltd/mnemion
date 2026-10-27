@@ -73,9 +73,38 @@ an SDK source change; the earlier 29 successful policy tests were not repeated.
 
 The existing compiled Electron review journey now checks and explicitly defers
 this initial notice before continuing its original approval/delivery steps.
-Its acceptance list requires that new check. This harness adaptation is
-syntax-checked; that separate native source-app journey was not replayed for
-this UI batch and is not included in the ten browser results above.
+Its acceptance list requires that new check. The initial integration included
+syntax checks; the later source-app run below is separate from the ten browser
+results above.
+
+### Compiled Electron follow-up
+
+The original review journey subsequently passed **ten checks across two app
+launches** on source `e03513dfba4817025e9fe8b1a8428268b1671c6b`.
+All **2,100 recorded source files** matched its input inventory. The runtime was
+Electron 44.9.3 / Node 24.22.0 on Linux x64, with a compiled frontend and normal
+desktop bridge around an isolated source CLI.
+
+The notice was explicitly deferred without granting permission. The remaining
+journey verified disclosure acknowledgement, exact report inspection, native
+opt-out invalidation, empty re-enable, discard without spending, approved
+delivery and opt-out/review-mode persistence after restart. Three memory cycles
+used nine memory operations and 12 successful fixture API requests. Exactly one
+accepted **four-byte loopback TLS body** matched the inspected report; no
+forbidden metadata or fixture contents entered the queue. The lease cleared,
+spending remained `[1, 65536]`, and the final queue was empty.
+
+The owned profiles, collector and temporary certificate were removed; production
+disclosure stayed unchanged. The current Electron source build passed. Reused
+dependencies were checked against the complete dependency graph and installed
+direct versions; only the application-version fields differed from the older
+local checkout. No dependency install, model call or new resource experiment
+was requested. This is a Linux source-app journey, not an installed release or
+all-platform/resource/privacy qualification.
+
+[Machine-readable native results](2026-10-27-telemetry-setup-disclosure-native.json)
+retain the result and private qualification hash
+`b63c3e6398a2171c83294a2068131b794ab9c1632621eda37b6bfed1c7f48bb2`.
 
 ## Evidence and remaining work
 

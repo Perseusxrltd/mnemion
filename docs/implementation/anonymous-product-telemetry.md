@@ -60,9 +60,14 @@ While displayed, focus/storage refreshes share one in-flight read. Completion
 or dismissal removes those listeners and prevents further setup checks until the
 next app load; no polling timer is added. The current false/null/null release with
 empty CAs loads no setup UI and performs no setup status request. The current
-SDK/frontend builds, 29 policy checks and ten compiled-browser UI checks passed;
-existing installed evidence and all remaining
-privacy, resource and release gates retain their original scope.
+SDK/frontend builds, 29 policy checks and ten compiled-browser UI checks passed.
+A subsequent actual compiled Linux x64 Electron source-app journey passed ten
+checks across two launches, including deferred disclosure without permission,
+exact report review and opt-out/restart persistence. Its qualification binds
+2,100 source files, 12 successful fixture API calls and one four-byte loopback TLS
+report matching inspection, with fixture cleanup.
+Existing installed evidence and all remaining privacy, resource and release
+gates retain their original scope.
 
 Read-only schema/status/format preview does not randomize or reserve reports,
 change queues, spending or consent, or make network requests. While unavailable,
@@ -126,14 +131,17 @@ privacy and resource acceptance remain open.
 The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
 matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
 event/input/result objects, free text and identifying values do not.
-The generated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-marks 93 categories with declared source mappings; `update.verify` remains
-unmeasured as a separate category. It is
-available in app/browser format inspection and native schema/preview as read-only
+The regenerated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+maps **all 94 categories, with zero unmeasured**, after the
+[27 October verification follow-up](../validation/2026-10-27-telemetry-update-verification.md).
+The preceding checkpoint mapped 93 categories, leaving `update.verify`
+independently unmeasured, and listed 632 action rows: 360 mapped, 265 excluded
+and seven delegated. Those counts remain historical. The inventory is available
+in app/browser format inspection and native schema/preview as read-only
 metadata. Release checks reject stale inventories. A source mapping
 does not qualify every screen, sensor or installed client.
-The [current action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-contains **632 declared actions and fixed variants: 360 mapped, 265 excluded,
+The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+contains **634 declared actions and fixed variants: 362 mapped, 265 excluded,
 seven delegated and zero unmeasured among these declarations**. It independently
 reads **seven shipped interfaces across six checked owner categories**: the
 maintained and legacy MCP interfaces share `local_stdio`. Other owners use
@@ -206,8 +214,8 @@ resume clears the metadata and has no owner. New connect, sign-in and local-open
 actions keep their existing labels. Explicit native/app backup inventory now
 owns `backup.list` on controller success, without inspecting the returned backup
 contents or claiming validity/cloud delivery. Status, polls and reusable helpers
-remain excluded. `update.verify` remains part of download's observed cycle,
-with no synthetic extra action.
+remain excluded. At that 4.46.25 checkpoint, `update.verify` remained
+independently unmeasured; the later observable boundaries are described below.
 
 The follow-up passed **30 distinct Python cases, 69 compiled Node controller
 cases plus one Node/Python SQLite policy case, and 25 browser-source cases**;
@@ -318,10 +326,27 @@ continuations, remote-requested or host-managed scans, reusable helpers and
 server-worker activity do not acquire another maintenance owner.
 Native resource samples require a real child callback; headless
 RSS is an ending observation, with its own CPU delta and configured capture
-limit. No source history or mixed-host totals are exported. Desktop updater download,
-verification and retries form one cycle; polls add no use, unfinished cycles
+limit. No source history or mixed-host totals are exported. Desktop updater download
+and retries retain one enclosing cycle; polls add no use, unfinished cycles
 are discarded on quit, and installer handoff is only accepted. Native request
 acknowledgements remain separate categories, not extra completed uses.
+
+The [27 October verification source](../validation/2026-10-27-telemetry-update-verification.md)
+adds `update.verify` at observable stages. Windows starts at its validation event
+and macOS at extraction/verification; ready, error or cancellation closes that
+stage. Linux requires fresh `download-progress` in the current attempt followed
+by `update-downloaded`, using policy captured at download start. Same-session
+cached readiness can follow an existence-only check and does not qualify as
+verification. No separate verification duration or classification of opaque
+errors is inferred. Download and
+verification observations must not be summed as unique user actions.
+`TelemetryWorkflow` captures its monotonic start before the asynchronous policy
+read and its actual end in the completion callback before awaiting that policy;
+completion without an observable phase start explicitly omits latency.
+All **91 Python host/service-update/coverage checks, 48 compiled Node controller/
+workflow checks and 29 browser-source checks** passed, with no Node skips; the
+current SDK and Electron builds also passed. These source checks do not qualify
+installed updates, resource limits or production privacy.
 
 The [managed-host update follow-up](../validation/2026-10-26-telemetry-host-updates.md)
 owns fresh headless staging, compatible apply and rollback under the watcher's
@@ -329,8 +354,11 @@ own OS-account acknowledged policy. Both the baseline supervised child and the
 isolated standalone watcher establish this boundary. Manual/API/library calls,
 ordinary checks, ready-runtime reuse and held/incompatible apply acquire no
 automatic owner. The live updater observes service readiness before successful
-apply; a candidate failure is confirmed only after rollback returns. Other
-exceptions remain unconfirmed. Interrupted unfinished work is discarded; a
+apply; a candidate failure is confirmed only after rollback returns. The new
+`update.verify` stage wraps final installed-package and runtime-wheel integrity
+checks in fresh staging; check failure is conclusive, while other mutation
+exceptions remain unconfirmed. Ready-runtime reuse and manual helpers gain no
+verification owner. Interrupted unfinished work is discarded; a
 later watcher can observe its own fresh rollback, never reconstruct the earlier
 apply from a journal. Only fixed workflow/outcome values and bounded timing
 enter telemetry; versions, paths, operational records and mixed-host resources

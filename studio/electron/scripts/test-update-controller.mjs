@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { after, mock, test } from 'node:test'
 import { setImmediate as immediate } from 'node:timers/promises'
 import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
+import { UpdateMeasurement } from '../dist/maintenance-measurement.js'
 
 const temporary = mkdtempSync(join(tmpdir(), 'mnemion-update-controller-'))
 const previousResources = process.resourcesPath
@@ -46,7 +47,7 @@ after(() => {
   rmSync(temporary, { recursive: true, force: true })
 })
 
-function fixture(t, { ready = true, telemetry } = {}) {
+function fixture(t, { ready = true, telemetry, verificationMode = 'stage' } = {}) {
   directory = mkdtempSync(join(temporary, 'profile-'))
   mkdirSync(join(directory, '.config'))
   writeFileSync(join(directory, 'desktop-preferences.json'), JSON.stringify({ automaticUpdates: true, startAtLogin: false, background: true }))
@@ -61,6 +62,8 @@ function fixture(t, { ready = true, telemetry } = {}) {
     webContents: { executeJavaScript: async () => state.safe } }
   const controller = new DesktopUpdates(() => window, () => state.busy,
     async () => { state.drains++; return await state.drain() }, () => {}, () => { state.cancelled++ }, telemetry)
+  // This fixture drives platform-bridge events even when its runner is Linux.
+  if (verificationMode !== 'actual') controller.measurements = new UpdateMeasurement(telemetry, verificationMode)
   // The adapter is a fixture; policy, all controller rechecks and the exact
   // Windows final authorization callback remain the production implementation.
   controller.mac = undefined
@@ -91,18 +94,18 @@ function localAction(controller, action, input = {}, signal = new AbortControlle
 }
 
 function measurements() {
-  const rows = [], choice = { enabled: true, revision: 0 }
+  const rows = [], choice = { enabled: true, revision: 0, generation: 'a'.repeat(32) }
   const store = { available: true, catalog: new TelemetryCatalog(JSON.parse(readFileSync(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8'))),
-    snapshot: async () => choice.enabled ? { revision: choice.revision, store_generation: 'a'.repeat(32) } : null,
+    snapshot: async () => choice.enabled ? { revision: choice.revision, store_generation: choice.generation } : null,
     recordMany: async (values, stamp) => {
-      if (!choice.enabled || stamp.revision !== choice.revision) return false
+      if (!choice.enabled || stamp.revision !== choice.revision || stamp.store_generation !== choice.generation) return false
       for (const value of values) store.catalog.observation(value)
       rows.push(...structuredClone(values)); return true
     } }
   return { rows, choice, store }
 }
 
-test('one download cycle owns progress, signature verification and its retry', async t => {
+test('one download cycle retains distinct validation attempts across a retry', async t => {
   const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
   await controller.check()
   controller.platformEvent({ state: 'current' })
@@ -114,16 +117,19 @@ test('one download cycle owns progress, signature verification and its retry', a
   controller.platformEvent({ state: 'error', message: 'PRIVATE_URL_OR_ERROR' })
   await controller.check(true)
   controller.platformEvent({ state: 'downloading', version: '4.0.12', percent: 60 })
+  controller.platformEvent({ state: 'verifying' })
   controller.platformEvent({ state: 'ready', version: '4.0.12' })
   await immediate()
-  assert.deepEqual(measured.rows.filter(row => row.kind === 'submission'), [{ kind: 'submission', workflow: 'update.download', surface: 'desktop' }])
-  assert.equal(measured.rows.find(row => row.kind === 'outcome').outcome, 'success')
+  assert.equal(measured.rows.filter(row => row.kind === 'submission' && row.workflow === 'update.download').length, 1)
+  assert.equal(measured.rows.find(row => row.kind === 'outcome' && row.workflow === 'update.download').outcome, 'success')
+  assert.deepEqual(measured.rows.filter(row => row.kind === 'outcome' && row.workflow === 'update.verify').map(row => row.outcome), ['failed', 'success'])
   assert.equal(/PRIVATE|4\.0\.12|percent/.test(JSON.stringify(measured.rows)), false)
 })
 
 test('opt-out and quit discard pending update measurement without changing updater behavior', async t => {
   const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
   controller.platformEvent({ state: 'downloading', version: '4.0.12', percent: 1 })
+  controller.platformEvent({ state: 'verifying' })
   await immediate()
   measured.choice.enabled = false; measured.choice.revision++
   controller.platformEvent({ state: 'ready', version: '4.0.12' })
@@ -135,6 +141,114 @@ test('opt-out and quit discard pending update measurement without changing updat
   controller.platformEvent({ state: 'downloading', version: '4.0.13', percent: 1 })
   app.emit('will-quit')
   await immediate()
+  assert.deepEqual(measured.rows, [])
+})
+
+test('cached platform validation is observed once without inventing a download', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
+  controller.platformEvent({ state: 'verifying' })
+  controller.platformEvent({ state: 'verifying' })
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  assert.deepEqual(measured.rows.filter(row => row.kind === 'submission'), [{ kind: 'submission', workflow: 'update.verify', surface: 'desktop' }])
+  assert.equal(measured.rows.find(row => row.kind === 'outcome').outcome, 'success')
+  assert.ok(Object.hasOwn(measured.rows.find(row => row.kind === 'outcome'), 'latency_ms'))
+})
+
+test('verification completion time is captured before a pending privacy read returns', async t => {
+  const measured = measurements()
+  let now = 10, release
+  t.mock.method(performance, 'now', () => now)
+  measured.store.snapshot = () => new Promise(resolve => { release = resolve })
+  const observation = new UpdateMeasurement(() => measured.store)
+  observation.verifying()
+  now = 50
+  observation.verified()
+  now = 240
+  release({ revision: 0, store_generation: measured.choice.generation })
+  await immediate()
+  const outcome = measured.rows.find(row => row.kind === 'outcome')
+  assert.equal(outcome.outcome, 'success')
+  assert.equal(outcome.latency_ms, 40)
+})
+
+test('Linux completion uses the original policy and omits an unobservable validation duration', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store, verificationMode: 'completion' })
+  controller.platformEvent({ state: 'downloading', percent: 0 })
+  controller.measurements.downloadProgress()
+  await immediate()
+  measured.store.snapshot = () => { throw new Error('Completion must not acquire new permission') }
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  const validation = measured.rows.filter(row => row.workflow === 'update.verify')
+  assert.deepEqual(validation, [
+    { kind: 'submission', workflow: 'update.verify', surface: 'desktop' },
+    { kind: 'outcome', workflow: 'update.verify', surface: 'desktop', outcome: 'success', reason: 'none' },
+  ])
+  assert.equal(controller.canRequestRestart, true)
+})
+
+test('Linux opaque errors and current-version polls cannot claim validation outcomes', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store, verificationMode: 'completion' })
+  controller.platformEvent({ state: 'downloading', percent: 0 })
+  controller.measurements.downloadProgress()
+  controller.platformEvent({ state: 'error' })
+  await controller.check(true)
+  controller.platformEvent({ state: 'current' })
+  await immediate()
+  assert.equal(measured.rows.some(row => row.workflow === 'update.verify'), false)
+})
+
+test('Linux cached completion without a fresh transfer does not backfill verification', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store, verificationMode: 'completion' })
+  controller.platformEvent({ state: 'downloading', percent: 0 })
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  assert.equal(measured.rows.some(row => row.workflow === 'update.verify'), false)
+  assert.equal(controller.canRequestRestart, true)
+})
+
+test('the Linux updater callbacks connect actual transfer progress to untimed verification', { skip: process.platform !== 'linux' }, async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store, verificationMode: 'actual' })
+  automatic.emit('update-available', { version: '4.0.12' })
+  automatic.emit('download-progress', { percent: 100, private: 'PRIVATE_DOWNLOAD_ADDRESS' })
+  automatic.emit('update-downloaded', { version: '4.0.12' })
+  await immediate()
+  const outcome = measured.rows.find(row => row.kind === 'outcome' && row.workflow === 'update.verify')
+  assert.equal(outcome.outcome, 'success')
+  assert.equal(Object.hasOwn(outcome, 'latency_ms'), false)
+  assert.equal(JSON.stringify(measured.rows).includes('PRIVATE'), false)
+  assert.equal(controller.canRequestRestart, true)
+})
+
+test('validation cancellation and a replaced privacy store preserve updater behavior', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
+  controller.platformEvent({ state: 'verifying' })
+  controller.platformEvent({ state: 'cancelled' })
+  await immediate()
+  assert.deepEqual(measured.rows.filter(row => row.kind === 'outcome').map(row => row.outcome), ['cancelled'])
+  measured.rows.length = 0
+  controller.platformEvent({ state: 'verifying' })
+  await immediate()
+  measured.choice.generation = 'b'.repeat(32)
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  assert.deepEqual(measured.rows, [])
+  assert.equal(controller.canRequestRestart, true)
+})
+
+test('late updater events after quit acquire no new observation or privacy read', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
+  controller.platformEvent({ state: 'verifying' })
+  app.emit('will-quit')
+  let lateReads = 0
+  measured.store.snapshot = () => { lateReads++; return null }
+  controller.platformEvent({ state: 'downloading', percent: 0 })
+  controller.platformEvent({ state: 'verifying' })
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  assert.equal(lateReads, 0)
   assert.deepEqual(measured.rows, [])
 })
 

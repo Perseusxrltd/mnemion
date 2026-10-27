@@ -75,9 +75,10 @@ presented as a queued or sent report. Opening it makes no reservation, consumes
 no queue or delivery allowance, acknowledges no disclosure and sends no telemetry.
 No actual outgoing packet is inspected. Expand **Workflow coverage and exclusions**
 to inspect the source coverage and explicit privacy exclusions. New source
-provides a filterable [coverage inventory](../validation/2026-10-26-telemetry-workspace-selections.md):
-93 of 94 categories have a declared measurement source. The separate
-`update.verify` category remains unmeasured; verification stays part of download.
+provides a filterable [coverage inventory](../validation/2026-10-27-telemetry-update-verification.md):
+all 94 categories have a declared measurement source, including observable
+`update.verify` boundaries. The 634 declared actions contain 362 mapped rows,
+265 exclusions and seven delegations.
 These counts describe catalog mappings, not complete screens, sensors or active
 collection. Choose a feature family or **Unmeasured** to inspect the gaps. The
 inventory is generated from Git source maps and checked for staleness at release.
@@ -493,14 +494,22 @@ fresh count stays unavailable, and replayed receipts or saved history do not
 become fresh usage. The [source validation](../validation/2026-10-26-telemetry-capture-actions.md)
 does not qualify installed platforms or activate collection.
 
-Automatic desktop update download, verification and bounded retries form one cycle.
+Automatic desktop update download and bounded retries retain one cycle.
+Separately observed verification stages are different units, not extra unique
+user actions. Windows/macOS have explicit verification-stage events; macOS's
+elapsed time includes extraction. Linux records a successful integrity outcome
+only after fresh transfer progress and successful download completion, without
+a separate phase duration. Cached readiness and opaque failures do not establish
+a fresh Linux verification outcome. See the
+[validation boundary](../validation/2026-10-27-telemetry-update-verification.md).
 Current-version and safe-restart polls add no use. An unfinished cycle is
 discarded on quit, and installer handoff is only `accepted`; it does not prove
 the new version installed. Its optional snapshot can wait up to **25 ms** before
 the original guarded action. There is no shutdown flush or wait for telemetry.
 
 The automatic managed-server watcher has a separate source boundary for fresh
-staging, compatible apply and rollback. It uses its **own OS-account acknowledged
+staging, final installed-package/runtime-wheel verification, compatible apply
+and rollback. It uses its **own OS-account acknowledged
 telemetry preference**, not your browser or remote operator setting. Use the
 existing offline local controls under the same account and application-data
 configuration to inspect or change that choice. Starting the watcher does not

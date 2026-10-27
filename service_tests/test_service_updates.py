@@ -344,6 +344,78 @@ def test_fresh_stage_records_once_but_current_and_cached_versions_do_not(
     assert all(row["workflow"] == "update.download" for row in rows)
 
 
+@pytest.mark.parametrize("owned", [True, False])
+@pytest.mark.parametrize("tampered", [True, False])
+def test_fresh_stage_observes_actual_installed_integrity_without_weakening_it(
+    managed, monkeypatch, host_telemetry, owned, tampered
+):
+    import shutil
+    import zipfile
+
+    from mnemion.product_telemetry import aggregate, policy
+
+    updates.check(managed.state)
+    release = updates._release(managed.root)
+    slot = updates._slot(managed.root, release)
+    site = slot / "venv/lib/site-packages"
+    package = site / "mnemion"
+    configuration = state_io.read(managed.root / "config.json")
+    state_io.write(managed.root / "config.json", {**configuration, "python": sys.executable})
+    monkeypatch.setattr(updates, "_models", lambda *args: ["fixture-generation"])
+    monkeypatch.setattr(
+        updates,
+        "download_artifact",
+        lambda version, artifact, target: shutil.copyfile(
+            managed.artifacts / artifact.name, target
+        ),
+    )
+
+    def prepared_runtime(command, **kwargs):
+        # Simulate the dependency installer, not the integrity checks. Those
+        # read the real tiny publisher archives and the resulting package bytes.
+        if command[1] == "sync":
+            site.mkdir(parents=True)
+            return b""
+        if command[1] == "pip":
+            with zipfile.ZipFile(managed.artifacts / "mnemion-4.0.8-py3-none-any.whl") as wheel:
+                wheel.extractall(site)
+            if tampered:
+                (package / "version.py").write_bytes(b"PRIVATE_TAMPERED_INSTALLED_DATA")
+            return b""
+        assert command[1:3] == ["-I", "-c"]
+        return json.dumps(
+            {
+                "version": release.version,
+                "studio": True,
+                "migrations": dict(release.migrations),
+                "package": str(package),
+                "readiness_protocol": 0,
+                "connector_protocol": 0,
+                "capture_protocol": 0,
+            }
+        ).encode()
+
+    monkeypatch.setattr(updates, "_command", prepared_runtime)
+    with updates.update_measurement.automatic_watcher() if owned else nullcontext():
+        if tampered:
+            with pytest.raises(ManifestError, match="differs from the signed service package"):
+                updates.stage(managed.state)
+            assert not (slot / "ready.json").exists()
+        else:
+            assert updates.stage(managed.state)["status"] == "staged"
+            # A cached ready stage does not repeat either observation.
+            assert updates.stage(managed.state)["status"] == "staged"
+    rows = aggregate.preview(host_telemetry)
+    verification = [row for row in rows if row.get("workflow") == "update.verify"]
+    assert sum(row["count"] for row in verification if row["metric"] == "submissions") == int(owned)
+    assert [row["bucket"] for row in verification if row["metric"] == "outcomes"] == (
+        ["failed" if tampered else "success"] if owned else []
+    )
+    assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 2 * int(owned)
+    assert "PRIVATE" not in json.dumps(rows)
+    assert b"PRIVATE" not in (host_telemetry / policy.DATABASE_NAME).read_bytes()
+
+
 @pytest.mark.parametrize("ending", ["restored", "rollback_unconfirmed", "interrupted"])
 def test_real_recovery_observes_fresh_work_without_replaying_interrupted_apply(
     managed, monkeypatch, host_telemetry, ending

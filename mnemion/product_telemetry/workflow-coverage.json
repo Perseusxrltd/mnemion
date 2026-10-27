@@ -5,8 +5,8 @@
   "qualification": "Mapped categories have a declared source boundary; they are not guaranteed on every screen or client. Unmeasured categories have no current mapped boundary. Neither state grants collection permission or qualifies sensors, delivery, anonymity or a release.",
   "summary": {
     "total": 94,
-    "mapped": 93,
-    "unmeasured": 1
+    "mapped": 94,
+    "unmeasured": 0
   },
   "owners": {
     "control_cli": "Local command line",
@@ -573,8 +573,11 @@
     },
     {
       "workflow": "update.verify",
-      "state": "unmeasured",
-      "owners": []
+      "state": "mapped",
+      "owners": [
+        "local_maintenance",
+        "host_updates"
+      ]
     },
     {
       "workflow": "update.apply",
@@ -878,8 +881,8 @@
       "local_stdio"
     ],
     "summary": {
-      "total": 632,
-      "mapped": 360,
+      "total": 634,
+      "mapped": 362,
       "excluded": 265,
       "delegated": 7,
       "unmeasured": 0
@@ -5669,6 +5672,14 @@
       },
       {
         "owner": "local_maintenance",
+        "action": "desktop.update_verify",
+        "state": "mapped",
+        "workflows": [
+          "update.verify"
+        ]
+      },
+      {
+        "owner": "local_maintenance",
         "action": "headless.standalone_capture",
         "selector": "fresh_cycle_work",
         "variant": "collected",
@@ -5857,6 +5868,14 @@
         "workflows": [
           "update.download"
         ]
+      },
+      {
+        "owner": "host_updates",
+        "action": "verify",
+        "state": "mapped",
+        "workflows": [
+          "update.verify"
+        ]
       }
     ]
   },
@@ -5867,7 +5886,7 @@
     "studio-methods.json": "182fd788c7db6af14a8eeb648d1064f9c800f25582e0d3c0ddb5d96b4c9c48ac",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
-    "maintenance-origins.json": "a518784bb20fb2eb03984c61a5a252cdfef14fd2f2ca0e1e5e0a02b53f3bbcdd",
+    "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",
     "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
     "packages/client/src/index.ts": "5dab6820e3e24b873defa56558447ea85869dc1a6716d2e01f3b2424b23ca7a4",

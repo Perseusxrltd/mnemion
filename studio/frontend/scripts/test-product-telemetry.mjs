@@ -116,7 +116,7 @@ test('the app preview loads source coverage only on demand without changing priv
       workflow: 'update.rollback', state: 'mapped', owners: ['host_updates'],
     })
     assert.deepEqual(preview.workflow_coverage.workflows.find(row => row.workflow === 'update.verify'), {
-      workflow: 'update.verify', state: 'unmeasured', owners: [],
+      workflow: 'update.verify', state: 'mapped', owners: ['local_maintenance', 'host_updates'],
     })
     assert.equal(preview.outbound_body, null)
     assert.equal(preview.outbound_bytes, 0)

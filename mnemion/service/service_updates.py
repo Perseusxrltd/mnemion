@@ -590,8 +590,9 @@ def _stage_fresh(root: Path, settings: dict, release: ServiceRelease, active: di
     runtime["readiness_protocol"] = protocol
     runtime["connector_protocol"] = connector_protocol
     runtime["capture_protocol"] = capture_protocol
-    verify_installed_package(artifacts, release, package)
-    runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
+    with update_measurement.operation("verify"):
+        verify_installed_package(artifacts, release, package)
+        runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
     compatible = _automatic_compatible(active, runtime)
     state_io.write(receipt, {"runtime": runtime, "automatic_compatible": compatible}, replace=False)
     state_io.record(root, "staged", version=release.version, automatic_compatible=compatible)
