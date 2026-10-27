@@ -57,31 +57,30 @@
     },
     {
       "id": 40524093039,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "62b9ab71e761a4e759e55d67ba9fc4e875e90eb8",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-27T15:12:58Z",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-27T15:13:48Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 12,
+        "completed": 11,
         "succeeded": 11,
-        "active": []
+        "active": [
+          {
+            "id": 122275903785,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          }
+        ]
       },
-      "failed_jobs": [
-        {
-          "name": "supervision (macos-15)",
-          "id": 122258864987,
-          "conclusion": "cancelled",
-          "runner_assigned": false,
-          "steps_reported": 0,
-          "steps": []
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 40528686080,
@@ -105,7 +104,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -130,7 +129,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -227,5 +226,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T15:13:26+00:00"
+  "observed_at": "2026-10-27T15:14:10+00:00"
 }

@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-27T15:13:26+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-27T15:14:10+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.40](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.40). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | codex/telemetry-sql-reads-20261027 | in\_progress | [Run 40523497882](https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882) |
-| ci\.yml | main | failure | [Run 40524093039](https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039) |
+| ci\.yml | main | queued | [Run 40524093039](https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039) |
 | public-updates\.yml | v4\.46\.40 | queued | [Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080) |
 | release\.yml | release/4\.46\.40 | success | [Run 40518115119](https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119) |
 | release\.yml | release/4\.46\.41 | queued | [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699) |
@@ -31,12 +31,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
+[Run 40524093039](https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039): 11/12 jobs completed; 11 succeeded.
+
+- supervision \(macos-15\): queued.
+
 [Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080): 1/7 jobs completed; 1 succeeded.
 
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - macos / arm64 public upgrade: queued.
 - macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
@@ -48,4 +52,3 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 ## Unsuccessful jobs
 
 - [Run 40523497882](https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
-- [Run 40524093039](https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
