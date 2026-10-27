@@ -18,15 +18,15 @@
   ],
   "runs": [
     {
-      "id": 40430021395,
+      "id": 40440920428,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "e18b495cdf554f682a4a2be0f1f2498e9d934fc4",
+      "source_commit": "e03513dfba4817025e9fe8b1a8428268b1671c6b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T01:33:58Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40430021395"
+      "updated_at": "2026-10-27T03:24:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40440920428"
     },
     {
       "id": 40439538705,
@@ -63,61 +63,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "completed": 20,
+        "succeeded": 19,
         "active": [
-          {
-            "id": 121977197963,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121977197981,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121977198007,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 121977198020,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
           {
             "id": 121977198078,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 121977198106,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           }
         ]
@@ -136,15 +91,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40438996406"
     },
     {
-      "id": 40430021427,
+      "id": 40440920343,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "e18b495cdf554f682a4a2be0f1f2498e9d934fc4",
+      "source_commit": "e03513dfba4817025e9fe8b1a8428268b1671c6b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T01:01:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40430021427"
+      "updated_at": "2026-10-27T02:52:29Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40440920343"
     },
     {
       "id": 40439536199,
@@ -158,5 +113,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40439536199"
     }
   ],
-  "observed_at": "2026-10-27T02:50:29+00:00"
+  "observed_at": "2026-10-27T03:25:19+00:00"
 }
