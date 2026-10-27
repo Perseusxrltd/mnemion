@@ -540,7 +540,13 @@ Both enabled cases delivered one four-byte report. Resource acceptance still
 fails: enabled main-process matched RSS maxima were **3,768,320 / 3,129,344
 bytes**. Both orders, opted-out controls, renderer results and endings are
 retained in the report; CPU remains descriptive. Original run 40477197149 stays
-failed with cause unproved. No further app comparison is selected.
+failed with cause unproved. The subsequent
+[SQL-read app comparison](../validation/2026-10-27-telemetry-sql-comparison.md),
+run 40523504727 on `3034bc0b`, qualified six functional cases, 2,171 source
+bindings each and cleanup. Both enabled main matched maxima still exceed
+2 MiB (**2,572,288 / 2,859,008 bytes**), as do the first renderer/GPU comparisons.
+All roles and both orders remain in the report; resources still fail, CPU is
+descriptive and no allocation cause or saving is established.
 
 The later [browser/Python owner follow-up](../validation/2026-10-27-telemetry-owner-saturation.md)
 reoffers prior committed work after browser Web Lock release and through Python

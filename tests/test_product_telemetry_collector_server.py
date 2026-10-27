@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+import signal
 import socket
 import ssl
 import subprocess
@@ -75,7 +76,7 @@ def response(channel):
     return bytes(received)
 
 
-def _running_server(tmp_path, certificates, *, activated=False):
+def _running_server(tmp_path, certificates, *, activated=False, crash_isolation=False):
     certificate, private_key = certificates
     inherited_fd = None
     with socket.socket() as reserved:
@@ -106,6 +107,18 @@ def _running_server(tmp_path, certificates, *, activated=False):
         str(private_key),
     ]
     options = {}
+    environment = {**os.environ, "SSLKEYLOGFILE": str(keylog), "PYTHONNOUSERSITE": "1"}
+    if crash_isolation:
+        # Deliberately faulted children receive no account credentials, user
+        # configuration or provider environment. A failed guard can expose only
+        # these synthetic fixtures, and never writes a core in the source tree.
+        environment = {
+            "PATH": os.environ.get("PATH", os.defpath),
+            "PYTHONPATH": str(ROOT),
+            "PYTHONNOUSERSITE": "1",
+            "SSLKEYLOGFILE": str(keylog),
+            "LANG": "C.UTF-8",
+        }
     if inherited_fd is not None:
         wrapper = (
             "import os,runpy,sys;fd=int(sys.argv.pop(1));"
@@ -127,13 +140,14 @@ def _running_server(tmp_path, certificates, *, activated=False):
         try:
             child = subprocess.Popen(
                 command,
-                cwd=ROOT,
-                env={**os.environ, "SSLKEYLOGFILE": str(keylog), "PYTHONNOUSERSITE": "1"},
+                cwd=tmp_path if crash_isolation else ROOT,
+                env=environment,
                 stdin=subprocess.DEVNULL,
                 stdout=out,
                 stderr=err,
                 **options,
             )
+            instance.process = child
         finally:
             if inherited_fd is not None:
                 os.close(inherited_fd)
@@ -183,10 +197,48 @@ def _running_server(tmp_path, certificates, *, activated=False):
 
 @pytest.fixture
 def server(tmp_path, certificates, request):
-    activated = getattr(request, "param", "standalone") == "systemd"
+    mode = getattr(request, "param", "standalone")
+    activated = mode in {"systemd", "systemd-crash"}
     if activated and sys.platform != "linux":
         pytest.skip("systemd listener handoff is Linux-specific")
-    yield from _running_server(tmp_path, certificates, activated=activated)
+    yield from _running_server(
+        tmp_path, certificates, activated=activated, crash_isolation=mode.endswith("-crash")
+    )
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux kernel crash-dump disposition")
+@pytest.mark.parametrize("server", ["standalone-crash", "systemd-crash"], indirect=True)
+def test_running_collector_crash_does_not_dump_an_incomplete_private_request(server, tmp_path):
+    with connect(server) as channel:
+        # Keep a real TLS request incomplete at the crash boundary. This token
+        # is synthetic; the isolated child inherits no user or provider secrets.
+        channel.sendall(
+            b"POST /v1/report HTTP/1.1\r\nHost: localhost\r\n"
+            b"X-Test-Private: " + CANARY + b"\r\nContent-Length: 4\r\n\r\n\x02"
+        )
+        channel.settimeout(0.05)
+        with pytest.raises(socket.timeout):
+            channel.recv(1)
+        pidfd = os.pidfd_open(server.process.pid)
+        try:
+            signal.pidfd_send_signal(pidfd, signal.SIGABRT)
+            deadline = time.monotonic() + 5
+            while True:
+                event = os.waitid(
+                    os.P_PID, server.process.pid, os.WEXITED | os.WNOWAIT | os.WNOHANG
+                )
+                if event is not None:
+                    break
+                assert time.monotonic() < deadline, "The faulted collector did not exit"
+                time.sleep(0.01)
+            assert event.si_status == signal.SIGABRT
+            assert event.si_code == os.CLD_KILLED, "The kernel attempted a core dump"
+            assert server.process.wait(timeout=2) == -signal.SIGABRT
+        finally:
+            os.close(pidfd)
+    assert not list(tmp_path.glob("core*"))
+    # Fixture teardown also requires empty output, no TLS key log, no private
+    # canary in retained state, and an empty report export after restart.
 
 
 @pytest.mark.parametrize(

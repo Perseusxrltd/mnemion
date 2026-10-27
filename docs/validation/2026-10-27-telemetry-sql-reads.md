@@ -37,8 +37,12 @@ publisher change is recorded in the [publication report](2026-10-27-release-publ
 
 No RSS or CPU saving is established. The [earlier actual-app comparison](2026-10-27-telemetry-delivery-comparison.md)
 and all failed resource results remain retained against the unchanged
-**2 MiB added RSS / 0.5% of one core** ceilings. One changed-source app comparison
-is planned; it has not been dispatched and has no result here.
+**2 MiB added RSS / 0.5% of one core** ceilings. A changed-source app comparison
+was planned at this source-stage checkpoint. The subsequent
+[original Electron run](2026-10-27-telemetry-sql-comparison.md), 40523504727,
+completed all six functional cases with source/ownership/cleanup qualification;
+both enabled main-process matched RSS maxima still exceeded 2 MiB. That later
+app evidence does not reclassify these earlier Node checks or qualify resources.
 
 All 66 requirements and **V08 Building** remain unchanged. Production
 collection/destination/route remain **false/null/null**, with empty release CAs.

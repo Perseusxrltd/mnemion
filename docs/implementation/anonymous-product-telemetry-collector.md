@@ -193,10 +193,14 @@ pipe. The [current startup guard](../validation/2026-10-27-telemetry-crash-bound
 therefore sets both core limits to zero, clears process dumpability and verifies
 it before taking the inherited listener, opening aggregate state or initializing
 TLS. Unavailable or refused protection stops `serve` with a fixed configuration
-error. Report inspection and non-Linux execution skip this guard. Its 19 passing
-source tests include a real child kernel probe and separate real TLS checks;
-they do not qualify actual crash capture, privileged host/provider snapshots or
-an installed collector.
+error. Report inspection and non-Linux execution skip this guard. The earlier
+19-case source checkpoint included a kernel probe and separate TLS checks.
+The [later 21-case selection](../validation/2026-10-27-telemetry-collector-crash.md)
+adds two actual serving-process crashes on Linux/WSL2 with a piped core handler:
+the kernel reported no core dump, fixture output/state stayed clean and a fresh
+report export was empty. Standalone and fixture-inherited sockets were covered;
+installed service restrictions, non-Linux behavior, privileged host/provider
+snapshots and production retention remain unqualified.
 
 To shut the collector down, stop both units so the listener cannot reactivate it:
 

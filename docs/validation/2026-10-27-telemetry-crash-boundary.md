@@ -49,3 +49,10 @@ activation or app/resource comparison occurred. The
 66 requirements, V08 **Building**, production collection/destination/route
 **false/null/null**, empty release CAs and the **2 MiB / 0.5%** resource ceilings
 with all earlier failed evidence.
+
+The later [serving-process crash checks](2026-10-27-telemetry-collector-crash.md)
+extend this historical source checkpoint: the full file passed 21 cases,
+including two actual Linux/WSL2 TLS-process crashes with kernel `CLD_KILLED`
+and no canary in retained collector state. The existing runtime guard was unchanged.
+This adds scoped Linux crash evidence; installed/non-Linux and production
+host/provider retention remain unqualified.

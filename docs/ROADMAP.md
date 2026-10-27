@@ -25,20 +25,24 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
-**27 October 2026, native SQL reads and publication status; source checks:**
-The [SQL-read follow-up](validation/2026-10-27-telemetry-sql-reads.md) combines
-current preference metadata and uses bounded array snapshots while preserving
-fresh policy/private-file checks and legacy schema handling. The
-[publication guard](validation/2026-10-27-release-publication-status.md) adds a
-bounded read-only wait for missing/pending verification-job metadata, with
-immediate refusal of failed/ambiguous evidence and unchanged publication guards.
-The Electron build and 38 publisher tests passed; together with the retained
-123 Node 22.22 Linux source passes, this is 161 distinct passes and two
-Windows-only skips, with no failures or native rerun. No actual Electron app
-journey or resource saving is qualified. One changed-source app comparison is
-planned, not dispatched. All 66
-requirements, V08 Building, disabled collection and the unchanged 2 MiB / 0.5%
-resource gates remain; earlier failed evidence is retained.
+**27 October 2026, completed SQL app comparison and collector crash checks:**
+The [original Electron comparison](validation/2026-10-27-telemetry-sql-comparison.md),
+run 40523504727 on `3034bc0b`, passed all six functional journeys, 2,171 source
+bindings per case, actual ownership controls and cleanup. Resource acceptance
+remains false: enabled main matched RSS maxima **2,572,288 / 2,859,008 bytes**
+exceed 2 MiB; the first renderer/GPU comparisons also exceed it. CPU remains
+descriptive, with no causal saving established. The preceding
+[SQL source checks](validation/2026-10-27-telemetry-sql-reads.md) and
+[publication checks](validation/2026-10-27-release-publication-status.md)
+retain their 161 distinct passes and two Windows-only skips.
+
+The tests-only [collector crash follow-up](validation/2026-10-27-telemetry-collector-crash.md)
+passed 21 cases, including two actual Linux/WSL2 serving-process crashes under
+a piped core handler. Kernel dump suppression and clean fixture state were
+verified; production/provider retention and non-Linux qualification remain open.
+All 66 requirement states and V08 Building remain unchanged, with collection/
+destination/route false/null/null, empty release CAs and the same 2 MiB / 0.5%
+resource ceilings. Earlier failed evidence remains retained.
 
 **27 October 2026, telemetry catalog compatibility; source qualification:**
 The [catalog follow-up](validation/2026-10-27-telemetry-catalog-compatibility.md)
