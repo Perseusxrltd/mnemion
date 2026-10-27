@@ -1,0 +1,499 @@
+{
+  "schema_version": 1,
+  "at": "2026-10-27T01:49:05.765687+00:00",
+  "source_commit": "051c9c8ac9beed7912321502ef50fbd8c2a1a4b9",
+  "source_hashes": {
+    "mnemion/product_telemetry/__init__.py": "d9e48147c9643741e63f3e7c5ff3080d63759625c5bf0d1b706b4c1be6664309",
+    "mnemion/product_telemetry/wire.py": "d7dec0c870e47d7759be32eb657050d071c3ec101446e015f2e3ec1d106c1056",
+    "mnemion/product_telemetry/wire-v2.json": "eeafd6206e10d45935654ebb7699b7ee5215e0737d9a8114161cdb42beb44147",
+    "mnemion/product_telemetry/catalog.py": "0ac7dc2884460c5ad256bb6c3793bb5f3cfb5f666e5a45ff2fe7cc04398fa6ac",
+    "mnemion/product_telemetry/catalog.json": "db976947c45195d438f4b983a809b39143527bca69e877e02082bd497ace7619",
+    "mnemion/product_telemetry/reporting.py": "6baedb75aff4d3b599ff472725befb0212ea7d5294631c32a16d1b110e228b6e",
+    "mnemion/product_telemetry/publication.py": "bb6b93d1ebb954b355b37f65348eda5dbd0a4a91a0cad5daff46000691e30824",
+    "mnemion/product_telemetry/delivery.py": "9e3501326b797bb23bfa24d9d9898def3c13b0c19148634cc064239ae2e09eb5",
+    "mnemion/product_telemetry/disclosure.json": "aa603b1a202744dd52e71d8f89a4c892c3bcba1867955658576735abb1e84e47"
+  },
+  "scope": "configuration arithmetic and deterministic Linux Python aggregate means",
+  "categories": 280,
+  "views": 23,
+  "weight_total": 256,
+  "minimum_total_reports": 64,
+  "minimum_view_reports": 4096,
+  "maximum_total_reports": 10000000,
+  "maximum_attempts_per_store_week": 7,
+  "default_all_groups_allocation": [
+    {
+      "view": "feature_family",
+      "weight": 40,
+      "minimum_expected_total_automatic_reports": 26215,
+      "optimistic_reporting_stores_at_maximum_attempts": 3745,
+      "expected_view_reports": {
+        "10": 10.9375,
+        "100": 109.375,
+        "1000": 1093.75,
+        "10000": 10937.5
+      }
+    },
+    {
+      "view": "feature",
+      "weight": 16,
+      "minimum_expected_total_automatic_reports": 65536,
+      "optimistic_reporting_stores_at_maximum_attempts": 9363,
+      "expected_view_reports": {
+        "10": 4.375,
+        "100": 43.75,
+        "1000": 437.5,
+        "10000": 4375.0
+      }
+    },
+    {
+      "view": "surface",
+      "weight": 8,
+      "minimum_expected_total_automatic_reports": 131072,
+      "optimistic_reporting_stores_at_maximum_attempts": 18725,
+      "expected_view_reports": {
+        "10": 2.1875,
+        "100": 21.875,
+        "1000": 218.75,
+        "10000": 2187.5
+      }
+    },
+    {
+      "view": "outcome",
+      "weight": 40,
+      "minimum_expected_total_automatic_reports": 26215,
+      "optimistic_reporting_stores_at_maximum_attempts": 3745,
+      "expected_view_reports": {
+        "10": 10.9375,
+        "100": 109.375,
+        "1000": 1093.75,
+        "10000": 10937.5
+      }
+    },
+    {
+      "view": "failure_reason",
+      "weight": 16,
+      "minimum_expected_total_automatic_reports": 65536,
+      "optimistic_reporting_stores_at_maximum_attempts": 9363,
+      "expected_view_reports": {
+        "10": 4.375,
+        "100": 43.75,
+        "1000": 437.5,
+        "10000": 4375.0
+      }
+    },
+    {
+      "view": "latency_ms",
+      "weight": 32,
+      "minimum_expected_total_automatic_reports": 32768,
+      "optimistic_reporting_stores_at_maximum_attempts": 4682,
+      "expected_view_reports": {
+        "10": 8.75,
+        "100": 87.5,
+        "1000": 875.0,
+        "10000": 8750.0
+      }
+    },
+    {
+      "view": "result_items",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "work_items",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "queue_items",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "rss_bytes",
+      "weight": 16,
+      "minimum_expected_total_automatic_reports": 65536,
+      "optimistic_reporting_stores_at_maximum_attempts": 9363,
+      "expected_view_reports": {
+        "10": 4.375,
+        "100": 43.75,
+        "1000": 437.5,
+        "10000": 4375.0
+      }
+    },
+    {
+      "view": "cpu_millicores",
+      "weight": 16,
+      "minimum_expected_total_automatic_reports": 65536,
+      "optimistic_reporting_stores_at_maximum_attempts": 9363,
+      "expected_view_reports": {
+        "10": 4.375,
+        "100": 43.75,
+        "1000": 437.5,
+        "10000": 4375.0
+      }
+    },
+    {
+      "view": "resource_budget_bytes",
+      "weight": 8,
+      "minimum_expected_total_automatic_reports": 131072,
+      "optimistic_reporting_stores_at_maximum_attempts": 18725,
+      "expected_view_reports": {
+        "10": 2.1875,
+        "100": 21.875,
+        "1000": 218.75,
+        "10000": 2187.5
+      }
+    },
+    {
+      "view": "queue_drops",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "payload_bytes_sent",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "payload_bytes_received",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "wire_bytes_sent",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "wire_bytes_received",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "throughput_bytes_per_second",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "stored_bytes",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "reported_tokens",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "platform",
+      "weight": 8,
+      "minimum_expected_total_automatic_reports": 131072,
+      "optimistic_reporting_stores_at_maximum_attempts": 18725,
+      "expected_view_reports": {
+        "10": 2.1875,
+        "100": 21.875,
+        "1000": 218.75,
+        "10000": 2187.5
+      }
+    },
+    {
+      "view": "architecture",
+      "weight": 4,
+      "minimum_expected_total_automatic_reports": 262144,
+      "optimistic_reporting_stores_at_maximum_attempts": 37450,
+      "expected_view_reports": {
+        "10": 1.09375,
+        "100": 10.9375,
+        "1000": 109.375,
+        "10000": 1093.75
+      }
+    },
+    {
+      "view": "release_family",
+      "weight": 8,
+      "minimum_expected_total_automatic_reports": 131072,
+      "optimistic_reporting_stores_at_maximum_attempts": 18725,
+      "expected_view_reports": {
+        "10": 2.1875,
+        "100": 21.875,
+        "1000": 218.75,
+        "10000": 2187.5
+      }
+    }
+  ],
+  "simultaneous_interval_radius_by_bucket": {
+    "256": 0.5397820467930547,
+    "512": 0.3816835456501233,
+    "1024": 0.2698910233965274,
+    "2048": 0.19084177282506165,
+    "4096": 0.1349455116982637,
+    "8192": 0.09542088641253083,
+    "32768": 0.04771044320626541,
+    "65536": 0.03373637792456592,
+    "1048576": 0.00843409448114148
+  },
+  "mean_level_sensitivity": [
+    {
+      "category_fraction": 0.25,
+      "bucket_for_mean_level_positive_lower_bound": 4096,
+      "radius": 0.1349455116982637,
+      "is_detection_power_guarantee": false,
+      "expected_total_reports_by_view": {
+        "feature_family": 26215,
+        "feature": 65536,
+        "outcome": 26215,
+        "failure_reason": 65536
+      }
+    },
+    {
+      "category_fraction": 0.1,
+      "bucket_for_mean_level_positive_lower_bound": 8192,
+      "radius": 0.09542088641253083,
+      "is_detection_power_guarantee": false,
+      "expected_total_reports_by_view": {
+        "feature_family": 52429,
+        "feature": 131072,
+        "outcome": 52429,
+        "failure_reason": 131072
+      }
+    },
+    {
+      "category_fraction": 0.05,
+      "bucket_for_mean_level_positive_lower_bound": 32768,
+      "radius": 0.04771044320626541,
+      "is_detection_power_guarantee": false,
+      "expected_total_reports_by_view": {
+        "feature_family": 209716,
+        "feature": 524288,
+        "outcome": 209716,
+        "failure_reason": 524288
+      }
+    },
+    {
+      "category_fraction": 0.01,
+      "bucket_for_mean_level_positive_lower_bound": 1048576,
+      "radius": 0.00843409448114148,
+      "is_detection_power_guarantee": false,
+      "expected_total_reports_by_view": {
+        "feature_family": 6710887,
+        "feature": 16777216,
+        "outcome": 6710887,
+        "failure_reason": 16777216
+      }
+    }
+  ],
+  "conditional_linked_report_composition": [
+    {
+      "reports": 1,
+      "log_likelihood_ratio_upper_bound": 1.0986122886681098,
+      "likelihood_ratio_upper_bound_exact": "3"
+    },
+    {
+      "reports": 7,
+      "log_likelihood_ratio_upper_bound": 7.690286020676768,
+      "likelihood_ratio_upper_bound_exact": "2187"
+    },
+    {
+      "reports": 56,
+      "log_likelihood_ratio_upper_bound": 61.522288165414146,
+      "likelihood_ratio_upper_bound_exact": "523347633027360537213511521"
+    }
+  ],
+  "composition_scope": "replacement categories; fixed permitted views and report inclusion; assumes an observer can link these reports; not typical inference accuracy or identity privacy",
+  "examples": [
+    {
+      "automatic_reports_in_this_view": 1024,
+      "fixture_proportions": {
+        "memory": 0.75,
+        "backup": 0.25
+      },
+      "state": "insufficient_reports",
+      "report_range": null,
+      "published_cells": [],
+      "hidden_cells": 0,
+      "accumulator_erased": true
+    },
+    {
+      "automatic_reports_in_this_view": 4096,
+      "fixture_proportions": {
+        "memory": 0.75,
+        "backup": 0.25
+      },
+      "state": "estimated",
+      "report_range": {
+        "minimum": 4096,
+        "maximum_exclusive": 8192
+      },
+      "published_cells": [
+        {
+          "value": "memory",
+          "state": "estimated",
+          "fraction": 0.75,
+          "interval": [
+            0.615,
+            0.885
+          ]
+        },
+        {
+          "value": "backup",
+          "state": "estimated",
+          "fraction": 0.25,
+          "interval": [
+            0.115,
+            0.385
+          ]
+        }
+      ],
+      "hidden_cells": 14,
+      "accumulator_erased": true
+    },
+    {
+      "automatic_reports_in_this_view": 4096,
+      "fixture_proportions": {
+        "memory": 0.984375,
+        "backup": 0.015625
+      },
+      "state": "estimated",
+      "report_range": {
+        "minimum": 4096,
+        "maximum_exclusive": 8192
+      },
+      "published_cells": [
+        {
+          "value": "memory",
+          "state": "estimated",
+          "fraction": 0.9844,
+          "interval": [
+            0.8494,
+            1.0
+          ]
+        }
+      ],
+      "hidden_cells": 15,
+      "accumulator_erased": true
+    },
+    {
+      "automatic_reports_in_this_view": 65536,
+      "fixture_proportions": {
+        "memory": 0.990234375,
+        "backup": 0.009765625
+      },
+      "state": "estimated",
+      "report_range": {
+        "minimum": 65536,
+        "maximum_exclusive": 131072
+      },
+      "published_cells": [
+        {
+          "value": "memory",
+          "state": "estimated",
+          "fraction": 0.9902,
+          "interval": [
+            0.9564,
+            1.0
+          ]
+        }
+      ],
+      "hidden_cells": 15,
+      "accumulator_erased": true
+    }
+  ],
+  "assumptions": [
+    "All automatic reports accepted and all metric groups enabled for allocation arithmetic.",
+    "Seven successful reports per reporting store is optimistic; jitter, inactivity, refusal and opt-out reduce counts.",
+    "Reporting stores and accepted packets are not distinct people or hardware.",
+    "Means at the threshold are not a probability guarantee; random view allocation and category noise vary.",
+    "Confidence assumes independent conforming randomization and packet-independent inclusion; no poisoning resistance."
+  ],
+  "claims_not_qualified": [
+    "distinct user or device counts",
+    "general cohort anonymity",
+    "participation and transport privacy",
+    "poisoning resistance",
+    "real-population adoption or accuracy",
+    "full telemetry acceptance"
+  ],
+  "privacy_or_resource_budgets_changed": false,
+  "network_requests": 0,
+  "model_calls": 0,
+  "production_collection_available": false,
+  "full_telemetry_accepted": false
+}

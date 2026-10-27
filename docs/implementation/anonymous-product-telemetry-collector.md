@@ -75,6 +75,16 @@ passed **67 tests in 17.87 seconds**, including report compatibility and the
 actual TLS minimal runtime; it does not qualify production deployment or
 installed collection.
 
+The [27 October aggregate utility analysis](../validation/2026-10-27-telemetry-aggregate-utility.md)
+quantifies these limits with all 23 views retained. With every group permitted,
+family and feature detail need 26,215 and 65,536 accepted automatic reports in
+expectation; seven successful reports per store and week is an optimistic
+assumption. The current simultaneous interval radius at 4,096 reports is about
+13.49 percentage points. Four deterministic mean fixtures show broad estimates
+and rare-cell suppression, without qualifying real-population utility or
+statistical coverage. Thresholds, privacy budgets and production settings remain
+unchanged; the linked report records the next design decision and its limits.
+
 The [selection correction](../validation/2026-10-26-telemetry-review-selection.md)
 declares `estimation_population: "automatic_reports_only"` and
 `reviewed_report_use: "coarse_global_volume_only"`. Categorical estimates require

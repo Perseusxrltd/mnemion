@@ -25,6 +25,13 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**27 October 2026, telemetry aggregate utility:**
+[Source-bound arithmetic and four deterministic fixtures](validation/2026-10-27-telemetry-aggregate-utility.md)
+quantify the report volume and precision needed by all 23 aggregate views.
+Detailed statistics during early adoption remain unqualified; no threshold,
+privacy/resource budget or requirement state changed. V08 remains Building and
+production collection stays unavailable.
+
 **27 October 2026, Python telemetry receive-window correction:**
 [The oversized-response follow-up](validation/2026-10-27-telemetry-receive-window.md)
 found that kernel buffering could exceed the reserved network allowance before
