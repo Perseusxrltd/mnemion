@@ -156,12 +156,6 @@
       "updated_at": "2026-10-27T17:28:38Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
@@ -173,18 +167,24 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
-      "id": 40534190911,
+      "id": 40558227999,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "3f8718688f9f8712906d1b88971323e438f041e0",
+      "source_commit": "98cde4838b71c39d1a02ac4dcef30b9f594d2909",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-27T15:46:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40534190911"
+      "updated_at": "2026-10-27T18:15:34Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40558227999"
     },
     {
       "id": 40528680423,
@@ -198,5 +198,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T17:29:35+00:00"
+  "observed_at": "2026-10-27T18:16:08+00:00"
 }
