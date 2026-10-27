@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-27T01:06:41.250163+00:00",
+  "source": "1b57752f79b4d232a5c5eca1995f1d3f07d50090",
+  "scope": "isolated Linux loopback Python TLS transport component",
+  "runtime": {
+    "python": "3.12.3",
+    "openssl": "OpenSSL 3.0.13 30 Jan 2024",
+    "platform": "linux"
+  },
+  "interface_mtu": 1280,
+  "private_interface_offloads": {
+    "tcp-segmentation-offload": "off",
+    "generic-segmentation-offload": "off",
+    "generic-receive-offload": "off"
+  },
+  "source_inputs": {
+    "mnemion/product_telemetry/__init__.py": "d9e48147c9643741e63f3e7c5ff3080d63759625c5bf0d1b706b4c1be6664309",
+    "mnemion/product_telemetry/activity.py": "cfe7eb2036e2d5c952202ca63ac3281889c9ed52fe062f222acc4db7f2822d23",
+    "mnemion/product_telemetry/aggregate.py": "7870d904d62e79a939ced5c94274d45b4f3568021d820e1b5710232f524bc883",
+    "mnemion/product_telemetry/catalog.py": "0ac7dc2884460c5ad256bb6c3793bb5f3cfb5f666e5a45ff2fe7cc04398fa6ac",
+    "mnemion/product_telemetry/cli.py": "a76e9ad8cb1a8a57d12884aff2458cf8fe97fa4d1575300049ebf5824425ca0c",
+    "mnemion/product_telemetry/collector.py": "bc535388c9b561c9e28f5ede7f361aa49b3fddeb3584298475a617535c4852ca",
+    "mnemion/product_telemetry/conditions.py": "175c1c110a7f923104620a5b57cd7d16eb6c84e98061a63dd0ff379a58c88f36",
+    "mnemion/product_telemetry/delivery.py": "9e3501326b797bb23bfa24d9d9898def3c13b0c19148634cc064239ae2e09eb5",
+    "mnemion/product_telemetry/endpoint.py": "624222c6a8088f50d33d1f75dc2ae9a87ce518fb0bcc0b19a38e0447419aa2b0",
+    "mnemion/product_telemetry/inspection.py": "a74634aaaf190c16634e49ef8eeaa12fdda333b7d578834bd41fdab5ac4c9f0c",
+    "mnemion/product_telemetry/network.py": "31ef6542566bb85e5ea99acbeaad21d4cab9b2e9254b22c57ed6e02cb4ab65d6",
+    "mnemion/product_telemetry/network_system.py": "6389e8f012329081da3dda13ddd33f67f9e6780e41606b76af73a6d23404ee55",
+    "mnemion/product_telemetry/policy.py": "35167f21b5619affe730646482a813e7b6b718e302ec83d010f601ad9c05ea49",
+    "mnemion/product_telemetry/publication.py": "bb6b93d1ebb954b355b37f65348eda5dbd0a4a91a0cad5daff46000691e30824",
+    "mnemion/product_telemetry/reporting.py": "6baedb75aff4d3b599ff472725befb0212ea7d5294631c32a16d1b110e228b6e",
+    "mnemion/product_telemetry/review.py": "d9900a6dc408161d112418e6ccdba60630a00716d842699aff7708b4ac90699b",
+    "mnemion/product_telemetry/review_clock.py": "acc68b64f623d2350c4b7400665450c181fba6163b2169ef96edbcf9b70a0ef7",
+    "mnemion/product_telemetry/review_clock_system.py": "3b865546b93e46b859b7ad68d274376dabd878dd4451dfedc8a00d88cd2a6514",
+    "mnemion/product_telemetry/review_storage.py": "e73a41fe90cdd4887051fab85a99c9a19a3bd2dfdbaf0ea91640eb0186c7f875",
+    "mnemion/product_telemetry/server.py": "5caf7ff685d42b75bc180edbd5d197b08072c1159ee4fe36e2f4acd09ff954c6",
+    "mnemion/product_telemetry/transport.py": "5183523eb9344bb8b35482155f399ceb9cba1eae8e41c5ab428fa891b53ab1ad",
+    "mnemion/product_telemetry/wire.py": "d7dec0c870e47d7759be32eb657050d071c3ec101446e015f2e3ec1d106c1056",
+    "mnemion/product_telemetry/workflow.py": "551d6883644a8779b19414599d31a9d59676ccee5c5f107b246acbc3260312f1",
+    "tests/test_product_telemetry_transport.py": "735aa26bb5a4206c68800379ca3f5e3841b5d791b64bce7e543c1af237b43038"
+  },
+  "cases": [
+    {
+      "name": "delivery",
+      "outcome": "delivered",
+      "tls_bytes_charged": 1311,
+      "requests": 1,
+      "report_body_bytes": 4,
+      "spent_attempt_retained_and_lease_cleared": true,
+      "capture": {
+        "tcp_frames": 16,
+        "frame_bytes": 2383,
+        "ipv4_tcp_bytes": 2159,
+        "maximum_observed_frame_bytes": 777,
+        "kernel_packets": 16,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 2159,
+        "rx_packets": 16,
+        "tx_bytes": 2159,
+        "tx_packets": 16
+      },
+      "two_independent_counters_agree": true,
+      "observed_loopback_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "redirect_refused",
+      "outcome": "failed",
+      "tls_bytes_charged": 1330,
+      "requests": 1,
+      "report_body_bytes": 4,
+      "spent_attempt_retained_and_lease_cleared": true,
+      "capture": {
+        "tcp_frames": 16,
+        "frame_bytes": 2402,
+        "ipv4_tcp_bytes": 2178,
+        "maximum_observed_frame_bytes": 777,
+        "kernel_packets": 16,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 2178,
+        "rx_packets": 16,
+        "tx_bytes": 2178,
+        "tx_packets": 16
+      },
+      "two_independent_counters_agree": true,
+      "observed_loopback_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "large_headers_refused",
+      "outcome": "failed",
+      "tls_bytes_charged": 5381,
+      "requests": 1,
+      "report_body_bytes": 4,
+      "spent_attempt_retained_and_lease_cleared": true,
+      "capture": {
+        "tcp_frames": 20,
+        "frame_bytes": 6717,
+        "ipv4_tcp_bytes": 6437,
+        "maximum_observed_frame_bytes": 1294,
+        "kernel_packets": 20,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 6437,
+        "rx_packets": 20,
+        "tx_bytes": 6437,
+        "tx_packets": 20
+      },
+      "two_independent_counters_agree": true,
+      "observed_loopback_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "opt_out_after_body",
+      "outcome": "suppressed",
+      "tls_bytes_charged": 1201,
+      "requests": 1,
+      "report_body_bytes": 4,
+      "spent_attempt_retained_and_lease_cleared": true,
+      "capture": {
+        "tcp_frames": 13,
+        "frame_bytes": 2075,
+        "ipv4_tcp_bytes": 1893,
+        "maximum_observed_frame_bytes": 778,
+        "kernel_packets": 13,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 1893,
+        "rx_packets": 13,
+        "tx_bytes": 1893,
+        "tx_packets": 13
+      },
+      "two_independent_counters_agree": true,
+      "observed_loopback_frames_under_attempt_reservation": true
+    },
+    {
+      "name": "opt_out_during_handshake",
+      "outcome": "suppressed",
+      "tls_bytes_charged": 254,
+      "requests": 0,
+      "report_body_bytes": 0,
+      "spent_attempt_retained_and_lease_cleared": true,
+      "capture": {
+        "tcp_frames": 8,
+        "frame_bytes": 798,
+        "ipv4_tcp_bytes": 686,
+        "maximum_observed_frame_bytes": 320,
+        "kernel_packets": 8,
+        "kernel_drops": 0,
+        "unexpected_frames": 0
+      },
+      "interface_delta": {
+        "rx_bytes": 686,
+        "rx_packets": 8,
+        "tx_bytes": 686,
+        "tx_packets": 8
+      },
+      "two_independent_counters_agree": true,
+      "observed_loopback_frames_under_attempt_reservation": true
+    }
+  ],
+  "cleanup": {
+    "temporary_fixture_removed": true,
+    "production_disclosure_unchanged": true,
+    "raw_packets_or_request_metadata_retained": false,
+    "user_workspace_or_app_changed": false
+  },
+  "qualification": {
+    "five_loopback_component_cases": true,
+    "total_measured_loopback_frames_under_65536_per_attempt": true,
+    "physical_network_or_retransmission_budget": false,
+    "native_electron_browser_or_other_operating_systems": false,
+    "rolling_day_whole_system_bandwidth": false,
+    "resource_limits": false,
+    "provider_privacy": false,
+    "full_telemetry": false
+  },
+  "original_observation": {
+    "receipt_sha256": "c4e67b1421048158325b3a3d9db36246bf5cc0e19ed0fcc132f5e6f39358c5c1",
+    "completed_cases": 5,
+    "largest_frame_bytes": 4222,
+    "coalescing_prevents_segmented_packet_qualification": true
+  },
+  "segmented_receipt_sha256": "b8385c48360f816f73db350e4e6d11b97de94b88bf3477981e9c472331b122d0",
+  "measurement_script_sha256": "188416d2f35b7ce35cd92b940138e7e4e70b94349af9bc329c082694ace6f8e5",
+  "preflight_failures_retained": true,
+  "production_collection_available": false,
+  "model_calls": 0
+}

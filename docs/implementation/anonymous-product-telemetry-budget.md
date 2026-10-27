@@ -57,9 +57,15 @@ derivation/filter description/certificate decode counts are 1/0/1 against
 original 5/3/130, with unavailable trust still zero. Actual Electron passed
 100 checks with two Windows-specific skips;
 134 browser-source tests, all-coordinate Python comparison and both builds
-passed. No RSS/CPU saving is established. One fixed six-case changed-source
-comparison is selected after integration, with its result pending and all prior
-resource failures and budgets unchanged.
+passed. No RSS/CPU saving is established. The original
+[4.46.32 resource comparison](../validation/2026-10-27-telemetry-metadata-allocation-results.md)
+completed all six functional cases with 2,075 matched source inputs each and
+passing cleanup. Enabled main matched maxima were 9,261,056 / 2,936,832 bytes;
+ending matched-phase differences were 9,261,056 / 1,593,344 bytes. Both maxima
+exceed 2 MiB, and the first enabled renderer comparison is ambiguous. The
+unchanged 2 MiB / 0.5% resource qualification remains failed; CPU observations
+are descriptive profiled diagnostics. All prior failures remain retained, with
+no causal savings claim, new resource measurement or budget change selected.
 
 The later [five-target installed-control qualification](../validation/2026-10-26-telemetry-preview.md#five-installed-native-targets-qualified)
 verified Linux and Windows x64/ARM64 plus macOS ARM64 against **64 required true
@@ -475,6 +481,15 @@ real nominal sample aged approximately 0.7 ms. Final fixture cleanup passed;
 the original missing Python cleanup receipt remains unqualified. Its disposable
 certificate SPKI exception does not qualify production browser trust. Prior
 resource failures, 2 MiB / 0.5% limits and other platform/privacy gates remain open.
+
+The [27 October Python loopback measurement](../validation/2026-10-27-telemetry-loopback-wire.md)
+adds five segmented IPv4/TCP/TLS observations in an isolated network namespace.
+Independent packet/interface counters agree, with zero drops; observed frame
+traffic was **798–6,717 bytes per attempt**, including **2,383 bytes** for the
+four-byte successful report. Every fixture retained spending and cleared its
+lease. The original coalesced observation and setup failures remain retained.
+This does not qualify physical-link/retransmission, other transports/platforms,
+the rolling-day whole-system limit, resources or production ingress.
 
 ## Source validation
 

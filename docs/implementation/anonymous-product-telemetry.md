@@ -404,6 +404,10 @@ recorded boundaries, not provider/ingress privacy or a production deployment.
 
 ## Remaining acceptance gates
 
+The [27 October acceptance ledger](../validation/2026-10-27-telemetry-acceptance-ledger.md)
+links implemented behavior, scoped qualifications and the evidence still
+required below. It preserves all requirements and failed results.
+
 - **Coverage and installed behavior:** finish the action-by-action ownership and
   exclusion review, including autonomous work and unknown remote clients. All
   six native targets still need installed staged-report approval/delivery,

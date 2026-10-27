@@ -8,6 +8,10 @@ corrections, cleanup and qualification limits. A pass qualifies only its recorde
 source and fixture; a dated “pending” statement remains historical. No failed
 evidence is deleted or reclassified by this reorganization.
 
+The [27 October acceptance ledger](2026-10-27-telemetry-acceptance-ledger.md)
+reconciles implemented behavior, scoped qualifications and remaining gates;
+the original reports below retain their source bindings and failed evidence.
+
 V08 remains Building with collection/destination/route false/null/null and an
 empty release certificate-authority list.
 The 4.46.13 basic controls and 4.46.22 review-mode/opt-out controls have scoped
@@ -57,6 +61,7 @@ Their operation/path counts are not counts of fully qualified workflows.
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
+| 27 October | [Python loopback wire accounting](2026-10-27-telemetry-loopback-wire.md) | Five segmented IPv4/TCP/TLS transport cases passed in a dedicated user/network namespace. TSO/GSO/GRO were disabled only there; aggregate packet and interface counters agree, with zero drops or unexpected frames. Observed frames total 798–6,717 bytes per case; every frame fits MTU 1,280 plus its link header. Spent reservations and lease cleanup passed; fixtures removed and disclosure unchanged. Earlier preflight errors and the first coalesced observation are retained. No physical-link/retransmission, native/browser, other-platform, rolling-day, RSS/CPU or production/privacy qualification. |
 | 26 October | [Read-only ingress and retention review](2026-10-26-telemetry-ingress-review.md) | Production collector/listener absent. Existing free certificate and active renewal timer provide a candidate; one TLS 1.3/HTTP1.1-ALPN handshake using only bounded ISRG X1/X2 roots verified the existing memory listener without HTTP/report traffic or a route change. Corrected inventory found ten IPv4/IPv6 logging targets missed initially; UFW weekly/four-rotation logging and persistent journal presence remain unqualified. Public provider policies and backup metadata do not verify VPS logging/snapshot privacy. Both public memory health endpoints report 4.46.22; authenticated source/client and auto-update acceptance remain unestablished. No host mutation, private-key/network-log/backup-content read, production launch or full V08 qualification. |
 | 26 October | [Release-owned TLS trust](2026-10-26-telemetry-scoped-trust.md) | Source follow-up based on `d2e55fbf`: route v2 permits at most two public CA certificates of at most 4 KiB each; native/Python trust has no ambient-root fallback, browser TLS unchanged. 78 distinct Python cases, 54 checks in the actual local Electron binary running Node mode, Ruff and Electron build passed. Python one-authority store: x509=1/crl=0/x509_ca=1, with certificate/hostname verification retained. Initial three lint collisions, the synthetic issuer-collision failure and fixture-only corrections remain retained; the independent repeated negative case is not counted twice. Existing approval/budget binding unchanged, no CA digest in reports. No RSS saving, resource pass, installed or production qualification; the completed resource result is recorded below. |
 | 24 October | [Original delivery components](2026-10-24-telemetry-delivery.md) | Earlier codec/collector/publisher checks, 47 Python checks, six Node and six Electron codec checks, and 12-check plain-loopback HTTP journey. Not a product-sender or TLS/provider qualification. |
