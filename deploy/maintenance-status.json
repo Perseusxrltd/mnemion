@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.46.39",
-    "published_at": "2026-10-27T14:26:59Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.39"
+    "version": "v4.46.40",
+    "published_at": "2026-10-27T15:12:29Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.40"
   },
   "issues": [
     {
@@ -18,37 +18,88 @@
   ],
   "runs": [
     {
-      "id": 40517759157,
+      "id": 40523497882,
       "attempt": 1,
       "workflow": "ci.yml",
-      "branch": "main",
-      "source_commit": "56bb40a01f5736c742be0d95add5a54beb605971",
+      "branch": "codex/telemetry-sql-reads-20261027",
+      "source_commit": "3034bc0b78b4b0ca52f2d794a3273a4e71999cca",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T14:39:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40517759157"
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:16:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882",
+      "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15)",
+          "id": 122256761910,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ],
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
+      }
     },
     {
-      "id": 40521216857,
+      "id": 40524093039,
+      "attempt": 2,
+      "workflow": "ci.yml",
+      "branch": "main",
+      "source_commit": "62b9ab71e761a4e759e55d67ba9fc4e875e90eb8",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:28:52Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40524093039",
+      "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15)",
+          "id": 122275903785,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ],
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
+      }
+    },
+    {
+      "id": 40528686080,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.46.39",
-      "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
+      "branch": "v4.46.40",
+      "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T14:39:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40521216857"
-    },
-    {
-      "id": 40504681891,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.39",
-      "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T13:30:43Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40504681891"
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:28:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080",
+      "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "macos / arm64 public upgrade",
+          "id": 122275375907,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ],
+      "job_progress": {
+        "total": 8,
+        "completed": 8,
+        "succeeded": 7,
+        "active": []
+      }
     },
     {
       "id": 40518115119,
@@ -56,88 +107,72 @@
       "workflow": "release.yml",
       "branch": "release/4.46.40",
       "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T14:36:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 21,
-        "completed": 18,
-        "succeeded": 17,
-        "active": [
-          {
-            "id": 122240702707,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Sign and verify the free macOS update archive"
-            ]
-          },
-          {
-            "id": 122240702918,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
-            ]
-          },
-          {
-            "id": 122240703432,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T15:06:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119"
     },
     {
-      "id": 40512666290,
+      "id": 40523707699,
       "attempt": 2,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "2ce50088b8e53020c31049419629946efc006936",
+      "workflow": "release.yml",
+      "branch": "release/4.46.41",
+      "source_commit": "56bb40a01f5736c742be0d95add5a54beb605971",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T14:27:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40512666290"
-    },
-    {
-      "id": 40501408889,
-      "attempt": 1,
-      "workflow": "website-release.yml",
-      "branch": "main",
-      "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-27T12:08:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40501408889"
-    },
-    {
-      "id": 40521210268,
-      "attempt": 1,
-      "workflow": "website-release.yml",
-      "branch": "v4.46.39",
-      "source_commit": "d26aa9abc201ec6eaa444fc1fba31baf09670e4c",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T14:27:08Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40521210268",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:38:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 1,
-        "completed": 1,
-        "succeeded": 1,
+        "total": 18,
+        "completed": 18,
+        "succeeded": 12,
         "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / native_database / Database / macos / arm64",
+          "id": 122281385486,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 40532935630,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "d6f142d4494bddc1a8088ff93f2ad7b547cd2d04",
+      "status": "completed",
+      "conclusion": "skipped",
+      "updated_at": "2026-10-27T15:38:13Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40532935630"
+    },
+    {
+      "id": 40513098255,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "main",
+      "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T13:35:54Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40513098255"
+    },
+    {
+      "id": 40528680423,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "v4.46.40",
+      "source_commit": "ca2d3fbcb3292a269f389b46c4f58ea425db90b1",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T15:13:13Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T14:40:46+00:00"
+  "observed_at": "2026-10-27T15:38:47+00:00"
 }
