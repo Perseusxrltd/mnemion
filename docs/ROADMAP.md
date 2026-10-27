@@ -25,6 +25,14 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**27 October 2026, standard Mac ARM runner follow-up:**
+The [capacity correction](validation/2026-10-27-macos-runner-capacity.md) selects
+`macos-26` after two runnerless ARM cancellations; Intel remains `macos-15-intel`.
+All six release targets and twelve Product checks remain. The 65 CI reuse/cache
+tests and Ruff checks passed; real image capacity/compatibility and the normal
+4.46.42 source/native gates remain pending. No requirement or telemetry acceptance
+state changes.
+
 **27 October 2026, completed SQL app comparison and collector crash checks:**
 The [original Electron comparison](validation/2026-10-27-telemetry-sql-comparison.md),
 run 40523504727 on `3034bc0b`, passed all six functional journeys, 2,171 source

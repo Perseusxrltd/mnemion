@@ -12,7 +12,7 @@ MATRIX = [
     {"os": "windows-2022", "arch": "x64", "platform": "windows"},
     {"os": "windows-11-arm", "arch": "arm64", "platform": "windows"},
     {"os": "macos-15-intel", "arch": "x64", "platform": "macos"},
-    {"os": "macos-15", "arch": "arm64", "platform": "macos"},
+    {"os": "macos-26", "arch": "arm64", "platform": "macos"},
 ]
 
 

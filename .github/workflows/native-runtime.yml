@@ -7,7 +7,7 @@ on:
       matrix:
         description: Native database build targets selected by desktop packaging
         type: string
-        default: '[{"os":"ubuntu-22.04","target":"linux","arch":"x64"},{"os":"ubuntu-22.04-arm","target":"linux","arch":"arm64"},{"os":"macos-15","target":"macos","arch":"arm64"},{"os":"macos-15-intel","target":"macos","arch":"x64"},{"os":"windows-2022","target":"windows","arch":"x64"}]'
+        default: '[{"os":"ubuntu-22.04","target":"linux","arch":"x64"},{"os":"ubuntu-22.04-arm","target":"linux","arch":"arm64"},{"os":"macos-26","target":"macos","arch":"arm64"},{"os":"macos-15-intel","target":"macos","arch":"x64"},{"os":"windows-2022","target":"windows","arch":"x64"}]'
 # Desktop checks already call this matrix for every relevant push and PR.
 # Keep direct dispatch for focused database verification without running a
 # second identical compiler matrix on the same source event.
@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.matrix || '[{"os":"ubuntu-22.04","target":"linux","arch":"x64"},{"os":"ubuntu-22.04-arm","target":"linux","arch":"arm64"},{"os":"macos-15","target":"macos","arch":"arm64"},{"os":"macos-15-intel","target":"macos","arch":"x64"},{"os":"windows-2022","target":"windows","arch":"x64"}]') }}
+        include: ${{ fromJSON(inputs.matrix || '[{"os":"ubuntu-22.04","target":"linux","arch":"x64"},{"os":"ubuntu-22.04-arm","target":"linux","arch":"arm64"},{"os":"macos-26","target":"macos","arch":"arm64"},{"os":"macos-15-intel","target":"macos","arch":"x64"},{"os":"windows-2022","target":"windows","arch":"x64"}]') }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6

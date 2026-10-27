@@ -6,8 +6,8 @@ on:
       runner:
         description: Native platform for focused service diagnostics
         type: choice
-        options: [macos-15, macos-15-intel, ubuntu-latest]
-        default: macos-15
+        options: [macos-26, macos-15, macos-15-intel, ubuntu-latest]
+        default: macos-26
 
 permissions:
   contents: read

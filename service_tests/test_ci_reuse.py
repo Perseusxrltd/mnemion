@@ -107,7 +107,7 @@ def test_complete_current_workflow_and_digest_qualify(evidence):
         "service (3.12)",
         "service (3.13)",
         "service (3.14)",
-        "supervision (macos-15)",
+        "supervision (macos-26)",
         "supervision (macos-15-intel)",
         "container (ubuntu-22.04)",
         "container (ubuntu-22.04-arm)",
