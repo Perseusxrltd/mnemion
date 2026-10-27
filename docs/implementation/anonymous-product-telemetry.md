@@ -44,6 +44,26 @@ served company restrictions. An enabled preference is not completed disclosure;
 company policy cannot override opt-out. Damaged or unreadable settings fail
 closed, with no automatic repair or repair command.
 
+The [first-time setup source](../validation/2026-10-27-telemetry-setup-disclosure.md)
+adds a local disclosure dialog on app entry when collection is available and
+an enabled preference has not acknowledged the current disclosure. This includes
+an updated disclosure; saved opt-outs, company restrictions, GPC and unreadable
+state remain authoritative. The checkbox starts checked, but only **Save and
+continue** explicitly saves it and, when enabling, acknowledges the displayed
+version using its original revision/generation. An unchecked save or direct
+**Disable product telemetry** saves an opt-out. **Not now**, Escape and the
+details link leave the choice and acknowledgement unchanged.
+
+`App.tsx` gates the lazy setup import and its status request on release
+availability/destination, excluding privacy, help and OAuth-consent routes.
+While displayed, focus/storage refreshes share one in-flight read. Completion
+or dismissal removes those listeners and prevents further setup checks until the
+next app load; no polling timer is added. The current false/null/null release with
+empty CAs loads no setup UI and performs no setup status request. The current
+SDK/frontend builds, 29 policy checks and ten compiled-browser UI checks passed;
+existing installed evidence and all remaining
+privacy, resource and release gates retain their original scope.
+
 Read-only schema/status/format preview does not randomize or reserve reports,
 change queues, spending or consent, or make network requests. While unavailable,
 local aggregates are empty, the actual outbound body is null and inspected bytes

@@ -1,0 +1,41 @@
+.telemetry-setup-dialog {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: min(620px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 28px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ivory);
+  background: var(--surface-raised);
+  font: 14px/1.6 var(--font-text);
+}
+.telemetry-setup-dialog::backdrop { background: rgba(2, 5, 13, .82); }
+.telemetry-setup-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; color: var(--gold-bright); }
+.telemetry-setup-dialog h2 { margin-bottom: 12px; font: 500 26px/1.2 var(--font-display); }
+.telemetry-setup-dialog h2:focus { outline: none; }
+.telemetry-setup-dialog dl { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px 16px; margin: 20px 0; padding: 18px 0; border-block: 1px solid var(--line-soft); }
+.telemetry-setup-dialog dt { color: var(--ivory-muted); }
+.telemetry-setup-dialog dd { margin: 0; overflow-wrap: anywhere; }
+.telemetry-setup-choice { display: flex; align-items: flex-start; gap: 10px; font-weight: 600; cursor: pointer; }
+.telemetry-setup-choice input { margin-top: 5px; accent-color: var(--gold-bright); }
+.telemetry-setup-note { margin-top: 10px; color: var(--ivory-muted); font-size: 12px; }
+.telemetry-setup-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.telemetry-setup-button { padding: 10px 14px; border: 1px solid var(--line); border-radius: 7px; color: var(--ivory); background: var(--surface-overlay); font: inherit; cursor: pointer; }
+.telemetry-setup-button.primary { color: var(--ink); background: var(--gold-bright); border-color: var(--gold-bright); }
+.telemetry-setup-button:disabled, .telemetry-setup-footer button:disabled { opacity: .55; cursor: wait; }
+.telemetry-setup-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 20px; }
+.telemetry-setup-footer a, .telemetry-setup-footer button { color: var(--gold-bright); font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.telemetry-setup-footer button { border: 0; background: transparent; cursor: pointer; }
+.telemetry-setup-error { margin-top: 12px; color: var(--danger); }
+.telemetry-setup-dialog :is(button, a, input):focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+@media (max-width: 520px) {
+  .telemetry-setup-dialog { padding: 20px; }
+  .telemetry-setup-dialog dl { grid-template-columns: 1fr; gap: 3px; }
+  .telemetry-setup-dialog dd + dt { margin-top: 10px; }
+  .telemetry-setup-actions { flex-direction: column; }
+  .telemetry-setup-actions button { width: 100%; }
+}

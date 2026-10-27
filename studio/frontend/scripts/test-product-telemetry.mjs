@@ -27,6 +27,7 @@ const exported = load(path)
 const { BrowserTelemetry, choiceKey, queueKey } = exported
 const { telemetryCatalog, pendingState, collect } = load(new URL('../src/workspace/telemetry-aggregate.ts', import.meta.url))
 const { TelemetrySnapshotReader } = load(new URL('../src/workspace/telemetry-refusals.ts', import.meta.url))
+const { needsTelemetrySetup, telemetrySetupChoice } = load(new URL('../src/workspace/telemetry-setup.ts', import.meta.url))
 const contract = createRequire(path)('../../../../mnemion/product_telemetry/disclosure.json')
 
 function installation() {
@@ -37,6 +38,67 @@ function installation() {
   const client = () => new BrowserTelemetry(() => storage, () => company, () => false, () => true)
   return { values, storage, client, company: value => { company = value } }
 }
+
+test('first-time setup saves the displayed disclosure only through an explicit choice', t => {
+  const original = { collection_available: contract.collection_available, destination: contract.destination }
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  t.after(() => Object.assign(contract, original))
+  const { client, values } = installation(), current = client()
+  const shown = current.status()
+  assert.equal(needsTelemetrySetup(shown), true)
+  assert.equal(values.size, 0, 'Opening or deferring setup must not create a preference')
+  const input = telemetrySetupChoice(shown, true)
+  assert.equal(values.size, 0, 'Preparing the explicit choice is not acknowledgement')
+  const saved = current.configure(input)
+  assert.equal(saved.effective_enabled, true)
+  assert.equal(saved.disclosure_version, shown.disclosure.version)
+  assert.equal(saved.pending_records, 0)
+  assert.equal(saved.delivery_budget.attempts_in_rolling_week, 0)
+  assert.equal(needsTelemetrySetup(client().status()), false, 'A later app session uses the persisted choice')
+})
+
+test('first-time opt-out persists without acknowledging or collecting', t => {
+  const original = { collection_available: contract.collection_available, destination: contract.destination }
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  t.after(() => Object.assign(contract, original))
+  const { client } = installation(), current = client()
+  current.configure(telemetrySetupChoice(current.status(), false))
+  const restarted = client().status()
+  assert.equal(restarted.reason, 'user_disabled')
+  assert.equal(restarted.disclosure_version, 0)
+  assert.equal(restarted.pending_records, 0)
+  assert.equal(needsTelemetrySetup(restarted), false)
+})
+
+test('a displayed setup choice cannot override a later opt-out or store generation', t => {
+  const original = { collection_available: contract.collection_available, destination: contract.destination }
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  t.after(() => Object.assign(contract, original))
+  const { client } = installation(), current = client()
+  const shown = current.status(), input = telemetrySetupChoice(shown, true)
+  const off = client().configure({ enabled: false, expected_revision: shown.revision })
+  assert.throws(() => current.configure(input), /changed in another tab/)
+  assert.equal(current.status().reason, 'user_disabled')
+  assert.equal(current.status().store_generation, off.store_generation)
+  assert.equal(needsTelemetrySetup(current.status()), false)
+})
+
+test('setup offers no acknowledgement for unavailable, restricted or unreadable state', t => {
+  const original = { collection_available: contract.collection_available, destination: contract.destination }
+  t.after(() => Object.assign(contract, original))
+  const { client, company, values } = installation()
+  Object.assign(contract, { collection_available: false, destination: null })
+  assert.equal(telemetrySetupChoice(client().status(), true), null)
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  company({ state: 'restricted', enabled: false, metric_groups: [] })
+  assert.equal(telemetrySetupChoice(client().status(), true), null)
+  company({ state: 'unmanaged', enabled: true, metric_groups: ['usage'] })
+  const shown = client().status()
+  assert.equal(telemetrySetupChoice({ ...shown, disclosure: { ...shown.disclosure, version: shown.required_disclosure_version + 1 } }, true), null)
+  values.set(choiceKey, 'broken settings')
+  assert.equal(client().status().reason, 'storage_unavailable')
+  assert.equal(telemetrySetupChoice(client().status(), true), null)
+})
 
 test('the app preview loads source coverage only on demand without changing privacy state', async () => {
   const { storage, values } = installation()

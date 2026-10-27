@@ -151,6 +151,7 @@ async def stop(process):
 
 REVIEW_CHECKS = (
     "disclosure_required",
+    "setup_disclosure_deferred_without_permission",
     "manual_choice_before_permission",
     "app_disclosure_acknowledged",
     "exact_review_preserved",

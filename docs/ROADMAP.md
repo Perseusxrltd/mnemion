@@ -25,6 +25,16 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**27 October 2026, first-time telemetry disclosure source:**
+[App setup](validation/2026-10-27-telemetry-setup-disclosure.md) now offers the
+current disclosure with a checked default saved only by explicit action, direct
+disable and dismissal without acknowledgement. Existing privacy restrictions
+remain authoritative; unavailable releases load no setup UI or status request,
+and decisions add no polling. The current SDK/frontend builds, 29 policy checks
+and ten compiled-browser UI checks passed. All 66 requirements and
+V08 Building remain unchanged, with collection/destination/route false/null/null,
+empty release CAs and privacy/resource/installed acceptance still open.
+
 **27 October 2026, telemetry aggregate utility:**
 [Source-bound arithmetic and four deterministic fixtures](validation/2026-10-27-telemetry-aggregate-utility.md)
 quantify the report volume and precision needed by all 23 aggregate views.

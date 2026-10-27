@@ -1,6 +1,6 @@
 # Product telemetry privacy controls
 
-**V08 remains in development; updated 26 October 2026.** Product
+**V08 remains in development; updated 27 October 2026.** Product
 telemetry is unavailable. Basic choice, status and format controls shipped in
 4.46.13. Installed 4.46.22 controls also have evidence for review-mode changes
 and persistence, as described below. Saving an enabled preference does not start
@@ -41,6 +41,29 @@ Open **Privacy & product telemetry** from the connection screen or visit
 `/privacy`. The page works before workspace sign-in and without a live memory
 service. The desktop bundles it; a browser still needs the app assets available
 to use the page offline.
+
+New source adds **Your privacy choice** when an enabled preference needs the
+current disclosure, at first app setup or after a disclosure update in a
+collection-capable build. It shows the purpose, included
+and excluded measurements, destination, limits and scope of the choice before
+any permission is saved. **Share anonymous product statistics** starts checked;
+**Save and continue** explicitly saves the displayed choice and acknowledges the
+current disclosure only when enabling. Unchecking it before saving, or choosing
+**Disable product telemetry** directly, saves an opt-out.
+
+**Not now**, Escape and **Review full privacy controls** dismiss this setup
+without changing the saved choice or disclosure acknowledgement. You can keep
+using Mnemion without sharing statistics. Existing opt-outs, company restrictions
+and browser Global Privacy Control remain authoritative; setup does not turn
+them back on. After a choice or dismissal, setup stops checking until the next
+app load. An unacknowledged disclosure can then be offered again.
+
+The current unavailable release does not load this setup UI or request privacy
+state for it. Collection/destination/route remain **false/null/null**, with no
+release CAs. [Setup validation](../validation/2026-10-27-telemetry-setup-disclosure.md)
+passed 29 policy checks and ten compiled-browser UI checks, with successful
+current SDK/frontend builds; this source addition does not establish publication, installed
+acceptance or completion of the privacy/resource gates.
 
 **Share anonymous product statistics** changes the saved preference, which
 defaults to enabled. **Disable product telemetry** saves an opt-out and clears

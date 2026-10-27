@@ -94,6 +94,17 @@ export async function reviewController({ root, input, application, marker }) {
     assert.equal(initial.reason, 'disclosure_required')
     assert.equal(initial.disclosure_version, 0)
     checks.disclosure_required = true
+    const setup = page.getByRole('dialog', { name: 'Your privacy choice', exact: true })
+    await setup.waitFor()
+    assert.equal(await setup.getByRole('checkbox', { name: 'Share anonymous product statistics', exact: true }).isChecked(), true)
+    await setup.getByRole('button', { name: 'Not now', exact: true }).click()
+    await setup.waitFor({ state: 'hidden' })
+    const deferred = await control('status')
+    assert.equal(deferred.storage, 'new')
+    assert.equal(deferred.disclosure_version, 0)
+    assert.equal(deferred.effective_enabled, false)
+    assert.equal(deferred.pending_records, 0)
+    checks.setup_disclosure_deferred_without_permission = true
     const bridge = await page.evaluate(() => ({
       available: typeof window.mnemion?.productTelemetry === 'function',
       node_integration: typeof window.require !== 'undefined',
