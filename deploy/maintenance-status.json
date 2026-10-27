@@ -23,26 +23,16 @@
       "workflow": "ci.yml",
       "branch": "codex/telemetry-sql-reads-20261027",
       "source_commit": "3034bc0b78b4b0ca52f2d794a3273a4e71999cca",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T14:56:29Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T15:16:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 11,
-        "succeeded": 10,
-        "active": [
-          {
-            "id": 122256761968,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
       },
       "failed_jobs": [
         {
@@ -95,8 +85,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 7,
-        "completed": 1,
-        "succeeded": 1,
+        "completed": 2,
+        "succeeded": 2,
         "active": [
           {
             "id": 122275375873,
@@ -113,15 +103,6 @@
             "status": "queued",
             "runner_assigned": null,
             "steps": []
-          },
-          {
-            "id": 122275375953,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
           },
           {
             "id": 122275375968,
@@ -226,5 +207,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T15:14:10+00:00"
+  "observed_at": "2026-10-27T15:17:47+00:00"
 }
