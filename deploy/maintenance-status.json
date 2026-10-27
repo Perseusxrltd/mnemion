@@ -30,61 +30,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 8,
+        "succeeded": 7,
         "active": [
-          {
-            "id": 122118762926,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend run test:native"
-            ]
-          },
-          {
-            "id": 122118845195,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
           {
             "id": 122118845261,
             "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 122118845273,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 122118845302,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 122118845312,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -93,7 +48,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -102,7 +57,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -111,12 +66,34 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Compile and exercise the native network admission probe in Python and Node"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "legacy",
+          "id": 122118845312,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 10,
+          "steps": [
+            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 40483624017,
+      "attempt": 1,
+      "workflow": "database-cache.yml",
+      "branch": "main",
+      "source_commit": "10c4f520b169ba808d63b5d17dddeca26526a47a",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-27T09:51:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40483624017"
     },
     {
       "id": 40474484566,
@@ -193,5 +170,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40474480217"
     }
   ],
-  "observed_at": "2026-10-27T09:47:03+00:00"
+  "observed_at": "2026-10-27T09:51:51+00:00"
 }
