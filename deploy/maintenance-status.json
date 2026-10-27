@@ -151,28 +151,29 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "ea059b56d5febcadca21ae4a90c01857ebc58c3e",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-27T17:24:46Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-27T17:28:38Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 1,
-        "completed": 0,
+        "total": 2,
+        "completed": 2,
         "succeeded": 0,
-        "active": [
-          {
-            "id": 122351983389,
-            "name": "verify",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
-            ]
-          }
-        ]
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "verify",
+          "id": 122351983389,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 16,
+          "steps": [
+            "Scan the exact downloaded distributions before publication"
+          ]
+        }
+      ]
     },
     {
       "id": 40534190911,
@@ -197,5 +198,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-27T17:25:18+00:00"
+  "observed_at": "2026-10-27T17:29:35+00:00"
 }
