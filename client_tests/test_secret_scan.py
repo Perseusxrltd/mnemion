@@ -387,6 +387,29 @@ def test_electron_wasm_exception_is_one_exact_verified_public_fragment():
         assert not re.fullmatch(exception["regexes"][0], other)
 
 
+def test_sparkle_metadata_exception_is_only_the_verified_header_fragment():
+    config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
+    exception = next(
+        item
+        for item in config["allowlists"]
+        if "Sparkle 2.10.0 public header" in item["description"]
+    )
+    value = "PrivateHeaders/SPUAppcastItemStateResolver.h"[:25]
+    assert (
+        hashlib.sha256(value.encode()).hexdigest()
+        == "30d6fe7da913623af91458be12af4c55c483ff6804b81d7d07811f91427e4c6d"
+    )
+    assert exception["regexTarget"] == "secret"
+    assert exception["regexes"] == ["^" + re.escape(value) + "$"]
+    for index in range(len(value)):
+        replacement = "A" if value[index] != "A" else "B"
+        assert not re.fullmatch(
+            exception["regexes"][0], value[:index] + replacement + value[index + 1 :]
+        )
+    for other in (value[:-1], value + "A", "A" + value, value + ";token=another-value"):
+        assert not re.fullmatch(exception["regexes"][0], other)
+
+
 @pytest.mark.parametrize("application_findings", [2, 3, 4, 5, 6])
 def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
     tmp_path, monkeypatch, application_findings

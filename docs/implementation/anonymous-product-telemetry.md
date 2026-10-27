@@ -373,6 +373,17 @@ run's second `Tab` remains unidentified. No causal saving, general CPU or
 resource/platform/privacy acceptance follows. Prior failures and strict
 budgets remain; no new resource run is selected.
 
+The [source-kernel control diagnostic](../validation/2026-10-27-telemetry-probe-controls.md)
+retains original run **40470335733** on `d56d578f` as **failed**. Each of its
+three cases completed 128 memory cycles and 387/387 API requests, with cleanup.
+The real opted-out status correctly cleared disclosure acknowledgement; the new
+diagnostic wrongly required it to remain set. Correcting that expectation
+passed 35 report tests and Ruff without changing product policy or rerunning
+the app. Independent retained-evidence analysis matched 2,130 source inputs per
+case and confirmed all three recorded control states. The original receipts
+and failed workflow remain unchanged; full-workflow, resource, installed-platform
+and full privacy acceptance remain unqualified.
+
 Denial-only hints for opt-out/exhausted scopes retain the original file/day and
 at-most-**60-second** expiry; merging scopes cannot renew it. Negative file
 observations can be reused for **250 ms**, so a recent re-enable may lose optional

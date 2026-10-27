@@ -52,7 +52,9 @@ def verify_setup_controls(result, *, required=False):
         "storage": "ready",
         "reason": "enabled" if condition == "enabled" else "user_disabled",
         "connection_mode": "unmetered",
-        "disclosure_acknowledged": True,
+        # Opt-out revokes acknowledgment as well as permission. Requiring a
+        # retained acknowledgment would reject the actual privacy policy.
+        "disclosure_acknowledged": condition == "enabled",
         "store_generation_valid": True,
     }
     for reply in controls["replies"]:

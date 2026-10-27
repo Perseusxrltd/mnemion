@@ -86,6 +86,21 @@ Linux IPv4/Python component result, with two agreeing counters and zero capture
 drops. The original five-case limits remain; total wire/retransmission, IPv6,
 other-platform, Electron/browser and rolling-day qualification remain required.
 
+## Native controls in diagnostic fixtures
+
+The [source-kernel control diagnostic](2026-10-27-telemetry-probe-controls.md),
+original run **40470335733** on `d56d578f`, remains **failed**. All three cases
+completed 128 memory cycles and 387/387 API requests, with cleanup. Actual
+opt-out correctly cleared disclosure acknowledgement and produced no telemetry
+writes or reports; the new validator incorrectly required acknowledgement.
+The corrected validator passed 35 report tests and Ruff without an app rerun.
+Original receipts and the earlier 33-test/19-assertion stages remain historical.
+Completed retained-evidence analysis matched 2,130 source inputs per case and
+confirmed all three recorded control states, with four further private mutation
+assertions. It preserves the original failed workflow and false opt-out journey
+flag; resources and installed/privacy acceptance remain unqualified, with all
+earlier resource failures retained.
+
 ## Retained failed resource result
 
 Run **40416923461** matched **2,075 source inputs per case**. Enabled main

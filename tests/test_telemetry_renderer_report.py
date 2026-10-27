@@ -5,6 +5,7 @@ import json
 import pytest
 
 from deploy.report_telemetry_renderer import aligned_rss_growth, summarize, verify_process_ownership
+from mnemion.product_telemetry import policy
 
 
 def samples(values, pid):
@@ -113,7 +114,7 @@ def setup_result(condition="enabled"):
                 "storage": "ready",
                 "reason": "enabled" if enabled else "user_disabled",
                 "connection_mode": "unmetered",
-                "disclosure_acknowledged": True,
+                "disclosure_acknowledged": enabled,
                 "store_generation_valid": True,
             }
         ],
@@ -209,6 +210,40 @@ def test_setup_proof_is_separate_from_resource_acceptance(tmp_path):
     )
     assert all(row["setup_controls_verified"] for row in result["observations"])
     assert result["resource_acceptance"] is False
+
+
+def test_setup_controls_follow_real_optout_disclosure_revocation(tmp_path, monkeypatch):
+    monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://collector.invalid/v1/report")
+    status = policy.configure(
+        tmp_path / "privacy",
+        {
+            "enabled": False,
+            "expected_revision": 0,
+            "disclosure_version": 1,
+            "connection_mode": "unmetered",
+        },
+        policy_path=tmp_path / "company-absent.json",
+    )
+    assert status["disclosure_version"] == 0
+    assert status["reason"] == "user_disabled"
+    current = setup_result("opted_out")
+    reply = current["setup_controls"]["replies"][0]
+    for name in ("user_enabled", "effective_enabled", "collection_available", "storage", "reason"):
+        reply[name] = status[name]
+    reply["disclosure_acknowledged"] = (
+        status["disclosure_version"] == status["required_disclosure_version"]
+    )
+    result = setup_summary(tmp_path, [setup_result("unavailable"), current])
+    assert all(row["setup_controls_verified"] for row in result["observations"])
+    assert result["resource_acceptance"] is False
+
+
+def test_opted_out_setup_must_not_retain_a_disclosure_acknowledgment(tmp_path):
+    current = setup_result("opted_out")
+    current["setup_controls"]["replies"][0]["disclosure_acknowledged"] = True
+    with pytest.raises(ValueError, match="setup control"):
+        setup_summary(tmp_path, [setup_result("unavailable"), current])
 
 
 def test_old_results_remain_readable_without_inventing_control_proof(tmp_path):

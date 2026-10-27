@@ -64,3 +64,10 @@ regexTarget = "secret"
 regexes = [
   '''^EAAAWhAAAJkQAACeEAAAnxAAAKoYAACqGAAAgBsAAKobAACu$''',
 ]
+
+[[allowlists]]
+description = "Reviewed exact truncated Sparkle 2.10.0 public header path from its signed resource manifest; verified against the pinned upstream distribution. No complete files or other tokens are excluded."
+regexTarget = "secret"
+regexes = [
+  '''^PrivateHeaders/SPUAppcast$''',
+]
