@@ -32,15 +32,34 @@
   ],
   "runs": [
     {
-      "id": 40751361702,
-      "attempt": 2,
+      "id": 40786527751,
+      "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "faadaf1b6ef273b52f9723454160c49b483c01f5",
+      "source_commit": "7f45565adefbf4057440e6527a8d8b4a94e2a035",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-28T19:47:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40751361702"
+      "conclusion": "failure",
+      "updated_at": "2026-10-28T23:41:49Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40786527751",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
+      },
+      "failed_jobs": [
+        {
+          "name": "studio",
+          "id": 123161001088,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 22,
+          "steps": [
+            "Check the lightweight native client before six-platform packaging"
+          ]
+        }
+      ]
     },
     {
       "id": 40702705371,
@@ -162,15 +181,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40768286929"
     },
     {
-      "id": 40783049175,
+      "id": 40786527984,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "d666833440233469b75fa97efad5041dce494007",
+      "source_commit": "7f45565adefbf4057440e6527a8d8b4a94e2a035",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-28T22:51:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40783049175"
+      "updated_at": "2026-10-28T23:19:43Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40786527984"
     },
     {
       "id": 40702700363,
@@ -184,5 +203,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T22:51:41+00:00"
+  "observed_at": "2026-10-28T23:42:22+00:00"
 }
