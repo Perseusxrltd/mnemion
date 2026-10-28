@@ -1,6 +1,7 @@
 # Dedicated product telemetry collector
 
-**Source implementation, including the 27 October Linux crash guard.** The dedicated collector entrypoint
+**Source implementation and scoped Linux host qualification.**
+The dedicated collector entrypoint
 and minimal deployment runtime are implemented. They are not a deployed or
 qualified production destination. Product collection remains disabled; the
 disclosed destination and release-owned route remain unset. See the
@@ -60,7 +61,7 @@ The current weekly accumulator stays in memory. Only validated, immutable
 closed-week reports can enter the private SQLite publisher, with at most eight
 retained weeks and a 1 MiB database ceiling.
 
-Current **report schema v3** retains the volume range introduced in v2: a closed
+Current **report schema v4** retains the volume range introduced in v2: a closed
 week with at least **64 accepted automatic or reviewed reports** can expose
 one global power-of-two volume bucket, such
 as `[64, 128)`. Below that threshold there is no weekly document. This offers
@@ -74,6 +75,11 @@ count is published. The earlier [weekly-volume source selection](../validation/2
 passed **67 tests in 17.87 seconds**, including report compatibility and the
 actual TLS minimal runtime; it does not qualify production deployment or
 installed collection.
+
+The [catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds the two appended feature labels to new schema-v4 reports. Existing schema
+v1/v2/v3 reports keep their original labels and bytes; they are readable without
+migration. The four-byte wire remains v2.
 
 The [27 October aggregate utility analysis](../validation/2026-10-27-telemetry-aggregate-utility.md)
 quantifies these limits with all 23 views retained. With every group permitted,
@@ -101,13 +107,13 @@ declares `estimation_population: "automatic_reports_only"` and
 `reviewed_report_use: "coarse_global_volume_only"`. Categorical estimates require
 correctly marked automatic reports with independent randomization and
 packet-independent inclusion; this is not authenticated or representative usage.
-The reader accepts immutable aggregate **v1/v2 reports** without rewriting them
+The reader accepts immutable aggregate **v1/v2/v3 reports** without rewriting them
 or adding a missing global bucket. That compatibility does not accept wire v1.
 Four-byte size, client budgets, endpoint selection and eight-week retention
 remain unchanged.
 The `server reports` command's outer envelope remains `schema_version: 1`;
 each report item carries its own schema version, with a root `report_range`
-in v2 and v3.
+in v2 through v4.
 There is no exact count, identifier, live statistics route or filter API. A
 coarse contribution threshold is not an anonymity or distinct-person threshold,
 and the volume bucket does not extend the packet's categorical privacy bound
@@ -176,10 +182,24 @@ Enabling and starting the service also starts its required socket; the socket
 does not need separate enablement.
 
 PID 1 creates the listener and hands it to `serve --systemd-socket`. The server
-requires exactly one named IPv4 TCP listening descriptor for its own PID,
-matching the configured address/port. The process itself cannot `connect` or
-`bind`: both system calls return `EPERM`, with no port-binding allowlist needed.
+requires exactly one named IPv4 or IPv6 TCP listening descriptor for its own PID,
+matching the configured numeric address/port and family. Numeric-only OS address
+conversion preserves the IPv6 socket-address shape and scope; it does not resolve
+DNS or service names. The descriptor is made noninheritable. The process itself
+cannot `connect` or `bind`: both system calls return `EPERM`, with no port-binding
+allowlist needed.
 The standalone command below continues to create its own loopback listener.
+
+The [IPv6 source follow-up](../validation/2026-10-27-telemetry-ipv6-collector.md)
+retains the original valid-listener rejection and 36 passing local collector
+tests, including real loopback TLS, endpoint refusals and an inherited IPv6 crash
+case. Those fixtures do not install systemd units. The later
+[actual host qualification](../validation/2026-10-27-telemetry-host-crash.md)
+used a fresh `::1` systemd service on Linux with a non-piped core handler. It
+verified no kernel dump, one automatic restart, accepted packets before/after,
+eight sandbox checks and cleanup. The original controller failed at report
+inspection because its restricted PATH omitted `runuser`; separate inspection
+passed without another service start or crash. Production collection remains off.
 
 The service uses the separate account and sets 128 MiB memory, no swap, 25% of
 one CPU, 128 file descriptors and 16 tasks. It drops capabilities, discards
@@ -198,9 +218,10 @@ error. Report inspection and non-Linux execution skip this guard. The earlier
 The [later 21-case selection](../validation/2026-10-27-telemetry-collector-crash.md)
 adds two actual serving-process crashes on Linux/WSL2 with a piped core handler:
 the kernel reported no core dump, fixture output/state stayed clean and a fresh
-report export was empty. Standalone and fixture-inherited sockets were covered;
-installed service restrictions, non-Linux behavior, privileged host/provider
-snapshots and production retention remain unqualified.
+report export was empty. Standalone and fixture-inherited sockets were covered.
+The subsequent host report above qualifies the stated temporary Linux service
+restrictions; non-Linux behavior, privileged host/provider snapshots, public
+ingress and production retention remain unqualified.
 
 To shut the collector down, stop both units so the listener cannot reactivate it:
 

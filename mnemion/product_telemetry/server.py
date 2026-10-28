@@ -203,11 +203,23 @@ def _systemd_listener(bind: str, port: int) -> socket.socket:
     listener = socket.socket(fileno=3)
     try:
         listener.set_inheritable(False)
+        family = socket.AF_INET6 if ip_address(bind).version == 6 else socket.AF_INET
+        # Let the OS canonicalize numeric addresses and IPv6 scope IDs into its
+        # native sockaddr shape. These flags prohibit name/service resolution.
+        addresses = socket.getaddrinfo(
+            bind,
+            port,
+            family,
+            socket.SOCK_STREAM,
+            socket.IPPROTO_TCP,
+            socket.AI_NUMERICHOST | socket.AI_NUMERICSERV,
+        )
         if (
-            listener.family != socket.AF_INET
+            len(addresses) != 1
+            or listener.family != family
             or listener.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE) != socket.SOCK_STREAM
             or listener.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN) != 1
-            or listener.getsockname() != (bind, port)
+            or listener.getsockname() != addresses[0][4]
         ):
             raise ConfigurationError
         return listener

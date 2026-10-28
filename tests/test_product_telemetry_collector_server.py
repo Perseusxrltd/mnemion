@@ -60,7 +60,7 @@ def certificates(tmp_path_factory):
 
 
 def connect(server):
-    raw = socket.create_connection(("127.0.0.1", server.port), timeout=8)
+    raw = socket.create_connection((server.address, server.port), timeout=8)
     try:
         return server.context.wrap_socket(raw, server_hostname="localhost")
     except BaseException:
@@ -76,11 +76,14 @@ def response(channel):
     return bytes(received)
 
 
-def _running_server(tmp_path, certificates, *, activated=False, crash_isolation=False):
+def _running_server(
+    tmp_path, certificates, *, activated=False, crash_isolation=False, address="127.0.0.1"
+):
     certificate, private_key = certificates
     inherited_fd = None
-    with socket.socket() as reserved:
-        reserved.bind(("127.0.0.1", 0))
+    family = socket.AF_INET6 if address == "::1" else socket.AF_INET
+    with socket.socket(family) as reserved:
+        reserved.bind((address, 0))
         port = reserved.getsockname()[1]
         if activated:
             reserved.listen(64)
@@ -91,7 +94,7 @@ def _running_server(tmp_path, certificates, *, activated=False, crash_isolation=
     context = ssl.create_default_context(cafile=certificate)
     context.minimum_version = ssl.TLSVersion.TLSv1_3
     context.set_alpn_protocols(["h2", "http/1.1"])
-    instance = SimpleNamespace(port=port, context=context, state=state)
+    instance = SimpleNamespace(address=address, port=port, context=context, state=state)
     command = [
         COLLECTOR_PYTHON,
         "-m",
@@ -99,6 +102,8 @@ def _running_server(tmp_path, certificates, *, activated=False, crash_isolation=
         "serve",
         "--state",
         str(state),
+        "--bind",
+        address,
         "--port",
         str(port),
         "--certificate",
@@ -198,16 +203,22 @@ def _running_server(tmp_path, certificates, *, activated=False, crash_isolation=
 @pytest.fixture
 def server(tmp_path, certificates, request):
     mode = getattr(request, "param", "standalone")
-    activated = mode in {"systemd", "systemd-crash"}
+    activated = mode.startswith("systemd")
     if activated and sys.platform != "linux":
         pytest.skip("systemd listener handoff is Linux-specific")
     yield from _running_server(
-        tmp_path, certificates, activated=activated, crash_isolation=mode.endswith("-crash")
+        tmp_path,
+        certificates,
+        activated=activated,
+        crash_isolation=mode.endswith("-crash"),
+        address="::1" if "ipv6" in mode else "127.0.0.1",
     )
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="Linux kernel crash-dump disposition")
-@pytest.mark.parametrize("server", ["standalone-crash", "systemd-crash"], indirect=True)
+@pytest.mark.parametrize(
+    "server", ["standalone-crash", "systemd-crash", "systemd-ipv6-crash"], indirect=True
+)
 def test_running_collector_crash_does_not_dump_an_incomplete_private_request(server, tmp_path):
     with connect(server) as channel:
         # Keep a real TLS request incomplete at the crash boundary. This token
@@ -253,6 +264,45 @@ def test_unrelated_or_extra_service_manager_descriptors_are_refused(monkeypatch,
         _systemd_listener("127.0.0.1", 8443)
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="systemd listener handoff is Linux-specific")
+@pytest.mark.parametrize("address", ["127.0.0.1", "::1"])
+@pytest.mark.parametrize(
+    "mismatch", [None, "family", "address", "port", "datagram", "not-listening"]
+)
+def test_inherited_listener_must_match_the_numeric_tcp_endpoint(monkeypatch, address, mismatch):
+    family = socket.AF_INET6 if address == "::1" else socket.AF_INET
+    kind = socket.SOCK_DGRAM if mismatch == "datagram" else socket.SOCK_STREAM
+    with socket.socket(family, kind) as listener:
+        listener.bind((address, 0))
+        port = listener.getsockname()[1]
+        if mismatch not in {"datagram", "not-listening"}:
+            listener.listen(1)
+        listener.set_inheritable(True)
+        monkeypatch.setenv("LISTEN_PID", str(os.getpid()))
+        monkeypatch.setenv("LISTEN_FDS", "1")
+        monkeypatch.setenv("LISTEN_FDNAMES", "telemetry")
+
+        def handed_descriptor(*, fileno):
+            assert fileno == 3
+            return listener
+
+        monkeypatch.setattr(socket, "socket", handed_descriptor)
+        if mismatch == "family":
+            address = "127.0.0.1" if family == socket.AF_INET6 else "::1"
+        elif mismatch == "address":
+            address = "::" if family == socket.AF_INET6 else "127.0.0.2"
+        elif mismatch == "port":
+            port = 1
+        if mismatch is None:
+            assert _systemd_listener(address, port) is listener
+            assert not listener.get_inheritable()
+        else:
+            with pytest.raises(ConfigurationError):
+                _systemd_listener(address, port)
+            assert listener.fileno() == -1
+        assert not {"LISTEN_PID", "LISTEN_FDS", "LISTEN_FDNAMES"} & os.environ.keys()
+
+
 def test_only_fixed_route_flags_reach_aggregate_processing():
     scope = {
         "type": "http",
@@ -279,7 +329,9 @@ def test_only_fixed_route_flags_reach_aggregate_processing():
     assert CANARY.decode() not in repr(scope)
 
 
-@pytest.mark.parametrize("server", ["standalone", "systemd"], indirect=True)
+@pytest.mark.parametrize(
+    "server", ["standalone", "systemd", "standalone-ipv6", "systemd-ipv6"], indirect=True
+)
 def test_real_tls_accepts_only_bounded_packets_without_logs_or_resume_tickets(server):
     requests = [
         (

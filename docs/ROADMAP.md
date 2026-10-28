@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
 Reviewed source distribution: **4.46.42**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-27**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-28**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -24,6 +24,17 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**27 October 2026, collector IPv6 host crash/restart qualification:**
+The [finite systemd host probe](validation/2026-10-27-telemetry-host-crash.md)
+verified 437 deployed source inputs, IPv6 loopback delivery, one automatic restart
+after a controlled crash, eight sandbox checks and cleanup. Its original controller
+failed at the inspection executable lookup; separate retained-state inspection
+passed without another service start or crash. The 36 local checks remain separate.
+This source-only follow-up leaves release 4.46.42 immutable, all 66 states and V08
+Building unchanged, collection/destination/route false/null/null and authorities
+empty. Failed RAM evidence and public/provider, whole-wire and platform gates remain
+open; no completion notification is claimed.
 
 **27 October 2026, standard Mac ARM runner follow-up:**
 The [capacity correction](validation/2026-10-27-macos-runner-capacity.md) selects
