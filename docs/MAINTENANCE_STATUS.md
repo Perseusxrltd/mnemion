@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T11:23:39+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T11:25:34+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.42](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.42). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,13 +18,27 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40674903593](https://github.com/Perseusxrltd/mnemion/actions/runs/40674903593) |
+| ci\.yml | main | in\_progress | [Run 40679716766](https://github.com/Perseusxrltd/mnemion/actions/runs/40679716766) |
 | database-cache\.yml | main | success | [Run 40534190892](https://github.com/Perseusxrltd/mnemion/actions/runs/40534190892) |
 | public-updates\.yml | v4\.46\.42 | success | [Run 40676183666](https://github.com/Perseusxrltd/mnemion/actions/runs/40676183666) |
 | release\.yml | release/4\.46\.42 | success | [Run 40540729543](https://github.com/Perseusxrltd/mnemion/actions/runs/40540729543) |
 | verify-artifacts\.yml | main | failure | [Run 40550326047](https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047) |
-| website-release\.yml | main | success | [Run 40534190911](https://github.com/Perseusxrltd/mnemion/actions/runs/40534190911) |
+| website-release\.yml | main | success | [Run 40679716958](https://github.com/Perseusxrltd/mnemion/actions/runs/40679716958) |
 | website-release\.yml | v4\.46\.42 | success | [Run 40676191314](https://github.com/Perseusxrltd/mnemion/actions/runs/40676191314) |
+
+## Active jobs
+
+[Run 40679716766](https://github.com/Perseusxrltd/mnemion/actions/runs/40679716766): 4/12 jobs completed; 4 succeeded.
+
+- studio: in\_progress — Verify wheel and source package include the matching web Studio.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- container \(ubuntu-22\.04-arm\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
 
 ## Unsuccessful jobs
 
