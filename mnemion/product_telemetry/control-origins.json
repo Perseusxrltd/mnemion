@@ -563,6 +563,13 @@
     "vault.audit": {
       "exclusion": "state_inspection"
     },
+    "vault.auditor": {
+      "workflow": "access.grant",
+      "completion": "success"
+    },
+    "vault.auditors": {
+      "exclusion": "state_inspection"
+    },
     "vault.delete": {
       "workflow": "vault.delete",
       "completion": "success"

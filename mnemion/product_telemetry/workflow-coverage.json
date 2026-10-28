@@ -920,10 +920,10 @@
     ],
     "summary": {
       "total": 706,
-      "mapped": 398,
-      "excluded": 296,
+      "mapped": 400,
+      "excluded": 298,
       "delegated": 8,
-      "unmeasured": 4
+      "unmeasured": 0
     },
     "reasons": {
       "control_cli.configuration_preview": "Preview or intermediate authorization steps do not establish a completed setup, import or sign-in.",
@@ -2172,14 +2172,17 @@
       {
         "owner": "control_cli",
         "action": "vault.auditor",
-        "state": "unmeasured",
-        "workflows": []
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
       },
       {
         "owner": "control_cli",
         "action": "vault.auditors",
-        "state": "unmeasured",
-        "workflows": []
+        "state": "excluded",
+        "workflows": [],
+        "reason": "control_cli.state_inspection"
       },
       {
         "owner": "control_cli",
@@ -5295,8 +5298,10 @@
       {
         "owner": "studio_actions",
         "action": "setVaultAuditor",
-        "state": "unmeasured",
-        "workflows": []
+        "state": "mapped",
+        "workflows": [
+          "access.grant"
+        ]
       },
       {
         "owner": "studio_actions",
@@ -5382,8 +5387,9 @@
       {
         "owner": "studio_actions",
         "action": "vaultAuditors",
-        "state": "unmeasured",
-        "workflows": []
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
       },
       {
         "owner": "studio_actions",
@@ -6513,9 +6519,9 @@
   },
   "source_inputs": {
     "catalog.json": "2b3f897ca15e951ea0636a947e3c708414dc84e6588fce7f717e682c3286ccbf",
-    "control-origins.json": "3e1b59bedf234585b00ce3a071011ddbba356d3f9e8a988fbc4d7e8d2b82a045",
+    "control-origins.json": "eebcc7e1509e4b9ccf08509bd330dc9428c16f8790814f0236eb25fed0320fae",
     "desktop-origins.json": "a03490ce4fe0e70b94f4d72c9a5875a6744e759303c80492926d3da63a5604a7",
-    "studio-methods.json": "15cbb7fe5065fc0b77343338ac8f5678ccb8cdbcc7a60b7504895f19b020948d",
+    "studio-methods.json": "ba6ec49158626a15991efd0b949df809abf4292f98554e0e35294b1eeb4fd2c1",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
     "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",

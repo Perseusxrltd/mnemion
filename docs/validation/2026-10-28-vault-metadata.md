@@ -45,6 +45,13 @@ has the `combobox` role, not `textbox`. Correcting that selector produced the
 successful complete journey. Both earlier records are retained; neither is
 presented as a successful app review.
 
+The first full source CI run caught two missing origin-map declarations for
+the newly added vault controls. The follow-up maps explicit auditor changes
+to the existing access workflow and excludes automatic auditor-list queries
+from usage counts. Its 16 Python origin/coverage checks and 24 Studio measurement
+checks passed. The generated coverage view was refreshed; no collection setting
+or telemetry release qualification changed. The original failed CI is retained.
+
 ## Installer work and remaining acceptance
 
 The same source replaces uncompressed desktop packaging with balanced lossless

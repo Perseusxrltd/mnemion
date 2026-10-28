@@ -67,9 +67,13 @@
     "removeConnectorBinding": "connectors.unbind",
     "pauseConnectorScope": "connectors.suspend",
     "resumeConnectorScope": "connectors.resume",
-    "resolveConnectorProposal": "connectors.resolve"
+    "resolveConnectorProposal": "connectors.resolve",
+    "setVaultAuditor": "vault.auditor"
   },
-  "variant_arguments": { "decideLibrarian": 2, "controlReindex": 2 },
+  "variant_arguments": {
+    "decideLibrarian": 2,
+    "controlReindex": 2
+  },
   "excluded": {
     "beginJournalUpload": "continuation_transport",
     "listJournalUploads": "automatic_query",
@@ -137,6 +141,7 @@
     "connectorBindings": "automatic_query",
     "connectorScopes": "automatic_query",
     "connectorProposals": "automatic_query",
-    "knowledge": "automatic_query"
+    "knowledge": "automatic_query",
+    "vaultAuditors": "automatic_query"
   }
 }
