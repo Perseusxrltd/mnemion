@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T14:22:34+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T14:59:11+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.44](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.44). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,20 +22,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.46\.44 | failure | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
 | release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
 | release\.yml | release/4\.46\.45 | queued | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
-| verify-artifacts\.yml | main | success | [Run 40701322252](https://github.com/Perseusxrltd/mnemion/actions/runs/40701322252) |
+| verify-artifacts\.yml | main | skipped | [Run 40711236639](https://github.com/Perseusxrltd/mnemion/actions/runs/40711236639) |
 | website-release\.yml | main | success | [Run 40684523123](https://github.com/Perseusxrltd/mnemion/actions/runs/40684523123) |
 | website-release\.yml | v4\.46\.44 | success | [Run 40702700363](https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363) |
 
 ## Active jobs
 
-[Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): 15/21 jobs completed; 14 succeeded.
+[Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): 20/21 jobs completed; 19 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
 - native / macos-26 / arm64: queued.
-- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
 ## Unsuccessful jobs
