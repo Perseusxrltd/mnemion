@@ -115,37 +115,51 @@
       "workflow": "release.yml",
       "branch": "release/4.46.46",
       "source_commit": "faadaf1b6ef273b52f9723454160c49b483c01f5",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-28T20:07:28Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-28T21:00:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40757944923",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 14,
-        "completed": 13,
-        "succeeded": 12,
-        "active": [
-          {
-            "id": 123070573365,
-            "name": "native / native_database / Database / macos / arm64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          }
-        ]
+        "total": 23,
+        "completed": 23,
+        "succeeded": 18,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 123073948659,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / macos-15-intel / x64",
+          "id": 123073948737,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
-      "id": 40760393959,
+      "id": 40768286929,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "67b5aafe034445312e6ce7b387ef14f02fdace84",
+      "source_commit": "e1c802901b6491f69d31682dd67b686877a9fa63",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-28T20:07:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40760393959"
+      "updated_at": "2026-10-28T21:00:52Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40768286929"
     },
     {
       "id": 40751361738,
@@ -170,5 +184,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T20:07:47+00:00"
+  "observed_at": "2026-10-28T21:01:17+00:00"
 }
