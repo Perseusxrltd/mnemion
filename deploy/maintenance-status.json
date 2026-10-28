@@ -32,103 +32,72 @@
   ],
   "runs": [
     {
-      "id": 40738967756,
+      "id": 40740459623,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "953e44642fed52cde169e5b07f94478051c4b64a",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-28T17:47:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40738967756",
+      "source_commit": "f656382db0ad1b99aa63ed3d0e9faf047e2ea291",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-28T18:33:34Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
-        "active": [
-          {
-            "id": 122995054127,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          },
-          {
-            "id": 122995154592,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 122995154599,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 122995154605,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 122995154629,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 122995154689,
-            "name": "supervision (macos-26)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 122995154707,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 122995154744,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 122995154772,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 7,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "service (3.12)",
+          "id": 123000595915,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "supervision (macos-15-intel)",
+          "id": 123000596139,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 18,
+          "steps": [
+            "Verify managed installation, host recovery, signed updates and rollback with real processes"
+          ]
+        },
+        {
+          "name": "service (3.14)",
+          "id": 123000596140,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.13)",
+          "id": 123000596241,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "supervision (macos-26)",
+          "id": 123000596295,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 40702705371,
@@ -209,15 +178,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40713875652"
     },
     {
-      "id": 40738967806,
+      "id": 40740459240,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "953e44642fed52cde169e5b07f94478051c4b64a",
+      "source_commit": "f656382db0ad1b99aa63ed3d0e9faf047e2ea291",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-28T17:47:20Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40738967806"
+      "updated_at": "2026-10-28T17:57:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40740459240"
     },
     {
       "id": 40702700363,
@@ -231,5 +200,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T17:47:55+00:00"
+  "observed_at": "2026-10-28T18:34:08+00:00"
 }
