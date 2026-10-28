@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T13:30:59+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T13:36:34+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.42](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.42). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -31,10 +31,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078): 18/21 jobs completed; 17 succeeded.
+[Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078): 19/21 jobs completed; 18 succeeded.
 
 - native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
