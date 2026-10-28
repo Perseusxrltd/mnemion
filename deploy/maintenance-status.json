@@ -32,15 +32,15 @@
   ],
   "runs": [
     {
-      "id": 40738967756,
+      "id": 40740459623,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "953e44642fed52cde169e5b07f94478051c4b64a",
+      "source_commit": "f656382db0ad1b99aa63ed3d0e9faf047e2ea291",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-28T17:47:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40738967756",
+      "updated_at": "2026-10-28T17:56:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
@@ -48,7 +48,7 @@
         "succeeded": 3,
         "active": [
           {
-            "id": 122995054127,
+            "id": 123000505374,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
@@ -57,7 +57,7 @@
             ]
           },
           {
-            "id": 122995154592,
+            "id": 123000595766,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
@@ -66,25 +66,7 @@
             ]
           },
           {
-            "id": 122995154599,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 122995154605,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 122995154629,
+            "id": 123000595843,
             "name": "container (ubuntu-22.04-arm)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -93,38 +75,56 @@
             ]
           },
           {
-            "id": 122995154689,
-            "name": "supervision (macos-26)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 122995154707,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 122995154744,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 122995154772,
+            "id": 123000595915,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
             ]
+          },
+          {
+            "id": 123000596049,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 123000596139,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 123000596140,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 123000596241,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 123000596295,
+            "name": "supervision (macos-26)",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
           }
         ]
       },
@@ -209,15 +209,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40713875652"
     },
     {
-      "id": 40738967806,
+      "id": 40740459240,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "953e44642fed52cde169e5b07f94478051c4b64a",
+      "source_commit": "f656382db0ad1b99aa63ed3d0e9faf047e2ea291",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-28T17:47:20Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40738967806"
+      "updated_at": "2026-10-28T17:57:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40740459240"
     },
     {
       "id": 40702700363,
@@ -231,5 +231,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T17:47:55+00:00"
+  "observed_at": "2026-10-28T17:57:35+00:00"
 }
