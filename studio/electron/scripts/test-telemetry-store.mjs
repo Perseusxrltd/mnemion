@@ -66,9 +66,12 @@ async function fixture(t, directory = 'private choice') {
   })
   const root = join(temporary, directory), company = join(temporary, 'company.json')
   const invoke = (action, extra = {}) => {
-    const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', timeout: 20000,
+    // Filling a synthetic quota performs repeated real Windows ACL checks.
+    // Its setup deadline is separate from the native hot-path assertions.
+    const timeout = action === 'record' && extra.repeat > 1 ? 60000 : 20000
+    const child = spawnSync(python, ['-c', program], { env: environment, encoding: 'utf8', timeout,
       input: JSON.stringify({ action, root, company, ...extra }) })
-    assert.equal(child.status, 0, child.stderr)
+    assert.equal(child.status, 0, child.error ? String(child.error) : child.stderr)
     assert.equal(child.stderr, '')
     return JSON.parse(child.stdout)
   }

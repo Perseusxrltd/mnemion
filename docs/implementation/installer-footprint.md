@@ -38,11 +38,28 @@ license or recovery feature is removed. The Windows NSIS decoder's required
 BCJ filter remains unchanged, as do signed update verification and all six
 native installation/recovery gates.
 
-Actual output sizes require the native builds; there is no claimed compression
-percentage before those artifacts exist. The existing installer verifier now
-also records installed regular-file bytes and component totals on each platform,
-alongside the download bytes already reported. Future size comparisons therefore
-use build receipts and public asset metadata without a manual filesystem audit.
+The first corrected-source [native run](https://github.com/Perseusxrltd/mnemion/actions/runs/40757944923)
+produced these **unpublished 4.46.46** archives:
+
+| Download | Bytes | Decimal MB | Reduction from 4.46.44 |
+| --- | ---: | ---: | ---: |
+| Mac Apple Silicon disk image | 263,519,971 | 263.5 | 59.9% |
+| Mac Apple Silicon update ZIP | 267,182,507 | 267.2 | 58.7% |
+| Mac Intel disk image | 270,979,220 | 271.0 | 59.3% |
+| Mac Intel update ZIP | 274,724,847 | 274.7 | 58.1% |
+
+Apple Silicon passed its native installation/recovery checks. Intel's archives
+built, but its installed workspace recovery check failed; Windows x64 also
+stopped on a test-fixture timeout. The corrected candidate must pass the normal
+native matrix before publication. These measurements describe those actual
+archives, not a promise of identical byte counts for later builds.
+
+The existing installer verifier also records installed regular-file bytes and
+component totals on each platform, alongside download bytes. The live
+[product page](https://www.perseusxr.com/mnemion) displays sizes from the same
+validated release assets as its download links, including the recommended
+download and all platform choices. Future public releases update these values
+through the existing Git-driven synchronization, without a page edit.
 
 ## Further reduction and acceptance
 

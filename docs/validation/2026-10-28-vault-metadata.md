@@ -60,13 +60,42 @@ PostgreSQL cases passed**, covering 15 preceding schema versions, existing
 KeePass histories, current import/export and metadata-auditor permissions. The
 original failed run is retained; native qualification uses the corrected source.
 
+That source passed [Product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/40751361702).
+The ensuing [native run](https://github.com/Perseusxrltd/mnemion/actions/runs/40757944923)
+passed Linux x64/ARM64, Windows ARM64 and Mac Apple Silicon. Two failures remain
+recorded: Windows x64 exceeded a 20-second Python fixture deadline while filling
+a synthetic telemetry quota, and Intel Mac reported unreadable local settings
+when reopening a recovered workspace. Neither failed platform is accepted.
+
+The follow-up reproduced a real local-state race: an atomic settings replacement
+between path inspection and opening the file, or immediately after opening,
+could incorrectly report damaged state. Both timing cases failed on the
+original source. The reader now reopens and validates the current private file
+up to three times. A continuously changing writer returns a distinct retryable
+error; linked, oversized and actually damaged records remain protected and
+their bytes are retained. **42 focused Python cases passed, with four platform
+skips**, covering these regressions and local readiness, recovery, backup and
+vault behavior. The Intel Mac incident has the same outward error; the original
+runner evidence does not prove that this race caused it. Its native recovery
+check must confirm the corrected behavior.
+
+Only the Windows fixture's repeated quota setup gets a 60-second deadline;
+ordinary fixture operations retain 20 seconds, and product resource and hot-path
+assertions are unchanged. The Electron build and targeted denied-burst test
+passed locally. An initial mistyped Python test path ran no tests and is retained
+separately from the corrected successful run. Windows native confirmation and
+the remaining release gates are pending.
+
 ## Installer work and remaining acceptance
 
 The same source replaces uncompressed desktop packaging with balanced lossless
 compression and extends the existing installer verifier with component-size
 reporting. Source parsing, effective builder configuration and release validation
-passed. Actual compressed size, signed updates, installation and recovery require
-the normal native matrix. See the [measured baseline](../implementation/installer-footprint.md).
+passed. The resulting Mac disk images measure **263.5 MB on Apple Silicon** and
+**271.0 MB on Intel**, approximately 60% below the public 4.46.44 images.
+They remain unpublished; complete signed update, installation and recovery
+qualification requires the corrected native matrix. See the
+[artifact measurements](../implementation/installer-footprint.md).
 
 Issues 44, 47 and 48 remain open. The reporter's four-session search failures,
 source freshness, all eleven-space acceptance, native task workflow and complete

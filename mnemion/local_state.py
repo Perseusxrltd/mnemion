@@ -203,25 +203,32 @@ def temporary_directory(*, prefix: str = "mnemion-", dir: Path | None = None):
 def read_bytes(path: Path) -> bytes:
     """Read a bounded private record, including damaged JSON during recovery."""
     try:
-        before = _regular(path)
-        descriptor = os.open(
-            path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+        for _ in range(3):
+            before = _regular(path)
+            descriptor = os.open(
+                path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+            )
+            with os.fdopen(descriptor, "rb") as stream:
+                info = os.fstat(stream.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_RECORD_BYTES:
+                    raise ValueError("Unsafe or oversized record")
+                if (info.st_dev, info.st_ino) != (
+                    before.st_dev,
+                    before.st_ino,
+                ) or info.st_nlink != 1:
+                    # A writer can atomically publish a complete replacement
+                    # between lstat and open, or unlink our just-opened old
+                    # inode. Reopen and validate the current private file;
+                    # never accept the changed descriptor or repair its bytes.
+                    continue
+                content = stream.read(MAX_RECORD_BYTES + 1)
+            if len(content) > MAX_RECORD_BYTES:
+                raise ValueError("Oversized record")
+            return content
+        raise LocalSetupError(
+            "state_changed",
+            "Local settings changed while being read. Retry the request; existing data has been retained.",
         )
-        with os.fdopen(descriptor, "rb") as stream:
-            info = os.fstat(stream.fileno())
-            if (info.st_dev, info.st_ino) != (
-                before.st_dev,
-                before.st_ino,
-            ) or (
-                not stat.S_ISREG(info.st_mode)
-                or info.st_nlink != 1
-                or info.st_size > MAX_RECORD_BYTES
-            ):
-                raise ValueError("Changed or oversized record")
-            content = stream.read(MAX_RECORD_BYTES + 1)
-        if len(content) > MAX_RECORD_BYTES:
-            raise ValueError("Oversized record")
-        return content
     except FileNotFoundError:
         raise
     except (OSError, ValueError):
