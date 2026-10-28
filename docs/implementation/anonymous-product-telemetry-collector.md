@@ -20,6 +20,15 @@ snapshot or retention settings. No host changes or private-key/network-log/
 backup-content reads occurred; production and provider/privacy acceptance remain
 open.
 
+The [28 October renewal follow-up](../validation/2026-10-28-telemetry-certificates.md)
+adds one atomically replaced TLS credential and a scoped Certbot deploy hook.
+Its 23 source tests and actual collector TLS fixture passed. The exact helper,
+private bundle and hook were prepared on the existing free host; the memory
+service stayed running and no collector listener was started. The
+[certificate guide](../guides/telemetry-collector-certificates.md) covers setup,
+migration and failure recovery. Public ingress, provider privacy and actual
+renewal of a running collector remain unqualified.
+
 The collector runs independently of workspace services. It imports no memory
 engine, embedding model, workspace authentication or connector. Its separate
 [runtime lock](../../deploy/collector/uv.lock) contains Uvicorn 0.54.0, h11 0.16.0

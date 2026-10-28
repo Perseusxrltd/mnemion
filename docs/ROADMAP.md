@@ -25,6 +25,15 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**28 October 2026, automatic collector certificate preparation:**
+The [4.46.45 source](releases/4.46.45.md) gives the separate telemetry collector
+one validated, atomic TLS credential and a Certbot renewal hook. Its
+[23-test qualification and actual host preparation](validation/2026-10-28-telemetry-certificates.md)
+passed. The hook and private bundle are installed on the existing free VPS;
+the memory service stayed running and the collector remains off. Actual public
+ingress, running-service renewal, privacy, resources and platform delivery
+remain open. All 66 states and full V08 acceptance are unchanged.
+
 **28 October 2026, actionable source diagnosis:**
 The [4.46.44 source batch](releases/4.46.44.md) adds paged source diagnostics in
 the app, SDKs and MCP, with current operator authority and recovery steps.

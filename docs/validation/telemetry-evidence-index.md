@@ -77,6 +77,13 @@ Their operation/path counts are not counts of fully qualified workflows.
 
 ## Delivery and collector
 
+The [28 October certificate renewal qualification](2026-10-28-telemetry-certificates.md)
+records 23 passing source tests, a real collector TLS request, 445 bound inputs
+and successful preparation of the exact helper/private bundle/Certbot hook on
+the existing free host. Its unchanged-material hook invocation left the memory
+service running and no collector listener. This does not qualify public ingress,
+provider privacy, actual running-service renewal or client resources/platforms.
+
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
 | 27 October | [Collector serving-process crashes](2026-10-27-telemetry-collector-crash.md) | Tests-only follow-up on `62b9ab71`: 21 passes, no failures/skips, including two real TLS-process crashes with standalone/fixture-inherited listeners. Linux/WSL2's piped core handler produced no kernel core dump; fixture logs/state and fresh report export stayed clean. 435 inputs matched. Earlier 19-case source evidence remains; production/provider, installed and non-Linux qualification stay open. |
