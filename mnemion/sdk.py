@@ -279,10 +279,17 @@ class Client(JournalUploadClient):
     def revoke_company_identity(self, link_id: str) -> dict:
         return self.request("DELETE", f"/v1/sign-in/company/links/{UUID(link_id)}")
 
-    def source_health(self) -> SourceHealth:
+    def source_health(
+        self, *, details: bool = False, after: str | None = None, limit: int = 20
+    ) -> SourceHealth:
         from .service.connector_contracts import SourceHealth
 
-        return SourceHealth.model_validate(self.request("GET", "/v1/health/sources"))
+        parameters = {"details": str(details).lower(), "limit": str(limit)}
+        if after is not None:
+            parameters["after"] = str(UUID(after))
+        return SourceHealth.model_validate(
+            self.request("GET", "/v1/health/sources", params=parameters)
+        )
 
     def connector_sync_status(self, connector_id: str) -> SyncStatus:
         from .service.connector_contracts import SyncStatus

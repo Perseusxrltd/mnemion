@@ -162,7 +162,17 @@ export interface ConnectorSyncStatus { connector_id: string; requested_generatio
 export interface ConnectorBinding { external_id: string; principal_id: string; role: 'reader' | 'reviewer' }
 export interface SourceFileError { path: string; path_sha256: string; error_code: 'source_is_not_utf8_text' | 'source_contains_binary_data' | 'source_too_large' }
 export interface SourceInventory { incomplete_inventory: boolean; skipped_documents: number; file_errors: SourceFileError[] }
-export interface SourceHealth { unavailable_scopes: number; incomplete_scopes: number; skipped_documents: number; attention: string[]; observed_at: string }
+export interface SourceDiagnostic {
+  space_id: string; connector_id: string; operator_id: string
+  provider: 'filesystem' | 'git' | 'conversations' | 'gdrive' | 'slack' | 'rclone' | 'other'
+  operator_paused: boolean; skipped_documents: number; reasons: string[]
+  recovery: 'restore_connector_identity' | 'enable_connector' | 'resume_source' | 'request_source_sync' | 'repair_source_files'
+  can_resume: boolean; can_request_sync: boolean
+}
+export interface SourceHealth {
+  unavailable_scopes: number; incomplete_scopes: number; skipped_documents: number; attention: string[]; observed_at: string
+  diagnostics?: { visibility: 'tenant' | 'owned' | 'unavailable'; items: SourceDiagnostic[]; next_cursor: string | null } | null
+}
 export interface ConnectorScope { space_id: string; connector_id: string; external_id: string; name?: string; operator_paused: boolean; access_current: boolean; observed_at: string; access_valid_until: string; suspended_at: string | null; suspension_reason: string | null; completed_at: string | null; checkpoint?: string | null; inventory?: SourceInventory | null }
 export interface KnowledgeNode { id: string; kind: 'space' | 'memory' | 'source' | 'entity'; label: string; space_id: string; memory_id?: string }
 export interface Knowledge { generated_at: string; fingerprint: string; truncated: boolean; memories: Memory[]; nodes: KnowledgeNode[]; edges: { source: string; target: string; relation: 'in_space' | 'cites' | 'about' }[]; topics: { id: string; title: string; space_id: string; memory_ids: string[] }[]; findings: { kind: 'exact_duplicate' | 'contested' | 'unassigned_subject'; message: string; memory_ids: string[] }[]; markdown: string }
@@ -469,7 +479,11 @@ export class MnemionClient {
   disableConnector(id: string) { return this.request<Connector>('DELETE', `/v1/connectors/${encodeURIComponent(id)}`) }
   enableConnector(id: string) { return this.request<Connector>('POST', `/v1/connectors/${encodeURIComponent(id)}/enable`) }
   connectorSyncStatus(id: string) { return this.request<ConnectorSyncStatus>('GET', `/v1/connectors/${encodeURIComponent(id)}/sync`) }
-  sourceHealth() { return this.request<SourceHealth>('GET', '/v1/health/sources') }
+  sourceHealth(options: { details?: boolean; after?: string; limit?: number; signal?: AbortSignal } = {}) {
+    const params = new URLSearchParams({ details: String(options.details ?? false), limit: String(options.limit ?? 20) })
+    if (options.after) params.set('after', options.after)
+    return this.request<SourceHealth>('GET', `/v1/health/sources?${params}`, { signal: options.signal })
+  }
   requestConnectorSync(id: string, expectedGeneration: number) { return this.request<ConnectorSyncStatus>('POST', `/v1/connectors/${encodeURIComponent(id)}/sync`, { body: { expected_generation: expectedGeneration } }) }
   connectorBindings(id: string) { return this.request<Page<ConnectorBinding>>('GET', `/v1/connectors/${encodeURIComponent(id)}/bindings`) }
   putConnectorBinding(id: string, input: ConnectorBinding) { return this.request('PUT', `/v1/connectors/${encodeURIComponent(id)}/bindings`, { body: input }) }

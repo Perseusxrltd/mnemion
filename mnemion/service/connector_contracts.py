@@ -52,12 +52,50 @@ class InventoryStatus(ResponseModel):
     file_errors: list[SourceFileError] = Field(default_factory=list)
 
 
+class SourceDiagnostic(ResponseModel):
+    space_id: str
+    connector_id: str
+    operator_id: str
+    provider: Literal["filesystem", "git", "conversations", "gdrive", "slack", "rclone", "other"]
+    operator_paused: bool
+    skipped_documents: int
+    reasons: list[
+        Literal[
+            "connector_disabled",
+            "connector_identity_disabled",
+            "connector_identity_not_dedicated",
+            "operator_paused",
+            "permissions_expired",
+            "source_access_lost",
+            "provider_unavailable",
+            "permissions_recheck_required",
+            "inventory_incomplete",
+        ]
+    ]
+    recovery: Literal[
+        "restore_connector_identity",
+        "enable_connector",
+        "resume_source",
+        "request_source_sync",
+        "repair_source_files",
+    ]
+    can_resume: bool
+    can_request_sync: bool
+
+
+class SourceDiagnostics(ResponseModel):
+    visibility: Literal["tenant", "owned", "unavailable"]
+    items: list[SourceDiagnostic]
+    next_cursor: str | None
+
+
 class SourceHealth(ResponseModel):
     unavailable_scopes: int
     incomplete_scopes: int
     skipped_documents: int
     attention: list[str]
     observed_at: str
+    diagnostics: SourceDiagnostics | None = None
 
 
 class ConnectorScope(ResponseModel):

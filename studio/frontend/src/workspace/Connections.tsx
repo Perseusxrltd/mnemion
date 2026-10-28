@@ -5,6 +5,7 @@ import { Download, Plus, RefreshCw } from "lucide-react";
 import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal, type SourceInventory } from "@mnemion/client";
 import { DesktopSourceCard } from "./DesktopSource";
 import CaptureAdministration from './CaptureAdministration';
+import { SourceHealthPanel } from './SourceHealth';
 
 const providers = [
   ["filesystem", "Obsidian / folder"], ["git", "Git repository"],
@@ -29,12 +30,12 @@ function configuration(connection: Connector, endpoint: string, members: string[
     service_token: { env: "MNEMION_CONNECTOR_KEY" }, provider: sources[connection.provider] }, null, 2);
 }
 
-export function Connections({ client, administrator, endpoint, selectSpace, serviceVersion }: {
-  client: MnemionClient; administrator: boolean; endpoint: string; selectSpace: (id: string) => void; serviceVersion?: string | null;
+export function Connections({ client, administrator, endpoint, selectSpace, serviceVersion, sessionIdentity }: {
+  client: MnemionClient; administrator: boolean; endpoint: string; selectSpace: (id: string) => void; serviceVersion?: string | null; sessionIdentity: string;
 }) {
   const cache = useQueryClient();
-  const connections = useQuery({ queryKey: ["connectors"], queryFn: () => client.connectors() });
-  const people = useQuery({ queryKey: ["principals"], queryFn: () => client.principals(), enabled: administrator });
+  const connections = useQuery({ queryKey: ["connectors", sessionIdentity], queryFn: () => client.connectors(), gcTime: 0 });
+  const people = useQuery({ queryKey: ["principals", sessionIdentity], queryFn: () => client.principals(), enabled: administrator, gcTime: 0 });
   const [selected, setSelected] = useState("");
   const connection = connections.data?.items.find(item => item.id === selected) ?? connections.data?.items[0];
   const [name, setName] = useState("");
@@ -47,12 +48,12 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
   const [cursor, setCursor] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
-  const bindings = useQuery({ queryKey: ["connector-bindings", connection?.id], queryFn: () => client.connectorBindings(connection!.id), enabled: !!connection });
-  const scopes = useQuery({ queryKey: ["connector-scopes", connection?.id, cursor], queryFn: () => client.connectorScopes(connection!.id, cursor), enabled: !!connection, refetchInterval: 15000 });
-  const syncStatus = useQuery({ queryKey: ["connector-sync", connection?.id], queryFn: async () => {
+  const bindings = useQuery({ queryKey: ["connector-bindings", sessionIdentity, connection?.id], queryFn: () => client.connectorBindings(connection!.id), enabled: !!connection, gcTime: 0 });
+  const scopes = useQuery({ queryKey: ["connector-scopes", sessionIdentity, connection?.id, cursor], queryFn: () => client.connectorScopes(connection!.id, cursor), enabled: !!connection, refetchInterval: 15000, gcTime: 0 });
+  const syncStatus = useQuery({ queryKey: ["connector-sync", sessionIdentity, connection?.id], queryFn: async () => {
     try { return await client.connectorSyncStatus(connection!.id); }
     catch (error) { if (error instanceof MnemionError && [404, 405].includes(error.status)) return null; throw error; }
-  }, enabled: !!connection, retry: false, refetchInterval: 15000 });
+  }, enabled: !!connection, retry: false, refetchInterval: 15000, gcTime: 0 });
   const published = !["gdrive", "slack"].includes(provider);
   async function act(work: () => Promise<unknown>) {
     setBusy(true); setError(undefined);
@@ -74,6 +75,7 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
   }
   return <div className="ws-page">
     <header className="ws-page-heading"><div><div className="ws-eyebrow">Sources</div><h1>Connect company knowledge</h1><p>Bring repositories, vaults and conversations into shared memory with their access boundaries intact.</p></div></header>
+    <SourceHealthPanel client={client} sessionIdentity={sessionIdentity} connectors={connections.isError ? [] : connections.data?.items ?? []} select={id => { setSelected(id); setCursor(undefined); }} />
     {[error, connections.error, people.error, bindings.error, scopes.error, syncStatus.error].filter(Boolean).map((value, i) => <div className="ws-notice ws-error" role="alert" key={i}>{failure(value)}</div>)}
     {administrator && <details className="ws-card" open={!connections.data?.items.length}>
       <summary><strong>Add a connection</strong></summary>

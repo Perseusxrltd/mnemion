@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.43**.
+Reviewed source distribution: **4.46.44**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-28**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,15 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**28 October 2026, actionable source diagnosis:**
+The [4.46.44 source batch](releases/4.46.44.md) adds paged source diagnostics in
+the app, SDKs and MCP, with current operator authority and recovery steps.
+Intentional pauses and provider permission checks remain effective. Its
+[57-case qualification](validation/2026-10-28-source-diagnostics.md) also fixes
+release preparation to generate coverage after its API contract. App/SDK builds
+and 22 SDK checks passed. Canonical telemetry docs now reference generated Git
+inventories; historical failures, all 66 states and full V08 acceptance remain.
 
 **28 October 2026, multi-agent field reliability source:**
 The [4.46.43 batch](releases/4.46.43.md) adds statement-scoped permission checks,

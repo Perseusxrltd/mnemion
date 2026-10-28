@@ -12495,13 +12495,173 @@
       "group": "operations",
       "input_schema": {
         "additionalProperties": false,
-        "properties": {},
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "After"
+              },
+              "details": {
+                "default": false,
+                "description": "Include paged source diagnosis for tenant administrators and the connector's operator, under existing source-control permissions.",
+                "title": "Details",
+                "type": "boolean"
+              },
+              "limit": {
+                "default": 20,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
         "type": "object"
       },
       "method": "GET",
       "name": "health.sources",
       "output_schema": {
         "$defs": {
+          "SourceDiagnostic": {
+            "additionalProperties": true,
+            "properties": {
+              "can_request_sync": {
+                "title": "Can Request Sync",
+                "type": "boolean"
+              },
+              "can_resume": {
+                "title": "Can Resume",
+                "type": "boolean"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "operator_id": {
+                "title": "Operator Id",
+                "type": "string"
+              },
+              "operator_paused": {
+                "title": "Operator Paused",
+                "type": "boolean"
+              },
+              "provider": {
+                "enum": [
+                  "filesystem",
+                  "git",
+                  "conversations",
+                  "gdrive",
+                  "slack",
+                  "rclone",
+                  "other"
+                ],
+                "title": "Provider",
+                "type": "string"
+              },
+              "reasons": {
+                "items": {
+                  "enum": [
+                    "connector_disabled",
+                    "connector_identity_disabled",
+                    "connector_identity_not_dedicated",
+                    "operator_paused",
+                    "permissions_expired",
+                    "source_access_lost",
+                    "provider_unavailable",
+                    "permissions_recheck_required",
+                    "inventory_incomplete"
+                  ],
+                  "type": "string"
+                },
+                "title": "Reasons",
+                "type": "array"
+              },
+              "recovery": {
+                "enum": [
+                  "restore_connector_identity",
+                  "enable_connector",
+                  "resume_source",
+                  "request_source_sync",
+                  "repair_source_files"
+                ],
+                "title": "Recovery",
+                "type": "string"
+              },
+              "skipped_documents": {
+                "title": "Skipped Documents",
+                "type": "integer"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "connector_id",
+              "operator_id",
+              "provider",
+              "operator_paused",
+              "skipped_documents",
+              "reasons",
+              "recovery",
+              "can_resume",
+              "can_request_sync"
+            ],
+            "title": "SourceDiagnostic",
+            "type": "object"
+          },
+          "SourceDiagnostics": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/SourceDiagnostic"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              },
+              "visibility": {
+                "enum": [
+                  "tenant",
+                  "owned",
+                  "unavailable"
+                ],
+                "title": "Visibility",
+                "type": "string"
+              }
+            },
+            "required": [
+              "visibility",
+              "items",
+              "next_cursor"
+            ],
+            "title": "SourceDiagnostics",
+            "type": "object"
+          },
           "mnemion__service__connector_contracts__SourceHealth": {
             "additionalProperties": true,
             "properties": {
@@ -12511,6 +12671,16 @@
                 },
                 "title": "Attention",
                 "type": "array"
+              },
+              "diagnostics": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SourceDiagnostics"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "incomplete_scopes": {
                 "title": "Incomplete Scopes",
@@ -12542,7 +12712,11 @@
         },
         "$ref": "#/$defs/mnemion__service__connector_contracts__SourceHealth"
       },
-      "parameter_locations": {},
+      "parameter_locations": {
+        "after": "query",
+        "details": "query",
+        "limit": "query"
+      },
       "path": "/v1/health/sources",
       "retry": "read",
       "sensitive_input": false,

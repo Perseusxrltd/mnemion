@@ -26,8 +26,16 @@ def install_routes(app, authenticated, service):
     Auth = Annotated[Identity, Depends(authenticated)]
 
     @app.get("/v1/health/sources", tags=["Operations"], response_model=c.SourceHealth)
-    def source_health(identity: Auth):
-        return service.health(identity)
+    def source_health(
+        identity: Auth,
+        details: bool = Query(
+            default=False,
+            description="Include paged source diagnosis for tenant administrators and the connector's operator, under existing source-control permissions.",
+        ),
+        after: UUID | None = None,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ):
+        return service.health(identity, details=details, after=after, limit=limit)
 
     @app.get("/v1/connectors", tags=["Connectors"], response_model=Page[c.Connector])
     def connectors(identity: Auth):

@@ -3,6 +3,7 @@
 import copy
 import json
 from pathlib import Path
+import shutil
 import subprocess
 from types import SimpleNamespace
 
@@ -12,6 +13,62 @@ from deploy import release_automation as subject
 
 REPO = "example/mnemion"
 COMMIT = "a" * 40
+
+
+def test_prepare_coverage_uses_the_regenerated_agent_contract(tmp_path, monkeypatch):
+    from deploy import telemetry_actions, telemetry_coverage
+
+    root = Path(subject.__file__).resolve().parents[1]
+    for name in telemetry_coverage.INPUTS:
+        relative = telemetry_coverage.OUTPUT.parent / name
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / relative, target)
+    for name in telemetry_actions.INPUTS:
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / name, target)
+    contract_path = tmp_path / "mnemion/service/agent_contract.json"
+    initial = contract_path.read_bytes()
+    validated = []
+
+    def command(arguments, *, cwd, check):
+        assert cwd == tmp_path and check
+        if arguments[1:] == [
+            "-m",
+            "mnemion.service.cli",
+            "schema",
+            "--output",
+            "docs/service/openapi.json",
+        ]:
+            return
+        if arguments[1:] == [
+            "-m",
+            "mnemion.service.cli",
+            "agent-schema",
+            "--output",
+            "mnemion/service/agent_contract.json",
+        ]:
+            contract = json.loads(initial)
+            contract["operations"][0]["summary"] = "Updated interface fixture"
+            contract_path.write_text(json.dumps(contract))
+            return
+        if arguments[1:] == ["-m", "deploy.telemetry_coverage", "--write"]:
+            (tmp_path / telemetry_coverage.OUTPUT).write_text(telemetry_coverage.render(tmp_path))
+            return
+        assert arguments[1:] == ["deploy/release.py"]
+        assert contract_path.read_bytes() != initial
+        # The real source-hash check must accept the post-export contract.
+        # Generating coverage earlier reproduces the original stale-hash error.
+        telemetry_coverage.verify(tmp_path)
+        validated.append(True)
+
+    monkeypatch.setattr(subject, "__file__", str(tmp_path / "deploy/release_automation.py"))
+    monkeypatch.setattr(subject, "prepare", lambda *_: [])
+    monkeypatch.setattr(subject.sys, "argv", ["release_automation", "prepare", "4.2.3"])
+    monkeypatch.setattr(subject.subprocess, "run", command)
+    subject.main()
+    assert validated == [True]
 
 
 @pytest.fixture

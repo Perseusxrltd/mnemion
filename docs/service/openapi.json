@@ -11765,6 +11765,134 @@
         "title": "Source",
         "type": "object"
       },
+      "SourceDiagnostic": {
+        "additionalProperties": true,
+        "properties": {
+          "can_request_sync": {
+            "title": "Can Request Sync",
+            "type": "boolean"
+          },
+          "can_resume": {
+            "title": "Can Resume",
+            "type": "boolean"
+          },
+          "connector_id": {
+            "title": "Connector Id",
+            "type": "string"
+          },
+          "operator_id": {
+            "title": "Operator Id",
+            "type": "string"
+          },
+          "operator_paused": {
+            "title": "Operator Paused",
+            "type": "boolean"
+          },
+          "provider": {
+            "enum": [
+              "filesystem",
+              "git",
+              "conversations",
+              "gdrive",
+              "slack",
+              "rclone",
+              "other"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "enum": [
+                "connector_disabled",
+                "connector_identity_disabled",
+                "connector_identity_not_dedicated",
+                "operator_paused",
+                "permissions_expired",
+                "source_access_lost",
+                "provider_unavailable",
+                "permissions_recheck_required",
+                "inventory_incomplete"
+              ],
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "recovery": {
+            "enum": [
+              "restore_connector_identity",
+              "enable_connector",
+              "resume_source",
+              "request_source_sync",
+              "repair_source_files"
+            ],
+            "title": "Recovery",
+            "type": "string"
+          },
+          "skipped_documents": {
+            "title": "Skipped Documents",
+            "type": "integer"
+          },
+          "space_id": {
+            "title": "Space Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "space_id",
+          "connector_id",
+          "operator_id",
+          "provider",
+          "operator_paused",
+          "skipped_documents",
+          "reasons",
+          "recovery",
+          "can_resume",
+          "can_request_sync"
+        ],
+        "title": "SourceDiagnostic",
+        "type": "object"
+      },
+      "SourceDiagnostics": {
+        "additionalProperties": true,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SourceDiagnostic"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "visibility": {
+            "enum": [
+              "tenant",
+              "owned",
+              "unavailable"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "visibility",
+          "items",
+          "next_cursor"
+        ],
+        "title": "SourceDiagnostics",
+        "type": "object"
+      },
       "SourceFileError": {
         "additionalProperties": false,
         "properties": {
@@ -13302,6 +13430,16 @@
             "title": "Attention",
             "type": "array"
           },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceDiagnostics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "incomplete_scopes": {
             "title": "Incomplete Scopes",
             "type": "integer"
@@ -13441,7 +13579,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.46.43"
+    "version": "4.46.44"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -19123,6 +19261,49 @@
     "/v1/health/sources": {
       "get": {
         "operationId": "source_health_v1_health_sources_get",
+        "parameters": [
+          {
+            "description": "Include paged source diagnosis for tenant administrators and the connector's operator, under existing source-control permissions.",
+            "in": "query",
+            "name": "details",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include paged source diagnosis for tenant administrators and the connector's operator, under existing source-control permissions.",
+              "title": "Details",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {

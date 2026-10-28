@@ -30,7 +30,7 @@ from .errors import ServiceError, not_found
 from .memory import MemoryService
 from .models import RevisionInput, json_value
 from .repository import audit, hydrate, memory_row
-from .source_health import source_health
+from .source_health import source_diagnostics, source_health
 
 
 def _digest(value: dict) -> str:
@@ -47,9 +47,14 @@ class ConnectorService(ConnectorSyncControls):
     def __init__(self, memory: MemoryService):
         self.memory, self.db = memory, memory.db
 
-    def health(self, identity: Identity) -> dict:
+    def health(
+        self, identity: Identity, *, details: bool = False, after: UUID | None = None, limit=20
+    ) -> dict:
         with self.db.transaction(identity) as conn:
-            return source_health(conn)
+            result = source_health(conn)
+            if details:
+                result["diagnostics"] = source_diagnostics(conn, after=after, limit=limit)
+            return result
 
     def create(self, identity: Identity, command: ConnectorInput) -> dict:
         with self.db.transaction(identity) as conn:

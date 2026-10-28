@@ -174,6 +174,41 @@ and other primary tools remain available. A read tool rejects a write before
 sending it. The generic write tool advertises possible destructive effects and
 does not advertise universal idempotence.
 
+### Source diagnosis and recovery (4.46.44)
+
+Use the existing `health.sources` operation with `details=true` when a source
+warning needs investigation. The default response retains personal grant-based
+counts. Explicit diagnostics use the existing source-control permissions:
+tenant administrators see affected sources across the organization; active
+connector operators see their own. A space administrator's content permissions
+do not make them a tenant administrator or connector operator. Other callers
+receive `visibility: "unavailable"` without source identities.
+
+```json
+{"action":"read","operation":"health.sources","request":{"parameters":{"details":true,"limit":20}}}
+```
+
+`diagnostics.items` identifies `space_id`, `connector_id` and the responsible
+`operator_id`, with fixed `reasons`, a `recovery` step and current `can_resume` /
+`can_request_sync` hints. It omits source paths, external memberships, private
+labels, checkpoints and raw error text. Pass `diagnostics.next_cursor` as `after`
+for the next page; `limit` is 1–100. Every page rechecks current database access.
+The hints do not authorize a later write; each command checks access again.
+
+| Recovery step | Supported action |
+| --- | --- |
+| `resume_source` | A tenant administrator explicitly calls `connectors.resume` with `space_id`. The source remains unavailable until its runner checks current provider permissions. Intentional pauses should remain paused until their owner chooses otherwise. |
+| `request_source_sync` | Read `connectors.sync_status`, then call `connectors.sync_request` with `connector_id` and that response's `requested_generation` as `body.expected_generation`. The registered runner must be online; queuing a scan does not restore permissions. |
+| `enable_connector` | A tenant administrator reviews and calls `connectors.enable` with `connector_id`, then follows the refreshed diagnosis. |
+| `restore_connector_identity` | A tenant administrator restores an active, dedicated application identity through the organization controls. Connector identities cannot carry tenant-administrator privileges. Recheck status before requesting work. |
+| `repair_source_files` | Inspect the authorized source controls / `connectors.scopes` inventory, repair unreadable source files, and request a new scan. A partial inventory does not authorize deleting retained memories. |
+
+In the app, **Connections → Source availability** shows the same affected
+sources and links to existing controls. Python uses
+`client.source_health(details=True, after=cursor, limit=20)`; TypeScript uses
+`client.sourceHealth({details: true, after: cursor, limit: 20})`.
+Reading the diagnostic view performs no recovery action.
+
 ## Use the CLI from any supported OS
 
 Install the Python release on the agent's machine. The catalog and schemas work

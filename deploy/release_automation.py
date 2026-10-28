@@ -453,7 +453,6 @@ def main():
     if args.command == "prepare":
         changed = prepare(root, args.version)
         for arguments in (
-            ["-m", "deploy.telemetry_coverage", "--write"],
             ["-m", "mnemion.service.cli", "schema", "--output", "docs/service/openapi.json"],
             [
                 "-m",
@@ -462,6 +461,9 @@ def main():
                 "--output",
                 "mnemion/service/agent_contract.json",
             ],
+            # Coverage hashes the generated contract; it must see the final
+            # interface before the release validator checks those source hashes.
+            ["-m", "deploy.telemetry_coverage", "--write"],
             ["deploy/release.py"],
         ):
             subprocess.run([sys.executable, *arguments], cwd=root, check=True)
