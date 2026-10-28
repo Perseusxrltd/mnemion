@@ -37,26 +37,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "faadaf1b6ef273b52f9723454160c49b483c01f5",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-28T19:32:26Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40751361702",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 123052170985,
-            "name": "supervision (macos-26)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-28T19:47:32Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40751361702"
     },
     {
       "id": 40702705371,
@@ -159,5 +143,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T19:32:46+00:00"
+  "observed_at": "2026-10-28T19:48:09+00:00"
 }
