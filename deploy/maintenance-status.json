@@ -21,6 +21,13 @@
       "updated_at": "2026-10-28T08:51:41Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/47",
       "labels": []
+    },
+    {
+      "number": 48,
+      "title": "Mnemion as the single system: full replacement of LEDGER/DISPATCH/files, plus vault compatibility",
+      "updated_at": "2026-10-28T09:04:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/48",
+      "labels": []
     }
   ],
   "runs": [
@@ -205,5 +212,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-28T08:52:15+00:00"
+  "observed_at": "2026-10-28T09:04:45+00:00"
 }
