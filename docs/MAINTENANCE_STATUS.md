@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T14:59:11+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T15:14:52+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.44](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.44). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,18 +21,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | ci\.yml | main | success | [Run 40684523128](https://github.com/Perseusxrltd/mnemion/actions/runs/40684523128) |
 | public-updates\.yml | v4\.46\.44 | failure | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
 | release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
-| release\.yml | release/4\.46\.45 | queued | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
-| verify-artifacts\.yml | main | skipped | [Run 40711236639](https://github.com/Perseusxrltd/mnemion/actions/runs/40711236639) |
+| release\.yml | release/4\.46\.45 | failure | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
+| verify-artifacts\.yml | main | skipped | [Run 40713875652](https://github.com/Perseusxrltd/mnemion/actions/runs/40713875652) |
 | website-release\.yml | main | success | [Run 40684523123](https://github.com/Perseusxrltd/mnemion/actions/runs/40684523123) |
 | website-release\.yml | v4\.46\.44 | success | [Run 40702700363](https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363) |
-
-## Active jobs
-
-[Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): 20/21 jobs completed; 19 succeeded.
-
-- native / macos-26 / arm64: queued.
-
 
 ## Unsuccessful jobs
 
 - [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371): macos / arm64 public upgrade (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
+- [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): native / macos-26 / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
