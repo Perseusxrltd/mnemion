@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T14:07:21+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T14:22:34+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.44](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.44). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -19,7 +19,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 40684523128](https://github.com/Perseusxrltd/mnemion/actions/runs/40684523128) |
-| public-updates\.yml | v4\.46\.44 | queued | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
+| public-updates\.yml | v4\.46\.44 | failure | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
 | release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
 | release\.yml | release/4\.46\.45 | queued | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
 | verify-artifacts\.yml | main | success | [Run 40701322252](https://github.com/Perseusxrltd/mnemion/actions/runs/40701322252) |
@@ -28,16 +28,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371): 1/7 jobs completed; 1 succeeded.
+[Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): 15/21 jobs completed; 14 succeeded.
 
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / arm64 public upgrade: queued.
-- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-26 / arm64: queued.
+- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
-[Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): 13/14 jobs completed; 12 succeeded.
 
-- native / native\_database / Database / macos / arm64: queued.
+## Unsuccessful jobs
 
+- [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371): macos / arm64 public upgrade (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
