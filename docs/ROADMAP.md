@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.45**.
+Reviewed source distribution: **4.46.46**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-28**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,20 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**28 October 2026, vault metadata access for agents:**
+The [4.46.46 source](releases/4.46.46.md) separates metadata-only MCP exposure
+from secret-value tools and adds administrator-managed, exact-key metadata
+auditor grants. App, SDK and agent controls include expiry, revision checks and
+revocation; recovery disables historical auditor access. This addresses part
+of issues 47/48 while their complete field and format acceptance remains open.
+The [source and actual app qualification](validation/2026-10-28-vault-metadata.md)
+passed; native publication and field acceptance are pending. All 66 requirement states remain;
+V08 stays Building with production collection disabled.
+The same batch enables balanced installer compression and automated component
+size reporting. The [footprint plan](implementation/installer-footprint.md)
+retains the reported 1 GB download, measured current artifacts and the remaining
+on-demand runtime evaluation. All existing capabilities remain in the package.
 
 **28 October 2026, automatic collector certificate preparation:**
 The [4.46.45 source](releases/4.46.45.md) gives the separate telemetry collector

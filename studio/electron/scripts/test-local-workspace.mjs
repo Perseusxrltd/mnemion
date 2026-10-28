@@ -47,6 +47,19 @@ const vaultInfo = (configured = false) => ({ ...addressInfo(17400), vault_access
   repairable: true, enabled: configured, mcp_enabled: false, key_id: configured ? vaultKeyId(vaultKey) : null,
   message: 'Private vault fixture',
 } })
+
+test('metadata-only vault settings preserve older inputs and reject ambiguous flags', () => {
+  assert.deepEqual(vaultOptions(vaultChange), vaultChange)
+  const metadata = { ...vaultChange, mcp_metadata_enabled: true }
+  assert.deepEqual(vaultOptions(metadata), metadata)
+  assert.equal(vaultOptions(metadata).mcp_enabled, false)
+  for (const invalid of ['true', 1, null, {}]) {
+    assert.throws(() => vaultOptions({ ...metadata, mcp_metadata_enabled: invalid }))
+    assert.throws(() => vaultSnapshot({ ...vaultInfo(true).vault_access, mcp_metadata_enabled: invalid }))
+  }
+  assert.deepEqual(vaultSnapshot(vaultInfo(true).vault_access), vaultInfo(true).vault_access)
+  assert.equal(vaultSnapshot({ ...vaultInfo(true).vault_access, mcp_metadata_enabled: true }).mcp_metadata_enabled, true)
+})
 const journalDestination = { space_id: '00000000-0000-4000-8000-000000000014', label: 'Team memory',
   remote: 'https://git.example.test/team/memory.git', branch: 'main', prefix: 'memory/native-buffer', personal_data_scan: true }
 const journalChange = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured', action: 'save', destination: journalDestination }

@@ -53,6 +53,39 @@ def test_private_key_setup_status_disable_and_explicit_recovery_copy(tmp_path):
     assert key not in json.dumps(local_vault.inspection(root, settings["workspace_id"]))
 
 
+def test_metadata_host_opt_in_preserves_legacy_files_and_omitted_changes(tmp_path):
+    root, settings, _ = workspace(tmp_path)
+    key = new_vault_key()
+    saved = local_vault.configure(root, change(settings, key=key))
+    assert not saved["mcp_metadata_enabled"]
+    path = root / "vault-access.json"
+    legacy = json.loads(state.read_bytes(path))
+    legacy.pop("mcp_metadata_enabled")
+    state.write(path, legacy, replace=True)
+    assert not local_vault.settings(root, settings["workspace_id"]).mcp_metadata_enabled
+    enabled = local_vault.configure(
+        root, change(settings, revision=saved["revision"], mcp_metadata_enabled=True)
+    )
+    assert enabled["mcp_metadata_enabled"] and not enabled["mcp_enabled"]
+    retained = local_vault.configure(root, change(settings, revision=enabled["revision"]))
+    assert retained["mcp_metadata_enabled"]
+    disabled = local_vault.configure(
+        root, change(settings, revision=retained["revision"], mcp_metadata_enabled=False)
+    )
+    assert not disabled["mcp_metadata_enabled"]
+    assert key not in json.dumps(disabled)
+
+
+def test_metadata_environment_flag_does_not_enable_values(monkeypatch):
+    from mnemion.service.vault_crypto import VaultSettings
+
+    monkeypatch.setenv("MNEMION_VAULT_ENABLED", "1")
+    monkeypatch.setenv("MNEMION_VAULT_MCP_ENABLED", "0")
+    monkeypatch.setenv("MNEMION_VAULT_MCP_METADATA_ENABLED", "1")
+    settings = VaultSettings.from_environment()
+    assert settings.mcp_metadata_enabled and not settings.mcp_enabled
+
+
 def test_configuration_requires_current_host_revision_and_stopped_workspace(tmp_path):
     root, settings, _ = workspace(tmp_path)
     key = new_vault_key()

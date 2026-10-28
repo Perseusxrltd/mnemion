@@ -24,6 +24,7 @@ class VaultRecord(BaseModel):
     key: SecretStr
     enabled: bool
     mcp_enabled: bool
+    mcp_metadata_enabled: bool = False
 
     @field_validator("key")
     @classmethod
@@ -42,6 +43,7 @@ class VaultChange(VaultRequest):
     action: Literal["configure", "restore"] = "configure"
     enabled: bool
     mcp_enabled: bool = False
+    mcp_metadata_enabled: bool | None = None
     recovery_key: SecretStr | None = None
     key_saved: bool = False
 
@@ -77,6 +79,7 @@ def inspection(root: Path, workspace_id: str):
         "state": "configuration_error",
         "enabled": False,
         "mcp_enabled": False,
+        "mcp_metadata_enabled": False,
         "key_id": None,
         "message": "Vault settings could not be read safely. Memory access is retained.",
     }
@@ -105,6 +108,7 @@ def inspection(root: Path, workspace_id: str):
             state="configured" if saved.enabled else "disabled",
             enabled=saved.enabled,
             mcp_enabled=saved.mcp_enabled,
+            mcp_metadata_enabled=saved.mcp_metadata_enabled,
             key_id=VaultCipher(saved.key.get_secret_value()).key_id,
             message="The vault key is saved on this host. Credential access still requires explicit grants."
             if saved.enabled
@@ -161,6 +165,9 @@ def configure(root: Path, change: VaultChange):
             key=key,
             enabled=change.enabled,
             mcp_enabled=change.mcp_enabled,
+            mcp_metadata_enabled=change.mcp_metadata_enabled
+            if change.mcp_metadata_enabled is not None
+            else (saved.mcp_metadata_enabled if saved else False),
         )
         value = updated.model_dump(mode="json")
         value["key"] = key.get_secret_value()
@@ -193,4 +200,9 @@ def settings(root: Path, workspace_id: str):
         return VaultSettings()
     if saved is None:
         return VaultSettings.from_environment() if content is None else VaultSettings()
-    return VaultSettings(key=saved.key, enabled=saved.enabled, mcp_enabled=saved.mcp_enabled)
+    return VaultSettings(
+        key=saved.key,
+        enabled=saved.enabled,
+        mcp_enabled=saved.mcp_enabled,
+        mcp_metadata_enabled=saved.mcp_metadata_enabled,
+    )

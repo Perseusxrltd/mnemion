@@ -30845,6 +30845,18 @@
                 "format": "uuid",
                 "title": "Principal Id",
                 "type": "string"
+              },
+              "target_key_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Target Key Id"
               }
             },
             "required": [
@@ -30852,6 +30864,7 @@
               "principal_id",
               "key_id",
               "entry_id",
+              "target_key_id",
               "action",
               "outcome",
               "occurred_at"
@@ -30871,6 +30884,299 @@
       "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Vault Audit"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "VaultAuditorChange": {
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "title": "Enabled",
+                "type": "boolean"
+              },
+              "expected_version": {
+                "maximum": 2147483646.0,
+                "minimum": 0.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "expires_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expires At"
+              }
+            },
+            "required": [
+              "expected_version",
+              "enabled"
+            ],
+            "title": "VaultAuditorChange",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/VaultAuditorChange"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "key_id": {
+                "format": "uuid",
+                "title": "Key Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "vault.auditor",
+      "output_schema": {
+        "$defs": {
+          "VaultAuditor": {
+            "additionalProperties": false,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "enabled": {
+                "title": "Enabled",
+                "type": "boolean"
+              },
+              "expires_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expires At"
+              },
+              "key_id": {
+                "format": "uuid",
+                "title": "Key Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "key_id",
+              "principal_id",
+              "name",
+              "version",
+              "enabled",
+              "expires_at",
+              "active",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "VaultAuditor",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultAuditor"
+      },
+      "parameter_locations": {
+        "key_id": "path"
+      },
+      "path": "/v1/vault/auditors/{key_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Auditor"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "key_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Key Id"
+              },
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "maximum": 10000,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "vault.auditors",
+      "output_schema": {
+        "$defs": {
+          "Page_VaultAuditor_": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultAuditor"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "title": "Page[VaultAuditor]",
+            "type": "object"
+          },
+          "VaultAuditor": {
+            "additionalProperties": false,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "enabled": {
+                "title": "Enabled",
+                "type": "boolean"
+              },
+              "expires_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expires At"
+              },
+              "key_id": {
+                "format": "uuid",
+                "title": "Key Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "key_id",
+              "principal_id",
+              "name",
+              "version",
+              "enabled",
+              "expires_at",
+              "active",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "VaultAuditor",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/Page_VaultAuditor_"
+      },
+      "parameter_locations": {
+        "key_id": "query",
+        "limit": "query",
+        "offset": "query"
+      },
+      "path": "/v1/vault/auditors",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Auditors"
     },
     {
       "authentication": "bearer",
@@ -32425,6 +32731,10 @@
                 "title": "Administrator",
                 "type": "boolean"
               },
+              "audit_access": {
+                "title": "Audit Access",
+                "type": "boolean"
+              },
               "available": {
                 "title": "Available",
                 "type": "boolean"
@@ -32480,6 +32790,14 @@
                 "title": "Mcp Enabled",
                 "type": "boolean"
               },
+              "mcp_metadata_enabled": {
+                "title": "Mcp Metadata Enabled",
+                "type": "boolean"
+              },
+              "metadata_available": {
+                "title": "Metadata Available",
+                "type": "boolean"
+              },
               "required_key_ids": {
                 "items": {
                   "type": "string"
@@ -32492,6 +32810,9 @@
               "configured",
               "enabled",
               "mcp_enabled",
+              "mcp_metadata_enabled",
+              "metadata_available",
+              "audit_access",
               "available",
               "error_code",
               "key_id",

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { root, platformArtifacts } from './platform-artifacts.mjs'
 import { verifyNativeResources } from './native-resources.mjs'
+import { packageFootprint } from './package-footprint.mjs'
 
 const artifacts = platformArtifacts()
 const requireSignature = process.env.MNEMION_REQUIRE_CODE_SIGNATURE === '1'
@@ -121,4 +122,5 @@ for (const path of artifacts.installers) {
 }
 writeFileSync(join(artifacts.output, `SHA256SUMS-${process.platform}-${process.arch}.txt`), checksums.join('\n') + '\n')
 console.log(JSON.stringify({ ok: true, platform: process.platform, architecture: process.arch, signature, nativeRuntime,
+  unpacked: packageFootprint(artifacts.bundle, artifacts.resources),
   installers: artifacts.installers.map(path => ({ file: basename(path), bytes: statSync(path).size })) }, null, 2))

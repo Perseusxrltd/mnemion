@@ -47,6 +47,8 @@ vault.keepass.preview POST /v1/vault/keepass/preview
 vault.keepass.import POST /v1/vault/keepass/import
 vault.keepass.export POST /v1/vault/keepass/export
 vault.audit GET /v1/vault/audit
+vault.auditors GET /v1/vault/auditors
+vault.auditor PUT /v1/vault/auditors/{key_id}
 spaces.list GET /v1/spaces
 spaces.create POST /v1/spaces
 spaces.get GET /v1/spaces/{space_id}

@@ -1,6 +1,6 @@
 {
   "name": "mnemion-studio",
-  "version": "4.46.45",
+  "version": "4.46.46",
   "description": "Mnemion Studio - shared app and team memory with Obsidian visualization",
   "author": {
     "name": "PERSEUS LEGACY LIMITED",
@@ -33,7 +33,7 @@
     "appId": "com.perseusxr.mnemion-studio",
     "productName": "Mnemion Studio",
     "copyright": "Copyright 2026 PERSEUS LEGACY LIMITED",
-    "compression": "store",
+    "compression": "normal",
     "directories": {
       "output": "../../dist-electron"
     },

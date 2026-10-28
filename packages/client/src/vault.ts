@@ -5,6 +5,7 @@ export interface VaultEntry {
 }
 export interface VaultStatus {
   configured: boolean; enabled: boolean; mcp_enabled: boolean; available: boolean; error_code: string | null;
+  mcp_metadata_enabled?: boolean; metadata_available?: boolean; audit_access?: boolean;
   key_id: string | null; required_key_ids: string[]; current_key_id: string; current_person_id: string | null; administrator: boolean;
 }
 export interface VaultPage<T> { items: T[]; next_offset: number | null }
@@ -13,7 +14,9 @@ export interface VaultGrants { entry_id: string; access_version: number; items: 
 export interface VaultGrantInput { expected_access_version: number; subject_kind: 'person' | 'key'; subject_id: string; read?: boolean; write?: boolean; remove?: boolean }
 export interface VaultPutInput { expected_version: number; name: string; value: string }
 export interface VaultEnvelope { format: 'mnemion-vault-export'; version: 1; key_id: string; nonce: string; ciphertext: string }
-export interface VaultAuditEvent { id: string; principal_id: string; key_id: string; entry_id: string | null; action: string; outcome: string; occurred_at: string }
+export interface VaultAuditEvent { id: string; principal_id: string; key_id: string; entry_id: string | null; target_key_id?: string | null; action: string; outcome: string; occurred_at: string }
+export interface VaultAuditor { key_id: string; principal_id: string; name: string; version: number; enabled: boolean; expires_at: string | null; active: boolean; created_at: string; updated_at: string }
+export interface VaultAuditorInput { expected_version: number; enabled: boolean; expires_at?: string | null }
 export interface KeepassPreviewInput { file: string; password?: string | null; key_file?: string | null; namespace?: string; mask_names?: boolean }
 export interface KeepassImportInput extends KeepassPreviewInput { expected_plan: string; import_current_values: true }
 export interface KeepassPreview {

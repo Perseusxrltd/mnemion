@@ -13,6 +13,7 @@ from .vault_crypto import VaultCipher, VaultSettings
 from .vault_models import (
     KeepassMapping,
     VaultArchive,
+    VaultAuditorChange,
     VaultDelete,
     VaultExport,
     VaultGrant,
@@ -42,6 +43,10 @@ class VaultService:
     @staticmethod
     def _administrator(conn):
         return conn.execute("SELECT mnemion.administrator() AS value").fetchone()["value"]
+
+    @staticmethod
+    def _auditor(conn):
+        return conn.execute("SELECT mnemion.vault_auditor() AS value").fetchone()["value"]
 
     @staticmethod
     def _person(conn, identity):
@@ -76,6 +81,11 @@ class VaultService:
             "configured": bool(self.settings.key),
             "enabled": self.settings.enabled,
             "mcp_enabled": self.settings.enabled and self.settings.mcp_enabled,
+            "mcp_metadata_enabled": self.settings.enabled
+            and (self.settings.mcp_metadata_enabled or self.settings.mcp_enabled),
+            "metadata_available": self.settings.enabled,
+            "audit_access": self._administrator(conn)
+            or (self.settings.enabled and self._auditor(conn)),
             "available": code is None,
             "error_code": code,
             "key_id": key_id,
@@ -91,7 +101,7 @@ class VaultService:
             return self._status(conn, identity)
 
     @contextmanager
-    def _access(self, identity, action, entry=None):
+    def _access(self, identity, action, entry=None, *, metadata=False, target_key=None):
         failure = None
         # This is also the key/person/grant retirement lock. Values are never
         # released by a request that waited behind its own revocation.
@@ -99,7 +109,11 @@ class VaultService:
             self._scope(conn, identity)
             try:
                 with conn.transaction():
-                    status = self._status(conn, identity)
+                    status = (
+                        {"available": self.settings.enabled, "error_code": "vault_disabled"}
+                        if metadata
+                        else self._status(conn, identity)
+                    )
                     if not status["available"]:
                         raise ServiceError(
                             503,
@@ -124,8 +138,8 @@ class VaultService:
             # label, ciphertext, request body nor recovery key belongs here.
             conn.execute(
                 """INSERT INTO mnemion.vault_audit_events
-                   (tenant_id,id,principal_id,key_id,entry_id,action,outcome)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                   (tenant_id,id,principal_id,key_id,entry_id,action,outcome,target_key_id)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
                 (
                     identity.tenant_id,
                     uuid4(),
@@ -134,6 +148,7 @@ class VaultService:
                     entry,
                     action,
                     outcome,
+                    target_key,
                 ),
             )
         if failure is not None:
@@ -163,7 +178,7 @@ class VaultService:
         }
 
     def list(self, identity: Identity, *, offset=0, limit=100):
-        with self._access(identity, "list") as conn:
+        with self._access(identity, "list", metadata=True) as conn:
             admin = self._administrator(conn)
             rows = conn.execute(
                 f"SELECT {METADATA},mnemion.vault_rights(id) AS rights FROM mnemion.vault_entries "
@@ -337,9 +352,82 @@ class VaultService:
         }
 
     def grants(self, identity: Identity, entry: UUID):
-        with self._access(identity, "list", entry) as conn:
+        with self._access(identity, "list", entry, metadata=True) as conn:
             require_administrator(conn)
             return self._grants(conn, entry)
+
+    @staticmethod
+    def _auditors(conn, *, offset=0, limit=100, key=None):
+        return conn.execute(
+            """SELECT a.key_id,k.principal_id,k.name,a.version,a.enabled,a.expires_at,
+                a.created_at,a.updated_at,
+                (a.enabled AND (a.expires_at IS NULL OR a.expires_at>clock_timestamp())
+                  AND k.revoked_at IS NULL AND p.disabled_at IS NULL
+                  AND (k.expires_at IS NULL OR k.expires_at>clock_timestamp())) AS active
+               FROM mnemion.vault_auditors a
+               JOIN mnemion.api_keys k ON k.tenant_id=a.tenant_id AND k.id=a.key_id
+               JOIN mnemion.principals p ON p.tenant_id=k.tenant_id AND p.id=k.principal_id
+               WHERE (%s::uuid IS NULL OR a.key_id=%s) ORDER BY a.key_id LIMIT %s OFFSET %s""",
+            (key, key, limit, offset),
+        ).fetchall()
+
+    def auditors(self, identity: Identity, *, offset=0, limit=100, key_id=None):
+        with self._access(identity, "list", metadata=True) as conn:
+            require_administrator(conn)
+            rows = self._auditors(conn, offset=offset, limit=limit + 1, key=key_id)
+            return {
+                "items": json_value(rows[:limit]),
+                "next_offset": offset + limit if len(rows) > limit else None,
+            }
+
+    def auditor(self, identity: Identity, key: UUID, command: VaultAuditorChange):
+        with self._access(identity, "auditor", metadata=True, target_key=key) as conn:
+            require_administrator(conn)
+            rows = self._auditors(conn, key=key)
+            current = rows[0] if rows else None
+            if (current["version"] if current else 0) != command.expected_version:
+                raise ServiceError(
+                    409, "vault_auditor_changed", "Auditor access changed. Reload and review it."
+                )
+            if not conn.execute(
+                """SELECT k.id FROM mnemion.api_keys k JOIN mnemion.principals p
+                   ON p.tenant_id=k.tenant_id AND p.id=k.principal_id
+                   WHERE k.id=%s AND (NOT %s OR (k.revoked_at IS NULL
+                     AND p.disabled_at IS NULL
+                     AND (k.expires_at IS NULL OR k.expires_at>clock_timestamp())))""",
+                (key, command.enabled),
+            ).fetchone():
+                raise ServiceError(
+                    422, "vault_grant_subject", "Choose an active key in this workspace."
+                )
+            if (
+                command.enabled
+                and command.expires_at
+                and not conn.execute(
+                    "SELECT %s::timestamptz>clock_timestamp() AS valid", (command.expires_at,)
+                ).fetchone()["valid"]
+            ):
+                raise ServiceError(
+                    422, "vault_auditor_expiry", "Choose a future expiry for this grant."
+                )
+            if (
+                current is None
+                and conn.execute("SELECT count(*) AS count FROM mnemion.vault_auditors").fetchone()[
+                    "count"
+                ]
+                >= 1000
+            ):
+                raise ServiceError(
+                    409, "vault_grant_capacity", "This vault already has 1000 auditor records."
+                )
+            conn.execute(
+                """INSERT INTO mnemion.vault_auditors(tenant_id,key_id,version,enabled,expires_at)
+                   VALUES (%s,%s,1,%s,%s) ON CONFLICT(tenant_id,key_id) DO UPDATE SET
+                   version=vault_auditors.version+1,enabled=excluded.enabled,
+                   expires_at=excluded.expires_at,updated_at=clock_timestamp()""",
+                (identity.tenant_id, key, command.enabled, command.expires_at),
+            )
+            return json_value(self._auditors(conn, key=key)[0])
 
     def grant(self, identity: Identity, entry: UUID, command: VaultGrant):
         with self._access(identity, "grant", entry) as conn:
@@ -499,10 +587,14 @@ class VaultService:
             return {"items": items, "next_offset": None}
 
     def audit_events(self, identity: Identity, *, offset=0, limit=100):
-        with self.db.transaction(identity) as conn:
-            require_administrator(conn)
+        with self.db.administration_transaction(identity) as conn:
+            self._scope(conn, identity)
+            if not self._administrator(conn) and not (
+                self.settings.enabled and self._auditor(conn)
+            ):
+                raise forbidden()
             rows = conn.execute(
-                """SELECT id,principal_id,key_id,entry_id,action,outcome,occurred_at
+                """SELECT id,principal_id,key_id,entry_id,action,outcome,occurred_at,target_key_id
                 FROM mnemion.vault_audit_events ORDER BY occurred_at DESC,id LIMIT %s OFFSET %s""",
                 (limit + 1, offset),
             ).fetchall()

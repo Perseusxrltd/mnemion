@@ -41,6 +41,7 @@ class VaultSettings(BaseModel):
     key: SecretStr | None = None
     enabled: bool = False
     mcp_enabled: bool = False
+    mcp_metadata_enabled: bool = False
 
     @classmethod
     def from_environment(cls):
@@ -48,6 +49,7 @@ class VaultSettings(BaseModel):
             key=os.environ.get("MNEMION_VAULT_KEY") or None,
             enabled=os.environ.get("MNEMION_VAULT_ENABLED", "0") == "1",
             mcp_enabled=os.environ.get("MNEMION_VAULT_MCP_ENABLED", "0") == "1",
+            mcp_metadata_enabled=os.environ.get("MNEMION_VAULT_MCP_METADATA_ENABLED", "0") == "1",
         )
 
 

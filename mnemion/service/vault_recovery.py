@@ -72,4 +72,10 @@ def restore(conn, ledger):
     # New recovery keys and freshly reenrolled people need explicitly reviewed
     # vault grants. An old session/person grant is never silently resurrected.
     conn.execute("DELETE FROM mnemion.vault_grants")
+    if conn.execute("SELECT to_regclass('mnemion.vault_auditors') AS relation").fetchone()[
+        "relation"
+    ]:
+        conn.execute(
+            "UPDATE mnemion.vault_auditors SET enabled=false,version=version+1,updated_at=clock_timestamp()"
+        )
     conn.execute("UPDATE mnemion.vault_entries SET access_version=access_version+1")

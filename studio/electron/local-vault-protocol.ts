@@ -20,17 +20,19 @@ export function vaultRequest(input: unknown): VaultRequest {
   return { workspace_id: value.workspace_id, expected_revision: value.expected_revision }
 }
 export function vaultOptions(input: unknown): VaultChange {
-  const value = object(input, ['workspace_id', 'expected_revision', 'action', 'enabled', 'mcp_enabled', 'recovery_key', 'key_saved'])
+  const value = object(input, ['workspace_id', 'expected_revision', 'action', 'enabled', 'mcp_enabled', 'mcp_metadata_enabled', 'recovery_key', 'key_saved'])
   const base = vaultRequest({ workspace_id: value.workspace_id, expected_revision: value.expected_revision })
   if (!['configure', 'restore'].includes(String(value.action)) || typeof value.enabled !== 'boolean' || typeof value.mcp_enabled !== 'boolean' || (value.key_saved !== undefined && typeof value.key_saved !== 'boolean')) throw new Error('Choose the vault access and key recovery settings.')
+  if (value.mcp_metadata_enabled !== undefined && typeof value.mcp_metadata_enabled !== 'boolean') throw new Error('Choose whether agents can inspect vault metadata.')
   if (value.recovery_key !== undefined) vaultKeyId(value.recovery_key)
   if ((value.action === 'restore' || base.expected_revision === 'not-configured') && (!value.recovery_key || value.key_saved !== true)) throw new Error('Save an independent copy of the vault key before enabling it.')
   return structuredClone(value) as VaultChange
 }
 export function vaultSnapshot(input: unknown): VaultAccess {
-  const value = object(input, ['revision', 'repairable', 'state', 'enabled', 'mcp_enabled', 'key_id', 'message'])
+  const value = object(input, ['revision', 'repairable', 'state', 'enabled', 'mcp_enabled', 'mcp_metadata_enabled', 'key_id', 'message'])
   if (typeof value.revision !== 'string' || (!revision.test(value.revision) && value.revision !== 'unreadable') ||
       typeof value.repairable !== 'boolean' || typeof value.enabled !== 'boolean' || typeof value.mcp_enabled !== 'boolean' ||
+      (value.mcp_metadata_enabled !== undefined && typeof value.mcp_metadata_enabled !== 'boolean') ||
       !['not_configured', 'configured', 'disabled', 'configuration_error', 'external'].includes(String(value.state)) ||
       (value.key_id !== null && (typeof value.key_id !== 'string' || !keyId.test(value.key_id))) ||
       typeof value.message !== 'string' || !value.message || value.message.length > 512) throw new Error('Invalid public vault status.')

@@ -9,6 +9,7 @@ export default function VaultSetup({ status, onStatus }: { status: LocalStatus; 
   const saved = status.info?.vault_access, settings = status.info?.settings, desktop = window.mnemion;
   const [editing, setEditing] = useState(false), [restoring, setRestoring] = useState(false);
   const [enabled, setEnabled] = useState(false), [mcp, setMcp] = useState(false), [revision, setRevision] = useState('');
+  const [metadata, setMetadata] = useState(false);
   const [key, setKey] = useState(''), [keySaved, setKeySaved] = useState(false), [visible, setVisible] = useState(false);
   const [revealed, setRevealed] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>();
   const [notice, setNotice] = useState('');
@@ -28,6 +29,7 @@ export default function VaultSetup({ status, onStatus }: { status: LocalStatus; 
   function begin(restore = false) {
     cancel(); setNotice(''); setRevision(saved!.revision); setEditing(true); setRestoring(restore);
     setEnabled(saved!.key_id ? saved!.enabled : true); setMcp(saved!.mcp_enabled);
+    setMetadata(saved!.mcp_metadata_enabled ?? false);
   }
   async function copy(value: string) {
     try { await navigator.clipboard.writeText(value); setNotice('Key copied. Keep its recovery copy separate from the encrypted backup.'); }
@@ -57,14 +59,16 @@ export default function VaultSetup({ status, onStatus }: { status: LocalStatus; 
       event.preventDefault(); if (stale) return; setBusy(true); setError(undefined); setRevealed('');
       try {
         const next = await desktop.localVault!({ workspace_id: settings.workspace_id, expected_revision: revision,
-          action: restoring ? 'restore' : 'configure', enabled, mcp_enabled: mcp,
+          action: restoring ? 'restore' : 'configure', enabled, mcp_enabled: mcp, mcp_metadata_enabled: metadata,
           ...(key ? { recovery_key: key, key_saved: keySaved } : {}) });
         if (live.current) { onStatus(next); cancel(); setNotice(next.state === 'starting' ? 'Vault settings saved. The workspace is restarting.' : 'Vault settings saved. Start the workspace to use them.'); }
       } catch (error) { if (live.current) setError(error); }
       finally { if (live.current) setBusy(false); }
     }}><fieldset disabled={working || stale} className="ws-setup-fields">
       <label className="ws-checkbox"><input type="checkbox" checked={enabled} onChange={event => setEnabled(event.target.checked)} /><span>Enable credential access in the app and API</span></label>
-      <label className="ws-checkbox"><input type="checkbox" checked={mcp} onChange={event => setMcp(event.target.checked)} /><span>Also enable the vault MCP tools for explicitly granted agents</span></label>
+      <label className="ws-checkbox"><input type="checkbox" checked={metadata || mcp} disabled={mcp} onChange={event => setMetadata(event.target.checked)} /><span>Let agents inspect permitted credential names, versions and access logs through MCP</span></label>
+      <small>Choose the specific metadata auditor keys in Secrets. This setting grants no permission to read or change secret values.</small>
+      <label className="ws-checkbox"><input type="checkbox" checked={mcp} onChange={event => setMcp(event.target.checked)} /><span>Also enable explicit secret-value MCP tools for granted agents</span></label>
       <small>MCP reads send the requested credential to that client or model. Ordinary memory search, context and automatic capture never include vault values. Disabling app/API access also disables the vault tools.</small>
       {(!saved.key_id || restoring) && <><h3>{restoring ? 'Restore the original key' : 'Create and save your recovery key'}</h3>
         <p>{restoring ? 'Use the key that encrypted your existing credentials. Previous private key files are retained; supplying a new key does not re-encrypt old values.' : 'Keep an independent copy before continuing. Workspace backups contain encrypted values; they do not include this host key.'}</p>

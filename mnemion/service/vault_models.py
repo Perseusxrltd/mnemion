@@ -51,6 +51,9 @@ class VaultStatus(VaultResponse):
     configured: bool
     enabled: bool
     mcp_enabled: bool
+    mcp_metadata_enabled: bool
+    metadata_available: bool
+    audit_access: bool
     available: bool
     error_code: str | None
     key_id: str | None
@@ -82,6 +85,24 @@ class VaultGrants(VaultResponse):
     entry_id: UUID
     access_version: int
     items: list[VaultGrantRecord]
+
+
+class VaultAuditorChange(Command):
+    expected_version: int = Field(ge=0, le=2147483646, strict=True)
+    enabled: bool = Field(strict=True)
+    expires_at: AwareDatetime | None = None
+
+
+class VaultAuditor(VaultResponse):
+    key_id: UUID
+    principal_id: UUID
+    name: str
+    version: int
+    enabled: bool
+    expires_at: AwareDatetime | None
+    active: bool
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
 
 
 class VaultDelete(Command):
@@ -166,6 +187,7 @@ class VaultAuditEvent(VaultResponse):
     principal_id: UUID
     key_id: UUID
     entry_id: UUID | None
+    target_key_id: UUID | None
     action: str
     outcome: str
     occurred_at: AwareDatetime

@@ -10,7 +10,7 @@ import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnectio
 export * from './sign-in.js'
 import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
-import type { KeepassExported, KeepassImported, KeepassImportInput, KeepassPreview, KeepassPreviewInput, VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
+import type { KeepassExported, KeepassImported, KeepassImportInput, KeepassPreview, KeepassPreviewInput, VaultAuditEvent, VaultAuditor, VaultAuditorInput, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
 export * from './vault.js'
 import type { JournalBackfillControl, JournalBackfillStart, JournalBackfillStatus, JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
 export * from './writeback.js'
@@ -374,6 +374,8 @@ export class MnemionClient {
   importKeePass(input: KeepassImportInput) { return this.request<KeepassImported>('POST', '/v1/vault/keepass/import', { body: input }) }
   exportKeePass(entry_ids: string[], password: string) { return this.request<KeepassExported>('POST', '/v1/vault/keepass/export', { body: { entry_ids, password } }) }
   vaultAudit(offset = 0, limit = 100) { return this.request<VaultPage<VaultAuditEvent>>('GET', `/v1/vault/audit?offset=${offset}&limit=${limit}`) }
+  vaultAuditors(offset = 0, limit = 100, keyId?: string) { return this.request<VaultPage<VaultAuditor>>('GET', `/v1/vault/auditors?offset=${offset}&limit=${limit}${keyId ? `&key_id=${encodeURIComponent(keyId)}` : ''}`) }
+  setVaultAuditor(keyId: string, input: VaultAuditorInput) { return this.request<VaultAuditor>('PUT', `/v1/vault/auditors/${encodeURIComponent(keyId)}`, { body: input }) }
   configureRecoveryDirectory(expected_revision: number, directory: RecoveryDirectory) {
     return this.request<RecoveryDirectoryRecord>('PUT', '/v1/recovery-directory', { body: { expected_revision, directory } })
   }

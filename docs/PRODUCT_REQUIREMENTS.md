@@ -13,6 +13,10 @@ acceptance under F02/F08/A03; named password-vault formats and lossless sync
 extend A04/C01/A09. Existing ledger/dispatch files remain authoritative until
 their migration is accepted. These additions do not mark any parent complete
 or replace any of the original 66 requested outcomes.
+The [installer footprint plan](implementation/installer-footprint.md) retains
+the 28 October request to reduce a reported 1 GB download under F05/F06 and
+release/update acceptance. Package-size measurements, compressed distributions
+and possible on-demand local runtimes must preserve all existing functionality.
 The generated [release status](RELEASE_STATUS.md) records the current published
 distribution and release gates. The audit preserves dated publication and
 actual-deployment evidence as historical snapshots. At the **22 October 2026

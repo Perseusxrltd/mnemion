@@ -239,6 +239,10 @@ def create_mcp(
         api_app.state.vault.settings if api_app is not None else VaultSettings.from_environment()
     )
     vault_tools = vault_settings.enabled and vault_settings.mcp_enabled
+    vault_metadata = vault_tools or (vault_settings.enabled and vault_settings.mcp_metadata_enabled)
+    vault_metadata_operations = frozenset(
+        {"vault.status", "vault.list", "vault.audit", "vault.auditors", "vault.auditor"}
+    )
     server = MnemionMCPServer(
         "Mnemion",
         api_url=base_url,
@@ -437,10 +441,12 @@ def create_mcp(
         return agent_control.describe(operation)
 
     def tool_operation(name, request, effect):
-        if name.startswith("vault.") and not vault_tools:
+        if name.startswith("vault.") and not (
+            vault_tools or (vault_metadata and name in vault_metadata_operations)
+        ):
             raise agent_control.ControlError(
                 "vault_mcp_disabled",
-                "Vault tools are disabled by this MCP host's operator.",
+                "This vault operation is disabled by the MCP host. Metadata access and secret-value tools have separate host settings.",
                 status=403,
             )
         operation, _ = agent_control.prepare(name, request, effect=effect)
@@ -493,7 +499,7 @@ def create_mcp(
             _tool="mnemion_write",
         )
 
-    if vault_tools:
+    if vault_metadata:
 
         @server.tool(annotations=Read, structured_output=True)
         async def vault_list(
@@ -509,6 +515,8 @@ def create_mcp(
                 ),
                 _tool="vault_list",
             )
+
+    if vault_tools:
 
         @server.tool(annotations=Read, structured_output=True)
         async def vault_get(entry_id: UUID, ctx: Context) -> dict[str, Any]:

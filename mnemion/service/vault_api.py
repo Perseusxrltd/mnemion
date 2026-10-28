@@ -19,6 +19,8 @@ from .keepass_models import (
 from .vault import VaultService
 from .vault_models import (
     VaultAuditEvent,
+    VaultAuditor,
+    VaultAuditorChange,
     VaultDelete,
     VaultDeleted,
     VaultEntry,
@@ -47,6 +49,18 @@ def attach_vault(app, service: VaultService, authenticated):
     def vault_list(identity: Auth, offset: Offset = 0, limit: Limit = 100):
         """List permitted credential names and current versions; values are never included."""
         return service.list(identity, offset=offset, limit=limit)
+
+    @app.get("/v1/vault/auditors", response_model=Page[VaultAuditor], tags=["Vault"])
+    def vault_auditors(
+        identity: Auth, offset: Offset = 0, limit: Limit = 100, key_id: UUID | None = None
+    ):
+        """Review exact-key metadata auditor grants as a workspace administrator."""
+        return service.auditors(identity, offset=offset, limit=limit, key_id=key_id)
+
+    @app.put("/v1/vault/auditors/{key_id}", response_model=VaultAuditor, tags=["Vault"])
+    def vault_auditor(key_id: UUID, command: VaultAuditorChange, identity: Auth):
+        """Grant or revoke vault-wide metadata and audit access, never value permissions."""
+        return service.auditor(identity, key_id, command)
 
     @app.get("/v1/vault/entries/{entry_id}", response_model=VaultValue, tags=["Vault"])
     def vault_get(entry_id: UUID, identity: Auth):

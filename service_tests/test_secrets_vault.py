@@ -18,7 +18,14 @@ from mnemion.service.db import Database
 from mnemion.service.models import KeyInput, PrincipalInput
 from mnemion.service.vault import VaultService
 from mnemion.service.vault_crypto import VaultSettings, new_vault_key
-from mnemion.service.vault_models import VaultDelete, VaultExport, VaultGrant, VaultImport, VaultPut
+from mnemion.service.vault_models import (
+    VaultAuditorChange,
+    VaultDelete,
+    VaultExport,
+    VaultGrant,
+    VaultImport,
+    VaultPut,
+)
 from service_tests.test_administration_continuity import authorization
 from service_tests.test_mcp_compatibility import call, request
 from service_tests.test_recovery import destination as destination
@@ -359,7 +366,9 @@ def test_delete_purges_ciphertext_and_refuses_reuse(env, vault):
         (VaultSettings(enabled=True, key="invalid-fixture-key"), "vault_key_invalid"),
     ],
 )
-def test_bad_vault_configuration_keeps_memory_available_and_vault_closed(env, settings, code):
+def test_bad_vault_configuration_keeps_values_closed_and_permitted_metadata_inspectable(
+    env, settings, code
+):
     with TestClient(
         create_app(
             env.db, env.embedder, vault_settings=settings, mcp_enabled=False, studio_enabled=False
@@ -369,7 +378,12 @@ def test_bad_vault_configuration_keeps_memory_available_and_vault_closed(env, se
         assert api.get("/v1/me", headers=headers).status_code == 200
         status = api.get("/v1/vault/status", headers=headers).json()
         assert not status["available"] and status["error_code"] == code
-        assert api.get("/v1/vault/entries", headers=headers).status_code == 503
+        assert status["metadata_available"] == settings.enabled
+        listing = api.get("/v1/vault/entries", headers=headers)
+        assert listing.status_code == (200 if settings.enabled else 503)
+        if settings.enabled:
+            assert listing.json()["items"] == []
+        assert api.get(f"/v1/vault/entries/{uuid4()}", headers=headers).status_code == 503
 
 
 def test_wrong_host_key_cannot_silently_create_a_second_key_family(env, vault):
@@ -527,6 +541,8 @@ def test_actual_backup_restore_requires_separate_key_and_fresh_grants(
 ):
     survivor = create(vault, env.owner)
     doomed = create(vault, env.owner, name="Discarded after snapshot")
+    auditor, _ = member(env)
+    vault.auditor(env.owner, auditor.key_id, VaultAuditorChange(expected_version=0, enabled=True))
     archive, ledger, credentials = (
         tmp_path / name for name in ("vault.mnemion", "ledger.json", "owner.json")
     )
@@ -562,6 +578,9 @@ def test_actual_backup_restore_requires_separate_key_and_fresh_grants(
             restored.get(identity, UUID(survivor["id"]))
         assert denied.value.status == 403
         assert restored.grants(identity, UUID(survivor["id"]))["items"] == []
+        historical = restored.auditors(identity)["items"]
+        assert len(historical) == 1 and not historical[0]["enabled"] and not historical[0]["active"]
+        assert historical[0]["key_id"] == str(auditor.key_id) and historical[0]["version"] == 2
         allow(restored, identity, survivor, identity, read=True)
         assert restored.get(identity, UUID(survivor["id"]))["value"] == VALUE
         with pytest.raises(ServiceError) as deleted:

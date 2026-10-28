@@ -226,6 +226,28 @@ class Client(JournalUploadClient):
     def vault_audit(self, *, offset: int = 0, limit: int = 100) -> dict:
         return self.request("GET", "/v1/vault/audit", params={"offset": offset, "limit": limit})
 
+    def vault_auditors(
+        self, *, offset: int = 0, limit: int = 100, key_id: str | None = None
+    ) -> dict:
+        params = {"offset": offset, "limit": limit}
+        if key_id is not None:
+            params["key_id"] = str(UUID(key_id))
+        return self.request("GET", "/v1/vault/auditors", params=params)
+
+    def vault_auditor(
+        self, key_id: str, *, expected_version: int, enabled: bool, expires_at: str | None = None
+    ) -> dict:
+        """Grant/revoke exact-key metadata access as administrator; never value access."""
+        return self.request(
+            "PUT",
+            f"/v1/vault/auditors/{UUID(key_id)}",
+            body={
+                "expected_version": expected_version,
+                "enabled": enabled,
+                "expires_at": expires_at,
+            },
+        )
+
     @staticmethod
     def _keepass_body(command):
         body = command.model_dump(mode="json")

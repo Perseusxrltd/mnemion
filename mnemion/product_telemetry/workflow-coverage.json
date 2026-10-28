@@ -919,11 +919,11 @@
       "classic_cli"
     ],
     "summary": {
-      "total": 702,
+      "total": 706,
       "mapped": 398,
       "excluded": 296,
       "delegated": 8,
-      "unmeasured": 0
+      "unmeasured": 4
     },
     "reasons": {
       "control_cli.configuration_preview": "Preview or intermediate authorization steps do not establish a completed setup, import or sign-in.",
@@ -2168,6 +2168,18 @@
         "state": "excluded",
         "workflows": [],
         "reason": "control_cli.state_inspection"
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.auditor",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "control_cli",
+        "action": "vault.auditors",
+        "state": "unmeasured",
+        "workflows": []
       },
       {
         "owner": "control_cli",
@@ -5282,6 +5294,12 @@
       },
       {
         "owner": "studio_actions",
+        "action": "setVaultAuditor",
+        "state": "unmeasured",
+        "workflows": []
+      },
+      {
+        "owner": "studio_actions",
         "action": "signInConfiguration",
         "state": "excluded",
         "workflows": [],
@@ -5360,6 +5378,12 @@
         "state": "excluded",
         "workflows": [],
         "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
+        "action": "vaultAuditors",
+        "state": "unmeasured",
+        "workflows": []
       },
       {
         "owner": "studio_actions",
@@ -6496,12 +6520,12 @@
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
     "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",
     "cli-origins.json": "421e3b12d6e1af9c405370cb3de3899c8cbe53afbabb016f41830690aa619808",
-    "mnemion/service/agent_contract.json": "47b235e6093a9fa41449d28b1735a6a88329087e272de0f7c725f8371ed410c5",
-    "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
-    "packages/client/src/index.ts": "10730549ca0e15a25a9af1ae3f328c5a2cd72a3602cb9a9cb301ffdfc7c389d1",
+    "mnemion/service/agent_contract.json": "7eacbe384b839d5b2aa1428fbfac04fb9ae73a1f0ce81dbb7f61a0b3d93e49a5",
+    "studio/electron/desktop-actions.ts": "5ad59e1f6b6de72c8972b17ba8a7ef59d4489fb6994088fe830539332d21c873",
+    "packages/client/src/index.ts": "bac50f468dabe558f67d311e7dcb50c8b392f53792f506f661a40eb996648d9d",
     "studio/frontend/src/api/client.ts": "14f4f284dea41e855e1691ee84035e4d8f273eb6a252fa3159e4015dbb3b59fe",
     "studio/electron/preload.ts": "1963aa4773fcd6db0cb50deb6a2d26775760d8b9656bef989482285f184751c2",
-    "mnemion/service/mcp.py": "68cad0902d2e934de5c76a60f8bf8c0954dbaf0e7ea55fc0074dea50fc5bb817",
+    "mnemion/service/mcp.py": "1d39c6af1c74473f78a063b0fee694c446e5759b02a9fc44dddc94693fe9408c",
     "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6",
     "mnemion/cli.py": "997636687c8a6179895acf71b42a5df9f3db6080ef15ae30bcea0f9ef6afdfc0"
   }

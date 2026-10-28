@@ -338,6 +338,7 @@ export class LocalWorkspace {
             if (!configured || settings?.workspace_id !== change.workspace_id || !vault_access ||
                 vault_access.state === 'configuration_error' || vault_access.revision === change.expected_revision ||
                 vault_access.enabled !== change.enabled || vault_access.mcp_enabled !== change.mcp_enabled ||
+                (change.mcp_metadata_enabled !== undefined && vault_access.mcp_metadata_enabled !== change.mcp_metadata_enabled) ||
                 (change.recovery_key && vault_access.key_id !== vaultKeyId(change.recovery_key))) throw new Error('The saved vault settings could not be confirmed. Refresh before retrying.')
           }
           if (action === 'journal') {

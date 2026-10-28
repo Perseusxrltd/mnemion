@@ -14,6 +14,14 @@ No original requirement text, state or completion count changes here.
 
 ## Operational repairs
 
+The 17:01 UTC follow-up to issue 47 adds **four simultaneous read-only MCP
+searches** failing on 4.46.40: two `generation_changed` and two
+`database_unavailable`, after 40–92 seconds, despite no model-setting change.
+Retain a four-session regression with the reporter's scope, plus serial controls;
+an unchanged generation must not produce a settings-change error. Source-file
+freshness also remains open. The original query improvement needs a published
+host upgrade and these actual-client checks before the issue can close.
+
 | Reported behavior | Current work and retained acceptance | Requirement |
 | --- | --- | --- |
 | Lexical recall took 18.2 seconds; hybrid averaged 8.3 seconds, with longer stalls. | Source 4.46.43 moves the existing grant/source/capture check into statement-scoped RLS sets. The [isolated query check](../validation/2026-10-28-field-reliability.md) passes; actual all-space lexical and hybrid latency, concurrency and clear bounded failures still require release and field measurement. Preserve the report's under-60-second and improved hybrid criteria. | F02, R04 |
@@ -63,10 +71,14 @@ Each transport needs preview, private input/output handling, encrypted custody,
 conflict recovery and its own acceptance evidence. Effort remains unestimated.
 
 Issue 47/48 also asks for per-key vault access with metadata-only status, list
-and audit over MCP. Host policy and per-entry/per-key grants must both permit
-the operation. The existing `vault_mcp_disabled` operator setting is not bypassed
-by this hotfix. A dedicated metadata policy and clear owner setup remain open;
-secret-bearing imports/exports continue through protected private files.
+and audit over MCP. The [4.46.46 source](../releases/4.46.46.md) introduces a
+separate, default-off metadata host setting, exact-key auditor grants with
+optional expiry and version checks, and app/SDK/agent setup. Metadata access
+does not confer read/write/manage permission over secret values. Historical
+auditor grants are disabled on recovery. See the [vault guide](../service/secrets-vault.md).
+Qualification, installed-host deployment and reporter acceptance remain required;
+the existing MCP setting is not silently changed. Secret-bearing imports/exports
+continue through protected private files, and all format/sync criteria above remain open.
 
 ## Release and field acceptance
 
