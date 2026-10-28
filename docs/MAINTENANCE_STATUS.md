@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T10:48:31+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T10:56:50+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.40](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.40). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -25,21 +25,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.46\.40 | success | [Run 40518115119](https://github.com/Perseusxrltd/mnemion/actions/runs/40518115119) |
 | release\.yml | release/4\.46\.41 | failure | [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699) |
 | release\.yml | release/4\.46\.42 | success | [Run 40540729543](https://github.com/Perseusxrltd/mnemion/actions/runs/40540729543) |
-| verify-artifacts\.yml | main | failure | [Run 40550326047](https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047) |
+| verify-artifacts\.yml | main | success | [Run 40675359288](https://github.com/Perseusxrltd/mnemion/actions/runs/40675359288) |
 | website-release\.yml | main | success | [Run 40674903426](https://github.com/Perseusxrltd/mnemion/actions/runs/40674903426) |
 | website-release\.yml | v4\.46\.40 | success | [Run 40528680423](https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423) |
 
 ## Active jobs
 
-[Run 40674903593](https://github.com/Perseusxrltd/mnemion/actions/runs/40674903593): 4/12 jobs completed; 4 succeeded.
+[Run 40674903593](https://github.com/Perseusxrltd/mnemion/actions/runs/40674903593): 8/12 jobs completed; 8 succeeded.
 
-- studio: in\_progress — Verify wheel and source package include the matching web Studio.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- container \(ubuntu-22\.04-arm\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
-- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 
@@ -48,4 +44,3 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - [Run 40523497882](https://github.com/Perseusxrltd/mnemion/actions/runs/40523497882): supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40528686080](https://github.com/Perseusxrltd/mnemion/actions/runs/40528686080): macos / arm64 public upgrade (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40523707699](https://github.com/Perseusxrltd/mnemion/actions/runs/40523707699): native / native\_database / Database / macos / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
-- [Run 40550326047](https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047): verify (failure). Steps: Scan the exact downloaded distributions before publication.

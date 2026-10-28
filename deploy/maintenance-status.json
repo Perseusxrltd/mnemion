@@ -72,34 +72,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
-          {
-            "id": 122770700723,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify wheel and source package include the matching web Studio"
-            ]
-          },
-          {
-            "id": 122770784983,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
           {
             "id": 122770785032,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -118,24 +100,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 122770785103,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
-          {
-            "id": 122770785152,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -241,34 +205,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40540729543"
     },
     {
-      "id": 40550326047,
+      "id": 40675359288,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "ea059b56d5febcadca21ae4a90c01857ebc58c3e",
+      "source_commit": "03e539823e10550d2a431dc1f841a22466c607e0",
       "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-27T17:28:38Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047",
-      "job_details_schema": 2,
-      "failed_jobs": [
-        {
-          "name": "verify",
-          "id": 122351983389,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 16,
-          "steps": [
-            "Scan the exact downloaded distributions before publication"
-          ]
-        }
-      ],
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      }
+      "conclusion": "success",
+      "updated_at": "2026-10-28T10:56:18Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40675359288"
     },
     {
       "id": 40674903426,
@@ -293,5 +238,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40528680423"
     }
   ],
-  "observed_at": "2026-10-28T10:48:31+00:00"
+  "observed_at": "2026-10-28T10:56:50+00:00"
 }
