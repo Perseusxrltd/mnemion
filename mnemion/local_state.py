@@ -210,8 +210,12 @@ def read_bytes(path: Path) -> bytes:
             )
             with os.fdopen(descriptor, "rb") as stream:
                 info = os.fstat(stream.fileno())
-                if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_RECORD_BYTES:
-                    raise ValueError("Unsafe or oversized record")
+                if (
+                    not stat.S_ISREG(info.st_mode)
+                    or info.st_nlink > 1
+                    or info.st_size > MAX_RECORD_BYTES
+                ):
+                    raise ValueError("Unsafe, linked or oversized record")
                 if (info.st_dev, info.st_ino) != (
                     before.st_dev,
                     before.st_ino,

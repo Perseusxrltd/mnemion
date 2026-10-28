@@ -86,6 +86,17 @@ passed locally. An initial mistyped Python test path ran no tests and is retaine
 separately from the corrected successful run. Windows native confirmation and
 the remaining release gates are pending.
 
+The next source CI caught an existing client contract: a hard link added between
+path inspection and opening was still refused, but reopening changed its error
+from unreadable state to an unsafe-folder message. The correction immediately
+refuses a descriptor with more than one link, preserving the earlier error and
+refusal before reading bytes. Only replacement or an unlinked old descriptor
+uses the bounded reopening path. The original client failure is retained; it
+was a refusal-message regression, not an accepted linked file.
+All **363 client and atomic-state cases passed, with 13 platform skips**, after
+the correction; formatting and lint also passed. Native installation and
+recovery still require the corrected release candidate's own matrix.
+
 ## Installer work and remaining acceptance
 
 The same source replaces uncompressed desktop packaging with balanced lossless
