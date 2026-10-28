@@ -136,6 +136,28 @@ class MemoryPage(Page[Memory]):
     next_cursor: str | None
 
 
+class MemorySummary(ResponseModel):
+    memory_id: str
+    revision_id: str
+    space_id: str
+    version: int
+    revision_version: int
+    subject: str | None = Field(
+        default=None,
+        description="Subject preview, bounded to 160 UTF-8 bytes. Fetch the memory for its complete subject.",
+    )
+    subject_truncated: bool
+    kind: MemoryKind
+    claim_status: ClaimStatus
+    review_state: ReviewState
+    created_by: str
+    recorded_at: str
+
+
+class MemorySummaryPage(Page[MemorySummary]):
+    next_cursor: str | None
+
+
 class Span(ResponseModel):
     start: int
     end: int
@@ -389,6 +411,10 @@ class AuditEvent(ResponseModel):
     details: dict[str, Any]
     reason: str | None
     created_at: str
+
+
+class AuditPage(Page[AuditEvent]):
+    next_cursor: str | None
 
 
 class RetryResult(ResponseModel):

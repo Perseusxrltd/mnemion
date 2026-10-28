@@ -289,7 +289,11 @@ def require_space(
 
 def require_administrator(conn: psycopg.Connection) -> None:
     if not conn.execute("SELECT mnemion.administrator()").fetchone()["administrator"]:
-        raise forbidden()
+        raise ServiceError(
+            403,
+            "forbidden",
+            "This action requires a tenant administrator. A space administrator can manage that space; ask a tenant administrator for organization-wide access.",
+        )
 
 
 def resolve_spaces(conn: psycopg.Connection, selection, level: int = 10) -> list[UUID]:

@@ -677,6 +677,7 @@ class MemoryService:
         limit: int = 50,
         cursor: str | None = None,
         review: bool = False,
+        summary: bool = False,
     ) -> dict:
         if not 1 <= limit <= 100:
             raise ServiceError(422, "invalid_limit", "Limit must be between 1 and 100.")
@@ -703,12 +704,28 @@ class MemoryService:
                 ) from None
         with self.db.transaction(identity) as conn:
             require_space(conn, space, 30 if review else 10)
-            rows = conn.execute(
-                """SELECT * FROM mnemion.memories WHERE space_id=%s AND id>%s AND created_at<=%s
-                   AND deleted_at IS NULL AND (review_state='ordinary' OR %s)
-                   ORDER BY id LIMIT %s""",
-                (space, after, snapshot, review, limit + 1),
-            ).fetchall()
+            query = (
+                """SELECT m.id,m.id AS memory_id,m.space_id,m.version,m.review_state,
+                          r.id AS revision_id,r.version AS revision_version,r.subject,r.kind,
+                          r.claim_status,r.created_by,r.recorded_at
+                   FROM mnemion.memories m JOIN mnemion.memory_revisions r
+                     ON r.tenant_id=m.tenant_id AND r.space_id=m.space_id
+                       AND r.memory_id=m.id AND r.id=m.current_revision_id
+                   JOIN LATERAL (
+                       SELECT 1 FROM mnemion.source_revisions sr JOIN mnemion.sources s
+                         ON s.tenant_id=sr.tenant_id AND s.space_id=sr.space_id AND s.id=sr.source_id
+                       WHERE sr.tenant_id=m.tenant_id AND sr.space_id=m.space_id
+                         AND sr.id=r.source_revision_id AND s.deleted_at IS NULL LIMIT 1
+                   ) source_visible ON true
+                   WHERE m.space_id=%s AND m.id>%s AND m.created_at<=%s
+                     AND m.deleted_at IS NULL AND (m.review_state='ordinary' OR %s)
+                   ORDER BY m.id LIMIT %s"""
+                if summary
+                else """SELECT * FROM mnemion.memories WHERE space_id=%s AND id>%s AND created_at<=%s
+                        AND deleted_at IS NULL AND (review_state='ordinary' OR %s)
+                        ORDER BY id LIMIT %s"""
+            )
+            rows = conn.execute(query, (space, after, snapshot, review, limit + 1)).fetchall()
             next_cursor = None
             if len(rows) > limit:
                 next_cursor = base64.urlsafe_b64encode(
@@ -720,6 +737,17 @@ class MemoryService:
                         }
                     ).encode()
                 ).decode()
+            if summary:
+                require_space(conn, space, 30 if review else 10)
+                items = []
+                for row in rows[:limit]:
+                    item = {key: value for key, value in row.items() if key != "id"}
+                    encoded = row["subject"].encode("utf-8") if row["subject"] is not None else b""
+                    item["subject_truncated"] = len(encoded) > 160
+                    if item["subject_truncated"]:
+                        item["subject"] = encoded[:160].decode("utf-8", errors="ignore")
+                    items.append(item)
+                return {"items": json_value(items), "next_cursor": next_cursor}
             return {
                 "items": [hydrate(conn, row) for row in rows[:limit]],
                 "next_cursor": next_cursor,
@@ -802,8 +830,44 @@ class MemoryService:
             )
 
     def activity(
-        self, identity: Identity, space: UUID, *, limit: int = 100, memory: UUID | None = None
+        self,
+        identity: Identity,
+        space: UUID,
+        *,
+        limit: int = 100,
+        memory: UUID | None = None,
+        action: str | None = None,
+        cursor: str | None = None,
     ) -> dict:
+        if not 1 <= limit <= 100:
+            raise ServiceError(422, "invalid_limit", "Limit must be between 1 and 100.")
+        if action is not None and (not isinstance(action, str) or not 1 <= len(action) <= 100):
+            raise ServiceError(422, "invalid_action", "Use an action name of 1 to 100 characters.")
+        resource = str(memory) if memory else None
+        before, before_id = None, None
+        if cursor:
+            try:
+                if not isinstance(cursor, str) or len(cursor) > 1000:
+                    raise ValueError()
+                data = json.loads(
+                    base64.b64decode(cursor.encode("ascii"), altchars=b"-_", validate=True)
+                )
+                if (
+                    not isinstance(data, dict)
+                    or set(data) != {"space", "at", "id", "memory", "action"}
+                    or any(not isinstance(data[key], str) for key in ("space", "at", "id"))
+                    or data["space"] != str(space)
+                    or data["memory"] != resource
+                    or data["action"] != action
+                ):
+                    raise ValueError()
+                before, before_id = datetime.fromisoformat(data["at"]), UUID(data["id"])
+                if before.tzinfo is None:
+                    raise ValueError()
+            except (ValueError, KeyError, TypeError, UnicodeError):
+                raise ServiceError(
+                    422, "invalid_cursor", "The pagination cursor is invalid for these filters."
+                ) from None
         with self.db.transaction(identity) as conn:
             require_space(conn, space, 30)
             rows = conn.execute(
@@ -811,7 +875,24 @@ class MemoryService:
                    FROM mnemion.audit_events a LEFT JOIN mnemion.memory_change_notes n
                      ON n.tenant_id=a.tenant_id AND n.event_id=a.id
                    WHERE a.space_id=%s AND (%s::text IS NULL OR a.resource_id=%s)
+                     AND (%s::text IS NULL OR a.action=%s)
+                     AND (%s::timestamptz IS NULL OR (a.created_at,a.id)<(%s,%s::uuid))
                    ORDER BY a.created_at DESC,a.id DESC LIMIT %s""",
-                (space, str(memory) if memory else None, str(memory) if memory else None, limit),
+                (space, resource, resource, action, action, before, before, before_id, limit + 1),
             ).fetchall()
-            return {"items": json_value(rows)}
+            require_space(conn, space, 30)
+            next_cursor = None
+            if len(rows) > limit:
+                last = rows[limit - 1]
+                next_cursor = base64.urlsafe_b64encode(
+                    json.dumps(
+                        {
+                            "space": str(space),
+                            "at": last["created_at"].isoformat(),
+                            "id": str(last["id"]),
+                            "memory": resource,
+                            "action": action,
+                        }
+                    ).encode()
+                ).decode()
+            return {"items": json_value(rows[:limit]), "next_cursor": next_cursor}

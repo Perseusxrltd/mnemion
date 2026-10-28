@@ -55,6 +55,11 @@ export interface AuditEvent {
   id: string; space_id: string | null; principal_id: string; action: string
   resource_id: string; details: Record<string, Json>; reason: string | null; created_at: string
 }
+export interface MemorySummary {
+  memory_id: string; revision_id: string; space_id: string; version: number; revision_version: number
+  subject: string | null; subject_truncated: boolean; kind: Kind; claim_status: ClaimStatus
+  review_state: 'ordinary' | 'quarantined'; created_by: string; recorded_at: string
+}
 export interface Evidence {
   source_id: string; source_revision_id: string; title: string; uri: string | null
   media_type: string; content_hash: string; start: number; end: number
@@ -392,6 +397,11 @@ export class MnemionClient {
     if (options.cursor) params.set('cursor', options.cursor)
     return this.request<Page<Memory>>('GET', `/v1/spaces/${encodeURIComponent(space)}/memories?${params}`)
   }
+  inventory(space: string, options: { limit?: number; cursor?: string; review?: boolean; signal?: AbortSignal } = {}) {
+    const params = new URLSearchParams({ summary: 'true', limit: String(options.limit ?? 100), review: String(options.review ?? false) })
+    if (options.cursor) params.set('cursor', options.cursor)
+    return this.request<Page<MemorySummary>>('GET', `/v1/spaces/${encodeURIComponent(space)}/memories?${params}`, { signal: options.signal })
+  }
   history(memory: string, review = false) { return this.request<Page<Memory>>('GET', `/v1/memories/${encodeURIComponent(memory)}/revisions?review=${review}`) }
   source(revision: string, review = false) { return this.request<Source>('GET', `/v1/sources/${encodeURIComponent(revision)}?review=${review}`) }
   resolveAlias(space: string, legacyId: string, review = false) { return this.request<Memory>('GET', `/v1/spaces/${encodeURIComponent(space)}/resolve?${new URLSearchParams({ legacy_id: legacyId, review: String(review) })}`) }
@@ -405,10 +415,12 @@ export class MnemionClient {
   context(input: RecallInput & { token_budget?: number }) { return this.request<ContextPack>('POST', '/v1/context', { body: input }) }
   operation(id: string) { return this.request<Operation>('GET', `/v1/operations/${encodeURIComponent(id)}`) }
   operations(space: string, state?: OperationState) { return this.request<Page<Operation>>('GET', `/v1/spaces/${encodeURIComponent(space)}/operations${state ? `?state=${state}` : ''}`) }
-  activity(space: string, options: { memoryId?: string; limit?: number } = {}) {
+  activity(space: string, options: { memoryId?: string; limit?: number; action?: string; cursor?: string; signal?: AbortSignal } = {}) {
     const params = new URLSearchParams({ limit: String(options.limit ?? 100) })
     if (options.memoryId) params.set('memory_id', options.memoryId)
-    return this.request<Page<AuditEvent>>('GET', `/v1/spaces/${encodeURIComponent(space)}/activity?${params}`)
+    if (options.action) params.set('action', options.action)
+    if (options.cursor) params.set('cursor', options.cursor)
+    return this.request<Page<AuditEvent>>('GET', `/v1/spaces/${encodeURIComponent(space)}/activity?${params}`, { signal: options.signal })
   }
   insights(space: string, options: { hours?: number; origin?: MetricOrigin; signal?: AbortSignal } = {}) {
     return this.request<Insights>('GET', `/v1/spaces/${encodeURIComponent(space)}/insights?${new URLSearchParams({ hours: String(options.hours ?? 24), origin: options.origin ?? 'all' })}`, { signal: options.signal })

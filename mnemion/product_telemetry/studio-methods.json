@@ -114,6 +114,7 @@
     "space": "automatic_query",
     "fetch": "automatic_query",
     "list": "automatic_query",
+    "inventory": "automatic_query",
     "history": "automatic_query",
     "source": "automatic_query",
     "resolveAlias": "automatic_query",

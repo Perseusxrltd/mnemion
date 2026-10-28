@@ -1597,12 +1597,16 @@ function CoreContext() {
 }
 
 function Operations() {
-  const { client, space, reviewer } = useSession();
+  const { client, space, reviewer, me } = useSession();
+  const activityScope = JSON.stringify([client.baseUrl, me.tenant_id, me.principal_id, space.id]);
+  const [activityPage, setActivityPage] = useState<{ scope: string; action: string; cursor?: string }>({ scope: activityScope, action: "" });
+  const currentActivity: typeof activityPage = activityPage.scope === activityScope ? activityPage : { scope: activityScope, action: "" };
   const activity = useQuery({
-    queryKey: ["activity", space.id],
-    queryFn: () => client.activity(space.id),
+    queryKey: ["activity", activityScope, currentActivity.action, currentActivity.cursor],
+    queryFn: ({ signal }) => client.activity(space.id, { action: currentActivity.action, cursor: currentActivity.cursor, signal }),
     enabled: reviewer,
-    refetchInterval: 5000,
+    refetchInterval: currentActivity.cursor ? false : 5000,
+    gcTime: 0,
   });
   const query = useQuery({
     queryKey: ["operations", space.id],
@@ -1749,7 +1753,17 @@ function Operations() {
       {reviewer && <section aria-label="Recent changes">
         <h2>Recent changes</h2>
         <p className="ws-helper">Review and correction notes are visible to reviewers. Notes are removed when their memory is deleted.</p>
-        {activity.isPending ? <Busy /> : activity.data?.items.length ? (
+        <label className="ws-field">Change type
+          <select aria-label="Filter changes" value={currentActivity.action} disabled={!activity.data || !("next_cursor" in activity.data)} onChange={event => setActivityPage({ scope: activityScope, action: event.target.value })}>
+            <option value="">All changes</option>
+            <option value="memory.created">Memory created</option>
+            <option value="memory.revised">Memory revised</option>
+            <option value="memory.reviewed">Memory reviewed</option>
+            <option value="memory.deleted">Memory deleted</option>
+            <option value="journal.organized">Journal organized</option>
+          </select>
+        </label>
+        {activity.isError ? <p role="status">Changes could not be loaded. Refresh to check your current access.</p> : activity.isPending ? <Busy /> : activity.data?.items.length ? (
           <div className="ws-table-wrap"><table className="ws-table">
             <thead><tr><th>Change</th><th>Note</th><th>When</th></tr></thead>
             <tbody>{activity.data.items.map(event => <tr key={event.id}>
@@ -1758,7 +1772,12 @@ function Operations() {
               <td>{date(event.created_at)}</td>
             </tr>)}</tbody>
           </table></div>
-        ) : <Empty title="No changes yet">Saves, corrections, reviews, and deletions appear here.</Empty>}
+        ) : <Empty title="No matching changes">Try another change type or return to the latest changes.</Empty>}
+        <div className="ws-actions">
+          {currentActivity.cursor && <button type="button" className="ws-button" disabled={activity.isFetching} onClick={() => setActivityPage({ scope: activityScope, action: currentActivity.action })}>Latest changes</button>}
+          {!activity.isError && activity.data?.next_cursor && <button type="button" className="ws-button" disabled={activity.isFetching} onClick={() => setActivityPage({ scope: activityScope, action: currentActivity.action, cursor: activity.data!.next_cursor! })}>Older changes <ArrowRight size={15} /></button>}
+        </div>
+        {!activity.isError && activity.data && !("next_cursor" in activity.data) && <p className="ws-helper">Update this workspace server to filter changes and browse earlier activity.</p>}
       </section>}
     </div>
   );

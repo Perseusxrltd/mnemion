@@ -4,8 +4,9 @@ The [4.46.42 native release](https://github.com/Perseusxrltd/mnemion/actions/run
 passed its platform builds. Its original
 [uploaded-artifact verification](https://github.com/Perseusxrltd/mnemion/actions/runs/40550326047)
 passed the exact-source validator and 38-asset integrity checks, then stopped at
-one possible-credential finding. The release remains draft until complete
-requalification and publication succeed.
+one possible-credential finding. That original failure remains recorded. The
+corrected full verification and publication completed on 28 October, as recorded
+below.
 
 The finding came from the Apple Silicon DMG, **656,955,919 bytes**, SHA-256
 `b6f9d960c2de4d119e81b50f41450d92c2349bfa5c94682f4788ba79e0d7a5c7`.
@@ -36,7 +37,20 @@ passed. The five recorded source and dependency inputs are unchanged.
 These results qualify the scanner correction and that exact asset. They do not
 replace the full uploaded-inventory, signatures, feeds and publication gates.
 
-The trusted verifier can apply this reviewed correction to the unchanged frozen
-release. No native rebuild or telemetry collection enablement is needed. Actual
-publication and installed versions remain tracked in
-[release status](../RELEASE_STATUS.md).
+## Completed publication
+
+The [corrected full verifier](https://github.com/Perseusxrltd/mnemion/actions/runs/40675359288)
+qualified all **38 unchanged assets**, totaling **4,120,914,519 bytes**. Its
+[scan receipt](releases/4.46.42-secret-scan.json) records 11,422 inspected members,
+zero findings, four complete public-literal substitutions and all six detection
+canaries passing. The [artifact receipt](releases/4.46.42-artifacts.json) preserves
+each asset's identity, size and digest at verification; its draft state describes
+that earlier verification checkpoint.
+
+[Version 4.46.42](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.42)
+was published at **2026-10-28 10:57:27 UTC**. The
+[publication receipt](releases/4.46.42-publication.json) confirms the inventory
+and tag still matched the verified release, and records the automatic website
+and update-feed follow-ups. No native rebuild or telemetry collection enablement
+was required. Installed versions and public updater acceptance remain separately
+tracked in [release status](../RELEASE_STATUS.md).

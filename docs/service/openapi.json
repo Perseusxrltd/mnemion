@@ -289,6 +289,35 @@
         "title": "AuditEvent",
         "type": "object"
       },
+      "AuditPage": {
+        "additionalProperties": true,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "AuditPage",
+        "type": "object"
+      },
       "BackfillControlInput": {
         "additionalProperties": false,
         "properties": {
@@ -7943,6 +7972,129 @@
         "title": "MemoryPage",
         "type": "object"
       },
+      "MemorySummary": {
+        "additionalProperties": true,
+        "properties": {
+          "claim_status": {
+            "enum": [
+              "observed",
+              "verified",
+              "contested",
+              "superseded",
+              "retracted"
+            ],
+            "title": "Claim Status",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "fact",
+              "event",
+              "preference",
+              "procedure",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "memory_id": {
+            "title": "Memory Id",
+            "type": "string"
+          },
+          "recorded_at": {
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "review_state": {
+            "enum": [
+              "ordinary",
+              "quarantined"
+            ],
+            "title": "Review State",
+            "type": "string"
+          },
+          "revision_id": {
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "revision_version": {
+            "title": "Revision Version",
+            "type": "integer"
+          },
+          "space_id": {
+            "title": "Space Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Subject preview, bounded to 160 UTF-8 bytes. Fetch the memory for its complete subject.",
+            "title": "Subject"
+          },
+          "subject_truncated": {
+            "title": "Subject Truncated",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "memory_id",
+          "revision_id",
+          "space_id",
+          "version",
+          "revision_version",
+          "subject_truncated",
+          "kind",
+          "claim_status",
+          "review_state",
+          "created_by",
+          "recorded_at"
+        ],
+        "title": "MemorySummary",
+        "type": "object"
+      },
+      "MemorySummaryPage": {
+        "additionalProperties": true,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemorySummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "MemorySummaryPage",
+        "type": "object"
+      },
       "MetricGroup": {
         "additionalProperties": true,
         "properties": {
@@ -8822,23 +8974,6 @@
           "items"
         ],
         "title": "Page[ApiKey]",
-        "type": "object"
-      },
-      "Page_AuditEvent_": {
-        "additionalProperties": true,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/AuditEvent"
-            },
-            "title": "Items",
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "title": "Page[AuditEvent]",
         "type": "object"
       },
       "Page_Binding_": {
@@ -13306,7 +13441,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.46.42"
+    "version": "4.46.43"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -26239,6 +26374,41 @@
               ],
               "title": "Memory Id"
             }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
           }
         ],
         "responses": {
@@ -26246,7 +26416,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_AuditEvent_"
+                  "$ref": "#/components/schemas/AuditPage"
                 }
               }
             },
@@ -33475,6 +33645,18 @@
               "title": "Review",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Return bounded inventory metadata and subject previews without memory content, evidence or arbitrary metadata.",
+            "in": "query",
+            "name": "summary",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Return bounded inventory metadata and subject previews without memory content, evidence or arbitrary metadata.",
+              "title": "Summary",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -33482,7 +33664,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MemoryPage"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MemoryPage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MemorySummaryPage"
+                    }
+                  ],
+                  "title": "Response List Memories V1 Spaces  Space Id  Memories Get"
                 }
               }
             },

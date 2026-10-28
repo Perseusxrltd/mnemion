@@ -49,6 +49,14 @@ def test_filing_requires_opt_in_and_schedules_real_notes_with_observable_status(
     assert status["last_fold_at"] and status["last_fold_commit"]
     assert first.text.encode() in content(destination, note_path(destination, first.memory_id))
     assert not service.run_once()
+    before = env.memory.activity(env.owner, env.space, action="journal.organized")["items"]
+    assert len(before) == 1
+    repeated = service.organize(env.owner, env.space, expected_version=enabled["version"])
+    assert repeated["notes"] == repeated["archived_files"] == 0
+    after = service.status(env.owner, env.space)
+    assert after["last_fold_at"] >= status["last_fold_at"] and after["next_fold_at"]
+    assert after["last_fold_notes"] == after["last_fold_archived_files"] == 0
+    assert env.memory.activity(env.owner, env.space, action="journal.organized")["items"] == before
     # A 4.15 client has no filing fields. Updating its publication interval must
     # neither disable filing nor change the administrator's selected schedule.
     retained = service.configure(

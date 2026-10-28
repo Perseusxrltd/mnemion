@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -132,3 +132,46 @@ def test_failed_revision_rolls_back_its_private_note_and_audit(env, monkeypatch)
             ).fetchone()["n"]
             == 0
         )
+
+
+def test_activity_cursor_and_action_filter_walk_tied_timestamps_without_loss(env):
+    from mnemion.service.repository import audit
+
+    resource = uuid4()
+    with env.db.transaction(env.owner) as conn:
+        for index in range(215):
+            audit(
+                conn,
+                env.owner,
+                "memory.revised" if index % 3 else "journal.organized",
+                resource,
+                space_id=env.space,
+                details={"sequence": index},
+            )
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        client.headers["Authorization"] = "Bearer " + env.token
+        path = f"/v1/spaces/{env.space}/activity"
+        params = {"memory_id": str(resource), "action": "memory.revised", "limit": 50}
+        rows, cursors = [], []
+        while True:
+            response = client.get(path, params=params)
+            assert response.status_code == 200, response.text
+            result = response.json()
+            rows.extend(result["items"])
+            if not result["next_cursor"]:
+                break
+            assert result["next_cursor"] not in cursors
+            cursors.append(result["next_cursor"])
+            params["cursor"] = result["next_cursor"]
+        assert len(cursors) == 2
+        assert len(rows) == len({row["id"] for row in rows}) == 143
+        assert {row["details"]["sequence"] for row in rows} == {i for i in range(215) if i % 3}
+        assert all(row["action"] == "memory.revised" for row in rows)
+        assert rows == sorted(rows, key=lambda row: (row["created_at"], row["id"]), reverse=True)
+        for changed in ({"action": "journal.organized"}, {"memory_id": str(uuid4())}):
+            bad = client.get(path, params={**params, **changed, "cursor": cursors[0]})
+            assert bad.status_code == 422 and bad.json()["error"]["code"] == "invalid_cursor"
+        invalid = client.get(path, params={"cursor": "PRIVATE_INVALID_CURSOR"})
+        assert invalid.status_code == 422 and "PRIVATE_INVALID_CURSOR" not in invalid.text
+        env.identities.revoke_grant(env.owner, env.space, env.owner.principal_id)
+        assert client.get(path, params=params).status_code == 404

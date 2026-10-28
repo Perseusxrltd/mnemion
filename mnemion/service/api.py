@@ -643,15 +643,25 @@ def create_app(
     def save(space_id: UUID, command: MemoryInput, identity: Auth, idempotency_key: Key):
         return memory.save(identity, space_id, command, idempotency_key)
 
-    @app.get("/v1/spaces/{space_id}/memories", tags=["Memory"], response_model=c.MemoryPage)
+    @app.get(
+        "/v1/spaces/{space_id}/memories",
+        tags=["Memory"],
+        response_model=c.MemoryPage | c.MemorySummaryPage,
+    )
     def list_memories(
         space_id: UUID,
         identity: Auth,
         limit: int = Query(default=50, ge=1, le=100),
         cursor: str | None = Query(default=None, max_length=1000),
         review: bool = False,
+        summary: bool = Query(
+            default=False,
+            description="Return bounded inventory metadata and subject previews without memory content, evidence or arbitrary metadata.",
+        ),
     ):
-        return memory.list(identity, space_id, limit=limit, cursor=cursor, review=review)
+        return memory.list(
+            identity, space_id, limit=limit, cursor=cursor, review=review, summary=summary
+        )
 
     @app.get("/v1/spaces/{space_id}/resolve", tags=["Memory"], response_model=c.Memory)
     def resolve_alias(
@@ -801,16 +811,18 @@ def create_app(
     def runtime_statistics(identity: Auth):
         return runtime_insights(database, identity, embedder, telemetry, registry=registry)
 
-    @app.get(
-        "/v1/spaces/{space_id}/activity", tags=["Operations"], response_model=c.Page[c.AuditEvent]
-    )
+    @app.get("/v1/spaces/{space_id}/activity", tags=["Operations"], response_model=c.AuditPage)
     def activity(
         space_id: UUID,
         identity: Auth,
         limit: int = Query(default=100, ge=1, le=100),
         memory_id: UUID | None = None,
+        action: str | None = Query(default=None, min_length=1, max_length=100),
+        cursor: str | None = Query(default=None, max_length=1000),
     ):
-        return memory.activity(identity, space_id, limit=limit, memory=memory_id)
+        return memory.activity(
+            identity, space_id, limit=limit, memory=memory_id, action=action, cursor=cursor
+        )
 
     @app.post(
         "/v1/exports",

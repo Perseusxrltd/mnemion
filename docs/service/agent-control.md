@@ -119,6 +119,43 @@ connect to an existing service and do not include these native-hosting controls.
 
 ## Discover through MCP
 
+### Large inventories and activity history (4.46.43)
+
+For an inventory, request `memories.list` with `summary: true`. It returns memory
+and revision IDs/versions, subject preview, kind, claim/review state, author and
+recorded date. Content, source evidence and arbitrary metadata stay in the full
+fetch. Subject previews have a 160-byte UTF-8 bound and `subject_truncated` flag;
+use `memories.get` when the full text is needed. Follow `next_cursor` without
+constructing or editing it. The typed JavaScript SDK offers `client.inventory()`.
+
+The compact `mnemion` tool defaults to 16 KiB per response. For 100 summary
+records, explicitly select the existing 128 KiB maximum:
+
+```json
+{
+  "action": "read",
+  "operation": "memories.list",
+  "max_response_bytes": 131072,
+  "request": {
+    "parameters": {"space_id": "SPACE_UUID", "summary": true, "limit": 100}
+  }
+}
+```
+
+`operations.activity` accepts `action`, `memory_id`, `limit` and `cursor`.
+Pages are ordered newest first; reuse the same filters with the next cursor.
+Every page checks the current reviewer grant. Studio's Activity page provides
+the same change filter and older/latest controls. A successful journal filing
+pass with zero changes updates its status without creating another audit event.
+
+`principals.list` and `insights.runtime` require a **tenant administrator**.
+A **space administrator** manages only its granted space. `connectors.list`
+shows the caller's owned connectors, or the tenant's connectors for a tenant
+administrator; an empty list does not prove the workspace has no sources.
+Source health, access leases, connector control and content permissions are
+separate. Ask the responsible tenant/source administrator to inspect an
+unavailable source through its supported controls.
+
 Use the [connection guide](agents.md) to connect with an application key.
 Upgrade the server/gateway to 4.0.4 or later and refresh the assistant's tool
 connection. Source-sync controls require 4.0.5 and its updated runner.

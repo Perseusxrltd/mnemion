@@ -1,12 +1,18 @@
 # Complete product requirements
 
-Updated **2026-10-26**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-28**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 
 The [complete-milestone audit](implementation/completion-audit.md) decomposes all
 42 partial requirements into missing acceptance work, dependencies and evidence.
 It retains every requirement and keeps effort estimates unknown until inspected.
+The [28 October field plan](implementation/multi-agent-field-readiness.md)
+retains every item in issues 47/48. Native task/handoff records are additional
+acceptance under F02/F08/A03; named password-vault formats and lossless sync
+extend A04/C01/A09. Existing ledger/dispatch files remain authoritative until
+their migration is accepted. These additions do not mark any parent complete
+or replace any of the original 66 requested outcomes.
 The generated [release status](RELEASE_STATUS.md) records the current published
 distribution and release gates. The audit preserves dated publication and
 actual-deployment evidence as historical snapshots. At the **22 October 2026

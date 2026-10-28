@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.42**.
+Reviewed source distribution: **4.46.43**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-28**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -25,12 +25,24 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**28 October 2026, multi-agent field reliability source:**
+The [4.46.43 batch](releases/4.46.43.md) adds statement-scoped permission checks,
+compact inventories, app/API/agent activity pagination and filters, no-op journal
+suppression and clear tenant-role hints. The [source qualification](validation/2026-10-28-field-reliability.md)
+retains the initial MCP limit failure and its passing correction. The original
+800-memory policy query timed out at 15 seconds; a fresh candidate fixture took
+about 280 ms. Live installation, all eleven reported spaces and latency still
+need acceptance. The [field plan](implementation/multi-agent-field-readiness.md)
+retains every item in issues 47/48, including native tasks and lossless vault
+format/sync work. Both issues remain open; all 66 requirement states are unchanged.
+
 **28 October 2026, exact-artifact scanner correction:**
 The [complete public-literal correction](validation/2026-10-28-fips-stream-scan.md)
 passed 45 focused tests and a scan of the original rejected Apple Silicon DMG,
-with zero findings and all six mandatory credential canaries detected. Complete
-uploaded-release requalification still controls 4.46.42 publication. The frozen
-product and its assets are unchanged; V08 remains Building with no collection.
+with zero findings and all six mandatory credential canaries detected. The full
+38-asset verification then passed, and 4.46.42 was published at 10:57 UTC; the
+linked qualification includes its artifact, scan and publication receipts. The
+frozen product and its assets are unchanged; V08 remains Building with no collection.
 
 **27 October 2026, collector IPv6 host crash/restart qualification:**
 The [finite systemd host probe](validation/2026-10-27-telemetry-host-crash.md)

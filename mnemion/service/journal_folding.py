@@ -71,23 +71,26 @@ def organize(service, identity, space, *, expected_version=None):
                     settings["version"],
                 ),
             )
-            audit(
-                conn,
-                publisher,
-                "journal.organized",
-                space,
-                space_id=space,
-                details={
-                    key: report[key]
-                    for key in (
-                        "commit",
-                        "notes",
-                        "archived_files",
-                        "pending_notes",
-                        "pending_files",
-                    )
-                },
-            )
+            # Keep the scheduling/status heartbeat above, but retain an activity
+            # receipt only when filing actually changes the journal.
+            if report["notes"] or report["archived_files"]:
+                audit(
+                    conn,
+                    publisher,
+                    "journal.organized",
+                    space,
+                    space_id=space,
+                    details={
+                        key: report[key]
+                        for key in (
+                            "commit",
+                            "notes",
+                            "archived_files",
+                            "pending_notes",
+                            "pending_files",
+                        )
+                    },
+                )
         return report
     except (JournalError, OSError, LocalSetupError) as error:
         code = error.code if isinstance(error, JournalError) else "journal_storage_unavailable"

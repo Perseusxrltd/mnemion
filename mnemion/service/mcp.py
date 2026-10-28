@@ -965,6 +965,7 @@ def create_mcp(
                 description="Optional name or summary filter for list; omitted for other actions.",
             ),
         ] = None,
+        max_response_bytes: ResponseLimit = 16384,
     ) -> dict[str, Any]:
         """Discover operations, inspect a schema, or explicitly execute a read/write with current access."""
         if action == "list":
@@ -980,6 +981,8 @@ def create_mcp(
                 raise MnemionError(422, "invalid_arguments", "Describe takes no request.")
             return await mnemion_operation(operation, ctx)
         function = mnemion_read if action == "read" else mnemion_write
-        return await function(operation, ctx, request=request, max_response_bytes=16384)
+        return await function(
+            operation, ctx, request=request, max_response_bytes=max_response_bytes
+        )
 
     return server

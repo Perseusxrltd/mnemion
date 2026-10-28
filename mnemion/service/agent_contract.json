@@ -20589,6 +20589,12 @@
                 "format": "uuid",
                 "title": "Space Id",
                 "type": "string"
+              },
+              "summary": {
+                "default": false,
+                "description": "Return bounded inventory metadata and subject previews without memory content, evidence or arbitrary metadata.",
+                "title": "Summary",
+                "type": "boolean"
               }
             },
             "required": [
@@ -20904,15 +20910,147 @@
             ],
             "title": "MemoryPage",
             "type": "object"
+          },
+          "MemorySummary": {
+            "additionalProperties": true,
+            "properties": {
+              "claim_status": {
+                "enum": [
+                  "observed",
+                  "verified",
+                  "contested",
+                  "superseded",
+                  "retracted"
+                ],
+                "title": "Claim Status",
+                "type": "string"
+              },
+              "created_by": {
+                "title": "Created By",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "fact",
+                  "event",
+                  "preference",
+                  "procedure",
+                  "note"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "memory_id": {
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "recorded_at": {
+                "title": "Recorded At",
+                "type": "string"
+              },
+              "review_state": {
+                "enum": [
+                  "ordinary",
+                  "quarantined"
+                ],
+                "title": "Review State",
+                "type": "string"
+              },
+              "revision_id": {
+                "title": "Revision Id",
+                "type": "string"
+              },
+              "revision_version": {
+                "title": "Revision Version",
+                "type": "integer"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "subject": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Subject preview, bounded to 160 UTF-8 bytes. Fetch the memory for its complete subject.",
+                "title": "Subject"
+              },
+              "subject_truncated": {
+                "title": "Subject Truncated",
+                "type": "boolean"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "memory_id",
+              "revision_id",
+              "space_id",
+              "version",
+              "revision_version",
+              "subject_truncated",
+              "kind",
+              "claim_status",
+              "review_state",
+              "created_by",
+              "recorded_at"
+            ],
+            "title": "MemorySummary",
+            "type": "object"
+          },
+          "MemorySummaryPage": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/MemorySummary"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor"
+            ],
+            "title": "MemorySummaryPage",
+            "type": "object"
           }
         },
-        "$ref": "#/$defs/MemoryPage"
+        "anyOf": [
+          {
+            "$ref": "#/$defs/MemoryPage"
+          },
+          {
+            "$ref": "#/$defs/MemorySummaryPage"
+          }
+        ],
+        "title": "Response List Memories V1 Spaces  Space Id  Memories Get"
       },
       "parameter_locations": {
         "cursor": "query",
         "limit": "query",
         "review": "query",
-        "space_id": "path"
+        "space_id": "path",
+        "summary": "query"
       },
       "path": "/v1/spaces/{space_id}/memories",
       "retry": "read",
@@ -25458,6 +25596,31 @@
           "parameters": {
             "additionalProperties": false,
             "properties": {
+              "action": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Action"
+              },
+              "cursor": {
+                "anyOf": [
+                  {
+                    "maxLength": 1000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Cursor"
+              },
               "limit": {
                 "default": 100,
                 "maximum": 100,
@@ -25562,7 +25725,7 @@
             "title": "AuditEvent",
             "type": "object"
           },
-          "Page_AuditEvent_": {
+          "AuditPage": {
             "additionalProperties": true,
             "properties": {
               "items": {
@@ -25571,18 +25734,32 @@
                 },
                 "title": "Items",
                 "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
               }
             },
             "required": [
-              "items"
+              "items",
+              "next_cursor"
             ],
-            "title": "Page[AuditEvent]",
+            "title": "AuditPage",
             "type": "object"
           }
         },
-        "$ref": "#/$defs/Page_AuditEvent_"
+        "$ref": "#/$defs/AuditPage"
       },
       "parameter_locations": {
+        "action": "query",
+        "cursor": "query",
         "limit": "query",
         "memory_id": "query",
         "space_id": "path"

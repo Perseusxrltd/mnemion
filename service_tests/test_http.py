@@ -3,10 +3,24 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from mnemion.service.api import create_app
-from mnemion.service.models import KeyInput, PrincipalInput
+from mnemion.service.models import GrantInput, KeyInput, PrincipalInput
 from mnemion.service.errors import ServiceError
 from mnemion.service.retrieval import RetrievalService
 from mnemion.version import __version__
+
+
+def test_space_administrator_errors_explain_the_required_tenant_role(env):
+    person = env.identities.create_principal(env.owner, PrincipalInput(name="Space administrator"))
+    key = env.identities.create_key(env.owner, UUID(person["id"]), KeyInput(name="Administration"))
+    env.identities.grant(env.owner, env.space, UUID(person["id"]), GrantInput(role="administrator"))
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        client.headers["Authorization"] = "Bearer " + key["api_key"]
+        assert client.get(f"/v1/spaces/{env.space}/status").status_code == 200
+        for path in ("/v1/principals", "/v1/insights/runtime"):
+            response = client.get(path)
+            assert response.status_code == 403
+            assert response.json()["error"]["code"] == "forbidden"
+            assert "tenant administrator" in response.json()["error"]["message"]
 
 
 def test_health_reports_running_version_without_exposing_workspace_or_update_details(env):

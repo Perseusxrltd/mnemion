@@ -10,6 +10,14 @@ expanded librarian, scientific/Jev work and every open issue. Current counts:
 1 external**.
 This audit changes work order; it neither narrows scope nor marks a parent done.
 
+**28 October operational priority:** the
+[multi-agent field plan](multi-agent-field-readiness.md) preserves all items from
+issues 47/48, including their new native task/handoff and named vault-format/sync
+acceptance. Source 4.46.43 supplies a bounded reliability batch; actual field
+acceptance and the broader requested workflows remain open. V08 stays the active
+feature milestone alongside these urgent operational repairs. The original 66
+requirement texts and counts remain unchanged.
+
 The actual [4.46.5 paired update](../validation/2026-10-23-4465-live-acceptance.md)
 passed on **23 October at 21:32:43 UTC**, followed by the
 [retained-custodian lifecycle](../validation/2026-10-23-4465-custody-acceptance.md)

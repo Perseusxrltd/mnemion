@@ -919,9 +919,9 @@
       "classic_cli"
     ],
     "summary": {
-      "total": 701,
+      "total": 702,
       "mapped": 398,
-      "excluded": 295,
+      "excluded": 296,
       "delegated": 8,
       "unmeasured": 0
     },
@@ -4827,6 +4827,13 @@
       },
       {
         "owner": "studio_actions",
+        "action": "inventory",
+        "state": "excluded",
+        "workflows": [],
+        "reason": "studio_actions.automatic_query"
+      },
+      {
+        "owner": "studio_actions",
         "action": "journalBackfillStatus",
         "state": "excluded",
         "workflows": [],
@@ -6484,17 +6491,17 @@
     "catalog.json": "2b3f897ca15e951ea0636a947e3c708414dc84e6588fce7f717e682c3286ccbf",
     "control-origins.json": "3e1b59bedf234585b00ce3a071011ddbba356d3f9e8a988fbc4d7e8d2b82a045",
     "desktop-origins.json": "a03490ce4fe0e70b94f4d72c9a5875a6744e759303c80492926d3da63a5604a7",
-    "studio-methods.json": "36c4e2f9920f10243c52c1664a38efa46ee1de43bb91cc2a17d665a711e0b936",
+    "studio-methods.json": "15cbb7fe5065fc0b77343338ac8f5678ccb8cdbcc7a60b7504895f19b020948d",
     "ui-origins.json": "14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e",
     "mcp-origins.json": "4aa9a5d623765c7ace76bc7608169cd3dcfdc7619aad98df8f276e25b2cdda25",
     "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",
     "cli-origins.json": "421e3b12d6e1af9c405370cb3de3899c8cbe53afbabb016f41830690aa619808",
-    "mnemion/service/agent_contract.json": "46dc0585fbacb10631990a5db54b55f32214fa3f397915dc8a63a2eb087db105",
+    "mnemion/service/agent_contract.json": "bfc9ab7c89faaa87aaad526a9fddd7b4ac8cc09d55826411dabc3e616b896e75",
     "studio/electron/desktop-actions.ts": "d1bc9d8775781e7be069d6e46097b5efe3aa8a33830ba5f07b15ee8f00fc33a2",
-    "packages/client/src/index.ts": "af0cb7aacf28f0884e4fecffb4a9a315cb57c0adeaeca836e7b83589b616c862",
+    "packages/client/src/index.ts": "010944da44f93ddc99fb21b261dbd862fa08a084cd164e57a7a9b891ae0693a6",
     "studio/frontend/src/api/client.ts": "14f4f284dea41e855e1691ee84035e4d8f273eb6a252fa3159e4015dbb3b59fe",
     "studio/electron/preload.ts": "1963aa4773fcd6db0cb50deb6a2d26775760d8b9656bef989482285f184751c2",
-    "mnemion/service/mcp.py": "14e9a86847af610b3c9de178fb3b5d84282ea353921f2e1070322084873e1ac1",
+    "mnemion/service/mcp.py": "68cad0902d2e934de5c76a60f8bf8c0954dbaf0e7ea55fc0074dea50fc5bb817",
     "mnemion/mcp_server.py": "b80bd2c2e5da59129f581516e3c21701011a8edd09c147bfffcf1f74410e60b6",
     "mnemion/cli.py": "997636687c8a6179895acf71b42a5df9f3db6080ef15ae30bcea0f9ef6afdfc0"
   }
