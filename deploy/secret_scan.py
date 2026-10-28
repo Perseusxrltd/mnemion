@@ -3,6 +3,8 @@
 Source mode scans a private snapshot of tracked and unignored source files.
 Path mode also inspects supported archives to depth four and encoded text to
 depth five. Executable internals and encrypted content are not decompiled.
+The complete published OpenSSL FIPS hexkey C string is normalized before scanner
+fragmentation; incomplete values and every surrounding byte remain unchanged.
 """
 
 from __future__ import annotations
@@ -36,6 +38,13 @@ import zipfile
 VERSION = "8.30.1"
 # Exact public-data exception; its provenance and narrow scope are tested.
 ELECTRON_WASM_FRAGMENT = "EAAAWhAAAJkQAACeEAAAnxAAAKoYAACqGAAAgBsAAKobAACu"
+# OpenSSL Configure's documented public default. Match its NUL-terminated CLI
+# literal before Gitleaks can split it into different apparent secrets. A longer
+# custom key sharing this prefix must remain entirely visible to the scanner.
+PUBLIC_FIPS_LITERAL = (
+    b"hexkey:" + hashlib.sha256(b"holy hand grenade of antioch").hexdigest().encode() + b"\0"
+)
+NORMALIZED_FIPS_LITERAL = b"hexkey:" + b"0" * 64 + b"\0"
 ARCHIVES = {
     "linux_x64.tar.gz": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
     "linux_arm64.tar.gz": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080",
@@ -308,7 +317,7 @@ def scan_input(paths, output):
     In particular Gitleaks does not recognize wheels as ZIP containers by suffix.
     No archive path is extracted or executed, and archive links are never followed.
     """
-    total, entries, line = 0, 0, 1
+    total, entries, line, normalized_fips = 0, 0, 1, 0
     locations = []
     input_path = None
     expires = time.monotonic() + 300
@@ -322,7 +331,7 @@ def scan_input(paths, output):
         line += data.count(b"\n")
 
     def member(stream, name, depth=0, label=None):
-        nonlocal entries
+        nonlocal entries, normalized_fips
         entries += 1
         if entries > 100000:
             raise ScanError("Secret scan exceeded its file inventory budget")
@@ -402,8 +411,17 @@ def scan_input(paths, output):
                                 )
         else:
             first = line
+            pending = b""
             while data := stream.read(1024**2):
-                write(data)
+                pending += data
+                normalized_fips += pending.count(PUBLIC_FIPS_LITERAL)
+                pending = pending.replace(PUBLIC_FIPS_LITERAL, NORMALIZED_FIPS_LITERAL)
+                # Retain only enough bytes to recognize the complete literal
+                # across reads. Never combine data from different members.
+                boundary = max(0, len(pending) - len(PUBLIC_FIPS_LITERAL) + 1)
+                write(pending[:boundary])
+                pending = pending[boundary:]
+            write(pending)
             write(b"\n")
             locations.append(
                 {
@@ -419,7 +437,8 @@ def scan_input(paths, output):
 
     # Gitleaks also skips a complete stdin stream when its initial bytes look
     # like an executable. A fixed text prelude with a newline prevents this
-    # content-type shortcut while preserving every input byte for inspection.
+    # content-type shortcut. Only the complete public literal above is changed;
+    # byte counts and line positions still refer to the original inputs.
     write(b"Mnemion bounded secret-scan stream\n")
     for path in paths:
         for file in sorted(path.rglob("*")) if path.is_dir() else [path]:
@@ -428,7 +447,12 @@ def scan_input(paths, output):
                 with file.open("rb") as stream:
                     member(stream, file.name, label=str(file))
     output.seek(0)
-    return {"inspected_stream_bytes": total, "inspected_members": entries, "locations": locations}
+    return {
+        "inspected_stream_bytes": total,
+        "inspected_members": entries,
+        "normalized_public_fips_literals": normalized_fips,
+        "locations": locations,
+    }
 
 
 def summarize_findings(findings, locations):

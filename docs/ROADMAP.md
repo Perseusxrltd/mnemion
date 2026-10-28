@@ -25,6 +25,13 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**28 October 2026, exact-artifact scanner correction:**
+The [complete public-literal correction](validation/2026-10-28-fips-stream-scan.md)
+passed 45 focused tests and a scan of the original rejected Apple Silicon DMG,
+with zero findings and all six mandatory credential canaries detected. Complete
+uploaded-release requalification still controls 4.46.42 publication. The frozen
+product and its assets are unchanged; V08 remains Building with no collection.
+
 **27 October 2026, collector IPv6 host crash/restart qualification:**
 The [finite systemd host probe](validation/2026-10-27-telemetry-host-crash.md)
 verified 437 deployed source inputs, IPv6 loopback delivery, one automatic restart

@@ -42,6 +42,38 @@ def test_nested_wheels_and_normally_excluded_names_are_inspected(tmp_path):
     )
 
 
+@pytest.mark.parametrize("offset", [0, 1024**2 - 35, 1024**2 + 7])
+def test_complete_public_fips_literal_keeps_adjacent_keys_and_original_positions(tmp_path, offset):
+    public = b"hexkey:" + hashlib.sha256(b"holy hand grenade of antioch").hexdigest().encode()
+    before, after = b"private-key-before\n", b"\x00private-key-after\n"
+    original = b"x" * offset + before + public + after
+    path = tmp_path / "native.bin"
+    path.write_bytes(original)
+    output = io.BytesIO()
+    observed = scan.scan_input([path], output)
+    inspected = output.read().split(b"\n", 1)[1][:-1]
+    assert inspected == original.replace(public, b"hexkey:" + b"0" * 64)
+    assert before in inspected and after in inspected
+    assert len(inspected) == len(original) and inspected.count(b"\n") == original.count(b"\n")
+    assert observed["normalized_public_fips_literals"] == 1
+
+
+def test_partial_or_changed_fips_values_are_never_normalized(tmp_path):
+    public = b"hexkey:" + hashlib.sha256(b"holy hand grenade of antioch").hexdigest().encode()
+    values = [public[:length] for length in range(7, len(public))]
+    values += [public[:-1] + b"0", public, public[7:], b"hexkey:" + b"a" * 64]
+    values += [public + b"0123456789abcdef\0", public + b"private-suffix\0"]
+    # These are precisely the bytes presented to the scanner, regardless of
+    # separate reviewed rules for the known complete key and one old fragment.
+    original = b"\n".join(values)
+    path = tmp_path / "credentials.txt"
+    path.write_bytes(original)
+    output = io.BytesIO()
+    observed = scan.scan_input([path], output)
+    assert output.read().split(b"\n", 1)[1][:-1] == original
+    assert observed["normalized_public_fips_literals"] == 0
+
+
 def test_rejection_summary_identifies_asset_without_values_or_filenames(tmp_path):
     package = tmp_path / "private-file-name.whl"
     member = "private-archive-name.txt"
