@@ -18,7 +18,7 @@
     {
       "number": 47,
       "title": "Field report (4.46.40): multi-agent usage audit \u2014 slow/hanging search, suspended connector scope, noisy activity log, unusable vault over MCP, and features left unused",
-      "updated_at": "2026-10-28T08:51:41Z",
+      "updated_at": "2026-10-28T17:01:24Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/47",
       "labels": []
     },
@@ -92,12 +92,6 @@
       "updated_at": "2026-10-28T15:14:07Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / macos-26 / arm64",
@@ -107,7 +101,13 @@
           "steps_reported": 0,
           "steps": []
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
     },
     {
       "id": 40713875652,
@@ -143,5 +143,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T15:14:52+00:00"
+  "observed_at": "2026-10-28T17:01:54+00:00"
 }
