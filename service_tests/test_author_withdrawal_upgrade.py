@@ -37,6 +37,10 @@ def inventory(dsn):
                 value = sql.SQL("jsonb_build_object('passage_times','{}'::jsonb) || to_jsonb(t)")
             if table in {"tenants", "spaces"}:
                 value = sql.SQL("jsonb_build_object('last_index_claim',NULL) || to_jsonb(t)")
+            if table == "vault_audit_events":
+                # 036 adds an optional auditor target. Preserve every actual
+                # field while supplying NULL only for the absent old column.
+                value = sql.SQL("jsonb_build_object('target_key_id',NULL) || to_jsonb(t)")
             rows = connection.execute(
                 sql.SQL("SELECT ({})::text AS value FROM mnemion.{} t ORDER BY value").format(
                     value, sql.Identifier(table)
@@ -46,7 +50,7 @@ def inventory(dsn):
         return result
 
 
-@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 28, 29])
+@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 28, 29, 35])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
     postgres, tmp_path, monkeypatch, previous_count
 ):
@@ -91,6 +95,17 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
             )
             database.close()
             database = None
+        if previous_count >= 26:
+            # An existing KeePass history must survive the replacement audit
+            # constraint, not merely work in a newly initialized database.
+            with psycopg.connect(admin_dsn) as connection:
+                for action in ("keepass_preview", "keepass_import", "keepass_export"):
+                    connection.execute(
+                        "INSERT INTO mnemion.vault_audit_events "
+                        "(tenant_id,id,principal_id,key_id,action,outcome) "
+                        "VALUES (%s,%s,%s,%s,%s,'allowed')",
+                        (owner.tenant_id, uuid4(), owner.principal_id, owner.key_id, action),
+                    )
         before = inventory(admin_dsn)
         # Exercise the installed gate's actual row hashing on the supported
         # preceding schemas without constructing or launching an installer.
@@ -188,6 +203,8 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
             expected_tables.add("capture_policy_versions")
         if previous_count < 34:
             expected_tables.add("capture_expiries")
+        if previous_count < 36:
+            expected_tables.add("vault_auditors")
         if previous_count < 20:
             expected_tables |= {
                 "vault_entries",

@@ -52,6 +52,14 @@ from usage counts. Its 16 Python origin/coverage checks and 24 Studio measuremen
 checks passed. The generated coverage view was refreshed; no collection setting
 or telemetry release qualification changed. The original failed CI is retained.
 
+The next full source run caught a migration regression: replacing the vault
+audit constraint had omitted the three existing KeePass actions. The correction
+retains preview/import/export history and updates the exhaustive upgrade
+inventory for the new table and nullable audit-target column. **50 focused
+PostgreSQL cases passed**, covering 15 preceding schema versions, existing
+KeePass histories, current import/export and metadata-auditor permissions. The
+original failed run is retained; native qualification uses the corrected source.
+
 ## Installer work and remaining acceptance
 
 The same source replaces uncompressed desktop packaging with balanced lossless

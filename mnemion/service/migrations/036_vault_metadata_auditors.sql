@@ -47,5 +47,6 @@ ALTER TABLE mnemion.vault_audit_events
     ADD COLUMN target_key_id uuid,
     DROP CONSTRAINT vault_audit_events_action_check,
     ADD CONSTRAINT vault_audit_events_action_check
-      CHECK (action IN ('list','get','put','grant','delete','export','import','auditor')),
+      CHECK (action IN ('list','get','put','grant','delete','export','import',
+                       'keepass_preview','keepass_import','keepass_export','auditor')),
     ADD CONSTRAINT vault_audit_target_check CHECK (target_key_id IS NULL OR action='auditor');
