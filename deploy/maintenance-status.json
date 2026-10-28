@@ -32,72 +32,92 @@
   ],
   "runs": [
     {
-      "id": 40740459623,
+      "id": 40751361702,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "f656382db0ad1b99aa63ed3d0e9faf047e2ea291",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-28T18:33:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623",
+      "source_commit": "faadaf1b6ef273b52f9723454160c49b483c01f5",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-28T19:06:59Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40751361702",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 12,
-        "succeeded": 7,
-        "active": []
+        "completed": 4,
+        "succeeded": 4,
+        "active": [
+          {
+            "id": 123038608454,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend run test:telemetry"
+            ]
+          },
+          {
+            "id": 123038694450,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 123038694500,
+            "name": "supervision (macos-26)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 123038694515,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 123038694516,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 123038694533,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 123038694556,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 123038694748,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          }
+        ]
       },
-      "failed_jobs": [
-        {
-          "name": "service (3.12)",
-          "id": 123000595915,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 19,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "supervision (macos-15-intel)",
-          "id": 123000596139,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 18,
-          "steps": [
-            "Verify managed installation, host recovery, signed updates and rollback with real processes"
-          ]
-        },
-        {
-          "name": "service (3.14)",
-          "id": 123000596140,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 19,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "service (3.13)",
-          "id": 123000596241,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 19,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "supervision (macos-26)",
-          "id": 123000596295,
-          "conclusion": "cancelled",
-          "runner_assigned": false,
-          "steps_reported": 0,
-          "steps": []
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 40702705371,
@@ -178,15 +198,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40713875652"
     },
     {
-      "id": 40740459240,
+      "id": 40751361738,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "f656382db0ad1b99aa63ed3d0e9faf047e2ea291",
+      "source_commit": "faadaf1b6ef273b52f9723454160c49b483c01f5",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-28T17:57:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40740459240"
+      "updated_at": "2026-10-28T19:07:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40751361738"
     },
     {
       "id": 40702700363,
@@ -200,5 +220,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-28T18:34:08+00:00"
+  "observed_at": "2026-10-28T19:07:58+00:00"
 }
