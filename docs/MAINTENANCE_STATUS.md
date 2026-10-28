@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T13:36:34+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T13:58:31+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.42](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.42). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,18 +23,25 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.46\.42 | success | [Run 40676183666](https://github.com/Perseusxrltd/mnemion/actions/runs/40676183666) |
 | release\.yml | release/4\.46\.42 | success | [Run 40540729543](https://github.com/Perseusxrltd/mnemion/actions/runs/40540729543) |
 | release\.yml | release/4\.46\.43 | failure | [Run 40684769321](https://github.com/Perseusxrltd/mnemion/actions/runs/40684769321) |
-| release\.yml | release/4\.46\.44 | in\_progress | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
-| release\.yml | release/4\.46\.45 | pending | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
-| verify-artifacts\.yml | main | skipped | [Run 40689058125](https://github.com/Perseusxrltd/mnemion/actions/runs/40689058125) |
+| release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
+| release\.yml | release/4\.46\.45 | in\_progress | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
+| verify-artifacts\.yml | main | in\_progress | [Run 40701322252](https://github.com/Perseusxrltd/mnemion/actions/runs/40701322252) |
 | website-release\.yml | main | success | [Run 40696961963](https://github.com/Perseusxrltd/mnemion/actions/runs/40696961963) |
 | website-release\.yml | v4\.46\.42 | success | [Run 40676191314](https://github.com/Perseusxrltd/mnemion/actions/runs/40676191314) |
 
 ## Active jobs
 
-[Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078): 19/21 jobs completed; 18 succeeded.
+[Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): 3/8 jobs completed; 2 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- Reuse verified Product checks: in\_progress — Run python -m pip install PyYAML==6\.0\.3.
+- native / Encrypted files / Windows / arm64: queued.
+- native / Encrypted files / Windows / x64: queued.
+- native / native\_database / Private state / Windows / arm64: queued.
+- native / native\_database / Private state / Windows / x64: queued.
+
+[Run 40701322252](https://github.com/Perseusxrltd/mnemion/actions/runs/40701322252): 0/1 jobs completed; 0 succeeded.
+
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
 
 ## Unsuccessful jobs
