@@ -151,8 +151,9 @@ change an existing memory service or firewall. Their fixed layout is:
 
 - Reviewed source under `/opt/mnemion-telemetry/source`.
 - The minimal locked interpreter under `/opt/mnemion-telemetry/venv`.
-- Protected certificate material under `/etc/mnemion-telemetry`, supplied to
-  the service with `LoadCredential`.
+- One root-owned `0600` certificate/key bundle,
+  `/etc/mnemion-telemetry/tls.pem`, in a root-owned `0700` directory. A single
+  `LoadCredential` supplies that bundle to both TLS arguments.
 - Owner-only aggregate state under `/var/lib/mnemion-telemetry`.
 
 From the reviewed source directory, install only the collector dependencies
@@ -165,10 +166,30 @@ UV_PROJECT_ENVIRONMENT=/opt/mnemion-telemetry/venv \
 
 Provision the dedicated non-login account with the included
 [sysusers declaration](../../deploy/collector/mnemion-telemetry.sysusers)
-and prepare the protected certificate files before starting the service.
+and prepare credentials from an existing certificate lineage before starting
+the service. Replace the example hostname and lineage with the reviewed values:
+
+```sh
+sudo /opt/mnemion-telemetry/venv/bin/python -I \
+  /opt/mnemion-telemetry/source/deploy/collector/credentials.py \
+  --lineage /etc/letsencrypt/live/telemetry.example.org \
+  --hostname telemetry.example.org
+```
+
+The [credential tool](../../deploy/collector/credentials.py) checks the key pair,
+hostname and validity through an in-memory TLS handshake, then atomically
+replaces the private bundle. It requires at least 24 hours of validity remaining.
+The one-file handoff prevents systemd from loading a certificate and key from
+different renewals. It does not establish public CA trust or ingress privacy.
+The [certificate renewal guide](../guides/telemetry-collector-certificates.md)
+covers the root-owned Certbot hook, active-service restart and migration from
+the earlier two-file template. The hook consumes an existing renewal setup;
+the credential tool does not issue certificates.
+
 Review the listener first: the socket template opens `0.0.0.0:8443`; keep its
 `ListenStream` and the service's `--bind`/`--port` values matched. Then install
-both units and enable/start the service:
+both units and enable/start the service only for the intended, qualified
+deployment:
 
 ```sh
 sudo systemd-sysusers deploy/collector/mnemion-telemetry.sysusers

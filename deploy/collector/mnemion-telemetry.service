@@ -15,11 +15,10 @@ StateDirectoryMode=0700
 WorkingDirectory=/opt/mnemion-telemetry/source
 Environment=PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
 UnsetEnvironment=SSLKEYLOGFILE PYTHONPATH PYTHONHOME PYTHONSTARTUP PYTHONINSPECT
-ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.server serve --state /var/lib/mnemion-telemetry --bind 0.0.0.0 --port 8443 --certificate %d/fullchain.pem --private-key %d/private-key.pem --systemd-socket
-# Install local certificate material at these protected operator-owned paths.
+ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.server serve --state /var/lib/mnemion-telemetry --bind 0.0.0.0 --port 8443 --certificate %d/tls.pem --private-key %d/tls.pem --systemd-socket
+# One atomically replaced bundle prevents mixed certificate/key generations.
 # No workspace credential or authentication header belongs in this service.
-LoadCredential=fullchain.pem:/etc/mnemion-telemetry/fullchain.pem
-LoadCredential=private-key.pem:/etc/mnemion-telemetry/private-key.pem
+LoadCredential=tls.pem:/etc/mnemion-telemetry/tls.pem
 UMask=0077
 Restart=on-failure
 RestartSec=10
