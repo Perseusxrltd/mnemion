@@ -1,9 +1,10 @@
 # Anonymous product telemetry catalog — V08
 
-**Building/source implementation, 27 October 2026.** This supplements the
-[V08 contract](anonymous-product-telemetry.md). Catalog version 1 defines **94
-workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
-four separate resource metrics. Python and TypeScript encoders, bounded native
+**Building/source implementation, 28 October 2026.** This supplements the
+[V08 contract](anonymous-product-telemetry.md). The
+[versioned catalog](../../mnemion/product_telemetry/catalog.json) defines the
+workflows, families, invocation surfaces, workflow metrics and separate resource
+metrics. Python and TypeScript encoders, bounded native
 and browser queues, revision/generation fencing, local controls and exact manual
 report review are implemented. Source owners cover reviewed classic CLI
 command variants, `mnemion-control call`, selected
@@ -17,9 +18,17 @@ establish production qualification. **Collection remains unavailable; destinatio
 and release route address are null.** No production product analytics is active.
 All 66 requirement texts and the other 65 states remain unchanged; V08 stays Building.
 
-The regenerated [source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-maps **all 94 categories, with zero unmeasured**, including the observable
-[27 October verification boundaries](../validation/2026-10-27-telemetry-update-verification.md).
+The generated [source-coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
+is the canonical Git source for current category totals and mapping states
+(`summary`) and declared-action totals and dispositions (`action_coverage.summary`).
+The [27 October catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds `capture.split` and `models.test` in catalog version 2, after the original
+version-1 workflow IDs. Existing coordinates, stored meanings and contribution
+limits are preserved without changing the four-byte wire format or granting
+collection permission.
+
+The earlier [27 October verification checkpoint](../validation/2026-10-27-telemetry-update-verification.md)
+mapped **all 94 categories, with zero unmeasured**.
 The preceding checkpoint had 93 mapped categories and an independently
 unmeasured `update.verify`; its 632 action rows comprised 360 mapped, 265 excluded
 and seven delegated. These earlier counts remain historical. The inventory is generated
@@ -30,10 +39,7 @@ preserves its 86-mapped/eight-unmeasured checkpoint. The
 [action-owner follow-up](../validation/2026-10-26-telemetry-action-coverage.md)
 records the later preparation boundary and remaining gaps.
 
-The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-lists **700 actions and fixed variants: 396 mapped, 294 excluded,
-eight delegated and two unmeasured among the represented declarations**. The
-[action generator](../../deploy/telemetry_actions.py) independently reads the
+The [action generator](../../deploy/telemetry_actions.py) independently reads the
 control contract, native action declarations, SDK class methods, legacy API,
 desktop preload request channels, maintained MCP registrations/invocation aliases
 and legacy MCP registry keys, plus literal classic CLI `argparse` paths, before
@@ -44,17 +50,20 @@ independent call-site proof. A newly declared interface
 action without a mapping appears as unmeasured even if its category has another
 owner. Fixed exclusion reasons and delegation are visible separately; none of
 these rows authorizes collection or represents activity history.
-The [current CLI follow-up](../validation/2026-10-27-telemetry-cli-outcomes.md)
-has 63 fixed rows: 32 mapped, 29 excluded and two unmeasured. `split` and
-`llm test` remain without a reviewed category/boundary. The
+The [27 October CLI outcomes checkpoint](../validation/2026-10-27-telemetry-cli-outcomes.md)
+recorded **700 actions and fixed variants: 396 mapped, 294 excluded,
+eight delegated and two unmeasured among the represented declarations**. Its
+63 classic CLI rows comprised 32 mapped, 29 excluded and two paths then unmeasured,
+`split` and `llm test`. The later catalog compatibility follow-up above supplies
+their dedicated categories and boundaries; these counts remain historical. The
 [earlier CLI checkpoint](../validation/2026-10-27-telemetry-cli-coverage.md)
 retains 51 classic rows (nine mapped, 13 excluded, 29 unmeasured) and 688 total
 rows. Hand-parsed options, other entrypoints and actual runtime coverage remain open.
 The preceding 637-row checkpoint (364 mapped, 265 excluded, eight delegated and
 zero unmeasured) remains historical.
 The preceding update-verification checkpoint listed 634 rows, with 362 mapped;
-the two typed capture-administration methods add declarations without changing
-the 94 workflow categories.
+the two typed capture-administration methods added declarations without changing
+the 94 workflow categories at that checkpoint.
 The [desktop cancellation hotfix](../validation/2026-10-27-desktop-request-cancellation.md)
 adds one delegated transport channel. Its local cancellation token is never a
 measurement; the enclosing Studio action retains ownership.
@@ -68,15 +77,19 @@ and does not qualify installed/native or production behavior; the
 [action-preview report](../validation/2026-10-26-telemetry-action-preview.md)
 retains the exact asset binding and cleanup receipt.
 
-Current [wire v2 and report v3](../validation/2026-10-26-telemetry-review-selection.md)
-retain a four-byte body and 23 permitted views. Automatic packets use the
+The current [wire v2 format](../../mnemion/product_telemetry/wire-v2.json) retains
+a four-byte body and 23 permitted views. Automatic packets use the
 randomized encoder. Manually reviewed packets use a constant body for the first
 permitted view, coordinate zero and flags `2`, with no category data or random
 draw. They contribute only to the coarse closed-week global volume range;
 categorical estimates, counts and precision use automatic reports exclusively.
 The thresholds remain 64 total reports per window and 4,096 automatic reports per
-view. No separate manual count is published. Legacy wire v1 is rejected; immutable
-aggregate reports v1/v2 remain readable. Manual review has no general categorical
+view. No separate manual count is published. The
+[catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds the new feature labels in report schema 4; immutable aggregate reports
+v1/v2/v3 remain readable under their original labels. Legacy wire v1 is rejected.
+The earlier [review-selection qualification](../validation/2026-10-26-telemetry-review-selection.md)
+retains its wire-v2/report-v3 evidence. Manual review has no general categorical
 privacy-loss claim, and neither mode establishes participation or network anonymity.
 
 The [published 4.46.13 control qualification](../validation/2026-10-26-44613-native-acceptance.md)
@@ -206,7 +219,7 @@ The [browser aggregate store](../../studio/frontend/src/workspace/telemetry-aggr
 uses bounded local storage under the [browser privacy policy](../../studio/frontend/src/workspace/telemetry-policy.ts).
 Current state formats are native/Python SQLite version 6, browser choice version 5
 and browser budget version 2; their fences prevent older senders from bypassing
-manual review. These are separate from catalog version 1 and wire version 2.
+manual review. These are separate from catalog version 2 and wire version 2.
 Both reject recording before storage access while collection is unavailable.
 When permitted, they recheck current choice, disclosure, company groups and the
 `revision`/`store_generation` pair captured by the originating work. Recreating
@@ -325,20 +338,25 @@ preview neither reserves a packet nor enables transport.
 
 The [classic CLI observer](../../mnemion/cli_measurement.py) owns only the
 [reviewed command paths](../../mnemion/product_telemetry/cli-origins.json), using
-the shared OS-account policy and original revision/generation fence. The current
-63 rows include explicit dry-run, quarantine-default-preview, librarian/repair
+the shared OS-account policy and original revision/generation fence. The reviewed
+variants include explicit dry-run, quarantine-default-preview, librarian/repair
 status, repair scan and wiki review/apply variants. Private arguments, output and
 result contents remain outside telemetry. Selected new mutative or early-return
 commands finish as `unconfirmed`; return alone does not prove their effects.
 Status, saved-diff/impact inspection and path display have explicit exclusions.
-`split` and `llm test` remain unmeasured, with no arbitrary fallback category.
+The [catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+maps an applied split to `capture.split` with an unconfirmed outcome; dry-run
+stays excluded. `llm test` maps to `models.test`, using the command's exact trimmed
+`MNEMION_OK` success condition or failed outcome. The owner receives no prompts,
+replies, model identifiers or paths. Current row counts and dispositions are in
+the generated [action inventory](../../mnemion/product_telemetry/workflow-coverage.json).
 
 `--no-telemetry` suppresses one invocation without changing the saved choice;
 both automatic hook-mine subprocesses use it. Direct handlers and
 `telemetry_owner=False` calls add no owner, and nested work stays within the
 enclosing invocation. Recorded work may notify an existing eligible local
 delivery owner; there is no new CLI keepalive, send or shutdown flush. The
-[current source report](../validation/2026-10-27-telemetry-cli-outcomes.md)
+[27 October CLI outcomes report](../validation/2026-10-27-telemetry-cli-outcomes.md)
 records 128 distinct Python passes, one source-preview pass and SDK/frontend
 builds, preserving the two defect reproductions and three corrected fixture
 failures. It also records the default repair dry-run fix, which stops before
@@ -350,7 +368,8 @@ behavior and full acceptance remain open.
 The [control-origin map](../../mnemion/product_telemetry/control-origins.json)
 covers all **161 operations** in the API control contract: **82 map to optional
 owned measurements and 79 are excluded**. These counts describe API operations;
-they map into the separate 94-workflow catalog above. The owner is specifically
+they map into the separate versioned workflow catalog above. The owner is
+specifically
 [`mnemion-control call`](../../mnemion/control_cli.py), with surface `headless`.
 Generic SDK calls, direct `agent_control.execute` calls and remote MCP requests
 do not acquire a measurement owner. Native privacy `schema` now exposes the
@@ -430,14 +449,14 @@ counts remain historical.
 ## Owned desktop, native-operator and Studio coverage
 
 These hooks are implemented in source and remain inactive under the unavailable
-collection contract. Their maps describe eligible boundaries, not proof that all
-94 catalog workflows have producers or that an installed app collects data.
+collection contract. Their maps describe eligible boundaries; they do not
+establish complete per-action or installed coverage, or active collection.
 
 | Boundary | Current source ownership |
 | --- | --- |
 | Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **77 top-level operations: 46 eligible and 31 excluded**. The eligible `host.request` entry separately classifies nine typed mutations and four read exclusions. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
-| Desktop preload requests | The same map's `ipc` section classifies **72 actual preload request channels**, including fixed `hosts:action` and `sources:control` variants. The runtime dispatcher and action inventory read these reviewed mappings; inspection, privacy, transport and automatic connection exclusions remain visible. The 4.46.22 source follow-up passed 54 distinct Python and 26 Node tests plus both source builds. |
-| Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **66 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. The earlier 64-method map preceded the two standalone capture-administration methods. |
+| Desktop preload requests | The same map's `ipc` section lists the actual preload request channels, including fixed `hosts:action` and `sources:control` variants. The runtime dispatcher and action inventory read these reviewed mappings; inspection, privacy, transport and automatic connection exclusions remain visible. The 4.46.22 source checkpoint classified 72 channels and passed 54 distinct Python and 26 Node tests plus both source builds. |
+| Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) lists selected methods and explicit exclusions. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. The earlier 64-method map preceded the two standalone capture-administration methods. |
 | Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
 
 The [workspace ownership follow-up](../validation/2026-10-26-workspace-telemetry-ownership.md)
@@ -530,7 +549,7 @@ it does not authorize server jobs or complete all background ownership.
 
 The [UI-origin map](../../mnemion/product_telemetry/ui-origins.json) and
 [MCP-origin map](../../mnemion/product_telemetry/mcp-origins.json) supplement the
-unchanged 94-workflow catalog. They classify eligible source paths, not deployed
+versioned workflow catalog. They classify eligible source paths, not deployed
 collection or completed all-platform coverage.
 
 | Boundary | Source mapping |
@@ -823,10 +842,13 @@ without adding an operation identifier to product telemetry.
 
 ## Workflow catalog
 
-The 15 workflow families below expand to the 94 catalog operations; separate
-resource cells are not extra workflows. The ownership maps above record the
-implemented CLI, app, stdio and selected maintenance boundaries. The broader
-integration points below still need full coverage qualification. Only version 1's fields are accepted today;
+The workflow families below expand to the operations in the
+[versioned catalog](../../mnemion/product_telemetry/catalog.json); its
+`workflow_order` and `workflow_counts` preserve numeric meanings across versions.
+Separate resource cells are not extra workflows. The ownership maps above record
+the implemented CLI, app, stdio and selected maintenance boundaries. The broader
+integration points below still need full coverage qualification. Only fields
+accepted by the current catalog and encoders can be recorded;
 additional modes, quality views and sensors mentioned below remain proposals.
 “Origin” means the disclosed app/agent owner above, not an arbitrary caller of
 a shared SDK. Unowned host/background paths remain excluded from measurement.
@@ -837,10 +859,10 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 | `workspace`: `connect`, `sign_in`, `open`, `switch`, `disconnect`, `forget` | Connection/open outcomes and latency; a fixed local/remote mode only if needed in an approved view. Exclude addresses, identity providers, account names and saved-connection IDs. | Explicit [Connect](../../studio/frontend/src/workspace/Connect.tsx) and [workspace controller](../../studio/electron/service-bridge.ts) boundaries. Only saved restore selects open/switch from verified transition metadata, with one owner; automatic resume stays excluded. Reset owns a forget acknowledgement. New connect/sign-in/local-open keep their labels. |
 | `memory`: `list`, `read`, `recall`, `context`, `knowledge`, `core_read` | Logical retrieval use, latency, result-count buckets and fixed empty/fallback/incomplete-index observations. Mode may be lexical/semantic/hybrid; no query, snippet, score vector, citation ID or search-filter values. | Origin; [SearchMemory.search](../../studio/frontend/src/workspace/Workspace.tsx#L1180), [Knowledge](../../studio/frontend/src/workspace/Knowledge.tsx#L17). [RetrievalService._measured](../../mnemion/service/retrieval.py#L118) is currently private operational measurement, not an export source. |
 | `memory`: `save`, `revise`, `review`, `forget`, `core_write`, `import`, `export` | Submission/terminal outcomes, latency and bounded item/transfer totals. Distinguish accepted write from indexing readiness; preserve uncertain deletion outcomes. Exclude contents, review reasons, paths and idempotency keys. | Origin; [save/revise/forget UI](../../studio/frontend/src/workspace/Workspace.tsx#L753), [API write routes](../../mnemion/service/api.py#L616). Index/purge completion coverage remains open when the origin is absent. |
-| `capture`: `configure`, `preview`, `collect`, `deliver`, `pause`, `drain`, `remove` | Separate local acceptance from remote delivery; bucket accepted/delivered counts, backlog, bytes and elapsed time. Fixed partial/fence/authorization reasons map into the common vocabulary. No conversation, file, device, grant or checkpoint identifiers. | Disclosed local capture owner; [shared native/headless cycle](../../mnemion/connectors/capture_cycle.py#L21), [DesktopSources](../../studio/electron/desktop-sources.ts#L362). The service must not recount accepted pages. |
+| `capture`: `configure`, `preview`, `collect`, `deliver`, `pause`, `drain`, `remove`, `split` | Separate local acceptance from remote delivery; bucket accepted/delivered counts, backlog, bytes and elapsed time. Fixed partial/fence/authorization reasons map into the common vocabulary. An applied split has an unconfirmed outcome; split dry-run is excluded. No conversation, file, device, grant or checkpoint identifiers. | Disclosed local capture owner; [shared native/headless cycle](../../mnemion/connectors/capture_cycle.py#L21), [DesktopSources](../../studio/electron/desktop-sources.ts#L362), and the [classic CLI map](../../mnemion/product_telemetry/cli-origins.json) for split. The service must not recount accepted pages. |
 | `sources`: `configure`, `scan`, `sync`, `pause`, `resume`, `repair`, `remove` | Scan/control outcomes, elapsed time and changed/removed/backlog buckets. Never export repository names, provider identities, paths, commits or per-source histories. | Origin for explicit controls; separately owned scans need local policy. [Connections](../../studio/frontend/src/workspace/Connections.tsx#L57), [runner._scan](../../mnemion/connectors/runner.py#L81), [managed status](../../mnemion/connectors/managed.py#L71). Shared-host scans remain unresolved. |
 | `librarian`: `configure`, `run`, `cancel`, `accept`, `reject`, `undo` | Submission versus completion, duration, processed/skipped/proposal-count buckets and available reported-token totals. Exclude memory IDs, proposals, model/profile names and decision text. | Origin for controls; [Librarian.act](../../studio/frontend/src/workspace/Librarian.tsx#L145). [Scheduled runner](../../mnemion/service/librarian_runner.py#L81) completion and unattended work require the background ownership decision. |
-| `models`: `configure`, `prepare`, `reindex`, `pause`, `resume`, `cancel` | Preparation/cache availability, downloads where measured, latency, admitted/deferred work and reported-token buckets. Use a reviewed local/remote execution class, not custom model IDs, endpoints, dimensions or exact hardware. | Origin for controls and owned local preparation; [EmbeddingModels](../../studio/frontend/src/workspace/EmbeddingModels.tsx#L33), [pinned model files](../../mnemion/service/model_files.py#L6), [ModelWorker](../../mnemion/service/model_worker.py#L25). Remote inference/background totals remain unresolved. |
+| `models`: `configure`, `prepare`, `reindex`, `pause`, `resume`, `cancel`, `test` | Preparation/cache availability, downloads where measured, latency, admitted/deferred work and reported-token buckets. The model test classifies its existing command outcome without prompts or replies. Use a reviewed local/remote execution class, not custom model IDs, endpoints, dimensions or exact hardware. | Origin for controls and owned local preparation; [EmbeddingModels](../../studio/frontend/src/workspace/EmbeddingModels.tsx#L33), [pinned model files](../../mnemion/service/model_files.py#L6), [ModelWorker](../../mnemion/service/model_worker.py#L25), and the [classic CLI map](../../mnemion/product_telemetry/cli-origins.json) for test. Remote inference/background totals remain unresolved. |
 | `backup`: `configure`, `create`, `list`, `verify`, `prune`; `recovery`: `inspect`, `restore`, `finish`, `discard` | Distinct submission, delivery, verified-readback and restore boundaries; duration and size buckets. Delivery includes upload/readback, and later verification downloads again. No destinations, key IDs, digests, archive names or operation IDs. | Origin through [local backup/recovery dispatch](../../studio/electron/service-bridge.ts#L650) or [HostBackups.request](../../studio/frontend/src/workspace/HostBackups.tsx#L24). [Native backup worker](../../mnemion/host_control/backup_jobs.py#L12) and [Git transfer stages](../../mnemion/host_control/backup_git.py#L263) are private evidence; remote completion ownership stays open. |
 | `update`: `check`, `download`, `verify`, `apply`, `restart`, `rollback` | Confirmed stage outcomes, duration, transfer buckets and fixed restart/deadline reasons. A downloaded candidate is not an installed update; a rollback remains separate from success. Exclude exact version pairs, journal contents and idle/activity timelines. | Shared desktop updater policy: [check](../../studio/electron/updates.ts#L263), [guarded restart](../../studio/electron/updates.ts#L310). The dedicated [managed updater](../../mnemion/service/update_measurement.py) owns fresh download/apply/rollback under its host account's acknowledged policy. Its live readiness/rollback observations do not backfill interrupted work. Installed lifecycle qualification remains open. |
 | `host`: `adopt`, `enroll`, `inspect`, `start`, `stop`, `plan_upgrade`, `resolve`, `revoke` | Typed control use and confirmed outcomes, including busy/no-effect versus uncertain effects. Backup and update operations use their own rows, not another host mutation total. Never export host/operator identity, SSH fingerprints, signed plans or service paths. | Origin at [hostAction](../../studio/electron/service-bridge.ts#L304)/[HostProfiles.request](../../studio/electron/host-profiles.ts#L268); headless typed operations map through the [host protocol](../../mnemion/host_control/protocol.py#L153). |
@@ -898,7 +920,7 @@ The following implementation and acceptance work remains open:
 - **Anonymity and output:** substantiate ingress/provider log behavior, transient
   source-IP handling, metadata stripping and absence of retained raw events.
   Wire v2 automatic randomization has a conditional per-report `ln(3)` bound;
-  report v3 categorical estimates assume conforming automatic reports and
+  categorical estimates assume conforming automatic reports and
   packet-independent inclusion, with a 4,096-automatic-report per-view gate and
   rare-cell suppression. The constant manual body carries no category and
   contributes only to the coarse global range after 64 total reports; its preview

@@ -1,6 +1,6 @@
 # Product telemetry delivery components — V08
 
-**Unreleased source checkpoint, 26 October 2026; V08 remains Building.** The
+**Building/source implementation; current checkpoint 28 October 2026.** The
 [full contract](anonymous-product-telemetry.md) and
 [local catalog/ownership](anonymous-product-telemetry-catalog.md) retain their
 scope. Python/TypeScript packet encoders, a volatile weekly accumulator, an
@@ -17,7 +17,9 @@ passed **22 browser checks and 18 native checks**. **Production collection
 remains disabled; installed production delivery and ingress qualification remain
 open.** The disclosure remains `collection_available: false` with
 `destination: null`. Source and synthetic utility evidence is recorded in the
-[delivery validation](../validation/2026-10-24-telemetry-delivery.md).
+[delivery validation](../validation/2026-10-24-telemetry-delivery.md). Consult
+[release status](../RELEASE_STATUS.md) for current availability; these component
+receipts qualify only their recorded source and fixtures.
 
 The later [application-owner source batch](../validation/2026-10-24-telemetry-app-owners.md)
 wires these senders to already awake desktop/browser work and an existing Python
@@ -390,7 +392,7 @@ actual server, TLS terminator, proxy or provider: transport metadata and logs
 still require evidence through the complete deployed path.
 
 Weeks are server-owned, fixed Monday-to-Monday windows. Only a closed window is
-passed to a publisher callback. Current **report schema version 3** retains the
+passed to a publisher callback. Current **report schema version 4** retains the
 root `report_range` introduced in v2: one global power-of-two volume range after
 **at least 64 accepted automatic or reviewed reports** in that week, for example
 `[64, 128)`. Fewer than 64 reports produce no
@@ -409,11 +411,14 @@ not unique users, all activity or total global feature usage. Reviewed reports
 cannot satisfy a detailed threshold or narrow an interval, and no separate
 manual count is published.
 
-Report v3 declares `estimation_population: "automatic_reports_only"` and
+The current schema retains v3's `estimation_population: "automatic_reports_only"` and
 `reviewed_report_use: "coarse_global_volume_only"`, with the inclusion assumptions
 above. It accompanies **wire v2**, whose packet remains four bytes. The reader
-accepts immutable aggregate report v1/v2 documents without rewriting them or
-inventing a missing global range. Legacy wire v1 is still refused. The volume
+accepts immutable aggregate report v1/v2/v3 documents without rewriting them or
+inventing a missing global range. The
+[catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds the appended feature labels only to new schema-v4 reports; older reports
+retain their original labels and bytes. Legacy wire v1 is still refused. The volume
 bucket does not inherit the categorical
 `ln(3)` bound as a participation or lifetime privacy guarantee; it remains
 subject to the complete privacy and utility qualification.

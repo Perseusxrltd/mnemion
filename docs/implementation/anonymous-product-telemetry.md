@@ -1,6 +1,6 @@
 # Anonymous product telemetry — V08
 
-**Building/source implementation; current checkpoint 27 October 2026.** V08
+**Building/source implementation; current checkpoint 28 October 2026.** V08
 retains the full scope in the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md);
 all requirement texts and the other 65 states are unchanged. The
 [shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
@@ -137,34 +137,46 @@ privacy and resource acceptance remain open.
 
 ### Owned observations and storage
 
-The catalog defines **94 workflows in 15 families**, fixed numeric buckets and
-matching Python/TypeScript coordinates. Only reviewed primitives enter encoding;
-event/input/result objects, free text and identifying values do not.
-The regenerated [coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-maps **all 94 categories, with zero unmeasured**, after the
-[27 October verification follow-up](../validation/2026-10-27-telemetry-update-verification.md).
+The [versioned catalog](../../mnemion/product_telemetry/catalog.json) defines the
+workflows, families, fixed numeric buckets and matching Python/TypeScript
+coordinates. Only reviewed primitives enter encoding; event/input/result
+objects, free text and identifying values do not. The generated
+[coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json) is
+the canonical Git source for current category totals and mapping states
+(`summary`) and declared-action totals and dispositions (`action_coverage.summary`).
+The inventory is available in app/browser format inspection and native
+schema/preview as read-only metadata. Release checks reject stale inventories.
+A source mapping does not qualify every screen, sensor or installed client.
+
+The [27 October catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds `capture.split` and `models.test` in catalog version 2. Existing numeric
+coordinates, stored meanings and contribution limits are preserved; the
+four-byte wire format and collection permission are unchanged.
+The earlier [27 October verification checkpoint](../validation/2026-10-27-telemetry-update-verification.md)
+mapped **all 94 categories, with zero unmeasured**.
 The preceding checkpoint mapped 93 categories, leaving `update.verify`
 independently unmeasured, and listed 632 action rows: 360 mapped, 265 excluded
-and seven delegated. Those counts remain historical. The inventory is available
-in app/browser format inspection and native schema/preview as read-only
-metadata. Release checks reject stale inventories. A source mapping
-does not qualify every screen, sensor or installed client.
-The current [action inventory](../../mnemion/product_telemetry/workflow-coverage.json)
-contains **700 declared actions and fixed variants: 396 mapped, 294 excluded,
-eight delegated and two unmeasured among these declarations**. It independently
-reads **eight shipped interfaces across seven checked owner categories**: the
+and seven delegated. Those counts remain historical.
+
+The [action generator](../../deploy/telemetry_actions.py) independently reads
+**eight shipped interfaces across seven checked owner categories**: the
 maintained and legacy MCP interfaces share `local_stdio`. Other owners use
 reviewed source-route maps. Missing mappings in those
 interfaces remain visible as unmeasured even
 when the category has another owner. Search, source/state filters and pages of
 50 rows inspect fixed metadata without invoking actions or adding a producer.
 The earlier update-verification checkpoint contained 634 rows, with 362 mapped;
-the capture-administration additions do not change the 94 workflow categories.
+the subsequent capture-administration additions did not change the 94 workflow
+categories at that checkpoint.
 The [desktop cancellation hotfix](../validation/2026-10-27-desktop-request-cancellation.md)
 adds one delegated transport channel. Its local cancellation token is never a
 measurement; the enclosing Studio action retains ownership.
-The [current CLI follow-up](../validation/2026-10-27-telemetry-cli-outcomes.md)
-has 63 fixed rows: 32 mapped, 29 excluded and two unmeasured (`split`, `llm test`).
+The [27 October CLI outcomes checkpoint](../validation/2026-10-27-telemetry-cli-outcomes.md)
+recorded **700 declared actions and fixed variants: 396 mapped, 294 excluded,
+eight delegated and two unmeasured**, including 63 classic CLI rows: 32 mapped,
+29 excluded and two paths then unmeasured (`split`, `llm test`). The later catalog
+compatibility follow-up above supplies their dedicated boundaries; these earlier
+counts remain historical.
 Fixed preview/status/review/apply variants preserve opaque inputs and results;
 selected new mutative or possibly early-return commands report unconfirmed completion.
 `--no-telemetry` suppresses one invocation without changing saved policy, and
@@ -596,14 +608,17 @@ universal wire bound or installed, physical-link, IPv6, retransmission, browser,
 rolling-day, resource or provider acceptance. Earlier failed resource results
 and the **2 MiB / 0.5%** limits remain unchanged.
 
-Current **wire v2/report v3** retains four-byte packets. Automatic reports use
+The current [wire v2 format](../../mnemion/product_telemetry/wire-v2.json) retains
+four-byte packets. Automatic reports use
 the randomized encoder; manual reports use the first permitted view, coordinate
 zero and flags two, without category data or a random draw. Reviewed reports
 contribute only to a coarse global power-of-two volume range after **64 total
 reports**. Categorical sums, per-view counts and precision use automatic reports
 exclusively, retaining the **4,096-report per-view threshold**. No separate manual
-count is published. Wire v1 is rejected; immutable aggregate reports v1/v2 remain
-readable. Volume is unauthenticated and is not a count of people/installations;
+count is published. The [catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds the new feature labels in aggregate report schema 4; immutable reports
+v1/v2/v3 remain readable under their original labels. Wire v1 is rejected.
+Volume is unauthenticated and is not a count of people/installations;
 fine-grained statistics can remain unavailable. Exact review and its privacy
 limits are specified below.
 
