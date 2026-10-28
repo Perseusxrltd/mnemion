@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T17:58:13+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-28T18:34:08+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.44](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.44). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,7 +18,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623) |
+| ci\.yml | main | failure | [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623) |
 | public-updates\.yml | v4\.46\.44 | failure | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
 | release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
 | release\.yml | release/4\.46\.45 | failure | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
@@ -26,20 +26,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | website-release\.yml | main | success | [Run 40740459240](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459240) |
 | website-release\.yml | v4\.46\.44 | success | [Run 40702700363](https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363) |
 
-## Active jobs
-
-[Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623): 5/12 jobs completed; 5 succeeded.
-
-- studio: in\_progress — Run npm --prefix studio/electron test.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-26\): queued.
-
-
 ## Unsuccessful jobs
 
+- [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623): service \(3\.12\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623): supervision \(macos-15-intel\) (failure). Steps: Verify managed installation, host recovery, signed updates and rollback with real processes.
+- [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623): service \(3\.14\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623): service \(3\.13\) (failure). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- [Run 40740459623](https://github.com/Perseusxrltd/mnemion/actions/runs/40740459623): supervision \(macos-26\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371): macos / arm64 public upgrade (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): native / macos-26 / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
