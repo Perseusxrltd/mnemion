@@ -425,13 +425,33 @@ that were already specific keep their own codes: `source_outside_selected_root`,
 `source_handle_verification_unavailable`, and `source_changed_during_read`.
 Operating-system text, absolute host paths, file bytes, and credentials are not
 stored. The scan does not continue past that file, does not infer deletions, and
-does not advance the last complete checkpoint. The scope is suspended as well.
-A later access-lease refresh clears that suspension and can make ordinary recall
-available again, but it leaves the failed inventory receipt in place, so source
-health keeps `connector_inventory_incomplete` until a later scan completes with
-no file failures. Reader health summaries still omit paths. The connector
-operator sees the path on source status and through `connectors.scopes`. Repair
-the file's access or exclude it, then scan again.
+does not advance the last complete checkpoint. In the same transaction as that
+receipt, every previously indexed item this run did not genuinely re-read is
+withheld from readers. That includes the named file and later files the walk
+never opened. A file this run did read stays visible. Records are not marked
+deleted. A readable but malformed file (`source_is_not_utf8_text`,
+`source_contains_binary_data`, `source_too_large`) still keeps the last good
+copy and does not quarantine the rest of the source. The scope is then suspended
+as a follow-up. A later access-lease refresh clears that suspension. It can
+show files this scan re-read, and native memories in other spaces. It does not
+reveal withheld items, remove the failed inventory receipt, advance the last
+complete scan, or clear a hold because a run id or root lease changed. A
+body-free retain is not a new read. Source health keeps
+`connector_inventory_incomplete` until a later scan reads the withheld files
+and finishes with no access failure. That repair restores the text even when
+the body and source revision are unchanged. Reader health summaries still omit
+paths. The connector operator sees the path on source status and through
+`connectors.scopes`.
+
+On Linux the open uses `O_NOFOLLOW`, so a selected symlink fails with `ELOOP`
+and is recorded as `source_link_or_handle_changed`. On Windows the final
+component is opened with `FILE_FLAG_OPEN_REPARSE_POINT` and refused when that
+handle is a reparse point. If converting the handle to a C runtime descriptor
+fails, the raw handle is closed. The opened handle must still remain inside
+the selected root. A catalog check alone is not the control. Directory
+symlinks and junctions are still rejected while walking. These focused checks
+ran on Linux. An actual Windows account still has to accept an in-root file
+symlink, a redirected symlink, and an ordinary file together.
 
 Directory symlinks are still rejected as `source_symlinks_not_supported` before
 their contents are walked. The scan report can name that relative directory, and

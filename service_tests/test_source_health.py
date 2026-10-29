@@ -3,7 +3,7 @@
 import hashlib
 import json
 import subprocess
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
@@ -15,7 +15,7 @@ from mnemion.service.api import create_app
 from mnemion.service.connector_models import BindingInput, ConnectorInput
 from mnemion.service.connectors import ConnectorService
 from mnemion.service.errors import ServiceError
-from mnemion.service.models import GrantInput, KeyInput, PrincipalInput
+from mnemion.service.models import GrantInput, KeyInput, MemoryInput, PrincipalInput
 from service_tests.test_clients import running as serve
 
 
@@ -409,7 +409,7 @@ def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
 
     service, connection, people, config = text_source
     root = config.provider.path
-    (root / "kept.md").write_text("Postgres kept before denial", encoding="utf-8")
+    (root / "a-kept.md").write_text("Postgres kept before denial", encoding="utf-8")
     (root / "gone.md").write_text("Postgres retained until access scan", encoding="utf-8")
     real_open = source_files.os.open
 
@@ -427,6 +427,14 @@ def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
     ):
         assert sync(config, client=client)["completed"]
         first = service.scopes(people["capture"][0], connection)["items"][0]
+        indexed = reader.request(
+            "POST",
+            "/v1/recall",
+            body={"query": "Postgres", "mode": "lexical", "all_accessible": True},
+        )
+        gone_hits = [hit for hit in indexed["hits"] if "retained until access scan" in hit["text"]]
+        assert gone_hits
+        gone_memory = UUID(gone_hits[0]["memory_id"])
         (root / "gone.md").unlink()
         (root / "denied.md").write_text("Postgres denied body", encoding="utf-8")
         (root / "later.md").write_text("Postgres later must stay unread", encoding="utf-8")
@@ -488,7 +496,203 @@ def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
         )
         visible = " ".join(hit["text"] for hit in still["hits"])
         assert "kept before denial" in visible
-        assert "retained until access scan" in visible
+        assert "retained until access scan" not in visible
         assert "later must stay unread" not in visible
         assert "denied body" not in visible
         assert "connector_inventory_incomplete" in still["warnings"]
+        assert env.memory.fetch(people["capture"][0], gone_memory)["content"].startswith(
+            "Postgres retained"
+        )
+        with pytest.raises(ServiceError) as hidden_gone:
+            env.memory.fetch(people["reader"][0], gone_memory)
+        assert hidden_gone.value.status == 404
+
+
+def test_previously_indexed_denial_stays_hidden_after_root_refresh(env, text_source, monkeypatch):
+    """Indexed files stay hidden after denial until a later scan reads them again."""
+    import errno
+    import os
+
+    from mnemion.connectors import source_files
+    from mnemion.service.connector_models import (
+        BatchInput,
+        ConnectorItemInput,
+        RunInput,
+        ScopeInput,
+        utc_now,
+    )
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept beside denial", encoding="utf-8")
+    (root / "m-denied.md").write_text("Postgres indexed before denial", encoding="utf-8")
+    (root / "z-second.md").write_text("Postgres second denial unread", encoding="utf-8")
+    env.identities.grant(
+        env.owner,
+        env.space,
+        people["reader"][0].principal_id,
+        GrantInput(role="reader"),
+    )
+    native = env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="Postgres native neighbor stays"),
+        "field47-native-neighbor",
+    )
+    native_id = UUID(native["memory_id"])
+    deny = {"on": False}
+    real_open = source_files.os.open
+    denied_names = {"m-denied.md", "z-second.md"}
+
+    def guarded(path, flags, *args, **kwargs):
+        if deny["on"] and os.fsdecode(path) in denied_names:
+            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "m-denied.md"))
+        return real_open(path, flags, *args, **kwargs)
+
+    def recall(reader):
+        return reader.request(
+            "POST",
+            "/v1/recall",
+            body={"query": "Postgres", "mode": "lexical", "all_accessible": True},
+        )
+
+    def items(space):
+        with env.db.transaction(people["capture"][0]) as conn:
+            rows = conn.execute(
+                """SELECT external_id, origin_revision, state, withheld_at, validated_run, memory_id
+                   FROM mnemion.connector_items WHERE space_id=%s""",
+                (space,),
+            ).fetchall()
+        return {row["memory_id"]: row for row in rows}
+
+    def refresh(external_id):
+        service.refresh_scope(
+            people["capture"][0],
+            connection,
+            ScopeInput(
+                external_id=external_id,
+                name="Fixture",
+                members=["employee:reader"],
+                observed_at=utc_now(),
+            ),
+        )
+
+    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, guarded})
+    monkeypatch.setattr(source_files.os, "open", guarded)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        indexed = recall(reader)
+        denied_memory = UUID(
+            next(
+                hit["memory_id"]
+                for hit in indexed["hits"]
+                if "indexed before denial" in hit["text"]
+            )
+        )
+        second_memory = UUID(
+            next(
+                hit["memory_id"] for hit in indexed["hits"] if "second denial unread" in hit["text"]
+            )
+        )
+        kept_memory = UUID(
+            next(hit["memory_id"] for hit in indexed["hits"] if "kept beside denial" in hit["text"])
+        )
+        assert env.memory.fetch(people["reader"][0], denied_memory)["content"].startswith(
+            "Postgres indexed"
+        )
+        assert env.memory.fetch(people["reader"][0], native_id)["content"].startswith(
+            "Postgres native"
+        )
+        deny["on"] = True
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0 and report["changed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied"
+        assert scope["incomplete_inventory"] and scope["checkpoint_committed"] is False
+        assert [error["path"] for error in scope["file_errors"]] == ["m-denied.md"]
+        assert "z-second.md" not in json.dumps(scope["file_errors"])
+        assert "PRIVATE_OS_STRING" not in json.dumps(report)
+        held = items(space)
+        assert held[kept_memory]["withheld_at"] is None
+        assert held[denied_memory]["withheld_at"] is not None
+        assert held[second_memory]["withheld_at"] is not None
+        assert held[denied_memory]["validated_run"] == held[second_memory]["validated_run"]
+        assert held[kept_memory]["validated_run"] != held[denied_memory]["validated_run"]
+        assert all(row["state"] != "deleted" for row in held.values())
+        refresh(first["external_id"])
+        refreshed = service.scopes(people["capture"][0], connection)["items"][0]
+        assert refreshed["suspended_at"] is None and refreshed["access_current"]
+        assert refreshed["completed_at"] == first["completed_at"]
+        assert refreshed["inventory"]["file_errors"][0]["path"] == "m-denied.md"
+        visible = " ".join(hit["text"] for hit in recall(reader)["hits"])
+        assert "kept beside denial" in visible
+        assert "native neighbor stays" in visible
+        assert "indexed before denial" not in visible
+        assert "second denial unread" not in visible
+        for memory_id in (denied_memory, second_memory):
+            with pytest.raises(ServiceError) as missing:
+                env.memory.fetch(people["reader"][0], memory_id)
+            assert missing.value.status == 404
+        assert env.memory.fetch(people["reader"][0], kept_memory)["content"].startswith(
+            "Postgres kept"
+        )
+        target = held[denied_memory]
+        retain_run = uuid4()
+        service.begin(people["capture"][0], space, RunInput(run_id=retain_run))
+        retained = service.page(
+            people["capture"][0],
+            space,
+            retain_run,
+            BatchInput(
+                sequence=0,
+                items=[
+                    ConnectorItemInput(
+                        external_id=target["external_id"],
+                        revision=target["origin_revision"],
+                        action="retain",
+                    )
+                ],
+            ),
+        )
+        assert retained["items"][0]["outcome"] == "unchanged"
+        after_retain = items(space)
+        assert after_retain[denied_memory]["withheld_at"] is not None
+        assert after_retain[denied_memory]["validated_run"] == target["validated_run"]
+        assert after_retain[second_memory]["withheld_at"] is not None
+        service.suspend(people["capture"][0], space, "provider_unavailable")
+        refresh(first["external_id"])
+        still = items(space)
+        assert still[denied_memory]["withheld_at"] is not None
+        assert still[second_memory]["withheld_at"] is not None
+        assert still[kept_memory]["withheld_at"] is None
+        visible = " ".join(hit["text"] for hit in recall(reader)["hits"])
+        assert "indexed before denial" not in visible and "second denial unread" not in visible
+        assert "kept beside denial" in visible and "native neighbor stays" in visible
+        deny["on"] = False
+        repaired = sync(config, client=client)
+        assert repaired["completed"] and repaired["removed"] == 0 and repaired["changed"] == 0
+        restored = recall(reader)
+        texts = " ".join(hit["text"] for hit in restored["hits"])
+        assert "indexed before denial" in texts and "second denial unread" in texts
+        assert "kept beside denial" in texts and "native neighbor stays" in texts
+        assert "connector_inventory_incomplete" not in restored["warnings"]
+        assert env.memory.fetch(people["reader"][0], denied_memory)["content"].startswith(
+            "Postgres indexed"
+        )
+        assert env.memory.fetch(people["reader"][0], second_memory)["content"].startswith(
+            "Postgres second"
+        )
+        repaired_items = items(space)
+        assert repaired_items[denied_memory]["withheld_at"] is None
+        assert repaired_items[second_memory]["withheld_at"] is None
+        assert repaired_items[denied_memory]["state"] != "deleted"
+        assert (
+            repaired_items[second_memory]["validated_run"]
+            == repaired_items[kept_memory]["validated_run"]
+        )

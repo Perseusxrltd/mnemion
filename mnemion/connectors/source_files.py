@@ -9,6 +9,8 @@ import os
 import stat
 from pathlib import Path, PurePosixPath
 
+from ..source_codes import ACCESS_WITHHOLD_CODES
+
 
 # Python maps EACCES/EPERM to PermissionError and ENOENT to FileNotFoundError.
 # ELOOP and ESTALE stay plain OSError, so the link/handle category checks errno.
@@ -20,20 +22,9 @@ _LINK_ERRNOS = {
     if (number := getattr(errno, name, None)) is not None
 }
 
-# These stop the inventory. Ordinary text/size skips are a different contract.
-INVENTORY_STOP_CODES = frozenset(
-    {
-        "source_permission_denied",
-        "source_disappeared",
-        "source_link_or_handle_changed",
-        "source_io_failed",
-        "source_handle_unverifiable",
-        "source_outside_selected_root",
-        "source_is_not_regular_file",
-        "source_handle_verification_unavailable",
-        "source_changed_during_read",
-    }
-)
+# These stop the inventory. The service then withholds every item this run
+# did not re-read. Ordinary text and size skips are a different contract.
+INVENTORY_STOP_CODES = ACCESS_WITHHOLD_CODES
 
 
 class SourceReadError(ValueError):
@@ -77,6 +68,67 @@ def relative_evidence(relative: str | None) -> dict:
 
 def _fail(code: str, relative: str) -> None:
     raise SourceReadError(code, relative=relative)
+
+
+def _windows_open_unfollowed(path: Path, relative: str) -> int:
+    """Open the final component itself. A symlink or junction is not followed."""
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    create.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    info_type = type(
+        "FILE_ATTRIBUTE_TAG_INFO",
+        (ctypes.Structure,),
+        {"_fields_": [("FileAttributes", wintypes.DWORD), ("ReparseTag", wintypes.DWORD)]},
+    )
+    kernel.GetFileInformationByHandleEx.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+    ]
+    kernel.GetFileInformationByHandleEx.restype = wintypes.BOOL
+    handle = create(
+        str(path),
+        0x80000000,
+        0x1 | 0x2 | 0x4,
+        None,
+        3,
+        0x00200000,
+        None,
+    )
+    opened = ctypes.cast(handle, ctypes.c_void_p).value
+    invalid = ctypes.c_void_p(-1).value
+    if not opened or opened == invalid:
+        # winerror selects the OSError subclass. Do not attach the host path.
+        raise OSError(0, None, None, ctypes.get_last_error())
+    info = info_type()
+    if not kernel.GetFileInformationByHandleEx(handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
+        kernel.CloseHandle(handle)
+        _fail("source_handle_unverifiable", relative)
+    if info.FileAttributes & 0x400:
+        kernel.CloseHandle(handle)
+        _fail("source_link_or_handle_changed", relative)
+    try:
+        # A failed conversion leaves the HANDLE with the caller. Close it.
+        return msvcrt.open_osfhandle(int(opened), os.O_RDONLY | os.O_BINARY)
+    except OSError:
+        kernel.CloseHandle(handle)
+        raise
 
 
 def _windows_handle_path(descriptor: int, relative: str) -> Path:
@@ -124,9 +176,10 @@ def open_selected(root: Path, relative: str):
             finally:
                 os.close(directory)
         elif os.name == "nt":
-            descriptor = os.open(root.joinpath(*parts), os.O_RDONLY | os.O_BINARY)
-            # Windows has no openat/O_NOFOLLOW equivalent in Python. Verify the
-            # actual opened handle before reading any bytes, including junctions.
+            # FILE_FLAG_OPEN_REPARSE_POINT keeps the final symlink or junction
+            # from being followed. The handle is still checked against the root
+            # so a parent junction cannot escape after that refusal.
+            descriptor = _windows_open_unfollowed(root.joinpath(*parts), relative)
             if not _windows_handle_path(descriptor, relative).is_relative_to(root):
                 _fail("source_outside_selected_root", relative)
         else:

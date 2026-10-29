@@ -25,18 +25,49 @@ pytest -q --tb=line \
   service_tests/test_source_diagnostics.py::test_resume_diagnosis_requires_fresh_provider_permissions_and_hides_raw_reasons
 ```
 
-Result: 18 passed in 79.45s. The denial fixture names `denied.md` and `source_permission_denied`, omits the injected OS string and the host root, leaves `removed` and `changed` at 0, and keeps the earlier `completed_at`. After refresh, recall still contains the files indexed before the stop, omits the denied file and the file that came after it, and warns `connector_inventory_incomplete`. The unlinked file is not deleted. Reader health still omits the path.
+Result: 18 passed in 79.45s. That run did not cover a file that had already been indexed and was then denied. The saved reproduction is `denial-refresh-failure.txt`: one failure in 44.90s. After a root refresh the reader could still recall `Postgres indexed before denial`. Those 18 passes are not evidence for the withhold below.
 
 `ruff check` and `ruff format --check` on the nine edited Python files passed. `json.load` of `docs/service/openapi.json` and `mnemion/service/agent_contract.json` succeeded. `info.version` is `4.46.53`.
 
+## Indexed denial, 29 October 2026
+
+Migration `037_source_read_withhold.sql` adds nullable `connector_items.withheld_at` and `connector_items.validated_run`. It does not rewrite existing rows. `validated_run` is set only when a content observation is stored. A body-free retain updates `last_seen_run` only.
+
+When the receipt contains an access-stop code, the same transaction sets `withheld_at` on every non-deleted item in that scope whose `validated_run` is not this run. That covers the named file and later files the walk never opened. A file read before the stop stays visible. The item is not marked deleted. Readable malformed files stay out of that set and keep the last good copy.
+
+`read_scope` on `memories` and `memory_revisions` keeps the migration 035 predicate, `space_id IN (SELECT mnemion.authorized_spaces(10))`, and adds `NOT mnemion.source_memory_withheld(...)`. The function is `SECURITY DEFINER` so a reader can be filtered without a grant on `connector_items`. The connector principal is exempt, so the runner can repair. Worker, vault, capture, source, and embedding policies were not replaced. Reader source fetch still starts from `memories`, so the memory policy applies before the body is returned.
+
+A later root refresh clears suspension only. It does not clear `withheld_at` or advance `completed_at`. The next scan can still begin, because refresh runs before `begin`. Repair restores the same memory ids when the bytes and revision are unchanged.
+
+The first failure file was not run again. After the code change, the pinned interpreter ran:
+
+```
+pytest -q --tb=short \
+  service_tests/test_source_health.py::test_previously_indexed_denial_stays_hidden_after_root_refresh \
+  service_tests/test_source_health.py::test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion \
+  service_tests/test_source_health.py::test_corrupt_file_keeps_other_updates_and_last_good_data_until_clean_scan \
+  client_tests/test_source_read_diagnostics.py \
+  client_tests/test_connector_providers.py::test_folder_symlink_cannot_escape_selected_vault_or_certify_deletions \
+  client_tests/test_connector_providers.py::test_file_replaced_after_checks_cannot_escape_selected_vault \
+  service_tests/test_author_withdrawal_upgrade.py::test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory[35]
+```
+
+Result: 13 passed in 83.16s. No skips. Python 3.12.3 in `/home/jorqu/.local/state/mnemion-release/2026-10-10/release-venv`. The log is `correction-checks.txt` beside the retained failure.
+
+The indexed-denial test now uses `a-kept.md`, `m-denied.md`, and `z-second.md`. Both denied files were indexed, then both reads were denied. The receipt names only `m-denied.md`. After a root-only refresh, the reader still sees the re-read neighbor and a native memory in another granted space, and both denied memory ids return 404. `removed` stays 0. A retain of the denied item does not clear `withheld_at` or `validated_run`. Suspending that open run and refreshing again still hides both denied files. A later scan with the denial removed restores both bodies and the same ids, with `changed` 0 and `removed` 0. The never-indexed denial test still passes: the re-read neighbor stays, and the unvisited unlinked file stays hidden without being deleted. The corrupt-file cases still keep last-good text. The upgrade from migration count 35 preserves the inventoried rows; `connector_items` in that fixture is empty, so the new nullable columns do not change its hash. The other `previous_count` values were not repeated.
+
+`ruff format` reformatted two files, then `ruff check` passed on `mnemion/source_codes.py`, `mnemion/connectors/source_files.py`, `mnemion/service/connector_models.py`, `mnemion/service/connectors.py`, `client_tests/test_source_read_diagnostics.py`, and `service_tests/test_source_health.py`. OpenAPI `info.version` remains `4.46.53`. No public contract field was added.
+
+On Linux, `test_in_root_symlink_is_refused_and_ordinary_file_remains` passed. An in-root symlink and an outside redirect were refused, and the ordinary file was read. The Windows `CreateFileW` / `FILE_FLAG_OPEN_REPARSE_POINT` path did not run: this interpreter is not Windows. The code closes the raw `HANDLE` if `msvcrt.open_osfhandle` raises, and it still checks the opened handle against the root. Actual Windows acceptance of an in-root file symlink, a redirected symlink, and an ordinary file together is still required.
+
 Remaining, and not claimed here:
 
-- No installed or live acceptance of 4.46.52, and no native matrix. V08 telemetry is untouched. The rest of issue 47 is untouched.
-- There is no new SQL column. The failure is the latest run result with `incomplete_inventory` and `file_errors`. That run is still stored as completed. `last_successful` is false, as with existing content skips. Do not call the scan successful.
+- No installed or live acceptance of 4.46.52, and no native matrix. V08 telemetry is untouched. The rest of issue 47 is untouched. This is not a release.
+- The failure remains the latest run result with `incomplete_inventory` and `file_errors`. That run is still stored as completed. `last_successful` is false. Do not call the scan successful.
 - A directory symlink found while walking still raises `source_symlinks_not_supported` and can be cleared by a later access refresh before a file receipt exists.
 - A denied `.json` or `.jsonl` journal still becomes `journal_inventory_unreadable` without this `file_errors` receipt.
 - Reader `health.sources` and administrator diagnostics JSON still omit paths. The operator sees the path on the scope inventory and in Studio File status.
 - Sync control status stays the coarse `incomplete_inventory`. The category is on the scope result and in `file_errors`.
+- App `read_scope` on `embeddings`, `sources`, and `source_revisions` was not given the per-file predicate. Reader recall, fetch, history, and source fetch go through `memories` first. The embedding worker policy is unchanged.
 - The next scan's opening refresh can clear suspension, so embedding freshness can look current until that scan fails again. The previous incomplete warning remains.
 - Before any incomplete receipt exists, the first failure can still look fresh until that scan finishes.
-- These tests ran on WSL Linux. Windows may still follow an in-root symlink. A target outside the selected root is rejected by the handle check.

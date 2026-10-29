@@ -16,6 +16,7 @@ from mnemion.connectors.source_files import (
     relative_evidence,
 )
 from mnemion.service.connector_models import SourceFileError
+from mnemion.source_codes import ACCESS_WITHHOLD_CODES
 
 
 def published():
@@ -46,6 +47,8 @@ def test_os_errors_use_fixed_categories_and_drop_host_text():
     assert private not in str(denied) and absolute not in str(denied)
     assert relative_evidence(absolute) == {}
     assert relative_evidence("../secret.md") == {}
+    assert INVENTORY_STOP_CODES == ACCESS_WITHHOLD_CODES
+    assert "source_too_large" not in ACCESS_WITHHOLD_CODES
     assert (
         set(SourceFileError.model_fields["error_code"].annotation.__args__) >= INVENTORY_STOP_CODES
     )
@@ -111,6 +114,45 @@ def test_read_selected_distinguishes_denial_disappearance_link_and_io(tmp_path, 
         read_selected(root, "denied.md", 1000)
     assert failed.value.code == "source_io_failed"
     assert "PRIVATE_OS_STRING" not in str(failed.value)
+
+
+def test_in_root_symlink_is_refused_and_ordinary_file_remains(tmp_path):
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "a-plain.md").write_text("ordinary selected", encoding="utf-8")
+    (root / "z-target.md").write_text("IN_ROOT_TARGET", encoding="utf-8")
+    outside = tmp_path / "outside.md"
+    outside.write_text("OUTSIDE_REDIRECT", encoding="utf-8")
+    try:
+        (root / "m-link.md").symlink_to(root / "z-target.md")
+        (root / "n-outside.md").symlink_to(outside)
+    except OSError:
+        pytest.skip("Creating a test symlink requires an extra privilege on this account")
+    with pytest.raises(SourceReadError) as linked:
+        read_selected(root, "m-link.md", 1000)
+    assert linked.value.code == "source_link_or_handle_changed" or linked.value.code in {
+        "source_outside_selected_root",
+        "source_is_not_regular_file",
+    }
+    assert linked.value.relative == "m-link.md"
+    assert "IN_ROOT_TARGET" not in str(linked.value)
+    assert read_selected(root, "a-plain.md", 1000) == b"ordinary selected"
+    provider = FilesystemProvider(
+        FilesystemConfig(path=root, **published() | {"max_file_bytes": 1000})
+    )
+    results = list(provider.documents(provider.scopes()[0]))
+    documents = [value for value in results if isinstance(value, Document)]
+    stopped = [value for value in results if isinstance(value, SkippedDocument)]
+    assert [value.external_id for value in documents] == ["a-plain.md"]
+    assert documents[0].text == "ordinary selected"
+    assert stopped and stopped[0].abort_inventory and stopped[0].path == "m-link.md"
+    assert stopped[0].code in {
+        "source_link_or_handle_changed",
+        "source_outside_selected_root",
+        "source_is_not_regular_file",
+    }
+    rendered = repr(results)
+    assert "IN_ROOT_TARGET" not in rendered and "OUTSIDE_REDIRECT" not in rendered
 
 
 def test_permission_denial_stops_before_later_files_and_keeps_content_skips(tmp_path, monkeypatch):

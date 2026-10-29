@@ -238,8 +238,8 @@ def filesystem_paths(config, *, verify_files=True):
             rel = relative_path(path.relative_to(root).as_posix())
             if not selected(config, rel):
                 continue
-            # A symlink file is opened below with a no-follow handle. Rejecting it
-            # here dropped the selected path and could not survive a later lease refresh.
+            # A symlink file is opened below and refused there, on Linux and
+            # Windows, with a path and category. A catalog check alone can race.
             if verify_files and not path.is_symlink() and not path.is_file():
                 raise ProviderError("source_symlinks_not_supported", relative=rel)
             count += 1

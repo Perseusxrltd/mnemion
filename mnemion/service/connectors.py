@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 from psycopg.types.json import Jsonb
 
+from ..source_codes import ACCESS_WITHHOLD_CODES
 from .connector_models import (
     BatchInput,
     BindingInput,
@@ -512,10 +513,12 @@ class ConnectorService(ConnectorSyncControls):
             memory, version, outcome = UUID(result["memory_id"]), result["version"], "created"
         conn.execute(
             """INSERT INTO mnemion.connector_items(tenant_id,space_id,external_id,memory_id,origin_revision,
-                 content_hash,applied_version,last_seen_run,state) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 content_hash,applied_version,last_seen_run,state,validated_run)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                ON CONFLICT(tenant_id,space_id,external_id) DO UPDATE SET origin_revision=excluded.origin_revision,
-                 content_hash=excluded.content_hash,applied_version=excluded.applied_version,last_seen_run=excluded.last_seen_run,
-                 state=excluded.state,updated_at=now()""",
+                 content_hash=excluded.content_hash,applied_version=excluded.applied_version,
+                 last_seen_run=excluded.last_seen_run,state=excluded.state,validated_run=excluded.validated_run,
+                 withheld_at=NULL,updated_at=now()""",
             (
                 identity.tenant_id,
                 space,
@@ -526,6 +529,7 @@ class ConnectorService(ConnectorSyncControls):
                 version,
                 run,
                 state,
+                run,
             ),
         )
         if outcome == "conflict":
@@ -627,6 +631,18 @@ class ConnectorService(ConnectorSyncControls):
                     conn.execute(
                         "SELECT mnemion.commit_connector_cursor(%s,%s)",
                         (space, current["checkpoint"]),
+                    )
+                # Same transaction as the receipt. Lease refresh and a new run id
+                # do not reveal files this scan did not re-read. Only a later
+                # content observation clears the hold. Retain is not one.
+                # Readable content skips are not in this set.
+                if any(error.error_code in ACCESS_WITHHOLD_CODES for error in command.file_errors):
+                    conn.execute(
+                        """UPDATE mnemion.connector_items
+                           SET withheld_at=clock_timestamp(), updated_at=clock_timestamp()
+                           WHERE tenant_id=%s AND space_id=%s AND state<>'deleted'
+                             AND validated_run IS DISTINCT FROM %s""",
+                        (identity.tenant_id, space, run),
                     )
                 audit(
                     conn,
