@@ -11,6 +11,12 @@ until the actual endpoint, trust, privacy, resource and platform requirements
 in the [V08 contract](../implementation/anonymous-product-telemetry.md) pass.
 Preparing credentials does not start a listener or enable client telemetry.
 
+The [28 October systemd qualification](../validation/2026-10-28-telemetry-systemd-rotation.md)
+verified active rotation, old-certificate refusal, unchanged-bundle behavior
+and an inactive service staying inactive on Linux. It used synthetic
+certificates and a loopback listener; issuer renewal and public deployment
+acceptance remain separate.
+
 ## Prepare the protected bundle
 
 Use a Linux host with systemd, Python 3.12 or later at `/usr/bin/python3`, the

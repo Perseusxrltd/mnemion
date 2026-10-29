@@ -84,6 +84,14 @@ the existing free host. Its unchanged-material hook invocation left the memory
 service running and no collector listener. This does not qualify public ingress,
 provider privacy, actual running-service renewal or client resources/platforms.
 
+The later [actual systemd rotation](2026-10-28-telemetry-systemd-rotation.md)
+completed eight recorded checks with 440 bound source files and synthetic
+certificates. Two reports returned 204; changed credentials restarted the
+service, unchanged credentials did not, and an inactive service stayed
+inactive. The original fixture's `200/CHDIR` parent-permission failure remains
+retained. This is isolated loopback lifecycle evidence; issuer renewal,
+public/provider privacy, resources and installed delivery remain open.
+
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
 | 27 October | [Collector serving-process crashes](2026-10-27-telemetry-collector-crash.md) | Tests-only follow-up on `62b9ab71`: 21 passes, no failures/skips, including two real TLS-process crashes with standalone/fixture-inherited listeners. Linux/WSL2's piped core handler produced no kernel core dump; fixture logs/state and fresh report export stayed clean. 435 inputs matched. Earlier 19-case source evidence remains; production/provider, installed and non-Linux qualification stay open. |

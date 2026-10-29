@@ -31,6 +31,22 @@ required for full acceptance.
 | Anonymity and useful aggregates | [Wire-v2/report-v3 selection rules](2026-10-26-telemetry-review-selection.md): randomized automatic categories, fixed manual body, bounded contributions and suppression. | Codec/selection checks support their stated conditional bounds. Manual reports contribute only to coarse volume; they establish no categorical, participation or network-anonymity guarantee. | Architecture/privacy and utility evidence for linkage, rare/coincident cohorts, repeated contributions, auxiliary information, suppression and difference attacks. Counts must remain sampled usage, not unique people or devices; no identifying workaround is permitted. |
 | Final release | Normal source, native, artifact-verification and public release gates. | [4.46.29 publication](2026-10-27-release-scan-boundary.md) verified 38 unchanged original assets. The [later source follow-up](2026-10-27-telemetry-mcp-interfaces.md#release-qualification-follow-up) passed 30 CI-scope checks and 40 actual Windows x64 storage checks. | Qualify the final implementation on Linux, Windows and macOS x64/ARM64 plus web, including supported restart/update and public distribution. Source-component tests do not qualify installed delivery, Windows ARM64 or provider/resource/privacy acceptance. |
 
+## Actual systemd credential rotation
+
+The [28 October host qualification](2026-10-28-telemetry-systemd-rotation.md)
+adds eight recorded checks of the repository's collector service and
+credential command, with 440 source files bound to `772f5c0b`. Synthetic A/B
+certificates exercised a real restart and two HTTP 204 reports over loopback;
+old trust was refused, unchanged material did not restart, and a stopped
+service stayed inactive. One report database had zero completed-window
+reports; cleanup passed. The original `200/CHDIR` fixture failure remains
+retained and is explained by its inaccessible parent directory.
+
+This qualifies only the isolated Linux systemd rotation journey. Actual issuer
+renewal, public ingress/provider/privacy, installed delivery, whole-wire and
+resource acceptance remain required. Production settings, budgets, all 66
+requirements and V08's Building state are unchanged.
+
 ## Setup recovery follow-up
 
 The [refused observation follow-up](2026-10-27-telemetry-refused-results.md)

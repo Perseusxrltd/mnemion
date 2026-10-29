@@ -163,6 +163,26 @@ class RetrievalService:
                 except Exception:
                     logger.warning("Retrieval diagnostic sample was not recorded")
 
+    def _check_routing(self, conn, command, spaces, routing):
+        # Source leases and grants can change without changing any model.
+        # Refuse the stale selection before inference or returning content,
+        # but do not misdirect the caller toward model reconfiguration.
+        if set(spaces) != routing.keys():
+            raise ServiceError(
+                409,
+                "scope_changed",
+                "Readable spaces changed during the search; retry using current permissions.",
+            )
+        if (
+            selected_generations(
+                conn, spaces, self.embedder.generation.id, command.embedding_generation
+            )
+            != routing
+        ):
+            raise ServiceError(
+                409, "generation_changed", "Space model settings changed; retry the search."
+            )
+
     def _recall(self, identity: Identity, command: RecallInput) -> dict:
         started = time.monotonic()
         ranking_reference = command.known_at or command.valid_at or datetime.now(timezone.utc)
@@ -181,20 +201,7 @@ class RetrievalService:
             for generation in groups:
                 try:
                     with self.db.transaction(identity) as conn:
-                        if (
-                            selected_generations(
-                                conn,
-                                resolve_spaces(conn, command),
-                                self.embedder.generation.id,
-                                command.embedding_generation,
-                            )
-                            != routing
-                        ):
-                            raise ServiceError(
-                                409,
-                                "generation_changed",
-                                "Space model settings changed; retry the search.",
-                            )
+                        self._check_routing(conn, command, resolve_spaces(conn, command), routing)
                         for space in groups[generation]:
                             policy = model_settings(conn, space, self.embedder.generation.id)
                             active_paused = (
@@ -273,18 +280,7 @@ class RetrievalService:
                     "attention"
                 ]
             )
-            if (
-                selected_generations(
-                    conn,
-                    params["spaces"],
-                    self.embedder.generation.id,
-                    command.embedding_generation,
-                )
-                != routing
-            ):
-                raise ServiceError(
-                    409, "generation_changed", "Space model settings changed; retry the search."
-                )
+            self._check_routing(conn, command, params["spaces"], routing)
             lexical, semantic, exact, keywords = [], [], [], []
             if command.mode != "semantic" or busy_fallback:
                 lexical = conn.execute(

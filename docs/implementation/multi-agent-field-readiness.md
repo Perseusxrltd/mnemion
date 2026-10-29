@@ -1,6 +1,6 @@
 # Multi-agent field readiness
 
-Reviewed **28 October 2026** against [issue 47](https://github.com/Perseusxrltd/mnemion/issues/47)
+Reviewed **29 October 2026** against [issue 47](https://github.com/Perseusxrltd/mnemion/issues/47)
 and [issue 48](https://github.com/Perseusxrltd/mnemion/issues/48). Both reports
 remain open. Their baseline is the reporter's **4.46.40** deployment; the
 [maintenance board](../MAINTENANCE_STATUS.md) owns current GitHub state.
@@ -21,6 +21,13 @@ Retain a four-session regression with the reporter's scope, plus serial controls
 an unchanged generation must not produce a settings-change error. Source-file
 freshness also remains open. The original query improvement needs a published
 host upgrade and these actual-client checks before the issue can close.
+
+The [scope-conflict correction](../validation/2026-10-29-search-scope-conflicts.md)
+reproduces one misleading error: new readable spaces or an expired source lease
+previously returned `generation_changed` without a model change. Source now
+returns the distinct `scope_changed` conflict while retaining both permission
+checks. All 41 focused scope/reindex/retrieval tests pass. This does not identify
+the cause of the reported live failures or replace their field acceptance.
 
 | Reported behavior | Current work and retained acceptance | Requirement |
 | --- | --- | --- |

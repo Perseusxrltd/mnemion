@@ -1,7 +1,7 @@
 {
   "name": "mnemion-studio",
   "private": true,
-  "version": "4.46.46",
+  "version": "4.46.47",
   "type": "module",
   "scripts": {
     "prebuild": "node ../branding/verify.mjs",
