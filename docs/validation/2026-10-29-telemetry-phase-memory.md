@@ -5,7 +5,7 @@ and it does not pass a resource gate. The original six-case observations stay
 as recorded. No source optimization is justified by those observations.
 
 The client change is on branch `grok/telemetry-phase-counters-20261029`, based
-on `f10a6cacdf25b93c009a1115357528157a65c36f` (public 4.46.54). It records
+on `f10a6cacdf25b93c009a1115357528157a65c36f` (source version 4.46.54). It records
 counters only when `--phase-memory` is combined with `--comparison`. The flag
 cannot be combined with attribution or the review journey. A normal diagnostic
 dispatch leaves the input false, so an unprofiled run does not gain these
@@ -25,7 +25,7 @@ fixed numeric groups and nothing else:
   [Node.js v24](https://nodejs.org/docs/latest-v24.x/api/v8.html):
   `total_heap_size` (bytes V8 has allocated for the heap),
   `total_physical_size` (committed physical memory, not reserved address space),
-  `used_heap_size` (bytes used by live JavaScript objects), and
+  `used_heap_size` (heap bytes currently in use; not proof that all of those objects survive collection), and
   `malloced_memory` (bytes allocated through malloc by V8). Heap-space names
   and the rest of the statistics object are dropped.
 

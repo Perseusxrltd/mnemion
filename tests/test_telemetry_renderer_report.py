@@ -576,3 +576,25 @@ def test_an_extra_phase_memory_string_is_rejected():
     result["samples"][0]["phase_memory"]["linux"]["Name"] = "bash"
     with pytest.raises(ValueError, match="fixed counters"):
         verify_phase_memory(result, required=True)
+
+
+def test_valid_phase_memory_absence_passes_the_normal_journey_gate():
+    ordinary = {
+        "comparison": True,
+        "phase_memory": False,
+        "samples": [{"name": "before_workspace_connect"}],
+    }
+    absent = verify_phase_memory(ordinary, required=False)
+    assert absent is None
+    assert absent is not False
+    enabled = verify_phase_memory(phase_case_result("r1-enabled", "enabled", 1), required=True)
+    assert enabled is True
+    smuggled = {
+        "comparison": True,
+        "samples": [{"name": "before_workspace_connect", "phase_memory": phase_counters(0)}],
+    }
+    try:
+        absent = verify_phase_memory(smuggled, required=False)
+    except ValueError:
+        absent = False
+    assert absent is False

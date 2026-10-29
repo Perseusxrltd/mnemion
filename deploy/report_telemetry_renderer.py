@@ -53,7 +53,7 @@ def sample_counters(sample):
 
 
 def verify_phase_memory(result, *, required=False):
-    """Reject a mix of instrumented samples and an unprofiled comparison label."""
+    """Reject unlabelled counters. Valid absence is None, not a failed check."""
     samples = result.get("samples") if isinstance(result, dict) else None
     carried = result.get("phase_memory") is True or any(
         isinstance(sample, dict) and "phase_memory" in sample for sample in samples or []
@@ -61,7 +61,7 @@ def verify_phase_memory(result, *, required=False):
     if not required:
         if carried:
             raise ValueError("Unprofiled results cannot carry phase-memory counters")
-        return False
+        return None
     if result.get("phase_memory") is not True or result.get("comparison") is not True:
         raise ValueError("Phase-memory comparison is missing its explicit result flag")
     if (result.get("allocation") or {}).get("enabled") is not False:
