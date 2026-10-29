@@ -28,19 +28,28 @@
       "updated_at": "2026-10-28T09:04:09Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/48",
       "labels": []
+    },
+    {
+      "number": 49,
+      "title": "macOS Studio dies at launch: ad-hoc signature rejects Electron Framework",
+      "updated_at": "2026-10-29T08:53:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/49",
+      "labels": [
+        "bug"
+      ]
     }
   ],
   "runs": [
     {
-      "id": 40832308336,
-      "attempt": 1,
+      "id": 40837798626,
+      "attempt": 2,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "b48438e2c61e6d9184f5d8419280f637212a4187",
+      "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T07:29:53Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40832308336"
+      "updated_at": "2026-10-29T08:40:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626"
     },
     {
       "id": 40820128156,
@@ -137,26 +146,85 @@
       }
     },
     {
-      "id": 40835184620,
+      "id": 40835999398,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.51-r2",
+      "source_commit": "b48438e2c61e6d9184f5d8419280f637212a4187",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-29T08:16:46Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835999398",
+      "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 123326192237,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
+    },
+    {
+      "id": 40844389559,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.52",
+      "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T09:51:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559"
+    },
+    {
+      "id": 40852860198,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "890eec8aa840244f32e3582c8385b9f4309e3cee",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-29T07:24:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835184620"
+      "source_commit": "72a23b4f77b56e5b82eefc770071f0fbf92f0daf",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T09:51:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40852860198",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 123376407277,
+            "name": "verify",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify every uploaded byte, production signature and complete feed"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
-      "id": 40832308319,
+      "id": 40837798631,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "b48438e2c61e6d9184f5d8419280f637212a4187",
+      "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T06:57:22Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40832308319"
+      "updated_at": "2026-10-29T07:48:47Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40837798631"
     },
     {
       "id": 40820125119,
@@ -170,5 +238,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T07:30:33+00:00"
+  "observed_at": "2026-10-29T09:51:40+00:00"
 }

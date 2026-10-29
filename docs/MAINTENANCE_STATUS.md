@@ -1,34 +1,45 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T07:30:33+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T09:51:40+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
-## Open issues (3)
+## Open issues (4)
 
 | Issue | Report | Last activity |
 | --- | --- | --- |
 | [#44](https://github.com/Perseusxrltd/mnemion/issues/44) | Integration acceptance: verify the separate Grok Bot cloud client end to end | 2026-10-20T11:20:12Z |
 | [#47](https://github.com/Perseusxrltd/mnemion/issues/47) | Field report \(4\.46\.40\): multi-agent usage audit — slow/hanging search, suspended connector scope, noisy activity log, unusable vault over MCP, and features left unused | 2026-10-28T17:01:24Z |
 | [#48](https://github.com/Perseusxrltd/mnemion/issues/48) | Mnemion as the single system: full replacement of LEDGER/DISPATCH/files, plus vault compatibility | 2026-10-28T09:04:09Z |
+| [#49](https://github.com/Perseusxrltd/mnemion/issues/49) | macOS Studio dies at launch: ad-hoc signature rejects Electron Framework | 2026-10-29T08:53:25Z |
 
 ## Relevant builds
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40832308336](https://github.com/Perseusxrltd/mnemion/actions/runs/40832308336) |
+| ci\.yml | main | success | [Run 40837798626](https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626) |
 | public-updates\.yml | v4\.46\.49 | success | [Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156) |
 | release\.yml | release/4\.46\.49 | success | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
 | release\.yml | release/4\.46\.50 | failure | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
 | release\.yml | release/4\.46\.51 | failure | [Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129) |
-| verify-artifacts\.yml | main | skipped | [Run 40835184620](https://github.com/Perseusxrltd/mnemion/actions/runs/40835184620) |
-| website-release\.yml | main | success | [Run 40832308319](https://github.com/Perseusxrltd/mnemion/actions/runs/40832308319) |
+| release\.yml | release/4\.46\.51-r2 | failure | [Run 40835999398](https://github.com/Perseusxrltd/mnemion/actions/runs/40835999398) |
+| release\.yml | release/4\.46\.52 | success | [Run 40844389559](https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559) |
+| verify-artifacts\.yml | main | in\_progress | [Run 40852860198](https://github.com/Perseusxrltd/mnemion/actions/runs/40852860198) |
+| website-release\.yml | main | success | [Run 40837798631](https://github.com/Perseusxrltd/mnemion/actions/runs/40837798631) |
 | website-release\.yml | v4\.46\.49 | success | [Run 40820125119](https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119) |
+
+## Active jobs
+
+[Run 40852860198](https://github.com/Perseusxrltd/mnemion/actions/runs/40852860198): 0/1 jobs completed; 0 succeeded.
+
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+
 
 ## Unsuccessful jobs
 
 - [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489): native / ubuntu-22\.04 / x64 (failure). Steps: Installed Linux app creates, searches and reopens a real local workspace.
 - [Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129): native / windows-2022 / x64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
 - [Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129): native / windows-11-arm / arm64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
+- [Run 40835999398](https://github.com/Perseusxrltd/mnemion/actions/runs/40835999398): native / windows-11-arm / arm64 (failure). Steps: Installed app creates, searches and reopens a real local workspace.
