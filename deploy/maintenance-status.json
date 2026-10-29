@@ -37,28 +37,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T08:26:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 123340659741,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T08:40:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626"
     },
     {
       "id": 40820128156,
@@ -218,5 +200,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T08:26:21+00:00"
+  "observed_at": "2026-10-29T08:41:16+00:00"
 }
