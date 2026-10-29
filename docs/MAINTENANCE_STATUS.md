@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T08:17:21+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T08:26:21+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -30,14 +30,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40837798626](https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626): 11/12 jobs completed; 10 succeeded.
+[Run 40837798626](https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626): 11/12 jobs completed; 11 succeeded.
 
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
 
 
 ## Unsuccessful jobs
 
-- [Run 40837798626](https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626): supervision \(macos-15-intel\) (failure). Steps: Audit the installed Mac dependencies.
 - [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489): native / ubuntu-22\.04 / x64 (failure). Steps: Installed Linux app creates, searches and reopens a real local workspace.
 - [Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129): native / windows-2022 / x64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
 - [Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129): native / windows-11-arm / arm64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.

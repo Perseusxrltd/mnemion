@@ -33,43 +33,32 @@
   "runs": [
     {
       "id": 40837798626,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T07:48:45Z",
+      "updated_at": "2026-10-29T08:26:13Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40837798626",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
         "completed": 11,
-        "succeeded": 10,
+        "succeeded": 11,
         "active": [
           {
-            "id": 123326665619,
-            "name": "service (3.12)",
+            "id": 123340659741,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           }
         ]
       },
-      "failed_jobs": [
-        {
-          "name": "supervision (macos-15-intel)",
-          "id": 123326665798,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 18,
-          "steps": [
-            "Audit the installed Mac dependencies"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 40820128156,
@@ -176,12 +165,6 @@
       "updated_at": "2026-10-29T08:16:46Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835999398",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-11-arm / arm64",
@@ -193,7 +176,13 @@
             "Installed app creates, searches and reopens a real local workspace"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
     },
     {
       "id": 40841002758,
@@ -229,5 +218,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T08:17:21+00:00"
+  "observed_at": "2026-10-29T08:26:21+00:00"
 }
