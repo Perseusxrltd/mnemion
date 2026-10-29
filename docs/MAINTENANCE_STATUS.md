@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T22:40:56+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T22:41:33+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.54](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.54). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -31,17 +31,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40967598417](https://github.com/Perseusxrltd/mnemion/actions/runs/40967598417): 3/12 jobs completed; 3 succeeded.
+[Run 40967598417](https://github.com/Perseusxrltd/mnemion/actions/runs/40967598417): 5/12 jobs completed; 5 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.13\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- studio: in\_progress — Run npm --prefix studio/electron test.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-15-intel\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
-- service \(3\.14\): in\_progress — Initialize containers.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 [Run 40965130140](https://github.com/Perseusxrltd/mnemion/actions/runs/40965130140): 25/32 jobs completed; 24 succeeded.
 
@@ -49,7 +47,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / macos-26 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 
