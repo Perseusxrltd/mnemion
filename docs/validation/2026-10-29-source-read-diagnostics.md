@@ -89,9 +89,27 @@ Result: 8 passed in 1.32s. No skips. The log is `windows-native-checks.txt`. On 
 
 `ruff format` and `ruff check` passed for `mnemion/service/worker.py`, `mnemion/service/reindex.py`, `service_tests/test_source_health.py`, `client_tests/test_source_read_diagnostics.py`, and `client_tests/test_connector_providers.py`. OpenAPI `info.version` remains `4.46.53`.
 
+## Cloud placeholder tags, 29 October 2026
+
+[MS-FSCC](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4) puts the name-surrogate bit at N (`0x20000000`). That bit means the name is another named entity. `IO_REPARSE_TAG_SYMLINK` is `0xA000000C` and `IO_REPARSE_TAG_MOUNT_POINT` is `0xA0000003`, so both stay refused. `IO_REPARSE_TAG_CLOUD` is `0x9000001A`. `CLOUD_1` through `CLOUD_F` change only the `0x0000F000` nibble. Those tags are not refused merely because `FILE_ATTRIBUTE_REPARSE_POINT` is set. The file is opened again without `FILE_FLAG_OPEN_REPARSE_POINT` so the cloud filter can supply bytes under the same caller token. The file identity must still match, the second tag must not be a name surrogate, and the handle must stay inside the selected root and be a regular file. A failed second open remains an operating-system error. Other reparse tags, including `IO_REPARSE_TAG_WOF` (`0x80000017`), stay refused.
+
+The 8-pass Windows log above did not cover this distinction. The same isolated venv ran only the reader file and the two link checks:
+
+```
+pytest -q --tb=short --color=no \
+  client_tests/test_source_read_diagnostics.py \
+  client_tests/test_connector_providers.py::test_folder_symlink_cannot_escape_selected_vault_or_certify_deletions \
+  client_tests/test_connector_providers.py::test_file_replaced_after_checks_cannot_escape_selected_vault
+```
+
+Result: 9 passed in 1.33s. No skips. Python 3.13.11 (MSC v.1944 64 bit). The log is `windows-cloud-tag-checks.txt`. `ruff format --check` and `ruff check` passed for `mnemion/connectors/source_files.py` and `client_tests/test_source_read_diagnostics.py`. OpenAPI `info.version` remains `4.46.53`.
+
+The cloud case is synthetic. The test applies `IO_REPARSE_TAG_CLOUD` to the attribute query of an ordinary local file and reads `synthetic cloud body`. It applies `IO_REPARSE_TAG_SYMLINK` to that same file and the read is refused. No cloud provider was configured. No real placeholder was hydrated. The service suite was not repeated.
+
 Remaining, and not claimed here:
 
 - No installed or live acceptance of 4.46.52, and no native matrix. V08 telemetry is untouched. The rest of issue 47 is untouched. This is not a release.
+- No real cloud provider or placeholder hydration was exercised. A synthetic `IO_REPARSE_TAG_CLOUD` on a local file is not a OneDrive read. If a provider cannot supply the bytes, that failure is still an operating-system read error, and that live path was not run.
 - The failure remains the latest run result with `incomplete_inventory` and `file_errors`. That run is still stored as completed. `last_successful` is false. Do not call the scan successful.
 - A directory symlink found while walking still raises `source_symlinks_not_supported` and can be cleared by a later access refresh before a file receipt exists.
 - A denied `.json` or `.jsonl` journal still becomes `journal_inventory_unreadable` without this `file_errors` receipt.

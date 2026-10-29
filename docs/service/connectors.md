@@ -449,13 +449,18 @@ paths. The connector operator sees the path on source status and through
 
 On Linux the open uses `O_NOFOLLOW`, so a selected symlink fails with `ELOOP`
 and is recorded as `source_link_or_handle_changed`. On Windows the final
-component is opened with `FILE_FLAG_OPEN_REPARSE_POINT` and refused when that
-handle is a reparse point. If converting the handle to a C runtime descriptor
-fails, the raw handle is closed. The opened handle must still remain inside
-the selected root. A catalog check alone is not the control. Directory
-symlinks and junctions are still rejected while walking. These focused checks
-ran on Linux. An actual Windows account still has to accept an in-root file
-symlink, a redirected symlink, and an ordinary file together.
+component is opened with `FILE_FLAG_OPEN_REPARSE_POINT`. A name-surrogate tag,
+including a symlink or junction, is refused. `IO_REPARSE_TAG_CLOUD` and
+`CLOUD_1` through `CLOUD_F` are not refused merely because the reparse
+attribute is set. Those files are opened again without that flag so the cloud
+filter can return the bytes under the caller's own rights. If hydration or
+the provider denies the read, the failure stays an operating-system read
+error. Any other reparse tag stays refused. If converting the handle to a C
+runtime descriptor fails, the raw handle is closed. The opened handle must
+still remain inside the selected root and be a regular file. A catalog check
+alone is not the control. Directory symlinks and junctions are still rejected
+while walking. The native Windows results are in the 29 October 2026
+validation note.
 
 Directory symlinks are still rejected as `source_symlinks_not_supported` before
 their contents are walked. The scan report can name that relative directory, and

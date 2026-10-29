@@ -70,6 +70,41 @@ def _fail(code: str, relative: str) -> None:
     raise SourceReadError(code, relative=relative)
 
 
+# MS-FSCC lays the tag out as M, R, N, D. N (0x20000000) means this name is
+# another named entity, as with IO_REPARSE_TAG_SYMLINK (0xA000000C) and
+# IO_REPARSE_TAG_MOUNT_POINT (0xA0000003). IO_REPARSE_TAG_CLOUD is 0x9000001A.
+# CLOUD_1 through CLOUD_F change only the 0x0000F000 nibble. They are
+# file-backed placeholders, not that name bit.
+_FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+_FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
+_REPARSE_NAME_SURROGATE = 0x20000000
+_IO_REPARSE_TAG_CLOUD = 0x9000001A
+_IO_REPARSE_TAG_CLOUD_MASK = 0x0000F000
+
+
+def _windows_reparse_is_name_redirect(attributes: int, tag: int) -> bool:
+    """A reparse point is refused unless it is only a supported cloud file tag."""
+    if not attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
+        return False
+    if tag & _REPARSE_NAME_SURROGATE:
+        return True
+    return (tag & ~_IO_REPARSE_TAG_CLOUD_MASK) != _IO_REPARSE_TAG_CLOUD
+
+
+def _windows_reparse_tag(kernel, handle):
+    import ctypes
+    from ctypes import wintypes
+
+    info = type(
+        "FILE_ATTRIBUTE_TAG_INFO",
+        (ctypes.Structure,),
+        {"_fields_": [("FileAttributes", wintypes.DWORD), ("ReparseTag", wintypes.DWORD)]},
+    )()
+    if not kernel.GetFileInformationByHandleEx(handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
+        return None
+    return int(info.FileAttributes), int(info.ReparseTag)
+
+
 def _windows_open_unfollowed(path: Path, relative: str) -> int:
     """Open the final component itself. A symlink or junction is not followed."""
     import ctypes
@@ -90,11 +125,6 @@ def _windows_open_unfollowed(path: Path, relative: str) -> int:
     create.restype = wintypes.HANDLE
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
     kernel.CloseHandle.restype = wintypes.BOOL
-    info_type = type(
-        "FILE_ATTRIBUTE_TAG_INFO",
-        (ctypes.Structure,),
-        {"_fields_": [("FileAttributes", wintypes.DWORD), ("ReparseTag", wintypes.DWORD)]},
-    )
     kernel.GetFileInformationByHandleEx.argtypes = [
         wintypes.HANDLE,
         ctypes.c_int,
@@ -102,33 +132,90 @@ def _windows_open_unfollowed(path: Path, relative: str) -> int:
         wintypes.DWORD,
     ]
     kernel.GetFileInformationByHandleEx.restype = wintypes.BOOL
-    handle = create(
-        str(path),
-        0x80000000,
-        0x1 | 0x2 | 0x4,
-        None,
-        3,
-        0x00200000,
-        None,
+    identity_type = type(
+        "BY_HANDLE_FILE_INFORMATION",
+        (ctypes.Structure,),
+        {
+            "_fields_": [
+                ("dwFileAttributes", wintypes.DWORD),
+                ("ftCreationTime", wintypes.FILETIME),
+                ("ftLastAccessTime", wintypes.FILETIME),
+                ("ftLastWriteTime", wintypes.FILETIME),
+                ("dwVolumeSerialNumber", wintypes.DWORD),
+                ("nFileSizeHigh", wintypes.DWORD),
+                ("nFileSizeLow", wintypes.DWORD),
+                ("nNumberOfLinks", wintypes.DWORD),
+                ("nFileIndexHigh", wintypes.DWORD),
+                ("nFileIndexLow", wintypes.DWORD),
+            ]
+        },
     )
-    opened = ctypes.cast(handle, ctypes.c_void_p).value
-    invalid = ctypes.c_void_p(-1).value
-    if not opened or opened == invalid:
-        # winerror selects the OSError subclass. Do not attach the host path.
-        raise OSError(0, None, None, ctypes.get_last_error())
-    info = info_type()
-    if not kernel.GetFileInformationByHandleEx(handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
-        kernel.CloseHandle(handle)
-        _fail("source_handle_unverifiable", relative)
-    if info.FileAttributes & 0x400:
-        kernel.CloseHandle(handle)
-        _fail("source_link_or_handle_changed", relative)
+    kernel.GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.POINTER(identity_type)]
+    kernel.GetFileInformationByHandle.restype = wintypes.BOOL
+
+    def create_handle(flags: int):
+        handle = create(str(path), 0x80000000, 0x1 | 0x2 | 0x4, None, 3, flags, None)
+        opened = ctypes.cast(handle, ctypes.c_void_p).value
+        invalid = ctypes.c_void_p(-1).value
+        if not opened or opened == invalid:
+            # winerror selects the OSError subclass. Do not attach the host path.
+            raise OSError(0, None, None, ctypes.get_last_error())
+        return handle
+
+    def file_identity(handle):
+        info = identity_type()
+        if not kernel.GetFileInformationByHandle(handle, ctypes.byref(info)):
+            return None
+        return (int(info.dwVolumeSerialNumber), int(info.nFileIndexHigh), int(info.nFileIndexLow))
+
+    probe = create_handle(_FILE_FLAG_OPEN_REPARSE_POINT)
+    content = None
     try:
-        # A failed conversion leaves the HANDLE with the caller. Close it.
-        return msvcrt.open_osfhandle(int(opened), os.O_RDONLY | os.O_BINARY)
-    except OSError:
-        kernel.CloseHandle(handle)
-        raise
+        tag = _windows_reparse_tag(kernel, probe)
+        if tag is None:
+            _fail("source_handle_unverifiable", relative)
+        attributes, reparse_tag = tag
+        if _windows_reparse_is_name_redirect(attributes, reparse_tag):
+            _fail("source_link_or_handle_changed", relative)
+        chosen = probe
+        if attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
+            # The probe suppressed reparse processing so a link could not be
+            # followed. A cloud placeholder still has to be opened without that
+            # flag, or the filter will not supply the file. The caller's token
+            # is unchanged. A provider or hydration failure stays an OSError.
+            probe_identity = file_identity(probe)
+            content = create_handle(0)
+            content_tag = _windows_reparse_tag(kernel, content)
+            if (
+                probe_identity is None
+                or file_identity(content) != probe_identity
+                or content_tag is None
+                or _windows_reparse_is_name_redirect(*content_tag)
+            ):
+                _fail(
+                    "source_handle_unverifiable"
+                    if probe_identity is None or content_tag is None
+                    else "source_link_or_handle_changed",
+                    relative,
+                )
+            chosen = content
+            content = None
+            kernel.CloseHandle(probe)
+            probe = None
+        else:
+            probe = None
+        opened = ctypes.cast(chosen, ctypes.c_void_p).value
+        try:
+            # A failed conversion leaves the HANDLE with the caller. Close it.
+            return msvcrt.open_osfhandle(int(opened), os.O_RDONLY | os.O_BINARY)
+        except OSError:
+            kernel.CloseHandle(chosen)
+            raise
+    finally:
+        if probe is not None:
+            kernel.CloseHandle(probe)
+        if content is not None:
+            kernel.CloseHandle(content)
 
 
 def _windows_handle_path(descriptor: int, relative: str) -> Path:
@@ -177,8 +264,9 @@ def open_selected(root: Path, relative: str):
                 os.close(directory)
         elif os.name == "nt":
             # FILE_FLAG_OPEN_REPARSE_POINT keeps the final symlink or junction
-            # from being followed. The handle is still checked against the root
-            # so a parent junction cannot escape after that refusal.
+            # from being followed. A cloud file tag is opened again without that
+            # flag. The handle is still checked against the root so a parent
+            # junction cannot escape after that refusal.
             descriptor = _windows_open_unfollowed(root.joinpath(*parts), relative)
             if not _windows_handle_path(descriptor, relative).is_relative_to(root):
                 _fail("source_outside_selected_root", relative)

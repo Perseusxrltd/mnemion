@@ -218,6 +218,48 @@ def test_ordinary_text_still_reads_and_oversize_stays_a_content_skip(tmp_path):
     ]
 
 
+def test_cloud_placeholder_tag_is_not_a_name_redirect(tmp_path, monkeypatch):
+    # The cloud values are the documented tags, applied to an ordinary local
+    # file. No cloud provider is configured and no hydration runs.
+    from mnemion.connectors import source_files
+
+    reparse = 0x400
+    assert source_files._windows_reparse_is_name_redirect(reparse, 0xA000000C)
+    assert source_files._windows_reparse_is_name_redirect(reparse, 0xA0000003)
+    assert source_files._windows_reparse_is_name_redirect(reparse, 0x80000017)
+    assert source_files._windows_reparse_is_name_redirect(reparse, 0x9000001A | 0x20000000)
+    assert not source_files._windows_reparse_is_name_redirect(reparse, 0x9000001A)
+    assert not source_files._windows_reparse_is_name_redirect(reparse, 0x9000F01A)
+    assert not source_files._windows_reparse_is_name_redirect(0x20, 0)
+    if os.name != "nt":
+        return
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "cloud.md").write_text("synthetic cloud body", encoding="utf-8")
+    calls = {"n": 0}
+
+    def cloud_tag(kernel, handle):
+        calls["n"] += 1
+        return reparse, 0x9000001A
+
+    monkeypatch.setattr(source_files, "_windows_reparse_tag", cloud_tag)
+    assert read_selected(root, "cloud.md", 1000) == b"synthetic cloud body"
+    assert calls["n"] == 2
+    calls["n"] = 0
+
+    def symlink_tag(kernel, handle):
+        calls["n"] += 1
+        return reparse, 0xA000000C
+
+    monkeypatch.setattr(source_files, "_windows_reparse_tag", symlink_tag)
+    with pytest.raises(SourceReadError) as linked:
+        read_selected(root, "cloud.md", 1000)
+    assert linked.value.code == "source_link_or_handle_changed"
+    assert linked.value.relative == "cloud.md"
+    assert "synthetic cloud body" not in str(linked.value)
+    assert calls["n"] == 1
+
+
 def test_windows_failed_handle_conversion_closes_the_raw_handle(tmp_path, monkeypatch):
     if os.name != "nt":
         pytest.skip("Windows HANDLE ownership is checked on a native Windows interpreter")
