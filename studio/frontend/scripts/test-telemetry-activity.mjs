@@ -37,12 +37,12 @@ function fixture(t) {
     }
   })
   const entered = deferred(), eligible = deferred()
-  let enabled = true, pressureStarts = 0, reservations = 0
+  let enabled = true, pressureStarts = 0, reservations = 0, seen
   const client = {
     status: () => ({ effective_enabled: enabled, connection_mode: 'unmetered', delivery_budget: { state: 'ready' } }),
     delivery: {
       eligible: () => { entered.resolve(); return eligible.promise },
-      reserve: async () => { reservations++; return null },
+      reserve: async (_stamp, _network, cohorts) => { seen = cohorts; reservations++; return null },
       cancel: async () => {},
     },
     reviewClock: { close() {} },
@@ -53,7 +53,7 @@ function fixture(t) {
   t.mock.method(activity.conditions, 'start', async () => { pressureStarts++; return false })
   const stamp = { revision: 1, store_generation: 'a'.repeat(32) }
   return { activity, page, entered: entered.promise, eligible, pressureStarts: () => pressureStarts,
-    reservations: () => reservations, disable: () => { enabled = false },
+    reservations: () => reservations, cohorts: () => seen, disable: () => { enabled = false },
     offer: () => activity.offer(stamp), settle: () => activity.activity.settled() }
 }
 
@@ -79,6 +79,19 @@ test('eligible awake work still reaches the browser resource gate once', async t
   await f.settle()
   assert.equal(f.pressureStarts(), 1)
   assert.equal(f.reservations(), 0, 'A refused resource gate must not spend an attempt')
+})
+
+test('eligible browser activity passes one reviewed cohort record', async t => {
+  const f = fixture(t)
+  t.mock.method(f.activity.conditions, 'start', async () => true)
+  f.offer()
+  await f.entered
+  f.eligible.resolve(true)
+  await f.settle()
+  assert.equal(f.reservations(), 1)
+  assert.equal(f.cohorts().release_family, '4')
+  assert.equal(f.cohorts().platform, undefined)
+  assert.equal(f.cohorts().architecture, undefined)
 })
 
 test('ineligible work never starts a browser sensor', async t => {

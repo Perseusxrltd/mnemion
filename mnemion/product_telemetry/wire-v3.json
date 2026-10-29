@@ -1,0 +1,523 @@
+{
+  "version": 3,
+  "mechanism": "bounded_normalized_summary_publication_discrete_laplace",
+  "privacy_model": "trusted_first_party_aggregation_publication_differential_privacy",
+  "not_v2_local_randomization": true,
+  "packet_bytes": 25,
+  "version_byte": 3,
+  "axis_byte": {
+    "release": 1,
+    "os": 2
+  },
+  "reserved_cohort_byte": 0,
+  "axis_rule": {
+    "name": "per_report_secure_coin",
+    "choices": [
+      "release",
+      "os"
+    ],
+    "reads_report_contents": false,
+    "source": "summary_path_secrets_randbelow",
+    "both_axes_in_one_window": true,
+    "joined_release_by_os_profile": false
+  },
+  "release_coordinate": {
+    "components": [
+      "major",
+      "minor",
+      "patch"
+    ],
+    "minimum": 0,
+    "maximum": 255
+  },
+  "release_allowlist": [
+    {
+      "slot": 0,
+      "major": 4,
+      "minor": 46,
+      "patch": 53,
+      "id": "4.46.53"
+    }
+  ],
+  "allowlist_maximum_slots": 32,
+  "unlisted_release_id": "unlisted",
+  "operating_systems": [
+    "windows",
+    "macos",
+    "linux",
+    "other"
+  ],
+  "state_bins": [
+    "group_disabled",
+    "sensor_missing"
+  ],
+  "metrics": [
+    {
+      "id": "feature_family",
+      "group": "usage",
+      "kind": "categories",
+      "categories": [
+        "setup",
+        "workspace",
+        "memory",
+        "capture",
+        "sources",
+        "librarian",
+        "models",
+        "backup",
+        "recovery",
+        "update",
+        "host",
+        "evaluation",
+        "journal",
+        "access",
+        "vault"
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "feature",
+      "group": "usage",
+      "kind": "categories",
+      "categories": [
+        "setup.create",
+        "setup.configure",
+        "setup.agent_install",
+        "setup.agent_remove",
+        "workspace.connect",
+        "workspace.sign_in",
+        "workspace.open",
+        "workspace.switch",
+        "workspace.disconnect",
+        "workspace.forget",
+        "memory.list",
+        "memory.read",
+        "memory.recall",
+        "memory.context",
+        "memory.knowledge",
+        "memory.core_read",
+        "memory.save",
+        "memory.revise",
+        "memory.review",
+        "memory.forget",
+        "memory.core_write",
+        "memory.import",
+        "memory.export",
+        "capture.configure",
+        "capture.preview",
+        "capture.collect",
+        "capture.deliver",
+        "capture.pause",
+        "capture.drain",
+        "capture.remove",
+        "sources.configure",
+        "sources.scan",
+        "sources.sync",
+        "sources.pause",
+        "sources.resume",
+        "sources.repair",
+        "sources.remove",
+        "librarian.configure",
+        "librarian.run",
+        "librarian.cancel",
+        "librarian.accept",
+        "librarian.reject",
+        "librarian.undo",
+        "models.configure",
+        "models.prepare",
+        "models.reindex",
+        "models.pause",
+        "models.resume",
+        "models.cancel",
+        "backup.configure",
+        "backup.create",
+        "backup.list",
+        "backup.verify",
+        "backup.prune",
+        "recovery.inspect",
+        "recovery.restore",
+        "recovery.finish",
+        "recovery.discard",
+        "update.check",
+        "update.download",
+        "update.verify",
+        "update.apply",
+        "update.restart",
+        "update.rollback",
+        "host.adopt",
+        "host.enroll",
+        "host.inspect",
+        "host.start",
+        "host.stop",
+        "host.plan_upgrade",
+        "host.resolve",
+        "host.revoke",
+        "evaluation.create_dataset",
+        "evaluation.run",
+        "evaluation.cancel",
+        "evaluation.assess",
+        "evaluation.compare",
+        "evaluation.export",
+        "evaluation.remove_dataset",
+        "journal.configure",
+        "journal.push",
+        "journal.organize",
+        "journal.backfill",
+        "journal.recover",
+        "access.configure",
+        "access.invite",
+        "access.grant",
+        "access.revoke",
+        "vault.configure",
+        "vault.read",
+        "vault.write",
+        "vault.delete",
+        "vault.import",
+        "vault.export",
+        "capture.split",
+        "models.test"
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "outcome",
+      "group": "usage",
+      "kind": "categories",
+      "categories": [
+        "success",
+        "accepted",
+        "deferred",
+        "cancelled",
+        "denied",
+        "unsupported",
+        "failed",
+        "unconfirmed"
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "result_items",
+      "group": "usage",
+      "kind": "ordered",
+      "unit": "observed_items",
+      "upper_bounds": [
+        0,
+        1,
+        9,
+        99,
+        999,
+        9999,
+        1000000
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "work_items",
+      "group": "usage",
+      "kind": "ordered",
+      "unit": "observed_items",
+      "upper_bounds": [
+        0,
+        1,
+        9,
+        99,
+        999,
+        9999,
+        1000000
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "reason",
+      "group": "reliability",
+      "kind": "categories",
+      "categories": [
+        "no_failure",
+        "invalid_input",
+        "authorization",
+        "conflict",
+        "host_busy",
+        "resource_pressure",
+        "offline",
+        "network_timeout",
+        "readiness_timeout",
+        "integrity_check",
+        "recovery_required",
+        "other_failure"
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "latency_ms",
+      "group": "performance",
+      "kind": "ordered",
+      "unit": "monotonic_milliseconds",
+      "upper_bounds": [
+        9,
+        49,
+        199,
+        999,
+        4999,
+        29999,
+        119999,
+        900000
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "queue_items",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "observed_items",
+      "upper_bounds": [
+        0,
+        1,
+        9,
+        99,
+        999,
+        9999,
+        1000000
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "payload_bytes_sent",
+      "group": "performance",
+      "kind": "ordered",
+      "unit": "application_bytes",
+      "upper_bounds": [
+        0,
+        1024,
+        16384,
+        262144,
+        4194304,
+        67108864,
+        1073741824,
+        17179869184
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "payload_bytes_received",
+      "group": "performance",
+      "kind": "ordered",
+      "unit": "application_bytes",
+      "upper_bounds": [
+        0,
+        1024,
+        16384,
+        262144,
+        4194304,
+        67108864,
+        1073741824,
+        17179869184
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "reported_tokens",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "model_reported_tokens",
+      "upper_bounds": [
+        0,
+        1,
+        99,
+        999,
+        9999,
+        99999,
+        1000000
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "stored_bytes",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "stored_bytes",
+      "upper_bounds": [
+        0,
+        1024,
+        16384,
+        262144,
+        4194304,
+        67108864,
+        1073741824,
+        17179869184
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "wire_bytes_sent",
+      "group": "performance",
+      "kind": "ordered",
+      "unit": "measured_wire_bytes",
+      "upper_bounds": [
+        0,
+        1024,
+        16384,
+        262144,
+        4194304,
+        67108864,
+        1073741824,
+        17179869184
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "wire_bytes_received",
+      "group": "performance",
+      "kind": "ordered",
+      "unit": "measured_wire_bytes",
+      "upper_bounds": [
+        0,
+        1024,
+        16384,
+        262144,
+        4194304,
+        67108864,
+        1073741824,
+        17179869184
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "throughput_bytes_per_second",
+      "group": "performance",
+      "kind": "ordered",
+      "unit": "measured_wire_bytes_per_second",
+      "upper_bounds": [
+        0,
+        1024,
+        16384,
+        262144,
+        4194304,
+        67108864,
+        1073741824,
+        17179869184
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "cpu_millicores",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "process_cpu_milliseconds_per_elapsed_second",
+      "upper_bounds": [
+        0,
+        1,
+        10,
+        100,
+        500,
+        1000,
+        4000,
+        16000
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "rss_bytes",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "process_resident_bytes",
+      "upper_bounds": [
+        0,
+        67108864,
+        268435456,
+        1073741824,
+        4294967296,
+        17179869184,
+        68719476736,
+        274877906944
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "resource_budget_bytes",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "configured_memory_bytes",
+      "upper_bounds": [
+        0,
+        67108864,
+        268435456,
+        1073741824,
+        4294967296,
+        17179869184,
+        68719476736,
+        274877906944
+      ],
+      "wire_index_origin": 2
+    },
+    {
+      "id": "queue_drops",
+      "group": "resources",
+      "kind": "ordered",
+      "unit": "local_discarded_observations",
+      "upper_bounds": [
+        0,
+        1,
+        9,
+        99,
+        999,
+        9999,
+        1000000
+      ],
+      "wire_index_origin": 2
+    }
+  ],
+  "contribution": {
+    "weight_per_metric": 1,
+    "denominator_weight": 1,
+    "clip_per_bucket": 255,
+    "maximum_observations": 512,
+    "weighting": "one_clipped_normalized_tick_per_metric_not_uncapped_events"
+  },
+  "admission": {
+    "rule": "every_well_formed_report",
+    "cross_report_eviction": false,
+    "per_report_clip": "one_tick_per_metric_after_clip_255"
+  },
+  "privacy": {
+    "unit": "add_or_remove_one_input_report_including_admission_and_clipping",
+    "epsilon": "ln(3)",
+    "l1_sensitivity": 20,
+    "noise": {
+      "distribution": "difference_of_two_geometrics",
+      "continue_numerator": 16452,
+      "continue_denominator": 17381
+    },
+    "publication_rounding": 1,
+    "suppression_noisy_denominator": 64,
+    "singleton_suppression": false
+  },
+  "client_budget": {
+    "minimum_attempt_spacing_seconds": 86400,
+    "maximum_attempts_per_rolling_week": 7,
+    "maximum_packet_bytes": 25,
+    "within_daily_wire_bytes": 262144,
+    "within_attempt_reservation_bytes": 65536,
+    "authenticates_distinct_installations": false
+  },
+  "reporting": {
+    "window_seconds": 604800,
+    "retained_windows": 8,
+    "schema_name": "aggregate-v3",
+    "schema_version": 2
+  },
+  "storage": {
+    "maximum_report_bytes": 786432,
+    "maximum_database_bytes": 7340032,
+    "page_size": 4096,
+    "reviewed_one_axis_32_release_bytes": 209365
+  },
+  "statements": {
+    "reports_are_not_unique_people": true,
+    "noise_is_not_independent_user_inference": true,
+    "noise_is_not_causal_inference": true,
+    "do_not_join_release_and_os": true,
+    "quantile_output": "conservative_cumulative_bounds_or_insufficient_precision",
+    "collector_sees_bounded_summaries": true,
+    "published_output_is_not_privacy_from_the_collector": true
+  }
+}

@@ -9,6 +9,7 @@ from threading import Lock
 import time
 
 from . import policy
+from .cohorts import reviewed_cohorts
 
 _owners: dict[Path, Activity] = {}
 _registry_lock = Lock()
@@ -97,7 +98,11 @@ class Activity:
                 or not await self.prepare()
             ):
                 return
-            report = self.budget.reserve(expected_revision=revision, expected_generation=generation)
+            report = self.budget.reserve(
+                expected_revision=revision,
+                expected_generation=generation,
+                cohorts=reviewed_cohorts(),
+            )
             if report is not None:
                 await send(self.budget, report, self.endpoint)
         except Exception:
