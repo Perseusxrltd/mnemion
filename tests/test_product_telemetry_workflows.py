@@ -19,7 +19,10 @@ def installation(tmp_path, monkeypatch):
     monkeypatch.setattr(policy, "company_policy_file", lambda: tmp_path / "company.json")
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
     monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/telemetry")
-    policy.configure(root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1})
+    policy.configure(
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
+    )
     monkeypatch.setenv("MNEMION_API_KEY", "fixture-only-key")
     monkeypatch.setenv("MNEMION_API_URL", "http://127.0.0.1:7892")
     return root
@@ -142,7 +145,7 @@ def test_final_choice_keeps_the_original_opt_out_and_reenable_fence(installation
             "enabled": True,
             "expected_revision": off["revision"],
             "expected_generation": off["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     active.finish_choice("capture.deliver", "success")

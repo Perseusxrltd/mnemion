@@ -239,7 +239,7 @@ def test_setup_controls_follow_real_optout_disclosure_revocation(tmp_path, monke
         {
             "enabled": False,
             "expected_revision": 0,
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
             "connection_mode": "unmetered",
         },
         policy_path=tmp_path / "company-absent.json",

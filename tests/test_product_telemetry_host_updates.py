@@ -17,7 +17,10 @@ def installation(tmp_path, monkeypatch):
     monkeypatch.setattr(policy, "company_policy_file", lambda: tmp_path / "company.json")
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
     monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
-    policy.configure(root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1})
+    policy.configure(
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
+    )
     return root
 
 
@@ -100,7 +103,11 @@ def test_host_observation_rechecks_its_original_authority(
                 (installation / policy.DATABASE_NAME).unlink()
                 policy.configure(
                     installation,
-                    {"enabled": True, "expected_revision": 0, "disclosure_version": 1},
+                    {
+                        "enabled": True,
+                        "expected_revision": 0,
+                        "disclosure_version": policy.DISCLOSURE_VERSION,
+                    },
                 )
     assert aggregate.preview(installation) == []
 

@@ -24,7 +24,10 @@ def installation(tmp_path, monkeypatch):
     monkeypatch.setattr(product_telemetry, "COLLECTION_AVAILABLE", True)
     monkeypatch.setattr(product_telemetry, "COLLECTOR_URL", "https://example.invalid/telemetry")
     monkeypatch.setattr(cli, "_configure_stdio", lambda: None)
-    policy.configure(root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1})
+    policy.configure(
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
+    )
     return root
 
 
@@ -150,7 +153,12 @@ def test_command_completion_keeps_its_original_privacy_fence(installation, monke
         if condition == "storage_loss":
             (installation / policy.DATABASE_NAME).unlink()
             policy.configure(
-                installation, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+                installation,
+                {
+                    "enabled": True,
+                    "expected_revision": 0,
+                    "disclosure_version": policy.DISCLOSURE_VERSION,
+                },
             )
         else:
             off = policy.configure(installation, {"enabled": False, "expected_revision": 0})
@@ -161,7 +169,7 @@ def test_command_completion_keeps_its_original_privacy_fence(installation, monke
                         "enabled": True,
                         "expected_revision": off["revision"],
                         "expected_generation": off["store_generation"],
-                        "disclosure_version": 1,
+                        "disclosure_version": policy.DISCLOSURE_VERSION,
                     },
                 )
 

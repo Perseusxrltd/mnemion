@@ -282,7 +282,10 @@ def host_telemetry(tmp_path, monkeypatch):
     monkeypatch.setattr(policy, "company_policy_file", lambda: tmp_path / "company.json")
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
     monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
-    policy.configure(root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1})
+    policy.configure(
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
+    )
     return root
 
 

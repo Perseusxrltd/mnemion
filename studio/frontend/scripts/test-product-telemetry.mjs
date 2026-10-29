@@ -107,7 +107,7 @@ function installation() {
 
 test('first-time setup saves the displayed disclosure only through an explicit choice', t => {
   const original = { collection_available: contract.collection_available, destination: contract.destination }
-  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v3/report' })
   t.after(() => Object.assign(contract, original))
   const { client, values } = installation(), current = client()
   const shown = current.status()
@@ -125,7 +125,7 @@ test('first-time setup saves the displayed disclosure only through an explicit c
 
 test('first-time opt-out persists without acknowledging or collecting', t => {
   const original = { collection_available: contract.collection_available, destination: contract.destination }
-  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v3/report' })
   t.after(() => Object.assign(contract, original))
   const { client } = installation(), current = client()
   current.configure(telemetrySetupChoice(current.status(), false))
@@ -138,7 +138,7 @@ test('first-time opt-out persists without acknowledging or collecting', t => {
 
 test('a displayed setup choice cannot override a later opt-out or store generation', t => {
   const original = { collection_available: contract.collection_available, destination: contract.destination }
-  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v3/report' })
   t.after(() => Object.assign(contract, original))
   const { client } = installation(), current = client()
   const shown = current.status(), input = telemetrySetupChoice(shown, true)
@@ -155,7 +155,7 @@ test('setup offers no acknowledgement for unavailable, restricted or unreadable 
   const { client, company, values } = installation()
   Object.assign(contract, { collection_available: false, destination: null })
   assert.equal(telemetrySetupChoice(client().status(), true), null)
-  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v1/report' })
+  Object.assign(contract, { collection_available: true, destination: 'https://telemetry-fixture.invalid/v3/report' })
   company({ state: 'restricted', enabled: false, metric_groups: [] })
   assert.equal(telemetrySetupChoice(client().status(), true), null)
   company({ state: 'unmanaged', enabled: true, metric_groups: ['usage'] })
@@ -284,7 +284,7 @@ test('unavailable coordination and browser privacy each prevent an effective opt
 test('unknown fields and a not-yet-available collector cannot be preapproved', () => {
   const { client, values } = installation()
   assert.throws(() => client().configure({ enabled: false, expected_revision: 0, token: 'PRIVATE_SENTINEL' }), /Choose whether/)
-  assert.throws(() => client().configure({ enabled: true, expected_revision: 0, disclosure_version: 1 }), /Collection is not available/)
+  assert.throws(() => client().configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version }), /Collection is not available/)
   assert.equal(values.size, 0)
 })
 
@@ -297,21 +297,28 @@ function available(run) {
 const measured = extra => ({ kind: 'outcome', workflow: 'memory.recall', surface: 'browser', outcome: 'success', ...extra })
 
 test('browser format preview is read-only and never claims an actual queued packet', () => available(() => {
-  contract.destination = 'https://example.invalid/v1/report'
+  contract.destination = 'https://example.invalid/v3/report'
   const instance = installation(), client = instance.client()
   const empty = client.preview()
   assert.equal(instance.values.size, 0)
   const example = empty.illustrative_packet
   assert.equal(example.kind, 'synthetic_example')
   assert.equal(example.body_encoding, 'base64')
-  assert.deepEqual(Buffer.from(example.body_base64, 'base64'), Buffer.from([2, 0, 7, 0]))
+  assert.equal(example.schema_version, 3)
+  assert.equal(example.body_bytes, 25)
+  assert.equal(example.view, 'bounded_summary')
+  assert.equal(example.coordinate, 0)
+  assert.equal(example.randomized_sign, null)
+  assert.equal(example.aggregation, 'bounded_summary_publication_noise')
+  assert.equal(example.privacy_bound_scope, 'publication_closed_week')
+  assert.deepEqual([...Buffer.from(example.body_base64, 'base64')], [3, 1, 4, 46, 53, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
   assert.equal(empty.outbound_state, 'not_inspected')
   assert.equal(empty.outbound_body, null)
   assert.equal(empty.outbound_bytes, 0)
   assert.equal(empty.status.effective_enabled, false)
   assert.equal(empty.transport_available, true)
   client.delivery.reserve = () => { assert.fail('Preview tried to reserve a delivery') }
-  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
   assert.equal(client.record(measured(), current), true)
   const saved = [...instance.values]
   const counted = client.preview()
@@ -333,9 +340,10 @@ test('browser format preview is read-only and never claims an actual queued pack
 test('browser capability reports only a configured HTTPS route, independent of permission', () => available(() => {
   const { client, values } = installation()
   for (const [destination, expected] of [
-    ['https://example.invalid/v1/report', true], ['http://example.invalid/v1/report', false],
-    ['https://secret@example.invalid/v1/report', false], ['https://example.invalid/other', false],
-    ['https://example.invalid/v1/report?secret=PRIVATE_SENTINEL', false], [null, false],
+    ['https://example.invalid/v3/report', true], ['https://example.invalid/v1/report', false],
+    ['http://example.invalid/v3/report', false], ['https://secret@example.invalid/v3/report', false],
+    ['https://example.invalid/other', false], ['https://example.invalid/v3/report?secret=PRIVATE_SENTINEL', false],
+    [null, false],
   ]) {
     contract.destination = destination
     const preview = client().preview()
@@ -349,7 +357,7 @@ test('browser capability reports only a configured HTTPS route, independent of p
 test('browser queue stores coarse cells, rejects content and obeys contribution bounds', () => available(() => {
   const instance = installation(), client = instance.client()
   instance.company({ state: 'unmanaged', enabled: true, metric_groups: ['usage', 'performance'] })
-  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
   const day = Math.floor(Date.now() / 86400000)
   assert.equal(client.record(measured({ latency_ms: 123.456, result_items: 37 }), current, day), true)
   assert.equal(client.record(measured({ query: 'PRIVATE_SENTINEL' }), current, day), false)
@@ -363,7 +371,7 @@ test('browser queue stores coarse cells, rejects content and obeys contribution 
   assert.equal(client.preview().local_aggregates.length, 3)
   const off = client.configure({ enabled: false, expected_revision: current.revision })
   assert.equal(instance.storage.getItem(queueKey), null)
-  const again = client.configure({ enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: 1 })
+  const again = client.configure({ enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: contract.version })
   assert.equal(client.record(measured(), current, day), false)
   assert.equal(client.record(measured(), again, day), true)
 }))
@@ -371,7 +379,7 @@ test('browser queue stores coarse cells, rejects content and obeys contribution 
 test('browser expiry, storage loss, company narrowing and write faults suppress old aggregates', () => available(() => {
   const instance = installation(), client = instance.client()
   instance.company({ state: 'unmanaged', enabled: true, metric_groups: ['usage', 'performance'] })
-  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
   assert.equal(client.record(measured({ latency_ms: 10 }), current, 20000), true)
   instance.company({ state: 'restricted', enabled: true, metric_groups: ['usage'] })
   assert.equal(client.record(measured({ latency_ms: 10 }), current, 20000), true)
@@ -381,13 +389,13 @@ test('browser expiry, storage loss, company narrowing and write faults suppress 
   instance.storage.removeItem(choiceKey)
   assert.equal(client.record(measured(), current, 20003), false)
   assert.equal(client.status().reason, 'disclosure_required')
-  const restored = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const restored = client.configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
   assert.equal(restored.pending_records, 0)
   assert.equal(restored.revision, current.revision)
   assert.notEqual(restored.store_generation, current.store_generation)
   assert.equal(client.record(measured(), current, 20003), false)
   assert.throws(() => client.configure({ enabled: true, expected_revision: current.revision,
-    expected_generation: current.store_generation, disclosure_version: 1 }), /changed in another tab/)
+    expected_generation: current.store_generation, disclosure_version: contract.version }), /changed in another tab/)
   instance.storage.setItem = () => { throw new Error('PRIVATE_SENTINEL') }
   assert.equal(client.record(measured(), restored, 20003), false)
   assert.equal(client.status().reason, 'storage_unavailable')
@@ -559,7 +567,7 @@ test('the app choice control clears desktop refusal hints before the next action
 }))
 
 test('a browser lock wait retains the original validated primitives and privacy stamp', async () => browserGlobals(async instance => {
-  const client = instance.client(), original = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const client = instance.client(), original = client.configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
   const input = measured({ latency_ms: 123.456 })
   const pending = exported.recordBrowserTelemetry(input, original)
   input.latency_ms = 'PRIVATE_SENTINEL'
@@ -568,7 +576,7 @@ test('a browser lock wait retains the original validated primitives and privacy 
   assert.ok(!instance.storage.getItem(queueKey).includes('PRIVATE_SENTINEL'))
   const next = exported.recordBrowserTelemetry(measured(), original)
   const off = client.configure({ enabled: false, expected_revision: original.revision })
-  const on = client.configure({ enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: 1 })
+  const on = client.configure({ enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: contract.version })
   Object.assign(original, on)
   instance.release({ name: choiceKey })
   assert.equal(await next, false)
@@ -576,7 +584,7 @@ test('a browser lock wait retains the original validated primitives and privacy 
 }))
 
 test('an unavailable browser lock drops a paired observation without retry or storage changes', async () => browserGlobals(async instance => {
-  const current = instance.client().configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const current = instance.client().configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
   const values = [{ kind: 'submission', workflow: 'memory.recall', surface: 'browser' }, measured()]
   const pending = exported.recordBrowserTelemetryMany(values, current)
   instance.release(null)
@@ -588,7 +596,7 @@ test('an unavailable browser lock drops a paired observation without retry or st
 }))
 
 for (const ending of ['ready', 'opted_out', 'page_exit']) test('queued browser delivery survives refused collection: ' + ending, async t => {
-  const instance = installation(), destination = 'https://telemetry-fixture.invalid/v1/report'
+  const instance = installation(), destination = 'https://telemetry-fixture.invalid/v3/report'
   const original = { collection_available: contract.collection_available, destination: contract.destination }
   const saved = Object.fromEntries(['window', 'document', 'navigator', 'fetch'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
   const page = Object.assign(new EventTarget(), {
@@ -597,7 +605,7 @@ for (const ending of ['ready', 'opted_out', 'page_exit']) test('queued browser d
   const document = Object.assign(new EventTarget(), { visibilityState: 'visible', querySelector: () => null })
   // An immediate lock adapter exercises producer/owner admission here. Real
   // browser coordination and sensor qualification retain their own evidence.
-  const navigator = { onLine: true, locks: { request: async (name, options, callback = options) => callback({ name }) } }
+  const navigator = { onLine: true, platform: 'Linux x86_64', locks: { request: async (name, options, callback = options) => callback({ name }) } }
   const requests = []
   const fetch = async (url, options) => {
     requests.push({ url, ...options, body: options.body ? [...options.body] : undefined })
@@ -659,7 +667,8 @@ for (const ending of ['ready', 'opted_out', 'page_exit']) test('queued browser d
   assert.equal(reports.length, ending === 'ready' ? 1 : 0)
   assert.equal(preparations, ending === 'ready' ? 2 : 1)
   if (reports.length) {
-    assert.equal(reports[0].body.length, 4)
+    assert.equal(reports[0].body.length, 25)
+    assert.equal(reports[0].body[0], 3)
     assert.equal(reports[0].credentials, 'omit')
     assert.equal(reports[0].referrerPolicy, 'no-referrer')
   }

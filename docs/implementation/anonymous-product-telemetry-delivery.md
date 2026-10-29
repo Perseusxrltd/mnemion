@@ -91,7 +91,7 @@ sign `-1` and four body bytes. They do not recover a true category, read a
 queue, draw new randomness or reserve an attempt. This wire v2 example is
 marked automatic and is not a sent report. Published 4.46.13 retains its
 original wire v1 example `01 00 07 00` / `AQAHAA==`; the historical
-format-preview checks cover that version. The pending wire v3 example is a
+format-preview checks cover that version. The current source example is a
 different labelled `synthetic_example` of 25 bytes. Do not reuse `AgAHAA==`
 or `AQAHAA==` as that body. Public 4.46.54 has no native v3 qualification.
 

@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { mkdtemp, rm, access, readFile, stat, link } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
@@ -15,6 +16,7 @@ import { markWorkspaceSelection } from '../dist/workspace-selection.js'
 import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+const disclosureVersion = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/disclosure.json', import.meta.url), 'utf8')).version
 const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
 // Node writes UTF-8 JSON frames. Windows Python otherwise reads those bytes
 // with its ANSI code page and creates a different non-ASCII fixture path.
@@ -33,7 +35,7 @@ action=request['action']
 if action=='configure': result=policy.configure(root,request['choice'])
 elif action=='recreate':
  shutil.rmtree(root)
- result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':1})
+ result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':policy.DISCLOSURE_VERSION})
  aggregate.record(root,request['value'],expected_revision=result['revision'],expected_generation=result['store_generation'])
 elif action=='record':
  result=[aggregate.record(root,request['value'],expected_revision=request['stamp']['revision'],expected_generation=request['stamp']['store_generation']) for _ in range(request.get('repeat',1))]
@@ -79,7 +81,7 @@ async function fixture(t, directory = 'private choice') {
   assert.equal(definitions.disclosure.collection_available, false, 'test never changes the shipped collection gate')
   const active = { ...definitions.disclosure, collection_available: true, destination: 'https://example.invalid/telemetry' }
   const store = new NativeTelemetryStore(root, active, definitions.catalog, company)
-  const initial = invoke('configure', { choice: { enabled: true, expected_revision: 0, disclosure_version: 1 } })
+  const initial = invoke('configure', { choice: { enabled: true, expected_revision: 0, disclosure_version: disclosureVersion } })
   return { root, company, invoke, store, initial, definitions, children }
 }
 
@@ -157,7 +159,7 @@ test('another process re-enabling invalidates the hint at the existing file-chec
   assert.equal(await store.snapshot('memory.recall', 'desktop'), null)
   assert.equal(opens, 0)
   const enabled = invoke('configure', { choice: { enabled: true, expected_revision: disabled.revision,
-    expected_generation: disabled.store_generation, disclosure_version: 1 } })
+    expected_generation: disabled.store_generation, disclosure_version: disclosureVersion } })
   now = 1251
   assert.deepEqual(await store.snapshot('memory.recall', 'desktop'), stampOf(enabled))
   assert.equal(opens, 1)
@@ -304,7 +306,7 @@ test('a chosen completion cannot inherit permission from opt-out followed by ree
   const { invoke, store, initial } = await fixture(t)
   const active = await TelemetryWorkflowChoice.choose(store, ['capture.collect', 'capture.deliver'], 'desktop')
   const off = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
-  invoke('configure', { choice: { enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: 1 } })
+  invoke('configure', { choice: { enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: disclosureVersion } })
   await active.finishChoice('capture.deliver', 'success')
   assert.deepEqual(invoke('preview', { day: Math.floor(Date.now() / 86400000) }), [])
 })
@@ -347,7 +349,7 @@ test('workspace restoration cannot reuse a result after a real cross-runtime opt
   await measure(() => {
     const off = invoke('configure', { choice: { enabled: false, expected_revision: initial.revision } })
     invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
-      expected_generation: off.store_generation, disclosure_version: 1 } })
+      expected_generation: off.store_generation, disclosure_version: disclosureVersion } })
     return markWorkspaceSelection(result, 'switched')
   })
   await Promise.all(pending)
@@ -534,7 +536,7 @@ test('Python opt-out wins over a pending app measurement and a later re-enable',
   const stamp = await store.snapshot(), pending = store.record(observation(), stamp, 20000)
   const off = invoke('configure', { choice: { enabled: false, expected_revision: stamp.revision } })
   const on = invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
-    expected_generation: off.store_generation, disclosure_version: 1 } })
+    expected_generation: off.store_generation, disclosure_version: disclosureVersion } })
   assert.equal(await pending, false)
   assert.deepEqual(invoke('preview'), [])
   assert.equal(await store.record(observation(), stamp, 20000), false)
@@ -601,7 +603,7 @@ test('exhausted workflows drop before SQLite and fresh choices still use the pri
   const off = invoke('configure', { choice: { enabled: false, expected_revision: stamp.revision } })
   assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
   const on = invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
-    expected_generation: off.store_generation, disclosure_version: 1 } })
+    expected_generation: off.store_generation, disclosure_version: disclosureVersion } })
   now = 250
   const fresh = await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop')
   assert.ok(fresh, 'changing the private choice invalidates only the negative cache')
@@ -669,7 +671,7 @@ test('an observed opt-out stays quiet and re-enabling still requires a fresh rea
   }
   assert.equal(opens, 0, 'a verified opt-out does not repeatedly reopen SQLite')
   invoke('configure', { choice: { enabled: true, expected_revision: off.revision,
-    expected_generation: off.store_generation, disclosure_version: 1 } })
+    expected_generation: off.store_generation, disclosure_version: disclosureVersion } })
   assert.equal(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'), null)
   now = 250
   assert.ok(await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop'))

@@ -21,7 +21,8 @@ def enabled(tmp_path, monkeypatch):
     monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/telemetry")
     monkeypatch.setattr(aggregate, "_day", lambda: 20000)
     current = policy.configure(
-        root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
     )
     return root, company, current["revision"], current["store_generation"]
 
@@ -285,7 +286,7 @@ def test_negative_hint_never_bypasses_new_choice_or_restores_old_measurement(ena
             "enabled": True,
             "expected_revision": off["revision"],
             "expected_generation": off["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     assert telemetry_workflow.begin("memory.recall", "headless", root=root) is None
@@ -324,7 +325,7 @@ def test_observed_opt_out_stays_quiet_until_fresh_choice_read(enabled, monkeypat
             "enabled": True,
             "expected_revision": off["revision"],
             "expected_generation": off["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     opened = 0
@@ -396,7 +397,7 @@ def test_opt_out_then_reenable_fences_an_old_native_process(enabled):
             "enabled": True,
             "expected_revision": disabled["revision"],
             "expected_generation": generation,
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     assert enabled_again["pending_records"] == 0
@@ -554,7 +555,7 @@ def test_recreated_store_rejects_old_work_even_when_revision_numbers_repeat(enab
             "enabled": True,
             "expected_revision": 0,
             "expected_generation": None,
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     assert fresh["revision"] == revision
@@ -573,7 +574,7 @@ def test_recreated_store_rejects_old_work_even_when_revision_numbers_repeat(enab
                 "enabled": True,
                 "expected_revision": revision,
                 "expected_generation": generation,
-                "disclosure_version": 1,
+                "disclosure_version": policy.DISCLOSURE_VERSION,
             },
         )
     assert aggregate.record(
