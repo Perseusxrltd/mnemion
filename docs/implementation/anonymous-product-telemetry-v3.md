@@ -15,9 +15,10 @@ nothing about provider logs. Those still have to be qualified before any route
 is turned on.
 
 `default_enabled` remains true. `collection_available`, the destination and the
-release route remain false/null. `server.py` still serves only `/v1/report`.
-The reference ingress is `CollectorV3` on `/v3/report`, constructed in process.
-Nothing in the client sends a v3 packet.
+release route remain false/null. The dedicated collector still defaults to
+legacy `/v1/report`. `CollectorV3` is mounted only when that process is started
+with `--mode v3`, on `/v3/report`, writing `reports-v3.sqlite3`. Nothing in the
+client sends a v3 packet. This does not start or change a host.
 
 ## What one report contains
 
@@ -66,7 +67,9 @@ A release id must equal `major.minor.patch`, slots are packed from zero, the
 unlisted id is exactly `unlisted`, and the OS list is exactly those four names
 in that order. Ordered legend bounds are strictly increasing integers. Their
 count and unit must match the compiled metric; the stored edges are the ones
-used to read that report.
+used to read that report. A category row stores only its id and kind.
+Category names are not in schema 2. Export reads those names from the current
+wire-v3 catalog, so a later rename of a category string is not preserved.
 
 The published vector contains the full fixed domain of both axes, including
 cohorts that received nothing. Global figures are the sum of that one noisy
@@ -170,10 +173,25 @@ disappear quietly and is not drawn again.
 ## Maintainer export
 
 ```text
+python -m mnemion.product_telemetry.server serve --state <absolute dir> --certificate <absolute pem> --private-key <absolute pem>
+python -m mnemion.product_telemetry.server serve --mode v3 --state <absolute dir> --certificate <absolute pem> --private-key <absolute pem>
 python -m mnemion.product_telemetry.maintainer_v3 --state <absolute dir> --format json
 python -m mnemion.product_telemetry.maintainer_v3 --state <absolute dir> --format csv
+python -m mnemion.product_telemetry.maintainer_v3 --state <absolute dir> --format html
 python -m mnemion.product_telemetry.maintainer_v3 --utility --format json
 ```
+
+The first serve command is legacy `/v1/report` and `reports.sqlite3`. `--mode v3`
+is the only switch that mounts `CollectorV3` on `/v3/report` and opens
+`reports-v3.sqlite3`. Default bind is `127.0.0.1:8443`. Optional flags stay
+`--bind`, `--port` and `--systemd-socket`. A bad flag, path or credential is a
+fixed error. It is not echoed. Export reads an absolute directory that already
+contains `reports-v3.sqlite3`. A mistyped directory does not create an empty
+database. JSON and CSV are unchanged. HTML is a self-contained file for the
+operator: one week control, then release or operating system, never both as one
+profile. It shows the nineteen metric distributions, the noisy denominators,
+p50 and p95 only as stored bucket bounds, and publication failures. An empty
+store still opens, with that fact stated.
 
 The summary says the export is not the local privacy page, that ticks are not
 people, and that the noise is not an independent-user or causal interval.
@@ -223,15 +241,19 @@ the three values together. Unknown browser architecture is omitted and stays
 ## Still required before any activation
 
 - Electron, browser and Python clients that encode and send v3, behind the
-  same opt-out, company, GPC, metering and 7-per-week gates. Not started.
-- Mounting `/v3/report` on a qualified host. `server.py` does not mount it.
+  same opt-out, company, GPC, metering and 7-per-week gates. The client worker
+  owns that codec. It is not done here.
+- A qualified host. The dedicated collector can select `--mode v3` in source.
+  No host was changed or started, and ingress, TLS, log and backup
+  qualification for an operated path remain open.
 - A versioned disclosure that says the collector sees bounded summaries and
   that provider retention was actually inspected. The current disclosure does
-  not say that.
-- Ingress, TLS, log and backup qualification for the operated path.
+  not say that. `collection_available`, destination and route stay false/null/null.
 - The installed 2 MiB / 0.5% resource gates. This packet is 25 bytes in source.
   That is not an installed measurement. The failed full-app trials were not
   rerun.
-- A dashboard, if one is wanted. The maintainer command is not that dashboard.
+- The private HTML file is a local maintainer export. It is not an
+  unauthenticated report endpoint and it is not added to ordinary privacy
+  settings.
 - Field 47 and the connector migration are a different change and were not
   touched here.

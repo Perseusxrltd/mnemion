@@ -76,3 +76,25 @@ python -m pytest tests/test_product_telemetry_v3.py -q --tb=short
 The two new checks reject `unexpected_free_form_label` on `report_unit` and `weighting`, reject nine current or future failure weeks before insertion, and keep twelve successive closed-week failure notices inside the eight-week window. Repeating a valid week does not add a row. The clock advance drops notices that leave the window. That run drew no publication noise and stored no report body.
 
 The desktop cohort helper no longer imports `package.json` as an ESM JSON module. Node 22.22.0 rejected the compiled import with `ERR_IMPORT_ATTRIBUTE_MISSING`, and this electron tsconfig emits the import without a `type` attribute. The helper reads the manifest beside `dist/` with `readFileSync`, the same shape already emitted for the other desktop JSON files. `scripts/test-telemetry-owner.mjs` imports `dist/telemetry-cohorts.js` and checks the release family. This Windows session did not install Node dependencies and did not run that compiled test. Astra's earlier Electron type-check and six browser activity checks are unchanged by this Python run. Collection stays off. V08 is not complete.
+
+## Served collector and private HTML
+
+The original `18 passed in 14.79s` above was not re-run. Astra's compiled Electron owner test, 9 passes including the emitted-module import, was not re-run. Pinned interpreter `/home/jorqu/.local/state/mnemion-release/2026-10-10/release-venv/bin/python`:
+
+```text
+python -m pytest tests/test_product_telemetry_v3_operator.py tests/test_product_telemetry_v3.py::test_maintainer_export_is_validated_and_is_not_a_privacy_page tests/test_product_telemetry_v3.py::test_closed_report_keeps_its_domain_when_the_allowlist_grows tests/test_product_telemetry_collector_server.py::test_only_fixed_route_flags_reach_aggregate_processing -q --tb=line
+9 passed in 9.46s
+```
+
+That run is local. It checks the explicit v3 TLS listener against its own packet, a malformed packet and the legacy route, empty logs, and the separate sqlite file. The default serve mode still answers `/v1/report` and does not create `reports-v3.sqlite3`. A quiet boundary wake drops in-memory failure notices outside the eight closed weeks. JSON and CSV export still read the sealed store. HTML shows a negative noisy denominator, `bucket_bounds` and `insufficient_precision`, and escapes a `</script>` payload. Ordered bucket edges and the release and OS ids come from the closed report. Category names do not: schema 2 stores `{id, kind}` for a category metric and the export reads the label from the current wire-v3 catalog. That run does not show that a future category rename would stay on an old report. The first export assertion in this session failed because it expected the CSV body to contain `publication_failed`; the passing check uses the summary week column. That failure is retained. A missing export directory does not create a database, and the rejected path is not printed. No internet collector, installed-resource trial, host change, or version bump. V08 stays Building.
+
+## Corrupt store, category labels, and the page trend
+
+The `9 passed in 9.46s` run above was not repeated. The same pinned interpreter ran only the new operator and page checks:
+
+```text
+python -m pytest tests/test_product_telemetry_v3_operator.py::test_corrupt_or_locked_export_stays_a_fixed_error tests/test_product_telemetry_v3_operator.py::test_v3_serve_rejects_a_bad_store_without_replacing_it tests/test_product_telemetry_v3_operator.py::test_category_names_follow_the_live_catalog tests/test_product_telemetry_v3_operator.py::test_remainder_trend_uses_the_same_member_set_and_week_positions -q --tb=short
+4 passed in 7.98s
+```
+
+Pinned Ruff on `server.py`, `maintainer_v3.py`, `collector_v3.py`, and `tests/test_product_telemetry_v3_operator.py` reported `4 files already formatted` and `All checks passed!`. A corrupt or locked `reports-v3.sqlite3` stays in place. Export returns `telemetry_v3_export_rejected`. Explicit v3 serve returns `telemetry_collector_configuration_invalid`. The category check renames the live outcome label and leaves the stored legend at `{id, kind}`. The page check keeps a remainder trend on one member set at real week positions, and it keeps `unlisted` selected when the next week reuses that numeric slot for `4.46.54`. V08 stays Building.
