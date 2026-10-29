@@ -114,3 +114,20 @@ python -m pytest tests/test_product_telemetry_v3.py::test_release_coordinates_ke
 ```
 
 Preparation adds the current source release and the target, keeps at most 32 contiguous slots, and does not write when the coordinate or catalog is invalid. A fixed one-release catalog fixture holds the known `4.46.53`, unknown `4.46.54`, and unlisted index 1 checks. V08 stays Building.
+
+## Integrated release-catalog check
+
+At 21:59 UTC on 29 October, Astra checked the combined source after normal
+preparation of 4.46.55 (`4cf4b400`). The release catalog contains 4.46.53,
+4.46.54 and 4.46.55. Using the existing pinned release interpreter:
+
+```text
+python -m pytest tests/test_product_telemetry_v3.py tests/test_product_telemetry_v3_operator.py -q --tb=short
+31 passed in 11.07s
+```
+
+This qualifies the combined codec, aggregation, closed-report compatibility and
+private operator checks with that expanded catalog. It does not qualify an
+installed client, production collector, provider or resource overhead. Original
+receipt: `automation/astra-grok/telemetry-release55/prepared-cohort-checks-original.json`
+in the private completion evidence; no failed receipt was replaced.
