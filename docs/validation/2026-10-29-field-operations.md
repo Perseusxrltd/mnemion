@@ -116,7 +116,16 @@ increased Git timeout, but failed before push at **05:20:40** during optional
 multi-pack bitmap generation. All three timers were restored and its guard
 stopped at **05:23:02** with zero actions. Ordinary Git connectivity passed with
 MIDX and bitmaps disabled. New delivery, performance and the guarded upgrade
-remain pending.
+were still pending at that stage.
+
+The later anchored publisher retains its first failed legacy-transition fixture;
+the corrected candidate passed **14 real local Git cases**, including bounded
+transfer and exact-byte reconstruction. It was installed at **06:17:50** with
+zero new captures requested. The original unit completed at **06:30:27**, exit 0;
+all three timers were active again at **06:39:44**. At **06:43:14**, independent
+GitHub verification confirmed the delivered commit and its manifest against all
+three local archives' hashes and sizes. No payload was downloaded or restored;
+snapshot freshness, performance and host-upgrade acceptance remain pending.
 
 The field probes made no memory writes or configuration changes. The original
 requirements, feature scope and **V08 Building** state are unchanged; product

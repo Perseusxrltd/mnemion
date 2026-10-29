@@ -58,3 +58,9 @@ Public **4.46.49** remains the verified distribution at this checkpoint.
 [Shared-host backup delivery](2026-10-29-backup-pack-index-repair.md), issues
 44/47/48 and full telemetry acceptance remain open. The original 66 requirement
 states are unchanged; V08 is Building with collection disabled.
+
+A subsequent [Windows fixture correction](2026-10-29-backup-read-windows.md)
+qualifies its real sharing-lock behavior while retaining the POSIX replacement
+cases. The application runtime is unchanged; the later focused runs passed
+31 checks on Windows and 33 on Linux, with their platform exclusions recorded
+separately. The original evidence above remains a dated qualification.

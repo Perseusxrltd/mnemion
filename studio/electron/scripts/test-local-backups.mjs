@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { LocalBackups, createRecoveryKey, recoveryKeyId, readBackupDocument } from '../dist/local-backups.js'
 import { backupResult } from '../dist/local-backup-protocol.js'
+import { replaceFile } from '../dist/atomic-file.js'
 
 async function documentFixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'mnemion-backup-document-'))
@@ -18,7 +19,10 @@ async function documentFixture(t) {
 }
 
 for (const point of ['before-open', 'after-open', 'during-read']) {
-  test(`backup metadata snapshot follows one atomic replacement ${point}`, async t => {
+  // Windows blocks replacement while the descriptor is open. Its real sharing
+  // transition is qualified separately below; these two timings require POSIX.
+  test(`backup metadata snapshot follows one atomic replacement ${point}`,
+    { skip: process.platform === 'win32' && point !== 'before-open' }, async t => {
     const f = await documentFixture(t), originalOpen = fs.open
     let opens = 0
     const mock = t.mock.method(fs, 'open', async (path, ...args) => {
@@ -45,6 +49,42 @@ for (const point of ['before-open', 'after-open', 'during-read']) {
     } finally { mock.mock.restore(); syncBuiltinESMExports() }
   })
 }
+
+test('Windows backup reader releases its sharing lock before replacement completes',
+  { skip: process.platform !== 'win32', timeout: 5000 }, async t => {
+    const f = await documentFixture(t), originalOpen = fs.open, originalRename = fs.rename
+    let opens = 0, attempts = 0, firstError, replacement
+    let firstAttemptDone
+    const firstAttempt = new Promise(resolve => { firstAttemptDone = resolve })
+    const rename = t.mock.method(fs, 'rename', async (...args) => {
+      if (args[1] !== f.path) return originalRename(...args)
+      const first = ++attempts === 1
+      try { return await originalRename(...args) }
+      catch (error) { if (first) firstError = error.code; throw error }
+      finally { if (first) firstAttemptDone() }
+    })
+    const open = t.mock.method(fs, 'open', async (path, ...args) => {
+      const file = await originalOpen(path, ...args)
+      if (path === f.path && ++opens === 1) {
+        replacement = replaceFile(f.replacement, f.path)
+        replacement.catch(() => {})
+        await firstAttempt
+      }
+      return file
+    })
+    syncBuiltinESMExports()
+    try {
+      assert.deepEqual(await readBackupDocument(f.path), { revision: 1 })
+      assert.ok(['EPERM', 'EACCES', 'EBUSY'].includes(firstError))
+      await replacement
+      assert.ok(attempts >= 2)
+      assert.deepEqual(await readBackupDocument(f.path), { revision: 2 })
+      assert.equal(opens, 2)
+    } finally {
+      await replacement?.catch(() => {})
+      open.mock.restore(); rename.mock.restore(); syncBuiltinESMExports()
+    }
+  })
 
 test('backup metadata snapshot bounds repeated atomic replacement without resetting data', async t => {
   const f = await documentFixture(t), originalOpen = fs.open

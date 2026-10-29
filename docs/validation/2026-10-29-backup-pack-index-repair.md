@@ -112,7 +112,7 @@ a performance improvement.
 The **05:31:42 ordinary-Git candidate qualification failed its bandwidth gate**.
 First-publication reconstruction and publication with unusable optional metadata
 passed, but unchanged ciphertext was included in the incremental pack. The
-candidate was **not installed**. The live helper remains
+candidate was **not installed**. At that checkpoint, the live helper remained
 `ac7de7ac749be2aec13ed9b2bf4ba63c5152d795831322ea0713becbe3cff810`.
 Local graph probes retained these results:
 
@@ -128,7 +128,42 @@ The unrelated-root and shared-empty-parent walks included the unchanged blob;
 the previous-parent walk excluded it. These synthetic comparisons do not qualify
 a production graph change or bandwidth acceptance.
 
-Fresh delivery, performance, migration 036 and installed vault-auditor acceptance
+The first anchored candidate then **failed legacy transition** at **06:01:41**,
+after eight cases passed: existing ciphertext was retransmitted. The retained
+nested-path probe isolates sparse negative-tree traversal: bridge packs were
+**377,942–377,947 bytes** with sparse walking, versus **795–800 bytes** without it.
+
+At **06:06:10**, the corrected candidate passed **14 real local Git cases** with
+**zero production mutations**. It uses bounded, parentless ciphertext-chunk
+anchors and disables sparse negative-tree traversal. Checks cover exact-byte
+reconstruction, a **5,973-byte unchanged pack**, legacy transition packs of
+**10,011 then 8,073 bytes**, concurrent remote-head refusal without a completion
+receipt, retirement and separate cache maintenance. Candidate SHA-256:
+`1a666bb6f2e585a1dca201200014f1ed42096673795f7681a0e23e9bb42af1b8`.
+The qualified helper was installed at **06:17:50**, with **zero new captures**
+requested. The original unit completed successfully at **06:30:27**, publication
+exit **0**. At **06:39:44** it was inactive and all three timers were active again.
+Archive inventory was unchanged, service-account cache ownership was verified,
+and the receipt reports **zero shared index locks and zero memory-service restarts**.
+
+The publisher recorded delivery at **06:30:05**: **1,125,836,193 ciphertext bytes**,
+**55 anchors**, **1,125,874,858 new Git-object bytes**, **one push**, no legacy bridge,
+and **448.479 seconds for push plus readback**. At **06:43:14**, an independent
+GitHub account check confirmed that delivery commit was readable and its manifest
+matched every local ciphertext SHA-256 and size: **three archives, two retained
+snapshots and 55 commit parents**. This is commit/manifest verification; archive
+payloads were **not downloaded or restored**. The result does not establish
+snapshot freshness, general performance or a host upgrade.
+
+The normal scheduled follow-up completed at **06:33:11** and its current GitHub
+ref was independently matched at **06:46:07**. It reused **54 parts** and
+**1,125,247,039 bytes of unchanged ciphertext**, with **610,519 new Git-object
+bytes** and **8.744 seconds for push plus readback**. This verifies the actual
+incremental path after timer restoration. A separate fresh-backup unit has now
+been launched; its new snapshot, independent verification and migration remain
+pending.
+
+Snapshot freshness, performance, migration 036 and installed vault-auditor acceptance
 remain **pending**; the last verified live service version is **4.46.44**.
 Original publication failures and full cache-maintenance, post-upgrade and
 guarded-host acceptance remain open.
@@ -153,11 +188,21 @@ passed all six desktop targets;
 [documentation CI](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659)
 and [website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612636)
 also passed. These release checks do not establish the shared host's migration.
+The **06:13:42** download measurement covered eight 4.46.49 installers: Windows
+ARM64/x64 files were **219,971,156 / 225,888,882 bytes**; the largest installer
+was **270,997,730 bytes**. All eight were below **400 MiB (419,430,400 bytes)**.
 
 The **4.46.50 Linux x64** native
 [backup-resume gate](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489/job/123273331148)
 failed with `local:backup-status`: “Backup settings could not be read safely.
 Existing recovery files were retained.” Its cause is not established.
+The original release run finished **failed at 05:54:35** and was not retried.
+The separate [4.46.51 backup-reader hotfix](2026-10-29-backup-read-snapshot.md)
+passed [source CI](https://github.com/Perseusxrltd/mnemion/actions/runs/40826012101);
+its [native release run](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129)
+is still running at this checkpoint. A separate
+[Windows fixture correction](2026-10-29-backup-read-windows.md) retains that
+original candidate and leaves its application runtime unchanged.
 **v4.46.49 remains the latest verified public release.**
 
 All **66 requirement states remain unchanged**. Issues **44, 47 and 48 remain
@@ -205,3 +250,12 @@ in-progress observations are evidence only for their recorded state.
 | `graph-probe/result.json` | `a40daabe585903ed8c434068a345ca801721f51c8c2d84323a6d3bfd790013cb` |
 | `graph-probe/identical-tree-result.json` | `7053249495043bd962319b7af63121f6e68eb812fa2d21a2b5fba8c336a479f7` |
 | `graph-probe/sparse-walk-result.json` | `50d8a6ed3e155d242540ab4778561620d6a4eec4a2b5e3db9a78e7d1abc033d2` |
+| `qualification.json` (first anchored candidate failure) | `c9d43b7b2a8c743a75175114b87d88141db6294f21b714cb2572405baea5747e` |
+| `legacy-nested-path-result.json` | `ed3f776586febf3b2cb0bdef163506943ca4fd6dc23bfba562fd53fa703ed07c` |
+| `qualification.json` (corrected anchored candidate) | `27c24b97343fbc9820587caf303d390c081591f5d4f65c23ebfa9c97ab7e498c` |
+| `published-44649-installer-sizes.json` | `ed8635e6bfdecb11bf5f782258e1e5b32dce94e1863f79d28b6d99530d294a4c` |
+| `062106Z-original-unit-observation.json` | `377c9df1f4df9a0607d09741410dd0df5e7c3f02600816e325b97039e4878af0` |
+| `063944Z-original-unit-observation.json` | `daf7c84db6a42b3c6e47776ca00d8dc664925d0d23ceb4c6a269e3cbfa41835e` |
+| `independent-delivery.json` (commit and manifest) | `1617f8ae4aa0bd55d40dfeda74332580a0599e9c3486c0b498937ea3e38d744b` |
+
+| `scheduled-followup-delivery.json` | `97bc998dd592873fa7dfe7cda495542405d4c4eecaea206a610eba9be81835fc` |

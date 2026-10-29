@@ -140,7 +140,12 @@ no actions requested. The publish-only follow-up at normal snapshot priority
 also failed, before push, on optional multi-pack bitmap generation at 05:20:40.
 Its timers were restored and guard stopped at 05:23:02 with zero actions.
 Ordinary service-account Git connectivity passed with optional indexes disabled.
-Fresh delivery, performance, migration 036 and installed vault-auditor acceptance
+The revised chunk-anchor candidate passed 14 real local Git cases, retaining the
+first legacy-transition failure. Installation at 06:17:50 is verified; the
+original unit completed at 06:30:27 with publication exit 0 and no new captures.
+Independent GitHub verification at 06:43:14 confirmed that commit and its manifest
+against the local archive hashes and sizes; no payload was downloaded or restored.
+Snapshot freshness, performance, migration 036 and installed vault-auditor acceptance
 remain pending.
 
 Ordinary Grok Bot cloud-computer wake and terminal inspection do not establish
