@@ -8,7 +8,14 @@ import sqlite3
 
 import pytest
 
-from mnemion.product_telemetry import aggregate, delivery, inspection, policy, review_storage, wire
+from mnemion.product_telemetry import (
+    aggregate,
+    delivery,
+    inspection,
+    policy,
+    review,
+    review_storage,
+)
 
 DAY = 86400000
 
@@ -24,7 +31,7 @@ def subject(tmp_path, monkeypatch):
         "initializations": 0,
     }
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     monkeypatch.setattr(policy, "company_policy_file", lambda: company)
     monkeypatch.setattr(policy, "transport_available", lambda: True)
     monkeypatch.setattr(aggregate, "_day", lambda: clock["now"] // DAY)
@@ -38,7 +45,7 @@ def subject(tmp_path, monkeypatch):
 
     monkeypatch.setattr(inspection, "read_review_clock", read)
     state = policy.configure(
-        root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+        root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
     )
 
     class Subject:
@@ -132,7 +139,7 @@ def test_pause_can_precede_permission_and_read_only_status_does_not_initialize(
 def test_empty_review_does_not_sample_randomness_or_start_a_clock(subject, monkeypatch):
     subject.pause()
     monkeypatch.setattr(
-        inspection.wire, "prepare", lambda *_, **__: pytest.fail("No input to encode")
+        inspection, "prepare", lambda *_, **__: pytest.fail("No input to encode")
     )
     result = subject.action("inspect_report")
     assert result["message"] == "no_observations" and result["packet"] is None
@@ -145,10 +152,13 @@ def test_repeated_inspection_keeps_exact_bytes_and_preserves_new_observations(su
     assert subject.record()
     initial = subject.stored()
     first = subject.action("inspect_report")
-    assert first["review"]["outcome"] == "held" and first["packet"]["body_bytes"] == 4
+    assert first["review"]["outcome"] == "held" and first["packet"]["body_bytes"] == 25
     assert first["packet"]["report_selection"] == "reviewed"
-    assert first["packet"]["aggregation"] == "coarse_global_volume_only"
+    assert first["packet"]["view"] == "bounded_summary"
+    assert first["packet"]["aggregation"] == "bounded_summary_publication_noise"
+    assert first["packet"]["randomized_sign"] is None
     assert first["packet"]["per_report_privacy_loss"] is None
+    assert "not unique people" in first["packet"]["protected_unit"]
     held = subject.stored()
     assert held["pending"] == held["spent"] == []
     assert held["contributions"] == initial["contributions"]
@@ -157,7 +167,7 @@ def test_repeated_inspection_keeps_exact_bytes_and_preserves_new_observations(su
         expected_generation=subject.state["store_generation"],
     )
     monkeypatch.setattr(
-        inspection.wire, "prepare", lambda *_, **__: pytest.fail("Inspection must not redraw")
+        inspection, "prepare", lambda *_, **__: pytest.fail("Inspection must not redraw")
     )
     assert subject.record()
     later = subject.stored()
@@ -182,7 +192,7 @@ def test_approval_claims_exact_packet_once_without_erasing_later_counts(subject,
     pending = subject.stored()["pending"]
     assert subject.action("approve_report")["review"]["outcome"] == "approved"
     monkeypatch.setattr(
-        delivery, "prepare", lambda *_, **__: pytest.fail("Approved bytes cannot be regenerated")
+        delivery, "prepare_summary", lambda *_, **__: pytest.fail("Approved bytes cannot be regenerated")
     )
     report = subject.reserve()
     assert report is not None and report.preview() == packet
@@ -225,7 +235,7 @@ def test_competing_owners_can_claim_only_once(subject):
             subject.budget.cancel(report)
 
 
-@pytest.mark.parametrize("damage", ["legacy_wire", "automatic_flag", "noncanonical_view"])
+@pytest.mark.parametrize("damage", ["legacy_wire", "reserved_byte", "group_mismatch"])
 def test_a_review_cannot_approve_legacy_or_automatic_marked_bytes(subject, damage):
     subject.pause()
     assert subject.record()
@@ -233,10 +243,10 @@ def test_a_review_cannot_approve_legacy_or_automatic_marked_bytes(subject, damag
     stored = subject.stored()["review"]
     if damage == "legacy_wire":
         stored["report"]["packet"][0] = 1
-    elif damage == "noncanonical_view":
-        stored["report"]["packet"][1] = 1
+    elif damage == "reserved_byte":
+        stored["report"]["packet"][5] = 1
     else:
-        stored["report"]["packet"][3] &= 1
+        stored["report"]["packet"][6] = 0
     with closing(sqlite3.connect(subject.root / policy.DATABASE_NAME)) as connection:
         review_storage.write(connection, stored)
         connection.commit()
@@ -304,7 +314,7 @@ def test_stale_controls_and_policy_changes_cannot_authorize_a_different_packet(
     subject.action("inspect_report")
     with pytest.raises(policy.PolicyError, match="telemetry_review_changed"):
         inspection.execute(subject.root, "approve_report", stale)
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://changed.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://changed.invalid/v3/report")
     result = subject.action("approve_report")
     assert result["review"]["outcome"] == "invalidated" and subject.reserve() is None
     assert subject.stored()["spent"] == []
@@ -314,10 +324,8 @@ def test_group_change_invalidates_even_if_selected_group_is_still_allowed(subjec
     subject.pause()
     assert subject.record()
     subject.action("inspect_report")
-    stored = subject.stored()["review"]["report"]
-    selected = wire.view(wire.decode(bytes(stored["packet"]))[0])["group"]
     subject.company.write_text(
-        json.dumps({"schema_version": 1, "enabled": True, "metric_groups": [selected]})
+        json.dumps({"schema_version": 1, "enabled": True, "metric_groups": ["usage"]})
     )
     assert subject.action("approve_report")["review"]["outcome"] == "invalidated"
     assert subject.reserve() is None
@@ -336,7 +344,7 @@ def test_opt_out_clears_bytes_and_preserves_manual_mode_on_reenable(subject):
             "enabled": True,
             "expected_revision": off["revision"],
             "expected_generation": off["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     assert on["effective_enabled"] and subject.stored()["review"]["mode"] == "review"
@@ -406,3 +414,105 @@ def test_arbitrary_packet_or_destination_inputs_are_rejected_before_any_control_
     with pytest.raises(policy.PolicyError, match="telemetry_invalid_review"):
         inspection.execute(subject.root, "inspect_report", subject.request(packet=[1, 0, 0, 0]))
     assert subject.stored() == before and subject.clock["reads"] == 0
+
+
+def _legacy_lifetime():
+    return {
+        "created_ms": 1000000,
+        "expires_ms": 1060000,
+        "checked_ms": 1000000,
+        "clock": {"epoch": "ab" * 16, "elapsed_ms": 10},
+        "checked_elapsed_ms": 10,
+    }
+
+
+def _stale_manual_approval():
+    token = "c" * 32
+    return {
+        "version": 1,
+        "mode": "review",
+        "token": token,
+        "outcome": "approved",
+        "report": {
+            "packet": [0, 0, 0, 0],
+            "stamp": {"revision": 1, "store_generation": "d" * 32},
+            "groups": ["usage", "reliability", "performance", "resources"],
+            "binding": {
+                "disclosure_version": 1,
+                "wire_version": 2,
+                "catalog_version": 2,
+                "destination": "https://example.invalid/v1/report",
+                "route_address": None,
+            },
+            "lifetime": _legacy_lifetime(),
+        },
+    }
+
+
+def test_corrupted_automatic_state_is_not_recovered_and_stale_manual_approval_is_invalidated(
+    subject,
+):
+    enabled = policy.status(subject.root)["user_enabled"]
+    subject.company.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "enabled": True,
+                "metric_groups": ["usage", "reliability", "performance", "resources"],
+            }
+        )
+    )
+    company = subject.company.read_bytes()
+    fresh = {
+        "version": 1,
+        "mode": "automatic",
+        "token": None,
+        "outcome": "inactive",
+        "report": None,
+    }
+    assert review.parse_review(json.dumps(fresh)) == fresh
+    assert review.salvage_stale_review(json.dumps(fresh)) is None
+    counterexample = json.dumps(
+        {"version": 1, "mode": "automatic", "report": {"packet": [0, 0, 0, 0]}}
+    )
+    with pytest.raises(ValueError, match="telemetry_review_unavailable"):
+        review.parse_review(counterexample)
+    assert review.salvage_stale_review(counterexample) is None
+    assert review.salvage_stale_review(counterexample) != review.fresh_review()
+    broken = dict(_stale_manual_approval())
+    del broken["token"]
+    assert review.salvage_stale_review(json.dumps(broken)) is None
+    with closing(sqlite3.connect(subject.root / policy.DATABASE_NAME)) as connection:
+        connection.execute("UPDATE report_review SET state=? WHERE singleton=1", (counterexample,))
+        connection.commit()
+        with pytest.raises(ValueError, match="telemetry_review_unavailable"):
+            review_storage.read(connection)
+    assert subject.reserve() is None
+
+    def rows(query):
+        with closing(sqlite3.connect(subject.root / policy.DATABASE_NAME)) as connection:
+            return connection.execute(query).fetchall()
+
+    assert rows("SELECT state FROM report_review") == [(counterexample,)]
+    assert rows("SELECT count(*) FROM delivery_attempts") == [(0,)]
+    stale = _stale_manual_approval()
+    raw = json.dumps(stale)
+    salvaged = review.salvage_stale_review(raw)
+    assert salvaged == {
+        "version": 1,
+        "mode": "review",
+        "token": stale["token"],
+        "outcome": "invalidated",
+        "report": None,
+    }
+    with closing(sqlite3.connect(subject.root / policy.DATABASE_NAME)) as connection:
+        connection.execute("UPDATE report_review SET state=? WHERE singleton=1", (raw,))
+        connection.commit()
+        assert review_storage.read(connection) == salvaged
+    assert subject.reserve() is None
+    assert rows("SELECT count(*) FROM delivery_attempts") == [(0,)]
+    stored = subject.stored()["review"]
+    assert stored["mode"] == "review" and stored["outcome"] == "invalidated"
+    assert stored["report"] is None and stored["token"] == stale["token"]
+    assert policy.status(subject.root)["user_enabled"] is enabled
+    assert subject.company.read_bytes() == company

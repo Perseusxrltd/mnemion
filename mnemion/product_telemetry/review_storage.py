@@ -1,13 +1,19 @@
 """The one private SQLite review row; caller owns its transaction."""
 
-from .review import clear_review, parse_review, serialize_review
+from .review import clear_review, parse_review, salvage_stale_review, serialize_review
 
 
 def read(connection):
     row = connection.execute("SELECT state FROM report_review WHERE singleton=1").fetchone()
     if row is None:
         raise ValueError("telemetry_review_unavailable")
-    return parse_review(row[0])
+    try:
+        return parse_review(row[0])
+    except ValueError:
+        salvaged = salvage_stale_review(row[0])
+        if salvaged is None:
+            raise
+        return salvaged
 
 
 def write(connection, state):

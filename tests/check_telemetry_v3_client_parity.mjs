@@ -8,10 +8,13 @@ import assert from 'node:assert/strict'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const typescript = [
-  '/home/jorqu/mnemion-telemetry-v3-review-20261029/studio/electron/node_modules/typescript/lib/typescript.js',
   resolve(root, 'studio/electron/node_modules/typescript/lib/typescript.js'),
-].find(candidate => existsSync(candidate))
-if (!typescript) throw new Error('pinned TypeScript was not found')
+  resolve(root, 'studio/frontend/node_modules/typescript/lib/typescript.js'),
+  process.env.MNEMION_TEST_TYPESCRIPT,
+].find(candidate => candidate && existsSync(candidate))
+if (!typescript) {
+  throw new Error('pinned TypeScript was not found; set MNEMION_TEST_TYPESCRIPT to typescript.js for this run')
+}
 const ts = createRequire(typescript)(typescript)
 const modules = new Map()
 
@@ -121,8 +124,7 @@ events.length = 0
 assert.throws(() => wire.prepare(proxy, [], fixture.release, 'linux', random), /telemetry_invalid_v3_report/)
 assert.deepEqual(events, [['draw', 2]])
 
-const python = process.env.MNEMION_TEST_PYTHON
-  || '/home/jorqu/.local/state/mnemion-release/2026-10-10/release-venv/bin/python'
+const python = process.env.MNEMION_TEST_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
 const child = spawnSync(python, [resolve(root, 'tests/check_telemetry_v3_client_packets.py')], {
   cwd: root, env: { ...process.env, PYTHONPATH: root, PYTHONNOUSERSITE: '1' }, encoding: 'utf8',
 })

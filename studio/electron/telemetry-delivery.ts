@@ -4,11 +4,12 @@ import { readFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import { setTimeout as delay } from 'node:timers/promises'
 import type { TelemetryStamp } from '../shared/product-telemetry.js'
-import { TelemetryWire } from './telemetry-wire.js'
+import { TelemetryWireV3 } from './telemetry-wire-v3.js'
+import { cohortOperatingSystem, reviewedDesktopOperatingSystem, reviewedDesktopRelease } from './telemetry-cohorts.js'
 import { telemetryWireResource } from './telemetry-resources.js'
 import { NativeTelemetryStore, nativeCompanyPolicyPath, type NativeTelemetryDisclosure } from './telemetry-store.js'
 import type { MeasurementCatalog } from './telemetry-catalog.js'
-import { checkReview, checkReviewMetadata, clearReview, parseReview, reviewContext, serializeReview,
+import { checkReview, checkReviewMetadata, clearReview, loadReview, reviewContext, serializeReview,
   type ReviewContext, type ReviewMetadata, type ReviewReport, type ReviewState } from './telemetry-review.js'
 import { readReviewClock } from './telemetry-review-clock.js'
 import type { ReviewClock } from './telemetry-review-lifetime.js'
@@ -47,22 +48,25 @@ export class PreparedTelemetryReport {
   #token: string
   #used = false
   #closed = false
-  #group: string
+  #groups: readonly string[]
   #claimed = false
   #transportClaimed = false
   #review: ReviewMetadata | null
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>, readonly deadline: number,
-    readonly monotonicDeadline: number, group: string, reviewed?: ReviewReport | null) {
+    readonly monotonicDeadline: number, groups: readonly string[], reviewed?: ReviewReport | null) {
     this.#body = new Uint8Array(body)
     this.#token = ticket
-    this.#group = group
+    this.#groups = Object.freeze([...groups])
     this.stamp = Object.freeze({ ...stamp })
     this.#review = reviewed ? { stamp: { ...reviewed.stamp }, groups: [...reviewed.groups], binding: { ...reviewed.binding },
       lifetime: { ...reviewed.lifetime, clock: { ...reviewed.lifetime.clock } } } : null
   }
   get used(): boolean { return this.#used }
   get closed(): boolean { return this.#closed }
-  get group(): string { return this.#group }
+  get groups(): readonly string[] { return this.#groups }
+  permits(current: readonly string[]): boolean {
+    return this.#groups.length > 0 && this.#groups.every(group => current.includes(group))
+  }
   get ticket(): string { return this.#token }
   body(): Uint8Array { return new Uint8Array(this.#body) }
   claimTransport(): boolean {
@@ -89,7 +93,7 @@ export class PreparedTelemetryReport {
 }
 
 export class NativeTelemetryDelivery extends NativeTelemetryStore {
-  private encoder?: TelemetryWire
+  private encoder?: TelemetryWireV3
   private routeAddress: string | null | undefined
   constructor(root: string, disclosure: NativeTelemetryDisclosure, catalog: MeasurementCatalog,
     companyFile = nativeCompanyPolicyPath(), private readonly now = () => Date.now(),
@@ -97,8 +101,8 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     super(root, disclosure, catalog, companyFile)
   }
 
-  private wire(): TelemetryWire {
-    this.encoder ??= new TelemetryWire(JSON.parse(readFileSync(new URL(`./${telemetryWireResource}`, import.meta.url), 'utf8')), this.catalog)
+  private wire(): TelemetryWireV3 {
+    this.encoder ??= new TelemetryWireV3(JSON.parse(readFileSync(new URL(`./${telemetryWireResource}`, import.meta.url), 'utf8')), this.catalog)
     return this.encoder
   }
 
@@ -113,15 +117,11 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
   }
 
   private reviewState(database: DatabaseSync, stamp: TelemetryStamp, groups: string[], now: number): ReviewState {
-    const state = parseReview(database.prepare('SELECT state FROM report_review WHERE singleton=1').get()?.state)
+    const state = loadReview(database.prepare('SELECT state FROM report_review WHERE singleton=1').get()?.state)
     if (!state.report) return state
     const checked = checkReview(state, this.reviewContext(stamp, groups), now, readReviewClock())
-    if (checked.report) {
-      try {
-        const decoded = this.wire().decode(new Uint8Array(checked.report.packet))
-        const expected = this.wire().specification.views.find(view => groups.includes(view.group))?.id
-        if (!decoded.reviewed || decoded.view !== expected) return clearReview(checked)
-      } catch { return clearReview(checked) }
+    if (checked.report && !this.wire().matchesGroups(new Uint8Array(checked.report.packet), checked.report.groups)) {
+      return clearReview(checked)
     }
     return checked
   }
@@ -197,8 +197,13 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
           else remove.run(cell)
         }
         if (!cells.length) return null
-        body = this.wire().prepare(cells, company.groups, cohorts)
+        const release = reviewedDesktopRelease()
+        const operatingSystem = cohortOperatingSystem(cohorts) ?? reviewedDesktopOperatingSystem()
+        if (!release) return null
+        body = this.wire().prepare(cells, company.groups, release, operatingSystem)
       }
+      const covered = reviewed ? reviewed.groups : company.groups
+      if (!this.wire().matchesGroups(body, covered)) return null
       const ticket = randomBytes(16).toString('hex'), jitter = randomInt(JITTER + 1)
       if (this.monotonic() - started >= DEADLINE) return null
       database.prepare('DELETE FROM delivery_attempts WHERE at_ms <= ?').run(now - WEEK)
@@ -209,8 +214,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       if (reviewed) database.prepare('UPDATE report_review SET state=? WHERE singleton=1').run(serializeReview(clearReview(review, 'consumed')))
       else database.exec('DELETE FROM pending')
       database.exec('COMMIT')
-      return new PreparedTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE,
-        this.wire().specification.views[this.wire().decode(body).view].group, reviewed)
+      return new PreparedTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE, covered, reviewed)
     } catch { return null }
     finally { this.closeDatabase(database) }
   }
@@ -230,7 +234,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       current.lease_deadline_ms === report.deadline && current.lease_token === report.ticket &&
       preference.revision === report.stamp.revision && preference.store_generation === report.stamp.store_generation &&
       preference.enabled === 1 && preference.connection_mode !== 'metered' && preference.disclosure_version === this.disclosure.version && company.enabled &&
-      company.groups.includes(report.group)
+      report.permits(company.groups)
   }
 
   async current(report: PreparedTelemetryReport): Promise<boolean> {

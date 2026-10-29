@@ -243,20 +243,21 @@ cell is unresolved. That residual competes as `sensor_missing`. It is not
 rewritten into `no_failure`. If reliability is disabled, the reason bin stays
 `group_disabled` even when a reason was observed.
 
-These helpers are not called by the Python, Electron, or browser senders.
-Review mode, the disclosure version, and the transport route are unchanged.
-Collection remains off.
+Python, Electron, and browser senders call these helpers when a report is
+prepared. Manual review, the final group check, opt-out, company policy, and
+the delivery budgets stay in front of that call. The request path in source is
+`POST /v3/report` with a 25-byte body. Disclosure version 2 describes a
+collector-visible summary. Collection remains off: `collection_available` is
+false, the destination is null, and the release route address is null.
+`server.py` still mounts only `/v1/report`. A v3 packet is not sent there.
 
 ## Still required before any activation
 
-- Wire the Python, Electron, and browser senders to this encoder, including
-  transport and disclosure version selection, without bypassing manual review.
-  The encoder above does not do that. Opt-out, company policy, GPC, metering,
-  and the 7-per-week gate stay in force. Not activated.
 - Mounting `/v3/report` on a qualified host. `server.py` does not mount it.
-- A versioned disclosure that says the collector sees bounded summaries and
-  that provider retention was actually inspected. The current disclosure does
-  not say that.
+- Provider retention was not inspected for this disclosure. The text says what
+  this installation does and does not send. It does not claim an operator audit.
+- Opt-out, company policy, GPC, metering, and the 7-per-week gate stay in force.
+  Not activated.
 - Ingress, TLS, log and backup qualification for the operated path.
 - The installed 2 MiB / 0.5% resource gates. This packet is 25 bytes in source.
   That is not an installed measurement. The failed full-app trials were not

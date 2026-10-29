@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+Object.defineProperty(globalThis, 'navigator', { value: { platform: 'Linux', userAgentData: { platform: 'Linux' } }, configurable: true })
 import { createRequire } from 'node:module'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
@@ -84,7 +85,7 @@ async function transportFixture(run, mode = 'success', policyMode = 'success') {
 
 async function available(run) {
   const saved = { collection_available: contract.collection_available, destination: contract.destination }
-  Object.assign(contract, { collection_available: true, destination: 'https://example.invalid/v1/report' })
+  Object.assign(contract, { collection_available: true, destination: 'https://example.invalid/v3/report' })
   try { await run() } finally { Object.assign(contract, saved) }
 }
 
@@ -117,7 +118,7 @@ function fixture(asyncLocks = false, releaseLater = false) {
   const first = client(), choice = (target, enabled) => {
     const status = target.status()
     return target.configure({ enabled, expected_revision: status.revision, expected_generation: status.store_generation,
-      disclosure_version: enabled ? 1 : 0 })
+      disclosure_version: enabled ? contract.version : 0 })
   }
   const enqueue = (target = first, count = 1) => {
     const stamp = target.status()
@@ -144,7 +145,7 @@ test('one origin shares spending, consumes cells and keeps the contribution limi
   const stamp = instance.enqueue(client, 6), other = instance.client()
   const [report, second] = await Promise.all([client.delivery.reserve(stamp, allowed), other.delivery.reserve(stamp, allowed)])
   assert.ok(report); assert.equal(second, null)
-  assert.equal(report.body().length, 4)
+  assert.equal(report.body().length, 25)
   assert.equal(instance.budget().attempts.length, 1)
   assert.equal(instance.budget().attempts[0].reserved_bytes, COST)
   const pending = pendingState(instance.storage.getItem(queueKey))
@@ -152,8 +153,8 @@ test('one origin shares spending, consumes cells and keeps the contribution limi
   assert.equal(pending.contributions[0].count, 6)
   assert.equal(client.status().delivery_budget.state, 'in_flight')
   let writes = 0
-  assert.equal(await client.delivery.guardedWrite(report, body => { writes++; assert.equal(body.length, 4); return true }), true)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.equal(await client.delivery.guardedWrite(report, body => { writes++; assert.equal(body.length, 25); return true }), true)
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   assert.equal(await client.delivery.current(report), true, 'a started handoff remains cancellable')
   assert.equal(await client.delivery.guardedWrite(report, () => { writes++; return true }), false)
   assert.equal(writes, 1)
@@ -181,7 +182,7 @@ test('a browser v3 upgrade retains spent budget and connection settings still ob
   const instance = fixture(), client = instance.first
   let stamp = instance.choice(client, true)
   stamp = client.configure({ enabled: true, expected_revision: stamp.revision, expected_generation: stamp.store_generation,
-    disclosure_version: 1, connection_mode: 'unmetered' })
+    disclosure_version: contract.version, connection_mode: 'unmetered' })
   instance.enqueue()
   assert.equal(await client.delivery.reserve(stamp, { network: 'metered', constrained: false }), null)
   assert.equal(await client.delivery.reserve(stamp, { network: 'unknown', constrained: true }), null)
@@ -195,7 +196,7 @@ test('a browser v3 upgrade retains spent budget and connection settings still ob
   const restarted = instance.client(), before = restarted.status()
   assert.equal(before.connection_mode, 'auto')
   const after = restarted.configure({ enabled: true, expected_revision: before.revision, expected_generation: before.store_generation,
-    disclosure_version: 1, connection_mode: 'metered' })
+    disclosure_version: contract.version, connection_mode: 'metered' })
   assert.equal(after.connection_mode, 'metered')
   assert.equal(after.store_generation, stamp.store_generation)
   assert.deepEqual(instance.budget().attempts, spent)
@@ -227,7 +228,7 @@ test('the final write fence observes another tab opting out and rejects a stale 
   instance.choice(instance.client(), true)
   assert.equal(await client.delivery.guardedWrite(report, () => { writes++; return true }), false)
   assert.equal(writes, 0)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.deepEqual([...report.body()], Array(25).fill(0))
 }))
 
 test('an active watch survives handoff, aborts cross-tab opt-out once, and removes listeners', async () => available(async () => {
@@ -417,7 +418,7 @@ test('browser transport uses the disclosed destination and isolated request opti
   assert.deepEqual([options.method, options.cache, options.credentials, options.mode, options.redirect, options.referrerPolicy, options.keepalive],
     ['POST', 'no-store', 'omit', 'cors', 'error', 'no-referrer', false])
   assert.equal(options.signal.aborted, true)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0]); assert.equal(report.closed, true)
+  assert.deepEqual([...report.body()], Array(25).fill(0)); assert.equal(report.closed, true)
   assert.equal(instance.budget().lease, null); assert.equal(instance.budget().attempts.length, 1)
 })))
 
@@ -481,8 +482,8 @@ test('a Chromium-style empty 204 stream is accepted without reading it', async (
   assert.equal(instance.budget().lease, null)
 }, 'empty_stream')))
 
-for (const destination of [null, 'http://example.invalid/v1/report', 'https://secret@example.invalid/v1/report',
-  'https://example.invalid/v1/report?account=private', 'https://example.invalid/other'])
+for (const destination of [null, 'http://example.invalid/v3/report', 'https://secret@example.invalid/v3/report',
+  'https://example.invalid/v3/report?account=private', 'https://example.invalid/v1/report', 'https://example.invalid/other'])
   test(`invalid browser collector ${destination === null ? 'null' : new URL(destination).protocol + '/' + new URL(destination).pathname} causes no request`,
     async () => available(() => transportFixture(async transport => {
       const instance = fixture(), client = instance.first

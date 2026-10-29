@@ -36,7 +36,7 @@ export async function sendBrowserTelemetry(client: Client, report: PreparedBrows
     // A local stop or expired attempt is not a newly observed company policy.
     if (request.signal.aborted) return { outcome: clock.expired ? 'deadline' : 'suppressed' }
     client.restrictCompany(company)
-    if (request.signal.aborted || !company.enabled || !company.metric_groups.includes(report.group) ||
+    if (request.signal.aborted || !company.enabled || !report.permits(company.metric_groups) ||
         performance.now() - checkedAt >= 1000 ||
         !await client.delivery.current(report)) return { outcome: clock.expired ? 'deadline' : 'suppressed' }
     let pending: Promise<Response | null> | undefined

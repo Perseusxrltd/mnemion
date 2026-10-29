@@ -12,10 +12,18 @@ import secrets
 import sqlite3
 import time
 
-from . import aggregate, policy, review, review_storage, wire
+from . import aggregate, policy, review, review_storage
+from .cohorts import reviewed_operating_system, reviewed_release_coordinate
 from .review_clock import check_review_lifetime, read_review_clock, start_review_lifetime
+from .wire_v3 import WIRE, packet_matches_groups, prepare, preview
 
 DAY_MS = 86400000
+
+
+def _row_group(cell):
+    from .catalog import describe
+
+    return describe(cell)["group"]
 
 
 def _now_ms():
@@ -39,7 +47,7 @@ def context(preference, company):
             "groups": company["metric_groups"],
             "binding": {
                 "disclosure_version": policy.DISCLOSURE_VERSION,
-                "wire_version": wire.specification()["version"],
+                "wire_version": WIRE["version"],
                 "catalog_version": specification()["version"],
                 "destination": policy.COLLECTOR_URL,
                 "route_address": release_address(),
@@ -55,12 +63,7 @@ def checked(state, preference, company, now):
     if result["report"] is not None:
         # Exact structural decoding is separate from bounded storage parsing.
         try:
-            identifier, _, _, reviewed = wire.decode(bytes(result["report"]["packet"]))
-            expected = next(
-                (view["id"] for view in wire.VIEWS if view["group"] in result["report"]["groups"]),
-                None,
-            )
-            if not reviewed or identifier != expected:
+            if not packet_matches_groups(bytes(result["report"]["packet"]), result["report"]["groups"]):
                 return review.clear_review(result)
         except (ValueError, TypeError):
             return review.clear_review(result)
@@ -92,7 +95,7 @@ def _result(root, state, message, *, reveal=False, policy_path=None):
             "expires_ms": report["lifetime"]["expires_ms"] if report else None,
             "created_ms": report["lifetime"]["created_ms"] if report else None,
         },
-        "packet": wire.preview(bytes(report["packet"])) if reveal and report else None,
+        "packet": preview(bytes(report["packet"]), reviewed=True) if reveal and report else None,
         "message": message,
         "interactive_privacy_qualified": False,
     }
@@ -236,22 +239,36 @@ def execute(root: Path | None, action: str, request: dict, *, policy_path: Path 
                         lifetime = start_review_lifetime(
                             now, clock, (min(row[2] for row in rows) + 2) * DAY_MS
                         )
-                        packet = wire.prepare(
-                            [(row[0], row[1]) for row in rows],
-                            groups=company["metric_groups"],
-                            reviewed=True,
-                        )
-                        state = {
-                            "version": 1,
-                            "mode": "review",
-                            "token": secrets.token_hex(16),
-                            "outcome": "held",
-                            "report": {**current, "packet": list(packet), "lifetime": lifetime},
-                        }
-                        # Consume only the staged snapshot. Producer allowances
-                        # remain; later observations enter a fresh pending batch.
-                        connection.execute("DELETE FROM pending")
-                        message, reveal = "held", True
+                        release = reviewed_release_coordinate()
+                        operating_system = reviewed_operating_system()
+                        groups = company["metric_groups"]
+                        usable = [
+                            (row[0], row[1])
+                            for row in rows
+                            if _row_group(row[0]) in groups
+                        ]
+                        if release is None or operating_system is None or not usable:
+                            message = "no_observations"
+                        else:
+                            packet = prepare(
+                                usable,
+                                groups=groups,
+                                release=release,
+                                operating_system=operating_system,
+                            )
+                            if not packet_matches_groups(packet, groups):
+                                raise ValueError("telemetry_invalid_v3_report")
+                            state = {
+                                "version": 1,
+                                "mode": "review",
+                                "token": secrets.token_hex(16),
+                                "outcome": "held",
+                                "report": {**current, "packet": list(packet), "lifetime": lifetime},
+                            }
+                            # Consume only the staged snapshot. Producer allowances
+                            # remain; later observations enter a fresh pending batch.
+                            connection.execute("DELETE FROM pending")
+                            message, reveal = "held", True
             review_storage.write(connection, state)
             if cancel:
                 connection.execute(

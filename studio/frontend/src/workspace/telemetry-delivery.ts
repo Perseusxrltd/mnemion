@@ -1,7 +1,9 @@
 /** Origin-wide reservations. No sender, idle timer, network request or identity. */
-import specification from '../../../../mnemion/product_telemetry/wire-v2.json'
+import specification from '../../../../mnemion/product_telemetry/wire-v3.json'
 import type { TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
-import { TelemetryWire, secureRandomBelow } from '../../../electron/telemetry-wire'
+import { TelemetryWireV3 } from '../../../electron/telemetry-wire-v3'
+import { secureRandomBelow } from '../../../electron/telemetry-wire'
+import { reviewedBrowserOperatingSystem, reviewedBrowserRelease } from './telemetry-cohorts'
 import { pendingState, telemetryCatalog } from './telemetry-aggregate'
 import { budgetKey, budgetState, choiceKey, queueKey, reserveBudget, serializeBudget,
   budgetView, clockValid, generationValid, DAY, DEADLINE, JITTER, MAX_CLOCK } from './telemetry-budget'
@@ -29,12 +31,15 @@ export class PreparedBrowserTelemetryReport {
   #policyClaimed = false
   #review: ReviewMetadata | null
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>,
-    readonly deadline: number, readonly monotonicDeadline: number, readonly group: string, reviewed?: ReviewReport | null) {
+    readonly deadline: number, readonly monotonicDeadline: number, readonly groups: readonly string[], reviewed?: ReviewReport | null) {
     this.#body = new Uint8Array(body)
     this.#ticket = ticket
     this.stamp = Object.freeze({ ...stamp })
     this.#review = reviewed ? { stamp: { ...reviewed.stamp }, groups: [...reviewed.groups], binding: { ...reviewed.binding },
       lifetime: { ...reviewed.lifetime, clock: { ...reviewed.lifetime.clock } } } : null
+  }
+  permits(current: readonly string[]): boolean {
+    return this.groups.length > 0 && this.groups.every(group => current.includes(group))
   }
   get used(): boolean { return this.#used }
   get closed(): boolean { return this.#closed }
@@ -69,7 +74,7 @@ export class PreparedBrowserTelemetryReport {
 }
 
 export class BrowserTelemetryDelivery {
-  private encoder?: TelemetryWire
+  private encoder?: TelemetryWireV3
   private readonly owned = new Set<PreparedBrowserTelemetryReport>()
   private readonly cancellations = new WeakMap<PreparedBrowserTelemetryReport, Promise<void>>()
   private readonly invalidators = new Set<() => void>()
@@ -84,21 +89,22 @@ export class BrowserTelemetryDelivery {
     }
   }
 
-  private wire(): TelemetryWire { return this.encoder ??= new TelemetryWire(specification, telemetryCatalog) }
+  private wire(): TelemetryWireV3 { return this.encoder ??= new TelemetryWireV3(specification, telemetryCatalog) }
 
   formatExample() { return this.wire().formatExample() }
-  packetPreview(packet: Uint8Array) { return this.wire().preview(packet) }
-  prepareInspection(cells: number[][], groups: string[]): Uint8Array { return this.wire().prepare(cells, groups, {}, undefined, true) }
+  packetPreview(packet: Uint8Array) { return this.wire().preview(packet, true) }
+  prepareInspection(cells: number[][], groups: string[]): Uint8Array {
+    const release = reviewedBrowserRelease()
+    const operatingSystem = reviewedBrowserOperatingSystem()
+    if (!release || !operatingSystem) throw new Error('telemetry_invalid_v3_report')
+    return this.wire().prepare(cells, groups, release, operatingSystem)
+  }
 
   checkedReview(state: ReviewState, status: TelemetryStatus, now: number): ReviewState {
     if (!state.report) return state
     const checked = checkReview(state, status.effective_enabled ? browserReviewContext(status) : null, now, this.port.reviewClock?.() ?? null)
-    if (checked.report) {
-      try {
-        const decoded = this.wire().decode(new Uint8Array(checked.report.packet))
-        const expected = this.wire().specification.views.find(view => status.company_policy.metric_groups.includes(view.group))?.id
-        if (!decoded.reviewed || decoded.view !== expected) return clearReview(checked)
-      } catch { return clearReview(checked) }
+    if (checked.report && !this.wire().matchesGroups(new Uint8Array(checked.report.packet), checked.report.groups)) {
+      return clearReview(checked)
     }
     return checked
   }
@@ -205,15 +211,24 @@ export class BrowserTelemetryDelivery {
         let next = reserveBudget(budget, now, ticket, secureRandomBelow(JITTER / 1000 + 1) * 1000)
         if (!next) return null
         if (reviewed) next = { ...next, clear: 'none', review: clearReview(review, 'consumed') }
-        else body = this.wire().prepare(cells, status.company_policy.metric_groups, cohorts)
+        else {
+          const release = reviewedBrowserRelease()
+          const hinted = cohorts && typeof cohorts === 'object' && !Array.isArray(cohorts)
+            ? (cohorts as { platform?: unknown }).platform : undefined
+          const operatingSystem = (hinted === 'windows' || hinted === 'macos' || hinted === 'linux' || hinted === 'other')
+            ? hinted : reviewedBrowserOperatingSystem()
+          if (!release || !operatingSystem) return null
+          body = this.wire().prepare(cells, status.company_policy.metric_groups, release, operatingSystem)
+        }
         if (!body) return null
+        const covered = reviewed ? reviewed.groups : status.company_policy.metric_groups
+        if (!this.wire().matchesGroups(body, covered)) return null
         if (this.environment.monotonic() - started >= DEADLINE) return null
         // No refund on failure, crash, opt-out or reload. Contributions remain.
         this.port.storage().setItem(budgetKey, serializeBudget(next))
         this.port.reconcile()
         if (this.environment.monotonic() - started >= DEADLINE) return null
-        const group = this.wire().specification.views[this.wire().decode(body).view].group
-        const report = new PreparedBrowserTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE, group, reviewed)
+        const report = new PreparedBrowserTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE, covered, reviewed)
         // An abandoned expired handle must not accumulate over later days.
         this.invalidate()
         this.owned.add(report)
@@ -240,7 +255,7 @@ export class BrowserTelemetryDelivery {
       budget.lease?.deadline_ms === report.deadline && budget.lease.token === report.ticket &&
       budget.generation === report.stamp.store_generation && status.effective_enabled && status.connection_mode !== 'metered' &&
       status.revision === report.stamp.revision && status.store_generation === report.stamp.store_generation &&
-      status.company_policy.metric_groups.includes(report.group)
+      report.permits(status.company_policy.metric_groups)
   }
 
   async current(report: PreparedBrowserTelemetryReport): Promise<boolean> {

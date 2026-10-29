@@ -6,7 +6,7 @@ import type { DatabaseSync, StatementSync } from 'node:sqlite'
 import type { TelemetryConnectionMode, TelemetryDisclosure, TelemetryStamp } from '../shared/product-telemetry.js'
 import { TelemetryCatalog, type MeasurementCatalog } from './telemetry-catalog.js'
 import { windowsTelemetryPrivateStore } from './telemetry-private-store.js'
-import { clearReview, parseReview, serializeReview } from './telemetry-review.js'
+import { clearReview, loadReview, salvageStaleReview, serializeReview } from './telemetry-review.js'
 import { checkReviewLifetime } from './telemetry-review-lifetime.js'
 import { readReviewClock } from './telemetry-review-clock.js'
 
@@ -259,7 +259,14 @@ export class NativeTelemetryStore {
 
   private maintainReview(database: DatabaseSync, preference: Preference, company: Company): void {
     if (preference.schema_version !== 6) return
-    const state = parseReview(database.prepare('SELECT state FROM report_review WHERE singleton=1').get()?.state)
+    const raw = database.prepare('SELECT state FROM report_review WHERE singleton=1').get()?.state
+    let state
+    try { state = loadReview(raw) }
+    catch { return }
+    if (salvageStaleReview(raw) && !state.report) {
+      database.prepare('UPDATE report_review SET state=? WHERE singleton=1').run(serializeReview(state))
+      return
+    }
     const report = state.report
     if (!report) return
     const permitted = preference.enabled === 1 && preference.disclosure_version === this.disclosure.version && company.enabled &&

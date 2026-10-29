@@ -439,6 +439,59 @@ def decode(packet: bytes) -> Summary:
     raise WireV3Error
 
 
+def packet_matches_groups(packet: bytes, groups: object) -> bool:
+    """Every permitted group is present and every other group stays disabled."""
+    permitted = _permitted_groups(groups)
+    summary = decode(packet)
+    return all(
+        (bucket == 0) != (metric["group"] in permitted)
+        for metric, bucket in zip(METRICS, summary.buckets, strict=True)
+    )
+
+
+def groups_remain_permitted(prepared: object, current: object) -> bool:
+    """A later company restriction cannot send a group that was encoded."""
+    try:
+        allowed = _permitted_groups(prepared)
+    except WireV3Error:
+        return False
+    if type(current) not in (list, tuple) or any(type(group) is not str for group in current):
+        return False
+    return allowed <= set(current)
+
+
+def preview(packet: bytes, *, reviewed: bool = False) -> dict:
+    """Exact bytes of one bounded summary. Not a locally randomized v2 body."""
+    import base64
+
+    summary = decode(packet)
+    return {
+        "schema_version": WIRE["version"],
+        "body_base64": base64.b64encode(packet).decode("ascii"),
+        "body_bytes": len(packet),
+        "view": "bounded_summary",
+        "coordinate": summary.cohort_index,
+        "randomized_sign": None,
+        "protected_unit": (
+            "Bounded summary of permitted metrics. The collector can read this "
+            "summary. Publication noise is added to the closed week, not on this "
+            "installation. Counts are not unique people."
+        ),
+        "report_selection": "reviewed" if reviewed else "automatic",
+        "aggregation": "bounded_summary_publication_noise",
+        "randomization_privacy_loss": None,
+        "per_report_privacy_loss": None,
+        "privacy_bound_scope": "publication_closed_week",
+        "participation_or_lifetime_guarantee": False,
+    }
+
+
+def format_example() -> dict:
+    """Fixed synthetic bytes. Not a queue, a draw, or a sent report."""
+    packet = encode("release", [1] * len(METRICS), release=(4, 46, 53))
+    return {"kind": "synthetic_example", "body_encoding": "base64", **preview(packet)}
+
+
 def release_slot(major: int, minor: int, patch: int) -> int | None:
     """Stable public coordinate. Unknown tuples stay unlisted; packets cannot add slots."""
     if any(type(part) is not int or not 0 <= part <= 255 for part in (major, minor, patch)):

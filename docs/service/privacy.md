@@ -53,7 +53,7 @@ Source now includes a pre-login/offline `/privacy` page and native
 `mnemion-service telemetry` controls. They save a default-enabled preference;
 they do not enable collection. The disclosure currently states
 `collection_available: false` and `destination: null`. The source controls show
-a fixed synthetic four-byte report-format example, separately from any private
+a fixed synthetic 25-byte bounded-summary example, separately from any private
 local-count snapshot. Viewing it does not inspect an actual outgoing packet,
 create or randomize a report, consume pending data or delivery allowance,
 acknowledge disclosure or contact a network endpoint. The app clears the preview

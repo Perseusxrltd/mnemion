@@ -76,9 +76,9 @@ def installation(tmp_path, monkeypatch, certificates):
 
     def prepare(endpoint, *, reserve=True):
         authority = endpoint.host if endpoint.port == 443 else f"{endpoint.host}:{endpoint.port}"
-        monkeypatch.setattr(policy, "COLLECTOR_URL", f"https://{authority}/v1/report")
+        monkeypatch.setattr(policy, "COLLECTOR_URL", f"https://{authority}/v3/report")
         state = policy.configure(
-            root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+            root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
         )
         if not reserve:
             return state
@@ -98,7 +98,7 @@ def installation(tmp_path, monkeypatch, certificates):
         return report
 
     def cleaned(report):
-        assert report._closed and report._body == b"\0" * 4
+        assert report._closed and report._body == b"\0" * 25
         with closing(sqlite3.connect(root / policy.DATABASE_NAME)) as database:
             assert database.execute("SELECT lease_token FROM delivery_state").fetchall() == [
                 (None,)
@@ -288,7 +288,7 @@ def test_existing_loop_accepts_threaded_workflow_and_owns_tls_cleanup(installati
                     if task is not None:
                         await asyncio.wait_for(task, 3)
                 assert len(server.requests) == 1
-                assert len(server.requests[0][1]) == 4
+                assert len(server.requests[0][1]) == 25
                 with closing(sqlite3.connect(f.root / policy.DATABASE_NAME)) as db:
                     assert db.execute("SELECT lease_token FROM delivery_state").fetchone() == (
                         None,
@@ -413,9 +413,9 @@ from pathlib import Path
 from mnemion.product_telemetry import aggregate,policy,workflow
 root=Path(sys.argv[1])/'private'
 policy.COLLECTION_AVAILABLE=True
-policy.COLLECTOR_URL='https://telemetry-fixture.invalid/v1/report'
+policy.COLLECTOR_URL='https://telemetry-fixture.invalid/v3/report'
 policy.company_policy_file=lambda:root.parent/'company.json'
-policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':1})
+policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':2})
 before='mnemion.product_telemetry.activity' in sys.modules
 active=workflow.begin('memory.recall','headless',root=root)
 assert active is not None
@@ -519,9 +519,9 @@ def test_managed_update_wait_sends_prior_queue_and_closes_before_returning(
             if ending == "opt_out":
                 policy.configure(f.root, {"enabled": False, "expected_revision": 0})
             await asyncio.wait_for(waiting, 3)
-            assert len(server.requests) == 1 and len(server.requests[0][1]) == 4
+            assert len(server.requests) == 1 and len(server.requests[0][1]) == 25
             assert len(prepared) == len(closed) == len(reports) == 1
-            assert reports[0]._body == b"\0" * 4
+            assert reports[0]._body == b"\0" * 25
             with closing(sqlite3.connect(f.root / policy.DATABASE_NAME)) as database:
                 assert database.execute("SELECT lease_token FROM delivery_state").fetchone() == (
                     None,
@@ -629,7 +629,8 @@ async def peer(context, mode="success"):
                 await release.wait()
                 return
             headers = await reader.readuntil(b"\r\n\r\n")
-            body = await reader.readexactly(4)
+            declared = headers.partition(b"Content-Length: ")[2].partition(b"\r\n")[0]
+            body = await reader.readexactly(int(declared))
             requests.append((headers, body))
             entered.set()
             if mode == "hold":
@@ -671,7 +672,7 @@ async def peer(context, mode="success"):
         await asyncio.gather(*list(tasks), return_exceptions=True)
 
 
-def test_tls_handoff_is_one_four_byte_request_without_dns_credentials_or_retries(
+def test_tls_handoff_is_one_25_byte_request_without_dns_credentials_or_retries(
     installation, monkeypatch
 ):
     f = installation
@@ -690,7 +691,8 @@ def test_tls_handoff_is_one_four_byte_request_without_dns_credentials_or_retries
             assert 0 < result.encrypted_bytes_charged <= transport.MAX_TLS_BYTES
             assert len(server.requests) == 1 and server.requests[0][1] == original
             headers = server.requests[0][0]
-            assert headers.startswith(b"POST /v1/report HTTP/1.1\r\n")
+            assert headers.startswith(b"POST /v3/report HTTP/1.1\r\n")
+            assert b"Content-Length: 25\r\n" in headers
             names = {line.split(b":", 1)[0].lower() for line in headers.split(b"\r\n")[1:] if line}
             assert names == {b"host", b"content-type", b"content-length", b"connection"}
             f.cleaned(report)

@@ -7,7 +7,7 @@ import socket
 
 import pytest
 
-from mnemion.product_telemetry import aggregate, cli, delivery, endpoint, policy, wire
+from mnemion.product_telemetry import aggregate, cli, delivery, endpoint, policy, wire, wire_v3
 from tests import test_product_telemetry_transport as tls_fixtures
 
 
@@ -32,13 +32,13 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
     root, company = tmp_path / "private", tmp_path / "company.json"
     monkeypatch.setattr(policy, "company_policy_file", lambda: company)
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     monkeypatch.setattr(endpoint, "release_address", lambda: "127.0.0.1")
     report = None
     budget = delivery.DeliveryBudget(root)
     if condition != "new":
         current = policy.configure(
-            root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+            root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
         )
         assert aggregate.record(
             root,
@@ -67,7 +67,8 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
         pytest.fail("A read-only format preview attempted collection, randomness or networking")
 
     monkeypatch.setattr(wire, "prepare", forbidden)
-    monkeypatch.setattr(delivery, "prepare", forbidden)
+    monkeypatch.setattr(wire_v3, "prepare", forbidden)
+    monkeypatch.setattr(delivery, "prepare_summary", forbidden)
     monkeypatch.setattr(delivery.DeliveryBudget, "reserve", forbidden)
     monkeypatch.setattr(socket, "socket", forbidden)
     before = {
@@ -80,10 +81,15 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
     assert value["outbound_state"] == "not_inspected"
     assert value["outbound_body"] is None and value["outbound_bytes"] == 0
     example = value["illustrative_packet"]
+    packet = base64.b64decode(example["body_base64"], validate=True)
+    assert example == wire_v3.format_example()
     assert example["kind"] == "synthetic_example" and example["body_encoding"] == "base64"
-    assert base64.b64decode(example["body_base64"], validate=True) == bytes((2, 0, 7, 0))
-    assert example["body_bytes"] == 4
-    assert set(example) == {"kind", "body_encoding", *wire.preview(bytes((2, 0, 7, 0)))}
+    assert len(packet) == example["body_bytes"] == 25 and packet[0] == 3
+    assert example["view"] == "bounded_summary"
+    assert example["randomized_sign"] is None
+    assert example["aggregation"] == "bounded_summary_publication_noise"
+    assert "not unique people" in example["protected_unit"]
+    assert "locally randomized" not in json.dumps(example)
     assert "PRIVATE_SENTINEL" not in json.dumps(value)
     assert value["transport_available"] is True
     assert value["status"]["delivery_budget"]["transport_available"] is True
@@ -111,13 +117,14 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
 @pytest.mark.parametrize(
     "destination,address,available,expected",
     [
-        ("https://example.invalid/v1/report", "127.0.0.1", True, True),
-        ("https://example.invalid/v1/report", "::1", True, True),
-        ("https://example.invalid/v1/report", None, True, False),
-        ("https://example.invalid/v1/report", "hostname.invalid", True, False),
-        ("https://example.invalid/v1/report", "127.0.0.1", False, False),
-        ("http://example.invalid/v1/report", "127.0.0.1", True, False),
-        ("https://secret@example.invalid/v1/report", "127.0.0.1", True, False),
+        ("https://example.invalid/v3/report", "127.0.0.1", True, True),
+        ("https://example.invalid/v3/report", "::1", True, True),
+        ("https://example.invalid/v3/report", None, True, False),
+        ("https://example.invalid/v3/report", "hostname.invalid", True, False),
+        ("https://example.invalid/v3/report", "127.0.0.1", False, False),
+        ("http://example.invalid/v3/report", "127.0.0.1", True, False),
+        ("https://secret@example.invalid/v3/report", "127.0.0.1", True, False),
+        ("https://example.invalid/v1/report", "127.0.0.1", True, False),
         ("https://example.invalid/other", "127.0.0.1", True, False),
     ],
 )

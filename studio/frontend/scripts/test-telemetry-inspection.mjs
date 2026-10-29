@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+Object.defineProperty(globalThis, 'navigator', { value: { platform: 'Linux', userAgentData: { platform: 'Linux' } }, configurable: true })
 import { createRequire } from 'node:module'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -24,7 +25,7 @@ const observation = { kind: 'submission', workflow: 'memory.recall', surface: 'b
 
 async function scenario(run, available = true) {
   const original = { collection_available: contract.collection_available, destination: contract.destination }, wall = Date.now
-  Object.assign(contract, { collection_available: available, destination: available ? 'https://example.invalid/v1/report' : null })
+  Object.assign(contract, { collection_available: available, destination: available ? 'https://example.invalid/v3/report' : null })
   const time = { wall: wall(), elapsed: 1000, lease: 5 }, values = new Map(), writes = []
   let busy = false, live = false, epoch = '1'.repeat(32), fault = () => false, initializations = 0
   let groups = ['usage', 'reliability', 'performance', 'resources']
@@ -54,7 +55,7 @@ async function scenario(run, available = true) {
     expected_review_token: value.review.token, ...extra } }
   const action = (client, name, extra) => client.reviewAction(name, request(client, extra))
   const choose = (client, enabled) => { const current = client.status(); return client.configure({ enabled,
-    expected_revision: current.revision, expected_generation: current.store_generation, disclosure_version: enabled && available ? 1 : 0 }) }
+    expected_revision: current.revision, expected_generation: current.store_generation, disclosure_version: enabled && available ? contract.version : 0 }) }
   const record = async (client = first) => locks.request(choiceKey, {}, () => {
     const status = client.status()
     return client.record(observation, { revision: status.revision, store_generation: status.store_generation }, Math.floor(time.wall / DAY))
@@ -84,10 +85,13 @@ test('inspection freezes one exact packet without spending and repeat views do n
   await f.action(f.first, 'review_mode', { mode: 'review' })
   assert.equal(await f.record(), true)
   const first = await f.action(f.first, 'inspect_report')
-  assert.equal(first.packet.body_bytes, 4)
+  assert.equal(first.packet.body_bytes, 25)
   assert.equal(first.packet.report_selection, 'reviewed')
-  assert.equal(first.packet.aggregation, 'coarse_global_volume_only')
+  assert.equal(first.packet.view, 'bounded_summary')
+  assert.equal(first.packet.aggregation, 'bounded_summary_publication_noise')
+  assert.equal(first.packet.randomized_sign, null)
   assert.equal(first.packet.per_report_privacy_loss, null)
+  assert.match(first.packet.protected_unit, /not unique people/)
   assert.equal(f.budget().attempts.length, 0)
   assert.equal(await f.first.delivery.eligible(f.stamp()), false)
   assert.equal(await f.first.delivery.reserve(f.stamp(), allowed), null)
@@ -120,13 +124,13 @@ test('competing tabs claim approved bytes only once and preserve post-inspection
   assert.equal(f.budget().attempts.length, 1)
 }))
 
-for (const damage of ['legacy_wire', 'automatic_flag', 'noncanonical_view']) test('browser review rejects ' + damage + ' before approval or spending', () => scenario(async f => {
+for (const damage of ['legacy_wire', 'reserved_byte', 'group_mismatch']) test('browser review rejects ' + damage + ' before approval or spending', () => scenario(async f => {
   f.choose(f.first, true); await f.action(f.first, 'review_mode', { mode: 'review' }); await f.record()
   await f.action(f.first, 'inspect_report')
   const budget = f.budget()
   if (damage === 'legacy_wire') budget.review.report.packet[0] = 1
-  else if (damage === 'noncanonical_view') budget.review.report.packet[1] = 1
-  else budget.review.report.packet[3] &= 1
+  else if (damage === 'reserved_byte') budget.review.report.packet[5] = 1
+  else budget.review.report.packet[6] = 0
   f.storage.setItem(budgetKey, JSON.stringify(budget))
   assert.equal((await f.action(f.second, 'approve_report')).review.outcome, 'invalidated')
   assert.equal(f.budget().review.report, null)
@@ -228,6 +232,47 @@ test('quota failures suppress other tabs without losing the separate spending le
   assert.equal(f.budget().attempts.length, 0)
   assert.equal(await f.second.delivery.reserve(f.stamp(f.second), allowed), null)
 }))
+
+test('a corrupted automatic review is not salvaged into sending and a valid stale approval is invalidated', () => {
+  const review = load(new URL('../../electron/telemetry-review.ts', import.meta.url))
+  const counterexample = JSON.stringify({ version: 1, mode: 'automatic', report: { packet: [0, 0, 0, 0] } })
+  const fresh = review.freshReview()
+  assert.throws(() => review.parseReview(counterexample), /telemetry_review_unavailable/)
+  assert.equal(review.salvageStaleReview(counterexample), null)
+  assert.equal(review.salvageStaleReview(JSON.parse(counterexample)), null)
+  assert.throws(() => review.loadReview(counterexample), /telemetry_review_unavailable/)
+  assert.equal(review.salvageStaleReview(JSON.stringify(fresh)), null)
+  assert.deepEqual(review.parseReview(JSON.stringify(fresh)), fresh)
+  const stale = {
+    version: 1, mode: 'review', token: 'c'.repeat(32), outcome: 'approved',
+    report: {
+      packet: [0, 0, 0, 0],
+      stamp: { revision: 1, store_generation: 'd'.repeat(32) },
+      groups: ['usage', 'reliability', 'performance', 'resources'],
+      binding: {
+        disclosure_version: 1, wire_version: 2, catalog_version: 2,
+        destination: 'https://example.invalid/v1/report', route_address: null,
+      },
+      lifetime: {
+        created_ms: 1000000, expires_ms: 1060000, checked_ms: 1000000,
+        clock: { epoch: 'ab'.repeat(16), elapsed_ms: 10 }, checked_elapsed_ms: 10,
+      },
+    },
+  }
+  const salvaged = review.salvageStaleReview(stale)
+  assert.deepEqual(salvaged, { version: 1, mode: 'review', token: stale.token, outcome: 'invalidated', report: null })
+  assert.equal(review.salvageStaleReview({ ...stale, token: null }), null)
+  const budget = {
+    version: 2, generation: 'a'.repeat(32), clock_ms: 0, next_ms: 0, attempts: [], lease: null, clear: 'none',
+    review: JSON.parse(counterexample),
+  }
+  assert.throws(() => budgetState(JSON.stringify(budget)), /telemetry_budget_unavailable|telemetry_review_unavailable/)
+  budget.review = stale
+  assert.equal(budgetState(JSON.stringify(budget)).review.outcome, 'invalidated')
+  budget.review = fresh
+  assert.equal(budgetState(JSON.stringify(budget)).review.mode, 'automatic')
+  assert.equal(budgetState(JSON.stringify(budget)).review.report, null)
+})
 
 test('legacy browser budgets migrate only through explicit controls and preserve spending', () => scenario(async f => {
   f.choose(f.first, true); await f.record()

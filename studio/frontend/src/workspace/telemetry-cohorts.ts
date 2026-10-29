@@ -28,6 +28,22 @@ function knownArchitecture(value: string | undefined): (typeof architectures)[nu
   return null
 }
 
+export function reviewedBrowserRelease(): [number, number, number] | null {
+  const parts = version.split('.')
+  if (parts.length !== 3 || parts.some(part => !/^\d{1,3}$/.test(part))) return null
+  const numbers = parts.map(Number)
+  if (numbers.some(part => !Number.isInteger(part) || part > 255)) return null
+  return numbers as [number, number, number]
+}
+
+export function reviewedBrowserOperatingSystem(): (typeof platforms)[number] | null {
+  const platform = knownPlatform(
+    (typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform)
+      ?? (typeof navigator === 'undefined' ? undefined : navigator.platform),
+  )
+  return platform
+}
+
 export function reviewedBrowserCohorts(): { platform?: string; architecture?: string; release_family: string } {
   const nav = typeof navigator === 'undefined' ? undefined : navigator
   const hinted = (nav as Navigator & { userAgentData?: { platform?: string; architecture?: string } } | undefined)?.userAgentData
