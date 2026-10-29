@@ -214,8 +214,12 @@ damaged settings.
 
 In default automatic mode, within one write transaction, reservation rechecks policy, clock, cooldown,
 active lease and both spending limits. It selects permitted bounded cells and
-prepares one [four-byte randomized body](anonymous-product-telemetry-delivery.md).
-Encoding and entropy must succeed before spending is committed. The transaction
+prepares one body. The published wire v2 reservation prepares one
+[four-byte randomized body](anonymous-product-telemetry-delivery.md). The pending
+wire v3 reservation, once that sender is qualified, prepares one 25-byte bounded
+summary inside the same 64 KiB attempt reservation and 256 KiB rolling-day guard.
+That sender is not qualified, and collection remains unavailable. Encoding must
+succeed before spending is committed. The transaction
 then records the attempt and reservation, sets the cooldown and private lease,
 and consumes the entire pending measurement queue.
 
@@ -239,10 +243,18 @@ The [new source controls](../validation/2026-10-26-telemetry-report-review.md)
 allow manual mode to be selected before collection permission. Staging itself
 requires current permission, disclosure, a configured route, usable observations
 and available delivery allowance. It reads no performance gauges and spends no
-attempt. [Inspection](../../mnemion/product_telemetry/inspection.py) stores one
-fixed four-byte reviewed report under the
-[current selection contract](../validation/2026-10-26-telemetry-review-selection.md)
-and consumes only that pending snapshot. Repeated inspection changes neither
+attempt. The [26 October inspection path](../../mnemion/product_telemetry/inspection.py)
+stores one fixed four-byte wire v2 reviewed report under the
+[wire v2 selection contract](../validation/2026-10-26-telemetry-review-selection.md)
+and consumes only that pending snapshot. The pending client transition stores a
+25-byte bounded summary for a live review. A structurally valid stored wire v2
+manual review — version 1, mode `review`, outcome held or approved, a four-byte
+packet, and wire version 2 or a destination ending in `/v1/report` — is
+invalidated: outcome `invalidated` and the report removed. Consent and company
+policy are not changed. Sending is refused if any group covered by the
+prepared summary is no longer permitted. The seven-attempt week,
+24-hour minimum gap, 64 KiB reservation and 256 KiB rolling-day guard stay.
+Repeated inspection of a still-valid held report changes neither
 its bytes nor its original expiry.
 
 Approval changes that report's state; a later eligible owner reserves the
@@ -432,7 +444,8 @@ the winner's live lease, and verified cleanup; it does not replace the earlier r
 
 The subsequent [browser Fetch sender](../../studio/frontend/src/workspace/telemetry-transport.ts)
 claims the full attempt before starting work, uses the remaining report lifetime,
-and creates one four-byte request inside the final Web Lock fence. It omits
+and creates one four-byte wire v2 request inside the final Web Lock fence. That
+recorded sender is not a qualified wire v3 delivery. It omits
 credentials and referrers, refuses redirects and disables keepalive, with no
 application-level retry or page-exit flush. Lifecycle and cancellation listeners
 are installed before Fetch; only policy lock polling waits for the guarded

@@ -16,7 +16,16 @@ and **65 browser source checks passed**. Actual loopback TLS/collector journeys
 passed **22 browser checks and 18 native checks**. **Production collection
 remains disabled; installed production delivery and ingress qualification remain
 open.** The disclosure remains `collection_available: false` with
-`destination: null`. Source and synthetic utility evidence is recorded in the
+`destination: null`. The sections below that describe a four-byte body and
+`/v1/report` are the published wire v2 transports. The pending report is the
+[wire v3 contract](../../mnemion/product_telemetry/wire-v3.json): 25 bytes at
+the reference ingress `POST /v3/report`, specified in the
+[v3 reference](anonymous-product-telemetry-v3.md). Client integration of that
+send path is unfinished. The dedicated server defaults to legacy `/v1/report`.
+Explicit `--mode v3` mounts CollectorV3 at `/v3/report` with its separate
+`reports-v3.sqlite3` store. That does not activate production collection.
+Nothing here is an installed v3 delivery pass, active collection,
+or a completed V08. Source and synthetic utility evidence is recorded in the
 [delivery validation](../validation/2026-10-24-telemetry-delivery.md). Consult
 [release status](../RELEASE_STATUS.md) for current availability; these component
 receipts qualify only their recorded source and fixtures.
@@ -37,7 +46,8 @@ and local TLS checks, not installed, resource or production acceptance.
 
 ## Automatic categories and fixed reviewed reports
 
-The [version 2 format](../../mnemion/product_telemetry/wire-v2.json) retains
+This section is the published wire v2 contract. It is not the pending 25-byte
+report. The [version 2 format](../../mnemion/product_telemetry/wire-v2.json) retains
 **23 views, 280 category values and 400 padded Hadamard coordinates**. The views
 cover feature family/operation, invocation surface, outcome/reason, fixed metric
 buckets and separate coarse platform, architecture and release-family cohorts.
@@ -58,7 +68,7 @@ The result is exactly **four body bytes**:
 
 | Byte | Meaning |
 | --- | --- |
-| 0 | Format version, currently `2` |
+| 0 | Wire version `2` |
 | 1 | Chosen view index |
 | 2 | Random coordinate within that view's padded domain |
 | 3 | Automatic sign flags `0`/`1`; canonical reviewed flag `2`, with coordinate `0`. Other forms are refused. |
@@ -73,14 +83,17 @@ because it has no selection marker; this does not prevent reading previously
 stored immutable aggregate reports. This newer source is excluded from frozen
 4.46.14; earlier codec/transport receipts retain their original versions.
 
-The source app, native CLI and browser controls now expose the fixed synthetic
-bytes `02 00 07 00` as Base64 **`AgAHAA==`** under `illustrative_packet`, labeled
-`kind: "synthetic_example"` and `body_encoding: "base64"`. The shared Python
-`format_example` and TypeScript `formatExample` helpers describe `feature_family`,
-coordinate `7`, sign `-1` and four body bytes. They do not recover a true category,
-read a queue, draw new randomness or reserve an attempt. This wire v2 example
-is marked automatic. Published 4.46.13 retains its original wire v1 example
-`01 00 07 00` / `AQAHAA==`; the historical format-preview checks cover that version.
+Wire v2 source exposes the fixed synthetic bytes `02 00 07 00` as Base64
+**`AgAHAA==`** under `illustrative_packet`, labelled `kind: "synthetic_example"`
+and `body_encoding: "base64"`. The wire v2 Python `format_example` and
+TypeScript `formatExample` helpers describe `feature_family`, coordinate `7`,
+sign `-1` and four body bytes. They do not recover a true category, read a
+queue, draw new randomness or reserve an attempt. This wire v2 example is
+marked automatic and is not a sent report. Published 4.46.13 retains its
+original wire v1 example `01 00 07 00` / `AQAHAA==`; the historical
+format-preview checks cover that version. The pending wire v3 example is a
+different labelled `synthetic_example` of 25 bytes. Do not reuse `AgAHAA==`
+or `AQAHAA==` as that body. Public 4.46.54 has no native v3 qualification.
 
 The actual-body fields stay `outbound_body: null`, `outbound_bytes: 0` and
 `outbound_state: "not_inspected"`. This is a report-format example, not an
@@ -214,7 +227,11 @@ keep its original five-second lifetime and cancel the lease on completion withou
 refund. Those component checks preceded application-owner wiring. The current
 source offers attempts only from already active work; it adds no idle scheduler.
 
-| Boundary | Native source | Browser source |
+The table records the wire v2 senders still described by this source: four
+bytes and `/v1/report`. The pending reference ingress is a 25-byte body at
+`POST /v3/report`. That send path is not qualified here.
+
+| Boundary | Native wire v2 source | Browser wire v2 source |
 | --- | --- | --- |
 | Destination and connection | Release-owned literal IP; certificate verification, minimum TLS 1.3 and disclosed hostname/port. No DNS or proxy. | Exact disclosed HTTPS URL at `/v1/report`, without credentials, query or fragment. The browser manages DNS, proxies, TLS and connection reuse. |
 | Certificate authorities | One or two bounded release-owned CA certificates; no ambient/system/extra-root fallback. | The browser's ordinary certificate trust; no application-supplied CA set. |
@@ -383,8 +400,8 @@ ten million accepted reports. A window seals once in memory and clears its array
 live accumulation is not persisted across restarts. The standard publisher makes
 completed weekly documents immutable.
 
-The [ASGI adapter](../../mnemion/product_telemetry/collector.py) accepts only the
-fixed four-byte frame at `POST /v1/report`, with bounded body assembly and a
+The wire v2 [ASGI adapter](../../mnemion/product_telemetry/collector.py) accepts
+only the fixed four-byte frame at `POST /v1/report`, with bounded body assembly and a
 five-second receive deadline. It does not inspect or retain authorization,
 cookie, user-agent, referrer or peer fields. It exposes no live statistics or
 arbitrary query/filter endpoint. These adapter properties do not qualify the
@@ -417,9 +434,13 @@ not unique users, all activity or total global feature usage. Reviewed reports
 cannot satisfy a detailed threshold or narrow an interval, and no separate
 manual count is published.
 
-The current schema retains v3's `estimation_population: "automatic_reports_only"` and
+Aggregate report schema 4 retains schema v3's
+`estimation_population: "automatic_reports_only"` and
 `reviewed_report_use: "coarse_global_volume_only"`, with the inclusion assumptions
-above. It accompanies **wire v2**, whose packet remains four bytes. The reader
+above. Aggregate report schema v3 is not wire version 3. This publication was
+measured with **wire v2**, whose packet remains four bytes. The pending wire
+version 3 packet is the separate
+[25-byte contract](../../mnemion/product_telemetry/wire-v3.json). The reader
 accepts immutable aggregate report v1/v2/v3 documents without rewriting them or
 inventing a missing global range. The
 [catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
