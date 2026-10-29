@@ -32,15 +32,15 @@
   ],
   "runs": [
     {
-      "id": 40820612659,
+      "id": 40826012101,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "457466f56a83f4d5bb3ee258f9e54b6ced9c525d",
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T04:59:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659"
+      "updated_at": "2026-10-29T06:23:32Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826012101"
     },
     {
       "id": 40820128156,
@@ -70,68 +70,53 @@
       "workflow": "release.yml",
       "branch": "release/4.46.50",
       "source_commit": "eef846a30b4da71fe2da18adbcd7dd56a98f587f",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T05:02:13Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-29T05:54:35Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489",
       "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 123273331148,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Installed Linux app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ],
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
+    },
+    {
+      "id": 40829255129,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.51",
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T06:30:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 14,
+        "completed": 13,
+        "succeeded": 12,
         "active": [
           {
-            "id": 123273331062,
-            "name": "native / windows-11-arm / arm64",
+            "id": 123299936224,
+            "name": "native / native_database / Database / windows / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Select the service interpreter independently of the desktop client"
-            ]
-          },
-          {
-            "id": 123273331079,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
-            ]
-          },
-          {
-            "id": 123273331125,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123273331148,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123273331196,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123273331332,
-            "name": "native / macos-26 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Compile pinned PostgreSQL, vector extension and static libraries"
             ]
           }
         ]
@@ -139,26 +124,26 @@
       "failed_jobs": []
     },
     {
-      "id": 40819658418,
+      "id": 40826079935,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "71fdde86be64d4cf177a56bb951debc344ea5bd5",
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T04:52:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-29T05:54:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826079935"
     },
     {
-      "id": 40820612636,
+      "id": 40829138051,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "457466f56a83f4d5bb3ee258f9e54b6ced9c525d",
+      "source_commit": "d969513adc0455a3b82e1fd093055e8243a1971b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T04:57:44Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820612636"
+      "updated_at": "2026-10-29T06:26:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40829138051"
     },
     {
       "id": 40820125119,
@@ -172,5 +157,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T05:04:37+00:00"
+  "observed_at": "2026-10-29T06:33:56+00:00"
 }
