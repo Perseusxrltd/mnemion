@@ -10,6 +10,13 @@ address and an empty certificate-authority list. Source controls, owners,
 senders and collector components exist.
 **No production product collection or qualified anonymous ingress is active.**
 
+Published controls and the pending report are different. Public 4.46.54 passed
+all six public update tests and has no native v3 qualification. The pending
+report is [wire v3](../../mnemion/product_telemetry/wire-v3.json), described
+below and in the [v3 reference](anonymous-product-telemetry-v3.md). It is not
+the four-byte wire v2 body. Collection stays off. The 2 MiB and 0.5% gates stay
+unaccepted. All 66 requirements stay.
+
 The [4.46.13 installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
 and public auto-update gates qualify their recorded release. The later
 [4.46.22 installed review-control qualification](../validation/2026-10-26-telemetry-installed-review.md)
@@ -608,19 +615,22 @@ universal wire bound or installed, physical-link, IPv6, retransmission, browser,
 rolling-day, resource or provider acceptance. Earlier failed resource results
 and the **2 MiB / 0.5%** limits remain unchanged.
 
-The current [wire v2 format](../../mnemion/product_telemetry/wire-v2.json) retains
-four-byte packets. Automatic reports use
-the randomized encoder; manual reports use the first permitted view, coordinate
-zero and flags two, without category data or a random draw. Reviewed reports
-contribute only to a coarse global power-of-two volume range after **64 total
-reports**. Categorical sums, per-view counts and precision use automatic reports
-exclusively, retaining the **4,096-report per-view threshold**. No separate manual
-count is published. The [catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
-adds the new feature labels in aggregate report schema 4; immutable reports
-v1/v2/v3 remain readable under their original labels. Wire v1 is rejected.
-Volume is unauthenticated and is not a count of people/installations;
-fine-grained statistics can remain unavailable. Exact review and its privacy
-limits are specified below.
+The published [wire v2 format](../../mnemion/product_telemetry/wire-v2.json)
+uses four-byte locally randomized packets. Automatic reports use the randomized
+encoder; manual reports use the first permitted view, coordinate zero and flags
+two, without category data or a random draw. Reviewed reports contribute only
+to a coarse global power-of-two volume range after **64 total reports**.
+Categorical sums, per-view counts and precision use automatic reports
+exclusively, retaining the **4,096-report per-view threshold**. No separate
+manual count is published. The
+[catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
+adds the new feature labels in aggregate report schema 4; immutable aggregate
+reports v1/v2/v3 remain readable under their original labels. Aggregate report
+schema v3 is not wire version 3. Wire v1 packets are rejected. Volume is
+unauthenticated and is not a count of people or installations; fine-grained
+statistics can remain unavailable. Those limits are the wire v2 contract the
+dated checks measured. They are not the pending report. Exact wire v2 review
+behavior is specified below.
 
 The dedicated collector implements bounded TLS intake, metadata removal,
 private immutable closed-week publication and **eight-window retention** in a
@@ -640,14 +650,32 @@ counterexamples prevent extending that bound to identity, lifetime or network
 anonymity. This source-only assessment changes no collection behavior or budget;
 full privacy, resource, platform, provider and useful-population acceptance remain open.
 
-A gated v3 reference now sits beside that wire. It is specified in
-[anonymous product telemetry v3](anonymous-product-telemetry-v3.md). The
-collector would see a bounded summary and publish one noisy closed week
-containing both axes, with an add-or-remove-one-report bound of `ln(3)` proved
-for the whole vector, including admission and clipping.
-That is not v2's local randomizer, and this source does not turn it on.
-`collection_available`, destination and route stay false/null. V08 is not
-complete.
+The pending report is the gated
+[wire v3 contract](../../mnemion/product_telemetry/wire-v3.json), specified in
+[anonymous product telemetry v3](anonymous-product-telemetry-v3.md). One report
+is 25 bytes and carries 19 bounded metrics. Each report securely chooses either
+a full semantic release coordinate or one coarse operating-system marginal,
+before the observations are read. Both axes can appear in one published week.
+There is no joined release-by-OS profile. A policy-disabled category is
+`group_disabled`. A missing sensor is `sensor_missing`. Raw memories, prompts,
+tokens as text, keys and identifiers are excluded. The collector sees the
+bounded summary, then drops the bytes. Publication-side report-level
+differential privacy is applied after that trusted first-party aggregation.
+The add-or-remove-one-report bound on the released vector is `ln(3)`, including
+admission and clipping. That bound is not network anonymity, collector
+blindness, a unique-user count, or an exact uncapped event total.
+
+The pending client transition uses disclosure version 2, checks metric groups
+again at final send, and invalidates a stored wire v2 manual approval instead
+of sending it. Real opt-outs, company restrictions, manual controls and the
+minimum request budget stay: seven attempts per rolling week, at least 24 hours
+plus jitter, 64 KiB reserved per attempt, and a 256 KiB rolling-day guard.
+`default_enabled` stays true. `collection_available`, destination and route
+stay false/null. Synthetic format examples are labelled examples, not sent
+reports. Private maintainer HTML, CSV and JSON exist on the accepted combined
+source. Ordinary Privacy settings do not show fleet data. This source does not
+turn collection on. Installed v3 delivery is not qualified. The 2 MiB and 0.5%
+gates stay unaccepted. V08 is not complete. All 66 requirements stay.
 
 ## Remaining acceptance gates
 
@@ -839,7 +867,9 @@ also qualified direct Python/helper agreement on Intel and ARM64 with Node
 review or resource acceptance.
 
 The [new report-review source](../validation/2026-10-26-telemetry-report-review.md)
-implements one private four-byte stage, app controls and local agent actions.
+implements one private wire v2 four-byte stage, app controls and local agent
+actions. That recorded stage is not the pending 25-byte wire v3 summary. A
+stored wire v2 manual approval is invalidated rather than sent.
 Inspection consumes its pending snapshot without spending delivery allowance;
 repeat inspection preserves the bytes and original expiry. Approval permits one
 eligible attempt using those bytes. Later observations, contribution limits and
@@ -857,8 +887,8 @@ and V08 remains Building.
 The later selection correction exposes `report_selection` and `aggregation`
 in exact previews. Reviewed packets show both privacy-loss fields as null and
 `privacy_bound_scope: "fixed_body_for_permitted_groups"`; no categorical
-measurement is transmitted. `ln(3)` describes automatic randomization, not
-arbitrary human inclusion. Report v3 estimates only correctly marked automatic reports under
+measurement is transmitted. `ln(3)` describes automatic wire v2 randomization, not
+arbitrary human inclusion. Aggregate report schema v3 estimates only correctly marked automatic reports under
 independent randomization and packet-independent inclusion. Neither a small
 packet nor its selection marker establishes participation or network anonymity.
 
