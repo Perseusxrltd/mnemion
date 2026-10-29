@@ -42,7 +42,7 @@ RETRIEVAL_IMPLEMENTATION = (
 # Keep source visibility as a dependent point lookup. Its LIMIT 1 prevents a
 # fresh database's sparse planner statistics from multiplying all source rows
 # in a space before matching the revision ID; RLS still applies to both tables.
-ELIGIBLE = """
+_ELIGIBLE_PREFIX = """
 WITH eligible AS MATERIALIZED (
     SELECT m.id AS memory_id, m.space_id, r.id AS revision_id,
            CASE WHEN %(group_sources)s
@@ -77,6 +77,8 @@ WITH eligible AS MATERIALIZED (
         LIMIT 1
     ) source_visible ON true
     WHERE m.tenant_id=mnemion.tenant() AND m.space_id=ANY(%(spaces)s::uuid[])
+"""
+_ELIGIBLE_FILTERS = """
       AND m.deleted_at IS NULL AND m.review_state='ordinary'
       AND (%(subject)s::text IS NULL OR r.subject=%(subject)s)
       AND (%(kinds)s::text[] IS NULL OR r.kind=ANY(%(kinds)s::text[]))
@@ -88,6 +90,15 @@ WITH eligible AS MATERIALIZED (
       AND (r.valid_to IS NULL OR r.valid_to>coalesce(%(valid_at)s::timestamptz, now()))
 )
 """
+ELIGIBLE = _ELIGIBLE_PREFIX + _ELIGIBLE_FILTERS
+# Apply the candidate bound inside the materialized CTE. An outer WHERE cannot
+# prevent that CTE from rebuilding chronology eligibility for the whole corpus.
+# Both variants retain identical source, revision, scope and temporal checks.
+SELECTED_ELIGIBLE = (
+    _ELIGIBLE_PREFIX
+    + "      AND m.id=ANY(%(selected_memories)s::uuid[])\n"
+    + _ELIGIBLE_FILTERS
+)
 
 
 class RetrievalService:
@@ -438,7 +449,7 @@ class RetrievalService:
                 warnings.append("passage_ranking_window_limited")
             if selected:
                 rows = conn.execute(
-                    ELIGIBLE
+                    SELECTED_ELIGIBLE
                     + """SELECT e.memory_id,e.revision_id,r.content,r.metadata,r.recorded_at,r.passage_times
                     FROM eligible e JOIN mnemion.memory_revisions r
                       ON r.tenant_id=mnemion.tenant() AND r.space_id=e.space_id AND r.id=e.revision_id
