@@ -1,6 +1,6 @@
 # Telemetry evidence index
 
-**Index checkpoint: 29 October 2026.** The
+**Index checkpoint: 30 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)
 owns current scope, invariants and acceptance ceilings. This index links the
 dated reports that own original receipts, source hashes, failed attempts,
@@ -20,8 +20,9 @@ the original reports below retain their source bindings and failed evidence.
 
 V08 remains Building with collection/destination/route false/null/null and an
 empty release certificate-authority list. The
-[29 October v3 reference](2026-10-29-telemetry-v3-reference.md) is a gated
-backend candidate beside wire v2. The corrected candidate keeps both axes in
+[29 October v3 reference](2026-10-29-telemetry-v3-reference.md) describes the gated
+v3 collector used by the current clients. Legacy v2 evidence remains below.
+The corrected implementation keeps both axes in
 one week, freezes each closed report's domain, labels quantiles only inside a
 conservative envelope, stores the supported 32-release domain, and admits a
 report without evicting another one. It does not complete V08.
@@ -35,6 +36,12 @@ for current availability. All 66 requirement texts and states and the
 The [29 October v3 client release checks](2026-10-29-telemetry-v3-release-checks.md)
 record the integrated current-format fixtures, native probe and automated parity
 entry, with original failures and corrected local build results.
+
+The [4.46.55 installed controls](2026-10-30-telemetry-v3-installed-controls.md)
+qualify the v3 synthetic preview, app/agent choice, review controls and clean
+restart persistence on all six targets from their original attempt-1 artifacts.
+No build or app run was repeated. Installed report delivery, resources and
+production collection remain unqualified.
 
 The [29 October probe staging fix](2026-10-29-telemetry-probe-staging.md)
 retains the failed first phase-memory run and the focused correction that loads

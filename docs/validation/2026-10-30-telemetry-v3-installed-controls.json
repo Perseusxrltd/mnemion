@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "qualified_at": "2026-10-29T23:35:59.774870+00:00",
+  "version": "4.46.55",
+  "source": "da8e97bc362c90427f690bd4f970e5f3a710c9a6",
+  "run": 40965130140,
+  "workflow_attempt": 1,
+  "hosting_fields_per_target": 67,
+  "telemetry_fields": [
+    "nativeTelemetryAppAgentChoice",
+    "nativeTelemetryDisclosurePreview",
+    "nativeTelemetryNoAttemptDuringInspection",
+    "nativeTelemetryOptOutSurvivesRestart",
+    "nativeTelemetryPreviewClearedOnRefresh",
+    "nativeTelemetryReviewAppAgentChoice",
+    "nativeTelemetryReviewBeforePermission",
+    "nativeTelemetryReviewModeSurvivesRestart"
+  ],
+  "targets": [
+    {
+      "target": "linux-x64",
+      "job": 123769906469,
+      "artifact": 12938344631,
+      "workflow_attempt": 1,
+      "artifact_created_during_job": true,
+      "archive_sha256": "11e358f960d8071efecee460a3160192be7ea82cd9d371ec965bc3e6db009f3c",
+      "evidence_sha256": "7445fdb4fccfe0104d1e9e2bd079678a2285016f2997be39f69f9acb8a5adb45",
+      "passed": true
+    },
+    {
+      "target": "linux-arm64",
+      "job": 123769906243,
+      "artifact": 12937149215,
+      "workflow_attempt": 1,
+      "artifact_created_during_job": true,
+      "archive_sha256": "25277db34c945cf915beacf7bb4d18a27448b42c37cfc0fe4d3dba1366fcf7d2",
+      "evidence_sha256": "775fa6a74e6cac500a5df6657cf49d55c30d8d2ab09d3f074b323363a59cca90",
+      "passed": true
+    },
+    {
+      "target": "windows-x64",
+      "job": 123769906440,
+      "artifact": 12940345089,
+      "workflow_attempt": 1,
+      "artifact_created_during_job": true,
+      "archive_sha256": "8956f4bf05f4e37f75458033dc3a911be0ece400a87408820abd74747a2b068d",
+      "evidence_sha256": "715fdd7afe55d4a770ee0df865f5ff9f6520c6c162488dc116c5005b8c5755dc",
+      "passed": true
+    },
+    {
+      "target": "windows-arm64",
+      "job": 123769906228,
+      "artifact": 12940357552,
+      "workflow_attempt": 1,
+      "artifact_created_during_job": true,
+      "archive_sha256": "5b423bf83daa2f6399f9d875c6653879849eb1f09318379a1fffb8f89121f496",
+      "evidence_sha256": "29c283cfbe5168687a35c5ade9332d435542ee2fbf51b3adb51bc12d5f572050",
+      "passed": true
+    },
+    {
+      "target": "macos-x64",
+      "job": 123769906406,
+      "artifact": 12939419844,
+      "workflow_attempt": 1,
+      "artifact_created_during_job": true,
+      "archive_sha256": "d8f44841bdea755eac36dff708edd96b8486fa6abf2bb43f3008d688a6bf27d4",
+      "evidence_sha256": "c8600add874c9f40701ab2e7a85f7293a425a13c22af3bde670253cd36b1c40e",
+      "passed": true
+    },
+    {
+      "target": "macos-arm64",
+      "job": 123769906372,
+      "artifact": 12939511083,
+      "workflow_attempt": 1,
+      "artifact_created_during_job": true,
+      "archive_sha256": "6907d7609ce3acf293eb8261aa952913930e425124a5a8dfb33509be9ed31967",
+      "evidence_sha256": "da806d1b6aba75ce62fe9b259c3aeb1c95afc111cbc437875e9c3f5f36c5ca8d",
+      "passed": true
+    }
+  ],
+  "probe_source_sha256": {
+    "studio/electron/native-telemetry-probe.ts": "5ef6946aef8a10d3aac5d195f53b36a5d0594ec4f7b5e7516987b26da7f9cab6",
+    "studio/electron/local-hosting-probe.ts": "67c00b676fbc891b70e7fea24837e2e388e5f2a901509a326fa15517d30acfec",
+    "studio/electron/scripts/smoke-installed-hosting.mjs": "eb42b1569ac81d7b4e649a25c06757792b5ee02fae4aaf513c0ef4d12b075ace"
+  },
+  "qualification_receipt_sha256": "39afa09fb4245a557f3a540ee99e894d0ccd48882dffafe226f7da7739622960",
+  "qualifier_sha256": "0ed15fb612842a62283c289a5c0661124d6f32279587a78bf4bace0a2e6a3329",
+  "reader_correction_checks": 9,
+  "new_builds": 0,
+  "new_app_runs": 0,
+  "new_model_calls": 0,
+  "installed_controls_qualified": true,
+  "installed_report_delivery_qualified": false,
+  "resource_acceptance": false,
+  "production_collection_available": false,
+  "full_v08_accepted": false
+}

@@ -1,6 +1,6 @@
 # Anonymous product telemetry — V08
 
-**Building/source implementation; current checkpoint 29 October 2026.** V08
+**Building/source implementation; current checkpoint 30 October 2026.** V08
 retains the full scope in the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md);
 all requirement texts and the other 65 states are unchanged. The
 [shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
@@ -10,11 +10,13 @@ address and an empty certificate-authority list. Source controls, owners,
 senders and collector components exist.
 **No production product collection or qualified anonymous ingress is active.**
 
-Published controls and the pending report are different. Public 4.46.54 passed
-all six public update tests and has no native v3 qualification. The pending
-report is [wire v3](../../mnemion/product_telemetry/wire-v3.json), described
-below and in the [v3 reference](anonymous-product-telemetry-v3.md). It is not
-the four-byte wire v2 body. Collection stays off. The latest compiled-app
+Release 4.46.55 includes the v3 clients, collector and private reporting tools.
+Its installed controls have the scoped qualification below; production
+collection stays off. The 25-byte report uses
+[wire v3](../../mnemion/product_telemetry/wire-v3.json), described below and in
+the [v3 reference](anonymous-product-telemetry-v3.md). Current publication and
+public update results are maintained in [release status](../RELEASE_STATUS.md).
+The latest qualified compiled-app
 comparison, [run 40967691671](../validation/2026-10-29-telemetry-v3-resource.md),
 still leaves the 2 MiB and 0.5% gates unaccepted. All 66 requirements stay.
 
@@ -30,6 +32,13 @@ needed for this evidence qualification. It does not qualify staged-report
 approval/delivery, later owners or 4.46.25 installed behavior, resource/provider
 privacy, actual PC/VPS upgrades or full V08. Consult the automatically maintained
 [release status](../RELEASE_STATUS.md) for current availability.
+
+The [4.46.55 installed-control qualification](../validation/2026-10-30-telemetry-v3-installed-controls.md)
+now binds the same eight control fields to current v3 source and all six
+original attempt-1 installer artifacts. It includes the exact 25-byte synthetic
+preview and opt-out/manual-mode persistence across a clean restart, with no new
+build or app run. Staging, approval and delivery of an actual report remain
+unqualified on installed targets; resource and production ingress gates remain.
 
 Use the [app/native control guide](../guides/product-telemetry-controls.md),
 [catalog and ownership map](anonymous-product-telemetry-catalog.md),
