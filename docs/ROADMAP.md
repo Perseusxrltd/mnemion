@@ -25,6 +25,17 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**29 October 2026, 14:56 UTC, shared-host 4.46.52 upgrade and health:**
+The [actual guarded upgrade](validation/2026-10-29-shared-host-44652.md)
+succeeded from 4.46.44 to 4.46.52 at 12:39 UTC, applying migration 036 after
+independent backup readback. Later HTTPS liveness and readiness checks both
+returned 200 and service version 4.46.52. Public 4.46.52 passed all six native
+release targets and its [public-update run](https://github.com/Perseusxrltd/mnemion/actions/runs/40853494264).
+Complete source freshness, reported search workloads and vault journeys remain
+open. The Mac launch correction is in 4.46.53 source; acceptance on the affected
+Mac remains pending. Issues 44/47/48/49, all 66 requirement states and V08
+Building/collection off are unchanged.
+
 **29 October 2026, Mac launch and Windows backup-read corrections:**
 The [4.46.53 source](releases/4.46.53.md) addresses the Mac ad-hoc Team ID launch
 failure in issue 49 and avoids rewriting already-private Windows folder
@@ -40,7 +51,8 @@ unchanged, and production telemetry collection remains disabled.
 The [4.46.52 source](releases/4.46.52.md) preserves background presentation across
 automatic updates while keeping deliberate visible restarts visible. Its
 [focused controller and file checks](validation/2026-10-29-background-relaunch.md)
-passed on Linux and Windows; native installation and publication remain pending.
+passed on Linux and Windows; native installation and publication were pending
+at that source checkpoint. The later publication and host evidence is recorded above.
 The [actual Windows 4.46.49 update](validation/2026-10-29-windows-44649-update.md)
 preserved the saved administrator connection and preferences, and exposed the
 relaunch defect addressed by this new source. Public 4.46.49 installer downloads
