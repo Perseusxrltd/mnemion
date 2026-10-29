@@ -44,93 +44,32 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 11,
+        "succeeded": 10,
         "active": [
-          {
-            "id": 123326602189,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
-            ]
-          },
-          {
-            "id": 123326665618,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
           {
             "id": 123326665619,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv sync --locked --python 3.12 --group dev"
-            ]
-          },
-          {
-            "id": 123326665620,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 123326665707,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123326665714,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 123326665736,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv sync --locked --python 3.13 --group dev"
-            ]
-          },
-          {
-            "id": 123326665768,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 123326665798,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15-intel)",
+          "id": 123326665798,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 18,
+          "steps": [
+            "Audit the installed Mac dependencies"
+          ]
+        }
+      ]
     },
     {
       "id": 40820128156,
@@ -232,84 +171,40 @@
       "workflow": "release.yml",
       "branch": "release/4.46.51-r2",
       "source_commit": "b48438e2c61e6d9184f5d8419280f637212a4187",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T07:47:23Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-29T08:16:46Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835999398",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
-        "active": [
-          {
-            "id": 123326192227,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123326192237,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Select the service interpreter independently of the desktop client"
-            ]
-          },
-          {
-            "id": 123326192251,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123326192275,
-            "name": "native / macos-26 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123326192279,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Locked native service build dependencies"
-            ]
-          },
-          {
-            "id": 123326192314,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          }
-        ]
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 123326192237,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
-      "id": 40835184620,
+      "id": 40841002758,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "890eec8aa840244f32e3582c8385b9f4309e3cee",
+      "source_commit": "5d53db12406a08879906322d1638a546c8def021",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-29T07:24:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835184620"
+      "updated_at": "2026-10-29T08:16:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40841002758"
     },
     {
       "id": 40837798631,
@@ -334,5 +229,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T07:49:18+00:00"
+  "observed_at": "2026-10-29T08:17:21+00:00"
 }
