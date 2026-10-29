@@ -181,39 +181,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.52",
       "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T09:51:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559"
+    },
+    {
+      "id": 40852860198,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "72a23b4f77b56e5b82eefc770071f0fbf92f0daf",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T08:49:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559",
+      "updated_at": "2026-10-29T09:51:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40852860198",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 14,
-        "completed": 13,
-        "succeeded": 12,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 123348782810,
-            "name": "native / native_database / Database / windows / x64",
+            "id": 123376407277,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Compile pinned PostgreSQL, vector extension and static libraries"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 40841002758,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "5d53db12406a08879906322d1638a546c8def021",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-29T08:16:50Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40841002758"
     },
     {
       "id": 40837798631,
@@ -238,5 +238,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T08:53:55+00:00"
+  "observed_at": "2026-10-29T09:51:40+00:00"
 }
