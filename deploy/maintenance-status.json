@@ -37,82 +37,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T01:51:53Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 5,
-        "succeeded": 5,
-        "active": [
-          {
-            "id": 123215016322,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123215072959,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123215072985,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 123215073046,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 123215073053,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 123215073072,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123215073083,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T02:25:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823"
     },
     {
       "id": 40801713765,
@@ -149,52 +77,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "completed": 19,
+        "succeeded": 18,
         "active": [
-          {
-            "id": 123215004876,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client ci"
-            ]
-          },
-          {
-            "id": 123215004882,
-            "name": "native / macos-26 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
-            ]
-          },
-          {
-            "id": 123215004890,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
-            ]
-          },
           {
             "id": 123215004892,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Select the service interpreter independently of the desktop client"
-            ]
-          },
-          {
-            "id": 123215004897,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron ci"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -203,7 +95,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Locked native service build dependencies"
+              "Packaged Mac update, restart guards and relaunch"
             ]
           }
         ]
@@ -244,5 +136,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801711006"
     }
   ],
-  "observed_at": "2026-10-29T01:52:39+00:00"
+  "observed_at": "2026-10-29T02:26:03+00:00"
 }
