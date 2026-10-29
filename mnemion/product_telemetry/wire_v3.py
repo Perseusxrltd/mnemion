@@ -107,6 +107,20 @@ RELEASE_BY_COORDINATE = {
 RELEASE_BY_SLOT = {item["slot"]: item for item in ALLOWLIST}
 
 
+def _quiet_indexes() -> tuple[int, int]:
+    outcome = METRIC_BY_ID["outcome"]["categories"]
+    reason = METRIC_BY_ID["reason"]["categories"]
+    if not reason or reason[0] != "no_failure":
+        raise WireV3Error
+    try:
+        return outcome.index("success"), outcome.index("accepted")
+    except ValueError:
+        raise WireV3Error from None
+
+
+QUIET_SUCCESS, QUIET_ACCEPTED = _quiet_indexes()
+
+
 class Summary:
     """One bounded packet after allowlist mapping. Not an installation record."""
 
@@ -161,8 +175,10 @@ def _weights(metric: dict) -> list[int]:
     return [0] * _measurement_bins(metric)
 
 
-def _add(weights: dict[str, list[int]], metric_id: str, key: object) -> None:
+def _add(weights: dict[str, list[int]], metric_id: str, key: object, count: int) -> None:
     metric = METRIC_BY_ID[metric_id]
+    if type(count) is not int or count < 1:
+        raise WireV3Error
     if metric["kind"] == "ordered":
         if type(key) is not int or not 0 <= key < len(metric["upper_bounds"]):
             raise WireV3Error
@@ -173,7 +189,107 @@ def _add(weights: dict[str, list[int]], metric_id: str, key: object) -> None:
         except ValueError:
             raise WireV3Error from None
     row = weights[metric_id]
-    row[index] = min(CLIP, row[index] + 1)
+    row[index] = min(CLIP, row[index] + count)
+
+
+def _blank() -> dict[str, list[int]]:
+    return {metric["id"]: _weights(metric) for metric in METRICS}
+
+
+def _permitted_groups(groups: object) -> set[str]:
+    if (
+        type(groups) not in (list, tuple)
+        or not 1 <= len(groups) <= len(GROUPS)
+        or any(type(group) is not str or group not in GROUPS for group in groups)
+        or len(set(groups)) != len(groups)
+    ):
+        raise WireV3Error
+    return set(groups)
+
+
+def _coordinates(release: object, operating_system: object) -> None:
+    if (
+        type(release) is not tuple
+        or len(release) != 3
+        or any(type(part) is not int or not 0 <= part <= 255 for part in release)
+        or type(operating_system) is not str
+        or operating_system not in OPERATING_SYSTEMS
+    ):
+        raise WireV3Error
+
+
+def _apply(weights: dict[str, list[int]], described: dict, count: int, permitted: set[str]) -> None:
+    metric_id = described["metric"]
+    if metric_id == "submissions":
+        if "usage" not in permitted:
+            return
+        workflow = described["workflow"]
+        family = workflow.split(".", 1)[0]
+        _add(weights, "feature_family", family, count)
+        _add(weights, "feature", workflow, count)
+        return
+    if metric_id == "outcomes":
+        if "usage" not in permitted:
+            return
+        _add(weights, "outcome", described["bucket"], count)
+        return
+    if metric_id == "reasons":
+        if "reliability" not in permitted:
+            return
+        _add(weights, "reason", described["bucket"], count)
+        return
+    spec = METRIC_BY_ID[metric_id]
+    if spec["group"] not in permitted:
+        return
+    _add(weights, metric_id, described["bucket"], count)
+
+
+def _reason_index(weights: dict[str, list[int]], random_below) -> int:
+    """Choose one reason tick without treating a missing reason as no failure.
+
+    Success and accepted support ``no_failure`` because the catalog forbids a
+    failure reason on those outcomes. Every other outcome stays unresolved
+    until a reason cell is present. The unresolved residual competes as
+    ``sensor_missing``. It is not written into ``no_failure``.
+    """
+    outcome = weights["outcome"]
+    explicit = weights["reason"]
+    quiet = outcome[QUIET_SUCCESS] + outcome[QUIET_ACCEPTED]
+    unresolved = sum(outcome) - quiet
+    no_failure = min(CLIP, quiet)
+    known = list(explicit)
+    known[0] = min(CLIP, known[0] + no_failure)
+    unknown = unresolved - sum(explicit)
+    if unknown < 0:
+        unknown = 0
+    known_mass = sum(known)
+    if known_mass == 0:
+        return 1
+    if unknown == 0:
+        return 2 + _choose(known, random_below)
+    position = _draw(known_mass + unknown, random_below)
+    if position < unknown:
+        return 1
+    position -= unknown
+    for index, weight in enumerate(known):
+        if position < weight:
+            return 2 + index
+        position -= weight
+    raise WireV3Error
+
+
+def _indexes(weights: dict[str, list[int]], permitted: set[str], random_below) -> list[int]:
+    indexes = []
+    for metric in METRICS:
+        if metric["group"] not in permitted:
+            indexes.append(0)
+            continue
+        if metric["id"] == "reason":
+            indexes.append(_reason_index(weights, random_below))
+            continue
+        row = weights[metric["id"]]
+        indexes.append(1 if sum(row) == 0 else 2 + _choose(row, random_below))
+    return indexes
 
 
 def _choose(weights: list[int], random_below) -> int:
@@ -202,71 +318,70 @@ def summarize(
 
     The first draw chooses release or coarse OS with equal probability. It does
     not read the observations, and the packet keeps only the chosen marginal.
-    Each enabled metric then contributes weight 1. Disabled groups and missing
+    Each enabled metric then contributes one tick. Disabled groups and missing
     sensors use explicit bins, not a fabricated zero. Later draws weight a
     clipped histogram. They are not the publication privacy mechanism.
     ``random_below`` exists for tests; a packet cannot select it.
     """
     random_below = random_below or secrets.randbelow
     axis = "release" if _draw(2, random_below) == 0 else "os"
-    if (
-        type(groups) not in (list, tuple)
-        or not 1 <= len(groups) <= len(GROUPS)
-        or any(type(group) is not str or group not in GROUPS for group in groups)
-        or len(set(groups)) != len(groups)
-        or axis not in AXIS
-    ):
-        raise WireV3Error
+    permitted = _permitted_groups(groups)
+    _coordinates(release, operating_system)
     if type(observations) not in (list, tuple) or not 1 <= len(observations) <= MAX_OBSERVATIONS:
         raise WireV3Error
-    permitted = set(groups)
-    weights = {metric["id"]: _weights(metric) for metric in METRICS}
-    saw_outcome = False
+    weights = _blank()
     try:
         for item in observations:
             _contribution, cells = observation(item)
             for cell in cells:
-                described = describe(cell)
-                metric_id = described["metric"]
-                if metric_id == "submissions":
-                    if "usage" not in permitted:
-                        continue
-                    workflow = described["workflow"]
-                    _add(weights, "feature_family", workflow.split(".", 1)[0])
-                    _add(weights, "feature", workflow)
-                    continue
-                if metric_id == "outcomes":
-                    if "usage" not in permitted:
-                        continue
-                    saw_outcome = True
-                    _add(weights, "outcome", described["bucket"])
-                    continue
-                if metric_id == "reasons":
-                    if "reliability" not in permitted:
-                        continue
-                    _add(weights, "reason", described["bucket"])
-                    continue
-                spec = METRIC_BY_ID[metric_id]
-                if spec["group"] not in permitted:
-                    continue
-                _add(weights, metric_id, described["bucket"])
+                _apply(weights, describe(cell), 1, permitted)
     except (MeasurementError, KeyError, WireV3Error):
         raise WireV3Error from None
-    indexes = []
-    for metric in METRICS:
-        if metric["group"] not in permitted:
-            indexes.append(0)
-            continue
-        row = weights[metric["id"]]
-        if metric["id"] == "reason":
-            if not saw_outcome and sum(row) == 0:
-                indexes.append(1)
-            elif sum(row) == 0:
-                indexes.append(2)
-            else:
-                indexes.append(2 + _choose(row, random_below))
-            continue
-        indexes.append(1 if sum(row) == 0 else 2 + _choose(row, random_below))
+    indexes = _indexes(weights, permitted, random_below)
+    return encode(axis, indexes, release=release, operating_system=operating_system)
+
+
+def prepare(
+    rows: object,
+    *,
+    groups: object,
+    release: tuple[int, int, int],
+    operating_system: str,
+    random_below=None,
+) -> bytes:
+    """Clip bounded ``(cell, count)`` rows into the same packet as ``summarize``.
+
+    The rows are the pending snapshot already reserved by the Python, Electron
+    and browser clients. Each count is added once and clipped per bucket. This
+    does not expand a count into repeated observations or rebuild a raw event.
+    The release-or-OS coin is drawn before any row is read. Publication noise
+    is not applied here.
+    """
+    random_below = random_below or secrets.randbelow
+    axis = "release" if _draw(2, random_below) == 0 else "os"
+    permitted = _permitted_groups(groups)
+    _coordinates(release, operating_system)
+    if type(rows) not in (list, tuple) or not 1 <= len(rows) <= MAX_OBSERVATIONS:
+        raise WireV3Error
+    weights = _blank()
+    seen: set[int] = set()
+    try:
+        for row in rows:
+            if (
+                type(row) not in (tuple, list)
+                or len(row) != 2
+                or type(row[0]) is not int
+                or type(row[1]) is not int
+                or not 0 <= row[0] <= 65535
+                or not 1 <= row[1] <= CLIP
+                or row[0] in seen
+            ):
+                raise WireV3Error
+            seen.add(row[0])
+            _apply(weights, describe(row[0]), row[1], permitted)
+    except (MeasurementError, KeyError, WireV3Error):
+        raise WireV3Error from None
+    indexes = _indexes(weights, permitted, random_below)
     return encode(axis, indexes, release=release, operating_system=operating_system)
 
 

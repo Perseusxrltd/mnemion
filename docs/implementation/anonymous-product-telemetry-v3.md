@@ -220,10 +220,39 @@ platform, architecture and release-family values into the existing v2
 the three values together. Unknown browser architecture is omitted and stays
 `unobserved`. This wiring is not v3 and it does not enable collection.
 
+## Client preparation
+
+The three clients already reserve a bounded pending snapshot of `(cell, count)`
+rows. `prepare` in `wire_v3.py` and `TelemetryWireV3` in
+`studio/electron/telemetry-wire-v3.ts` turn that snapshot into the same 25-byte
+packet as `summarize`. The TypeScript helper takes the reviewed wire contract
+and catalog from its caller. It does not open a config file.
+
+Counts are added once and clipped at 255 per bucket. A count is not expanded
+into repeated observations, and the encoder does not rebuild a raw event. At
+most 512 rows are accepted. The release-or-OS coin is the first
+`secrets.randbelow` or `crypto.getRandomValues` draw, before any row is read.
+A test may pass draws; a packet cannot. No local randomizer runs on this path.
+The collector still sees the summary. Publication noise stays on the closed
+week, which this client step does not change.
+
+`no_failure` is only the clipped mass of `success` and `accepted`. The catalog
+forbids a failure reason on those two outcomes, so a missing reason cell there
+is the `none` reason. A `failed`, `deferred`, or other outcome with no reason
+cell is unresolved. That residual competes as `sensor_missing`. It is not
+rewritten into `no_failure`. If reliability is disabled, the reason bin stays
+`group_disabled` even when a reason was observed.
+
+These helpers are not called by the Python, Electron, or browser senders.
+Review mode, the disclosure version, and the transport route are unchanged.
+Collection remains off.
+
 ## Still required before any activation
 
-- Electron, browser and Python clients that encode and send v3, behind the
-  same opt-out, company, GPC, metering and 7-per-week gates. Not started.
+- Wire the Python, Electron, and browser senders to this encoder, including
+  transport and disclosure version selection, without bypassing manual review.
+  The encoder above does not do that. Opt-out, company policy, GPC, metering,
+  and the 7-per-week gate stay in force. Not activated.
 - Mounting `/v3/report` on a qualified host. `server.py` does not mount it.
 - A versioned disclosure that says the collector sees bounded summaries and
   that provider retention was actually inspected. The current disclosure does

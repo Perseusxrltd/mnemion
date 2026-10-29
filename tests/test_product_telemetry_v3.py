@@ -11,6 +11,7 @@ import csv
 import io
 import json
 from fractions import Fraction
+from pathlib import Path
 
 import pytest
 from starlette.testclient import TestClient
@@ -42,8 +43,10 @@ from mnemion.product_telemetry.wire_v3 import (
     PACKET_BYTES,
     WIRE,
     WireV3Error,
+    bucket_label,
     decode,
     encode,
+    prepare,
     release_slot,
     summarize,
 )
@@ -642,3 +645,139 @@ def test_publication_failure_is_observable_and_is_not_resealed(tmp_path):
     document = json.loads(render(store.reports(), "json", store.publication_failures()))
     assert document["summary"]["publication_failures"] == [notice]
     assert "denominator" not in document["summary"]["publication_failures"][0]
+
+
+def _exact_draws(values):
+    state = {"n": 0}
+
+    def random_below(limit):
+        if state["n"] >= len(values):
+            raise AssertionError("extra draw")
+        value = values[state["n"]]
+        state["n"] += 1
+        if type(value) is not int or not 0 <= value < limit:
+            raise AssertionError((value, limit))
+        return value
+
+    random_below.used = lambda: state["n"]
+    return random_below
+
+
+def _vector_rows(case):
+    if "repeat" in case:
+        return [(0, 1)] * case["repeat"]
+    if "rows" in case:
+        return case["rows"]
+    if "rows_from" in case:
+        rows = []
+        for item in case["rows_from"]:
+            _contribution, cells = catalog.observation(item["observation"])
+            picked = [cell for cell in cells if catalog.describe(cell)["metric"] == item["metric"]]
+            assert len(picked) == 1
+            rows.append((picked[0], item["count"]))
+        return rows
+    totals = {}
+    order = []
+    for item in case.get("observations", []):
+        _contribution, cells = catalog.observation(item)
+        for cell in cells:
+            if cell not in totals:
+                order.append(cell)
+                totals[cell] = 0
+            totals[cell] += 1
+    return [(cell, totals[cell]) for cell in order]
+
+
+def _vector_call(function, case, rows):
+    draws = _exact_draws(case["draws"])
+    packet = function(
+        case["observations"] if function is summarize else rows,
+        groups=case.get("groups", GROUPS),
+        release=tuple(case.get("release", (4, 46, 53))),
+        operating_system=case.get("operating_system", "linux"),
+        random_below=draws,
+    )
+    assert draws.used() == len(case["draws"])
+    return packet
+
+
+def test_failed_outcome_without_a_reason_is_not_no_failure():
+    failed = {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+    success = {**failed, "outcome": "success"}
+    deferred = {**failed, "outcome": "deferred"}
+    offline = {**failed, "reason": "offline"}
+
+    def reason_of(packet):
+        decoded = decode(packet)
+        return bucket_label(METRIC_BY_ID["reason"], decoded.buckets[metric_index("reason")])
+
+    lone = summarize(
+        [failed], groups=GROUPS, release=RELEASE, operating_system="linux", random_below=_exact_draws([0])
+    )
+    assert reason_of(lone) == "sensor_missing"
+    assert lone == prepare(_vector_rows({"observations": [failed]}), groups=GROUPS, release=RELEASE,
+                            operating_system="linux", random_below=_exact_draws([0]))
+    assert reason_of(summarize([success], groups=GROUPS, release=RELEASE, operating_system="linux",
+                                random_below=_exact_draws([0]))) == "no_failure"
+    assert reason_of(summarize([deferred], groups=GROUPS, release=RELEASE, operating_system="linux",
+                                random_below=_exact_draws([0]))) == "sensor_missing"
+    assert reason_of(summarize([offline], groups=GROUPS, release=RELEASE, operating_system="linux",
+                                random_below=_exact_draws([0]))) == "offline"
+    mixed = [success, failed]
+    unknown = summarize(mixed, groups=GROUPS, release=RELEASE, operating_system="linux",
+                         random_below=_exact_draws([0, 0, 0]))
+    assert reason_of(unknown) == "sensor_missing"
+    assert unknown == prepare(_vector_rows({"observations": mixed}), groups=GROUPS, release=RELEASE,
+                               operating_system="linux", random_below=_exact_draws([0, 0, 0]))
+    kept = summarize(mixed, groups=GROUPS, release=RELEASE, operating_system="linux",
+                      random_below=_exact_draws([0, 0, 1]))
+    assert reason_of(kept) == "no_failure"
+
+
+def test_bounded_client_vectors_keep_one_tick_and_reject_malformed_rows():
+    fixture = Path(__file__).parents[1] / "tests/fixtures/telemetry-v3-client-vectors.json"
+    document = json.loads(fixture.read_text())
+    for case in document["cases"]:
+        rows = _vector_rows(case)
+        if case.get("error"):
+            with pytest.raises(WireV3Error):
+                _vector_call(prepare, case, rows)
+            continue
+        prepared = decode(_vector_call(prepare, case, rows))
+        if "observations" in case:
+            summarized = decode(_vector_call(summarize, case, rows))
+            assert summarized.buckets == prepared.buckets
+            assert (summarized.axis, summarized.cohort_id) == (prepared.axis, prepared.cohort_id)
+        expect = case["expect"]
+        if "axis" in expect:
+            assert prepared.axis == expect["axis"]
+        if "cohort" in expect:
+            assert prepared.cohort_id == expect["cohort"]
+        if "cohort_index" in expect:
+            assert prepared.cohort_index == expect["cohort_index"]
+        for name, label in expect.get("metrics", {}).items():
+            assert bucket_label(METRIC_BY_ID[name], prepared.buckets[metric_index(name)]) == label
+
+
+def test_summary_coin_is_drawn_before_contents_and_not_from_secrets(monkeypatch):
+    events = []
+
+    def random_below(limit):
+        events.append(("draw", limit))
+        return 0
+
+    def describe(cell):
+        events.append("cell")
+        return catalog.describe(cell)
+
+    def refuse_secrets(_limit):
+        raise AssertionError("secrets")
+
+    monkeypatch.setattr("mnemion.product_telemetry.wire_v3.describe", describe)
+    monkeypatch.setattr("mnemion.product_telemetry.wire_v3.secrets.randbelow", refuse_secrets)
+    prepare([(0, 1)], groups=GROUPS, release=RELEASE, operating_system="linux", random_below=random_below)
+    assert events[0] == ("draw", 2) and "cell" in events
+    events.clear()
+    with pytest.raises(WireV3Error):
+        prepare([(0, 1)], groups=[], release=RELEASE, operating_system="linux", random_below=random_below)
+    assert events == [("draw", 2)]
