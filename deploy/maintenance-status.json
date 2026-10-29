@@ -44,18 +44,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 5,
-        "succeeded": 5,
+        "completed": 11,
+        "succeeded": 11,
         "active": [
-          {
-            "id": 123309075541,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron ci"
-            ]
-          },
           {
             "id": 123309130136,
             "name": "service (3.12)",
@@ -63,51 +54,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123309130144,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 123309130168,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 123309130185,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123309130188,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123309130262,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           }
         ]
@@ -172,53 +118,16 @@
       "workflow": "release.yml",
       "branch": "release/4.46.51",
       "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T06:42:22Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-29T07:24:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 17,
-        "succeeded": 14,
-        "active": [
-          {
-            "id": 123304345030,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123304345043,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123304345045,
-            "name": "native / macos-26 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123304345112,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          }
-        ]
+        "total": 23,
+        "completed": 23,
+        "succeeded": 18,
+        "active": []
       },
       "failed_jobs": [
         {
@@ -246,15 +155,15 @@
       ]
     },
     {
-      "id": 40826079935,
+      "id": 40835184620,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
+      "source_commit": "890eec8aa840244f32e3582c8385b9f4309e3cee",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-29T05:54:38Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826079935"
+      "updated_at": "2026-10-29T07:24:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835184620"
     },
     {
       "id": 40832308319,
@@ -279,5 +188,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T06:57:58+00:00"
+  "observed_at": "2026-10-29T07:24:36+00:00"
 }
