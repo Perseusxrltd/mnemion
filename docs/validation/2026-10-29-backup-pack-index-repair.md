@@ -257,5 +257,4 @@ in-progress observations are evidence only for their recorded state.
 | `062106Z-original-unit-observation.json` | `377c9df1f4df9a0607d09741410dd0df5e7c3f02600816e325b97039e4878af0` |
 | `063944Z-original-unit-observation.json` | `daf7c84db6a42b3c6e47776ca00d8dc664925d0d23ceb4c6a269e3cbfa41835e` |
 | `independent-delivery.json` (commit and manifest) | `1617f8ae4aa0bd55d40dfeda74332580a0599e9c3486c0b498937ea3e38d744b` |
-
 | `scheduled-followup-delivery.json` | `97bc998dd592873fa7dfe7cda495542405d4c4eecaea206a610eba9be81835fc` |
