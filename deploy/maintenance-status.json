@@ -62,37 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "1adc472af8874ccdb261f7532eeab0463d888a40",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T22:40:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40967598417",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 10,
-        "succeeded": 10,
-        "active": [
-          {
-            "id": 123776112925,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json"
-            ]
-          },
-          {
-            "id": 123776112976,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T23:04:33Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40967598417"
     },
     {
       "id": 40951291442,
@@ -147,7 +120,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Packaged Mac update, restart guards and relaunch"
             ]
           }
         ]
@@ -188,5 +161,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40951286816"
     }
   ],
-  "observed_at": "2026-10-29T23:01:42+00:00"
+  "observed_at": "2026-10-29T23:05:09+00:00"
 }
