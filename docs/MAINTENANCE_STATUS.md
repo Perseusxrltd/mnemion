@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T06:26:39+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T06:33:56+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,9 +22,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.46\.49 | success | [Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156) |
 | release\.yml | release/4\.46\.49 | success | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
 | release\.yml | release/4\.46\.50 | failure | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
+| release\.yml | release/4\.46\.51 | in\_progress | [Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129) |
 | verify-artifacts\.yml | main | skipped | [Run 40826079935](https://github.com/Perseusxrltd/mnemion/actions/runs/40826079935) |
 | website-release\.yml | main | success | [Run 40829138051](https://github.com/Perseusxrltd/mnemion/actions/runs/40829138051) |
 | website-release\.yml | v4\.46\.49 | success | [Run 40820125119](https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119) |
+
+## Active jobs
+
+[Run 40829255129](https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129): 13/14 jobs completed; 12 succeeded.
+
+- native / native\_database / Database / windows / x64: in\_progress — Compile pinned PostgreSQL, vector extension and static libraries.
+
 
 ## Unsuccessful jobs
 

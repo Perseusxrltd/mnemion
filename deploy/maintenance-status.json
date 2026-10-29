@@ -95,6 +95,35 @@
       }
     },
     {
+      "id": 40829255129,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.51",
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T06:30:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 14,
+        "completed": 13,
+        "succeeded": 12,
+        "active": [
+          {
+            "id": 123299936224,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Compile pinned PostgreSQL, vector extension and static libraries"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
       "id": 40826079935,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -128,5 +157,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T06:26:39+00:00"
+  "observed_at": "2026-10-29T06:33:56+00:00"
 }
