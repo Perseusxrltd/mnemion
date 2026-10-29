@@ -48,46 +48,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.49",
       "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T04:52:21Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 4,
-        "succeeded": 4,
-        "active": [
-          {
-            "id": 123270458827,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123270458829,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123270458896,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T05:04:01Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156"
     },
     {
       "id": 40812422400,
@@ -108,21 +72,66 @@
       "source_commit": "eef846a30b4da71fe2da18adbcd7dd56a98f587f",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T04:49:43Z",
+      "updated_at": "2026-10-29T05:02:13Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 14,
-        "completed": 13,
-        "succeeded": 12,
+        "total": 21,
+        "completed": 15,
+        "succeeded": 14,
         "active": [
           {
-            "id": 123269256571,
-            "name": "native / native_database / Database / windows / x64",
+            "id": 123273331062,
+            "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Compile pinned PostgreSQL, vector extension and static libraries"
+              "Select the service interpreter independently of the desktop client"
+            ]
+          },
+          {
+            "id": 123273331079,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+            ]
+          },
+          {
+            "id": 123273331125,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 123273331148,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 123273331196,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/electron test"
+            ]
+          },
+          {
+            "id": 123273331332,
+            "name": "native / macos-26 / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           }
         ]
@@ -163,5 +172,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T04:59:39+00:00"
+  "observed_at": "2026-10-29T05:04:37+00:00"
 }
