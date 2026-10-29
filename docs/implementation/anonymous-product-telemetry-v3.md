@@ -232,14 +232,6 @@ lower side of the split still clears the total, the majority bucket, and the
 even split. None of those cells is a guaranteed observed count. Seven reports
 require seven locally spaced attempts. Two is a sparse model.
 
-## Cohort arguments on the existing v2 path
-
-Python activity, the browser activity and the desktop activity now pass coarse
-platform, architecture and release-family values into the existing v2
-`prepare` call. v2 still samples one view, so one packet still does not carry
-the three values together. Unknown browser architecture is omitted and stays
-`unobserved`. This wiring is not v3 and it does not enable collection.
-
 ## Client preparation
 
 The three clients already reserve a bounded pending snapshot of `(cell, count)`
@@ -269,7 +261,8 @@ the delivery budgets stay in front of that call. The request path in source is
 `POST /v3/report` with a 25-byte body. Disclosure version 2 describes a
 collector-visible summary. Collection remains off: `collection_available` is
 false, the destination is null, and the release route address is null.
-`server.py` still mounts only `/v1/report`. A v3 packet is not sent there.
+The dedicated server defaults to legacy `/v1/report`; `--mode v3` mounts
+`/v3/report`. A v3 packet is not sent to the legacy route.
 
 ## Still required before any activation
 
