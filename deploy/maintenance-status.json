@@ -32,15 +32,105 @@
   ],
   "runs": [
     {
-      "id": 40820612659,
+      "id": 40826012101,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "457466f56a83f4d5bb3ee258f9e54b6ced9c525d",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T04:59:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659"
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T05:54:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826012101",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 123289102831,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python deploy/bundle_studio.py"
+            ]
+          },
+          {
+            "id": 123289152150,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 123289152153,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --locked --python 3.12 --group dev"
+            ]
+          },
+          {
+            "id": 123289152177,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 123289152182,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 123289152185,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 123289152209,
+            "name": "supervision (macos-26)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 123289152227,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+            ]
+          },
+          {
+            "id": 123289152319,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40820128156,
@@ -70,95 +160,51 @@
       "workflow": "release.yml",
       "branch": "release/4.46.50",
       "source_commit": "eef846a30b4da71fe2da18adbcd7dd56a98f587f",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T05:02:13Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-29T05:54:35Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
-        "active": [
-          {
-            "id": 123273331062,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Select the service interpreter independently of the desktop client"
-            ]
-          },
-          {
-            "id": 123273331079,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
-            ]
-          },
-          {
-            "id": 123273331125,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123273331148,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123273331196,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123273331332,
-            "name": "native / macos-26 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          }
-        ]
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 123273331148,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Installed Linux app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
-      "id": 40819658418,
+      "id": 40826079935,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "71fdde86be64d4cf177a56bb951debc344ea5bd5",
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T04:52:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-29T05:54:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826079935"
     },
     {
-      "id": 40820612636,
+      "id": 40826012104,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "457466f56a83f4d5bb3ee258f9e54b6ced9c525d",
+      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T04:57:44Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820612636"
+      "updated_at": "2026-10-29T05:54:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826012104"
     },
     {
       "id": 40820125119,
@@ -172,5 +218,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T05:04:37+00:00"
+  "observed_at": "2026-10-29T05:54:43+00:00"
 }
