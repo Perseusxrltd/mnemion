@@ -13,7 +13,7 @@ import time
 
 from .aggregate_v3 import AggregateWindow
 from .reporting import reporting_week
-from .wire_v3 import PACKET_BYTES, WireV3Error
+from .wire_v3 import PACKET_BYTES, WIRE, WireV3Error
 
 
 class CollectorV3:
@@ -23,8 +23,23 @@ class CollectorV3:
         self._publish = publish_closed_window
         self._clock = clock
         self._random_below = random_below
-        self.publication_failures = []
+        self._publication_failures: list[dict] = []
         self._window = AggregateWindow(reporting_week(clock()))
+
+    @property
+    def publication_failures(self) -> list[dict]:
+        self._prune_failures()
+        return self._publication_failures
+
+    def _prune_failures(self) -> None:
+        current = reporting_week(self._clock())
+        low = current - WIRE["reporting"]["retained_windows"]
+        kept = {}
+        for item in self._publication_failures:
+            week = item.get("window_week") if type(item) is dict else None
+            if type(week) is int and low <= week < current and item.get("state") == "publication_failed":
+                kept[week] = {"window_week": week, "state": "publication_failed"}
+        self._publication_failures = [kept[week] for week in sorted(kept)]
 
     def _advance(self) -> bool:
         week = reporting_week(self._clock())
@@ -48,8 +63,14 @@ class CollectorV3:
         return True
 
     def _record_failure(self, week: int) -> None:
-        notice = {"window_week": week, "state": "publication_failed"}
-        self.publication_failures.append(notice)
+        current = reporting_week(self._clock())
+        low = current - WIRE["reporting"]["retained_windows"]
+        if type(week) is not int or not low <= week < current:
+            self._prune_failures()
+            return
+        self._prune_failures()
+        self._publication_failures = [item for item in self._publication_failures if item["window_week"] != week]
+        self._publication_failures.append({"window_week": week, "state": "publication_failed"})
         recorder = getattr(self._publish, "record_publication_failure", None)
         if callable(recorder):
             with suppress(Exception):

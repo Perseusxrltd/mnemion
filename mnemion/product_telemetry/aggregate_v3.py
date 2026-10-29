@@ -41,6 +41,7 @@ QUANTILE_METHOD = {
     "single_coordinate_halfwidth_is_not_a_percentile_confidence_interval": True,
 }
 ADMISSION = {"rule": "every_well_formed_report", "cross_report_eviction": False}
+REPORT_UNIT = "anonymous_bounded_summary_not_a_person_or_installation"
 _RADIUS_CACHE: dict[tuple[int, int], int] = {}
 
 
@@ -414,7 +415,7 @@ def _publish(week: int, cohorts, widths, stride, noisy: list[int]) -> dict:
         "mechanism_halfwidth_95": HALFWIDTH,
         "publication_rounding": ROUNDING,
         "protected_unit": "add_or_remove_one_input_report_including_admission_and_clipping",
-        "report_unit": "anonymous_bounded_summary_not_a_person_or_installation",
+        "report_unit": REPORT_UNIT,
         "weighting": WIRE["contribution"]["weighting"],
         "admission": dict(ADMISSION),
         "reports_are_not_unique_people": True,
@@ -592,6 +593,8 @@ def validate(result: object) -> dict:
         or result["mechanism_halfwidth_95"] != HALFWIDTH
         or result["publication_rounding"] != 1
         or result["protected_unit"] != "add_or_remove_one_input_report_including_admission_and_clipping"
+        or result["report_unit"] != REPORT_UNIT
+        or result["weighting"] != WIRE["contribution"]["weighting"]
         or result["admission"] != ADMISSION
         or result["reports_are_not_unique_people"] is not True
         or result["noise_uncertainty_is_not"] != "independent_user_sampling_or_causal_inference"

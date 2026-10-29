@@ -1,5 +1,9 @@
 /** Coarse v2 cohort arguments for the desktop owner. Not a hardware fingerprint or a v3 report. */
-import { version } from './package.json'
+import { readFileSync } from 'node:fs'
+
+// The compiled file lives in dist/. Node 22 rejects a JSON import that has no
+// type attribute, and this tsconfig does not emit one. Read the manifest beside dist.
+const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
 
 function family(value: string): 'before_4' | '4' | '5_plus' | 'unobserved' {
   const major = Number(value.split('.')[0])
