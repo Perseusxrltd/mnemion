@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T04:00:31+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T04:52:42+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.46.48](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.48). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -18,22 +18,28 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40812214715](https://github.com/Perseusxrltd/mnemion/actions/runs/40812214715) |
-| public-updates\.yml | v4\.46\.48 | success | [Run 40814044656](https://github.com/Perseusxrltd/mnemion/actions/runs/40814044656) |
-| release\.yml | release/4\.46\.48 | success | [Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811) |
-| release\.yml | release/4\.46\.49 | in\_progress | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
-| verify-artifacts\.yml | main | success | [Run 40813597891](https://github.com/Perseusxrltd/mnemion/actions/runs/40813597891) |
-| website-release\.yml | main | success | [Run 40802930121](https://github.com/Perseusxrltd/mnemion/actions/runs/40802930121) |
-| website-release\.yml | v4\.46\.48 | success | [Run 40814041922](https://github.com/Perseusxrltd/mnemion/actions/runs/40814041922) |
+| ci\.yml | main | success | [Run 40808620574](https://github.com/Perseusxrltd/mnemion/actions/runs/40808620574) |
+| public-updates\.yml | v4\.46\.49 | in\_progress | [Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156) |
+| release\.yml | release/4\.46\.49 | success | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
+| release\.yml | release/4\.46\.50 | in\_progress | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
+| verify-artifacts\.yml | main | success | [Run 40819658418](https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418) |
+| website-release\.yml | main | success | [Run 40808620485](https://github.com/Perseusxrltd/mnemion/actions/runs/40808620485) |
+| website-release\.yml | v4\.46\.49 | success | [Run 40820125119](https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119) |
 
 ## Active jobs
 
-[Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400): 15/21 jobs completed; 14 succeeded.
+[Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156): 1/7 jobs completed; 1 succeeded.
 
-- native / ubuntu-22\.04 / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / macos-26 / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / macos-15-intel / x64: in\_progress — Run npm --prefix studio/electron test.
-- native / windows-11-arm / arm64: in\_progress — Run npm --prefix studio/frontend ci.
-- native / windows-2022 / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / x64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
+- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+
+[Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489): 11/14 jobs completed; 10 succeeded.
+
+- native / native\_database / Database / linux / x64: in\_progress — Relocate, initialize, verify TLS and RLS, restore backup and recover a crash.
+- native / native\_database / Database / windows / x64: in\_progress — Compile pinned PostgreSQL, vector extension and static libraries.
+- native / Service engine / Windows x64: in\_progress — Run uv run --no-sync python -m deploy\.build\_native\_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine.
 

@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.46.48",
-    "published_at": "2026-10-29T03:46:47Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.48"
+    "version": "v4.46.49",
+    "published_at": "2026-10-29T04:51:57Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49"
   },
   "issues": [
     {
@@ -32,106 +32,84 @@
   ],
   "runs": [
     {
-      "id": 40812214715,
+      "id": 40808620574,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "eef846a30b4da71fe2da18adbcd7dd56a98f587f",
+      "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T04:00:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40812214715"
+      "updated_at": "2026-10-29T03:26:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40808620574"
     },
     {
-      "id": 40814044656,
+      "id": 40820128156,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.46.48",
-      "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T03:59:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40814044656"
-    },
-    {
-      "id": 40806507811,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.48",
-      "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T03:41:49Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811"
-    },
-    {
-      "id": 40812422400,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.49",
+      "branch": "v4.46.49",
       "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T03:55:48Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400",
+      "updated_at": "2026-10-29T04:52:21Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "total": 7,
+        "completed": 1,
+        "succeeded": 1,
         "active": [
           {
-            "id": 123253461485,
-            "name": "native / ubuntu-22.04 / x64",
+            "id": 123270458827,
+            "name": "linux / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Linux desktop libraries"
             ]
           },
           {
-            "id": 123253461496,
-            "name": "native / macos-26 / arm64",
+            "id": 123270458829,
+            "name": "windows / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Run python -m pip install psutil==7.2.2"
             ]
           },
           {
-            "id": 123253461512,
-            "name": "native / macos-15-intel / x64",
+            "id": 123270458850,
+            "name": "macos / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Install public release and observe its automatic update"
             ]
           },
           {
-            "id": 123253461524,
-            "name": "native / windows-11-arm / arm64",
+            "id": 123270458874,
+            "name": "windows / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/frontend ci"
+              "Run python -m pip install psutil==7.2.2"
             ]
           },
           {
-            "id": 123253461587,
-            "name": "native / windows-2022 / x64",
+            "id": 123270458896,
+            "name": "linux / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Linux desktop libraries"
             ]
           },
           {
-            "id": 123253461630,
-            "name": "native / ubuntu-22.04-arm / arm64",
+            "id": 123270458951,
+            "name": "macos / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Install public release and observe its automatic update"
             ]
           }
         ]
@@ -139,38 +117,96 @@
       "failed_jobs": []
     },
     {
-      "id": 40813597891,
+      "id": 40812422400,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.49",
+      "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T04:46:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400"
+    },
+    {
+      "id": 40815491489,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.50",
+      "source_commit": "eef846a30b4da71fe2da18adbcd7dd56a98f587f",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T04:49:43Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 14,
+        "completed": 11,
+        "succeeded": 10,
+        "active": [
+          {
+            "id": 123269256541,
+            "name": "native / native_database / Database / linux / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
+            ]
+          },
+          {
+            "id": 123269256571,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Compile pinned PostgreSQL, vector extension and static libraries"
+            ]
+          },
+          {
+            "id": 123269696372,
+            "name": "native / Service engine / Windows x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m deploy.build_native_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
+      "id": 40819658418,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "cc5bce2aa874c6d5a1e08db31ff62c6e91ca6bed",
+      "source_commit": "71fdde86be64d4cf177a56bb951debc344ea5bd5",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T03:46:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40813597891"
+      "updated_at": "2026-10-29T04:52:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418"
     },
     {
-      "id": 40802930121,
+      "id": 40808620485,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
+      "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T01:51:51Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40802930121"
+      "updated_at": "2026-10-29T02:49:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40808620485"
     },
     {
-      "id": 40814041922,
+      "id": 40820125119,
       "attempt": 1,
       "workflow": "website-release.yml",
-      "branch": "v4.46.48",
-      "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
+      "branch": "v4.46.49",
+      "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T03:47:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40814041922"
+      "updated_at": "2026-10-29T04:52:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T04:00:31+00:00"
+  "observed_at": "2026-10-29T04:52:42+00:00"
 }
