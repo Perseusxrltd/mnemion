@@ -5,6 +5,7 @@ import type { NativeTelemetryDisclosure } from './telemetry-store.js'
 import type { MeasurementCatalog } from './telemetry-catalog.js'
 import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import { nativeTelemetryRoute, validCertificateAuthorities } from './telemetry-route.js'
+import { reviewedDesktopCohorts } from './telemetry-cohorts.js'
 
 export type TelemetryConditions = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
 
@@ -29,7 +30,7 @@ export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
         (releaseTrustValid ??= validCertificateAuthorities(authorities)),
       reserve: async (stamp, stop) => {
         if (gauges && (!await this.eligible(stamp) || !await gauges.prepare(stop) || stop.aborted)) return null
-        return this.reserve(stamp)
+        return this.reserve(stamp, { network: 'unknown', constrained: true }, reviewedDesktopCohorts())
       },
       send: async (report, stop) => {
         const { TelemetryEndpoint, sendNativeTelemetry } = await import('./telemetry-transport.js')
