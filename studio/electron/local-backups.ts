@@ -8,9 +8,9 @@ import type { LocalWorkspace } from './local-workspace.js'
 import type { BackupFile, BackupReceipt, BackupConfiguration, BackupView, BackupSettings, BackupInventory, BackupRetentionResult } from '../shared/local-workspace.js'
 import { backupResult, retentionPolicy, retentionResult } from './local-backup-protocol.js'
 import { replaceFile } from './atomic-file.js'
+import { BackupStateError, type BackupStateDiagnostic } from './backup-state-diagnostics.js'
 
 type Stored = Omit<BackupConfiguration, 'protected_key'> & { format: 1; sealed_key: string | null }
-const message = 'Backup settings could not be read safely. Existing recovery files were retained.'
 
 export function recoveryKey(value: unknown): string {
   if (typeof value !== 'string' || !/^mnm_bk_[A-Za-z0-9_-]{43}$/.test(value) ||
@@ -40,19 +40,22 @@ export async function readBackupDocument(path: string): Promise<any | undefined>
     let before
     try { before = await lstat(path) } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
-      throw new Error(message)
+      throw new BackupStateError(path, 'path', error)
     }
-    if (!privateBackupFile(before)) throw new Error(message)
+    if (!privateBackupFile(before)) throw new BackupStateError(path, 'path_private')
     let file
+    let stage: BackupStateDiagnostic['stage'] = 'open'
     try {
       file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
+      stage = 'descriptor'
       const actual = await file.stat()
-      if (!privateBackupFile(actual, true)) throw new Error(message)
+      if (!privateBackupFile(actual, true)) throw new BackupStateError(path, 'descriptor_private')
       if (actual.dev !== before.dev || actual.ino !== before.ino || actual.nlink === 0) {
         if (attempt === 0) continue
-        throw new Error(message)
+        throw new BackupStateError(path, 'replacement_limit')
       }
-      if (!sameBackupVersion(before, actual)) throw new Error(message)
+      if (!sameBackupVersion(before, actual)) throw new BackupStateError(path, 'metadata_before_read')
+      stage = 'read'
       const bytes = Buffer.alloc(256 * 1024 + 1)
       let length = 0
       while (length < bytes.length) {
@@ -60,19 +63,23 @@ export async function readBackupDocument(path: string): Promise<any | undefined>
         if (!read.bytesRead) break
         length += read.bytesRead
       }
+      stage = 'metadata_after_read'
       const after = await file.stat()
-      if (!privateBackupFile(after, true)) throw new Error(message)
+      if (!privateBackupFile(after, true)) throw new BackupStateError(path, 'descriptor_private')
       if (after.nlink === 0) {
         if (attempt === 0) continue
-        throw new Error(message)
+        throw new BackupStateError(path, 'replacement_limit')
       }
-      if (!sameBackupVersion(actual, after) || length !== actual.size || length > 256 * 1024) throw new Error(message)
+      if (!sameBackupVersion(actual, after) || length !== actual.size || length > 256 * 1024) throw new BackupStateError(path, stage)
+      stage = 'json'
       return JSON.parse(bytes.subarray(0, length).toString('utf8'))
-    } catch { throw new Error(message) } finally {
-      await file?.close().catch(() => { throw new Error(message) })
+    } catch (error) {
+      throw error instanceof BackupStateError ? error : new BackupStateError(path, stage, error)
+    } finally {
+      await file?.close().catch(error => { throw new BackupStateError(path, 'close', error) })
     }
   }
-  throw new Error(message)
+  throw new BackupStateError(path, 'replacement_limit')
 }
 
 async function writeDocument(path: string, value: unknown, signal?: AbortSignal): Promise<void> {
@@ -99,7 +106,7 @@ function decode(value: any, workspaceId: string): Stored {
       typeof value.enabled !== 'boolean' || ![6, 12, 24, 168].includes(value.snapshot_hours) ||
       ![15, 30, 60, 240].includes(value.ledger_minutes) ||
       !(value.sealed_key === null || typeof value.sealed_key === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(value.sealed_key) && value.sealed_key.length <= 16384) ||
-      (value.enabled && !value.sealed_key)) throw new Error(message)
+      (value.enabled && !value.sealed_key)) throw new BackupStateError('backup-policy.json', 'policy')
   return { ...value, retention: retentionPolicy(value.retention) } as Stored
 }
 
@@ -159,7 +166,7 @@ export class LocalBackups {
     const value = await readBackupDocument(this.failureFile)
     if (!value || value.workspace_id !== configuration.workspace_id || value.revision !== configuration.revision) return undefined
     if (value.format !== 1 || typeof value.message !== 'string' || value.message.length > 1000 ||
-        typeof value.retry_at !== 'string' || value.retry_at.length > 40 || !Number.isFinite(Date.parse(value.retry_at))) throw new Error(message)
+        typeof value.retry_at !== 'string' || value.retry_at.length > 40 || !Number.isFinite(Date.parse(value.retry_at))) throw new BackupStateError(this.failureFile, 'failure_record')
     return { message: value.message, retry_at: value.retry_at }
   }
   private due(last: string | undefined, interval: number): number {

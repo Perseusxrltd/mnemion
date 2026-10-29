@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.52**.
+Reviewed source distribution: **4.46.53**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-29**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,17 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**29 October 2026, Mac launch and Windows backup-read corrections:**
+The [4.46.53 source](releases/4.46.53.md) addresses the Mac ad-hoc Team ID launch
+failure in issue 49 and avoids rewriting already-private Windows folder
+permissions during status reads. The [Windows qualification](validation/2026-10-29-windows-directory-security.md)
+includes a passing actual Python/Node regression and fixed, private-data-free
+failure diagnostics. The [Mac policy qualification](validation/2026-10-29-macos-adhoc-launch.md)
+retains hardened runtime and requires actual executable-entitlement inspection
+in the native installer gate. Native publication and the affected Mac's launch
+remain pending. Issues 44/47/48/49 remain open, all 66 requirement states remain
+unchanged, and production telemetry collection remains disabled.
 
 **29 October 2026, background update relaunch and smaller public downloads:**
 The [4.46.52 source](releases/4.46.52.md) preserves background presentation across

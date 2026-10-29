@@ -16,6 +16,7 @@ import { ServiceRequests } from './service-requests.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import { localDiagnostic } from './local-diagnostics.js'
 import { LocalBackups, createRecoveryKey, readBackupDocument, recoveryKey } from './local-backups.js'
+import { BackupStateError, backupStateDiagnostic, type BackupStateDiagnostic } from './backup-state-diagnostics.js'
 import { backupResult } from './local-backup-protocol.js'
 import { DesktopOperator, type DesktopRequest } from './desktop-operator.js'
 import { desktopAction, desktopActions } from './desktop-actions.js'
@@ -194,6 +195,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let connections: WorkspaceConnections | undefined
   let local: LocalWorkspace | undefined
   let backups: LocalBackups | undefined
+  let backupStateFailure: BackupStateDiagnostic | undefined
   let sources: DesktopSources | undefined
   let agentSetup: DesktopAgents | undefined
   let hosts: HostProfiles | undefined
@@ -697,7 +699,14 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   async function backupStatus() {
     const host = localWorkspace()
     if (!host.status.info && !host.busy) await host.inspect()
-    return localBackups().status()
+    try {
+      const result = await localBackups().status()
+      backupStateFailure = undefined
+      return result
+    } catch (error) {
+      backupStateFailure = error instanceof BackupStateError ? backupStateDiagnostic(error.diagnostic) : undefined
+      throw error
+    }
   }
   handle('local:backup-status', event => { trusted(event); return backupStatus() })
   handle('local:backup-key', event => { trusted(event); return createRecoveryKey() })
@@ -1075,6 +1084,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   return {
     localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
     backupDiagnostic: () => localDiagnostic(local?.status.backup?.diagnostic),
+    backupStateDiagnostic: () => backupStateDiagnostic(backupStateFailure),
     maintenanceTelemetry: telemetryStore,
     measureMenuAction: (action: 'app.update-check' | 'app.update-restart' | 'app.preferences', run: () => unknown) =>
       measureAction(action, {}, 'desktop', run),

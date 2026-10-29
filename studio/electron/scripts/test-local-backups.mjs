@@ -2,12 +2,43 @@ import assert from 'node:assert/strict'
 import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:crypto'
 import fs, { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
+import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import { LocalBackups, createRecoveryKey, recoveryKeyId, readBackupDocument } from '../dist/local-backups.js'
 import { backupResult } from '../dist/local-backup-protocol.js'
 import { replaceFile } from '../dist/atomic-file.js'
+import { BackupStateError, backupStateDiagnostic, backupStateMessage } from '../dist/backup-state-diagnostics.js'
+
+test('backup state diagnostics carry only fixed categories, never private filenames or OS error text', () => {
+  const secret = 'PRIVATE_CREDENTIAL_SENTINEL'
+  const error = new BackupStateError(join(tmpdir(), secret, 'backup-policy.json'), 'open',
+    Object.assign(new Error(secret), { code: 'EACCES', path: secret }))
+  assert.equal(error.message, backupStateMessage)
+  assert.deepEqual(backupStateDiagnostic(error.diagnostic), { document: 'policy', stage: 'open', filesystem: 'denied' })
+  assert.ok(!JSON.stringify(error).includes(secret))
+  assert.deepEqual(new BackupStateError(secret, 'path', { code: secret }).diagnostic,
+    { document: 'other', stage: 'path', filesystem: 'other' })
+})
+
+test('uploaded backup diagnostics reject additional fields, malformed values and prototype names', () => {
+  const fixture = { document: 'policy', stage: 'metadata_before_read', filesystem: 'none' }
+  assert.deepEqual(backupStateDiagnostic(fixture), fixture)
+  assert.equal(backupStateDiagnostic(undefined), undefined)
+  for (const key of Object.keys(fixture)) {
+    for (const value of ['private-secret', { private: true }, ['none'], null, 4, true]) {
+      assert.throws(() => backupStateDiagnostic({ ...fixture, [key]: value }), /Invalid backup-state/)
+    }
+    const missing = { ...fixture }; delete missing[key]
+    assert.throws(() => backupStateDiagnostic(missing), /Invalid backup-state/)
+  }
+  for (const value of [null, [], { ...fixture, path: 'private-secret' },
+    JSON.parse('{"document":"policy","stage":"json","toString":"none"}')]) {
+    assert.throws(() => backupStateDiagnostic(value), /Invalid backup-state/)
+  }
+})
 
 async function documentFixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'mnemion-backup-document-'))
@@ -17,6 +48,31 @@ async function documentFixture(t) {
   await writeFile(replacement, '{"revision":2}\n', { mode: 0o600 })
   return { root, path, replacement }
 }
+
+test('native Windows folder protection leaves a concurrent backup status read stable',
+  { skip: process.platform !== 'win32', timeout: 30000 }, async t => {
+    const base = await mkdtemp(join(tmpdir(), 'mnemion-directory-reader-'))
+    t.after(() => rm(base, { recursive: true, force: true }))
+    const directory = join(base, 'Private state Équipe'), path = join(directory, 'backup-policy.json')
+    const project = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+    function protect() {
+      const result = spawnSync(process.env.MNEMION_TEST_PYTHON || 'python', ['-c',
+        'from pathlib import Path; import sys; from mnemion.local_state import directory; directory(Path(sys.argv[1]))', directory],
+        { cwd: project, encoding: 'utf8', timeout: 10000 })
+      assert.equal(result.status, 0, 'The real private-directory helper must complete')
+    }
+    protect()
+    // Like the desktop settings writer, this child inherits the private DACL.
+    await writeFile(path, '{"revision":1}\n', { mode: 0o600 })
+    const originalOpen = fs.open
+    const mock = t.mock.method(fs, 'open', async (selected, ...args) => {
+      if (selected === path) protect()
+      return originalOpen(selected, ...args)
+    })
+    syncBuiltinESMExports()
+    try { assert.deepEqual(await readBackupDocument(path), { revision: 1 }) }
+    finally { mock.mock.restore(); syncBuiltinESMExports() }
+  })
 
 for (const point of ['before-open', 'after-open', 'during-read']) {
   // Windows blocks replacement while the descriptor is open. Its real sharing
@@ -128,14 +184,18 @@ test('backup metadata snapshot rejects an in-place rewrite rather than retrying 
   })
   syncBuiltinESMExports()
   try {
-    await assert.rejects(readBackupDocument(f.path), /Backup settings could not be read safely/)
+    await assert.rejects(readBackupDocument(f.path), error => {
+      assert.equal(error.message, backupStateMessage)
+      assert.deepEqual(error.diagnostic, { document: 'policy', stage: 'metadata_before_read', filesystem: 'none' })
+      return true
+    })
     assert.equal(opens, 1)
   } finally { mock.mock.restore(); syncBuiltinESMExports() }
 })
 
 test('backup metadata snapshot rejects corrupt JSON without another open', async t => {
   const f = await documentFixture(t), originalOpen = fs.open
-  await writeFile(f.path, '{invalid json}\n')
+  await writeFile(f.path, '{PRIVATE_INVALID_JSON_SENTINEL}\n')
   let opens = 0
   const mock = t.mock.method(fs, 'open', async (path, ...args) => {
     if (path === f.path) ++opens
@@ -143,7 +203,12 @@ test('backup metadata snapshot rejects corrupt JSON without another open', async
   })
   syncBuiltinESMExports()
   try {
-    await assert.rejects(readBackupDocument(f.path), /Backup settings could not be read safely/)
+    await assert.rejects(readBackupDocument(f.path), error => {
+      assert.equal(error.message, backupStateMessage)
+      assert.deepEqual(error.diagnostic, { document: 'policy', stage: 'json', filesystem: 'none' })
+      assert.ok(!JSON.stringify(error).includes('PRIVATE_INVALID_JSON_SENTINEL'))
+      return true
+    })
     assert.equal(opens, 1)
   } finally { mock.mock.restore(); syncBuiltinESMExports() }
 })

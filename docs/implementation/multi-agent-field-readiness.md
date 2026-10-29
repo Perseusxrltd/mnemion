@@ -14,6 +14,13 @@ No original requirement text, state or completion count changes here.
 
 ## Operational repairs
 
+The later [issue 49](https://github.com/Perseusxrltd/mnemion/issues/49) reports a
+Mac desktop launch failure with an ad-hoc Electron Framework signature. The
+[4.46.53 signing correction](../validation/2026-10-29-macos-adhoc-launch.md)
+keeps hardened runtime and adds the documented library-validation entitlement.
+Both Mac native package gates and launch on the affected Mac remain required;
+this new critical repair does not replace the field requirements below.
+
 The 17:01 UTC follow-up to issue 47 adds **four simultaneous read-only MCP
 searches** failing on 4.46.40: two `generation_changed` and two
 `database_unavailable`, after 40–92 seconds, despite no model-setting change.

@@ -11,6 +11,7 @@ import { verifyNativeResources } from './native-resources.mjs'
 import { localDiagnostic } from '../dist/local-diagnostics.js'
 import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
+import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 
 const artifacts = platformArtifacts()
 // Production NSIS owns registry entries. Run only on a fresh hosted CI machine,
@@ -309,6 +310,9 @@ try {
   let backupDiagnostic
   let invalidBackupDiagnostic = false
   try { backupDiagnostic = localDiagnostic(state?.backupDiagnostic) } catch { invalidBackupDiagnostic = true }
+  let backupState
+  let invalidBackupStateDiagnostic = false
+  try { backupState = backupStateDiagnostic(state?.backupStateDiagnostic) } catch { invalidBackupStateDiagnostic = true }
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, platform: process.platform, architecture: process.arch,
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
@@ -316,6 +320,7 @@ try {
     ...(modelSetup ? { modelSetup } : {}),
     ...(engineDiagnostic ? { engineDiagnostic } : {}), ...(invalidEngineDiagnostic ? { invalidEngineDiagnostic: true } : {}),
     ...(backupDiagnostic ? { backupDiagnostic } : {}), ...(invalidBackupDiagnostic ? { invalidBackupDiagnostic: true } : {}),
+    ...(backupState ? { backupStateDiagnostic: backupState } : {}), ...(invalidBackupStateDiagnostic ? { invalidBackupStateDiagnostic: true } : {}),
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error
 } finally {

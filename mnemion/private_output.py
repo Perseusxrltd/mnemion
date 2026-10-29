@@ -92,6 +92,90 @@ def _windows_create_directory(path: Path) -> bool:
         raise OSError(error, "Windows cannot create this private workspace folder")
 
 
+def _windows_same_private_dacl(handle: int, desired: int) -> bool:
+    """Inspect this handle each time; never rewrite an identical private DACL.
+
+    SetSecurityInfo propagates even an unchanged directory DACL to inherited
+    children. Their change times then move during otherwise read-only status
+    checks, invalidating a concurrent private-file snapshot.
+    """
+    import ctypes as c
+    from ctypes import wintypes as w
+
+    class AclSizeInfo(c.Structure):
+        _fields_ = [("count", w.DWORD), ("used", w.DWORD), ("free", w.DWORD)]
+
+    class AceHeader(c.Structure):
+        _fields_ = [("kind", w.BYTE), ("flags", w.BYTE), ("size", w.WORD)]
+
+    advapi = c.WinDLL("advapi32", use_last_error=True)
+    kernel = c.WinDLL("kernel32", use_last_error=True)
+    kernel.LocalFree.argtypes, kernel.LocalFree.restype = [c.c_void_p], c.c_void_p
+    advapi.GetSecurityInfo.argtypes = [
+        w.HANDLE,
+        w.DWORD,
+        w.DWORD,
+        c.c_void_p,
+        c.c_void_p,
+        c.POINTER(c.c_void_p),
+        c.c_void_p,
+        c.POINTER(c.c_void_p),
+    ]
+    advapi.GetSecurityInfo.restype = w.DWORD
+    advapi.GetSecurityDescriptorControl.argtypes = [
+        c.c_void_p,
+        c.POINTER(w.WORD),
+        c.POINTER(w.DWORD),
+    ]
+    advapi.GetSecurityDescriptorControl.restype = w.BOOL
+    advapi.IsValidAcl.argtypes, advapi.IsValidAcl.restype = [c.c_void_p], w.BOOL
+    advapi.GetAclInformation.argtypes = [c.c_void_p, c.c_void_p, w.DWORD, c.c_int]
+    advapi.GetAclInformation.restype = w.BOOL
+    advapi.GetAce.argtypes = [c.c_void_p, w.DWORD, c.POINTER(c.c_void_p)]
+    advapi.GetAce.restype = w.BOOL
+
+    def only_ace(acl):
+        if not advapi.IsValidAcl(acl):
+            raise OSError("Cannot inspect private Windows security")
+        size = AclSizeInfo()
+        if not advapi.GetAclInformation(acl, c.byref(size), c.sizeof(size), 2):
+            raise OSError("Cannot inspect private Windows security")
+        if size.count != 1:
+            return None
+        ace = c.c_void_p()
+        if not advapi.GetAce(acl, 0, c.byref(ace)) or not ace.value:
+            raise OSError("Cannot inspect private Windows security")
+        length = c.cast(ace, c.POINTER(AceHeader)).contents.size
+        if not c.sizeof(AceHeader) <= length <= size.used - 8 <= 65527:
+            raise OSError("Cannot inspect private Windows security")
+        return c.string_at(ace, length)
+
+    expected = only_ace(desired)
+    if expected is None:
+        raise OSError("Cannot construct private Windows security")
+    acl, security = c.c_void_p(), c.c_void_p()
+    try:
+        if advapi.GetSecurityInfo(handle, 1, 4, None, None, c.byref(acl), None, c.byref(security)):
+            raise OSError("Cannot inspect private Windows security")
+        control, revision = w.WORD(), w.DWORD()
+        if not security.value or not advapi.GetSecurityDescriptorControl(
+            security, c.byref(control), c.byref(revision)
+        ):
+            raise OSError("Cannot inspect private Windows security")
+        # The DACL must be present, protected from parent inheritance and not
+        # defaulted. One byte-identical owner ACE preserves both rights and
+        # child-inheritance flags; extra, inherited or broader ACEs do not pass.
+        return bool(
+            acl.value
+            and control.value & 0x1004 == 0x1004
+            and not control.value & 0x0008
+            and only_ace(acl) == expected
+        )
+    finally:
+        if security.value:
+            kernel.LocalFree(security)
+
+
 def _windows_owner_only_handle(handle: int, *, inherit: bool = False) -> None:
     import ctypes as c
     from ctypes import wintypes as w
@@ -124,11 +208,15 @@ def _windows_owner_only_handle(handle: int, *, inherit: bool = False) -> None:
             or not acl.value
         ):
             raise OSError("Cannot create a private Windows file")
+        if _windows_same_private_dacl(handle, acl):
+            return
         # Existing directories have already passed the current-user ownership
         # check. Only replace their DACL; never take ownership of another path.
         result = advapi.SetSecurityInfo(handle, 1, 0x80000004, None, None, acl, None)
         if result:
             raise OSError(result, "The filesystem cannot protect the output file")
+        if not _windows_same_private_dacl(handle, acl):
+            raise OSError("The filesystem did not retain private Windows security")
 
 
 def _windows_create_file(path: Path) -> int:

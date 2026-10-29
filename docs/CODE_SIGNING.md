@@ -1,6 +1,6 @@
 # Code signing policy
 
-Updated: **2026-10-11**. Project maintainer: **PERSEUS LEGACY LIMITED**.
+Updated: **2026-10-29**. Project maintainer: **PERSEUS LEGACY LIMITED**.
 
 ## Platform status
 
@@ -19,6 +19,23 @@ The build is not Apple Developer ID signed or notarized. First launch may requir
 explicit Privacy & Security approval, which a managed Mac may prohibit. Apple
 publisher trust is separate from verification of subsequent signed archives.
 Never disable Gatekeeper or describe an ad-hoc signature as Apple-verified identity.
+
+The 4.46.53 source corrects the launch failure in
+[issue 49](https://github.com/Perseusxrltd/mnemion/issues/49). Ad-hoc executables
+have no Apple Team ID; hardened runtime's library validation can therefore
+reject the app's own Electron Framework even when every bundle seal verifies.
+The free build retains hardened runtime and explicitly grants only
+`com.apple.security.cs.allow-jit` and
+`com.apple.security.cs.disable-library-validation` to the main executable and
+Electron helpers. This is the [Electron Builder documented policy](https://www.electron.build/v26/docs/features/code-signing/code-signing-mac.html)
+for ad-hoc builds, not a publisher certificate. The native installer verifier
+checks these actual executable entitlements as well as bundle integrity, and
+the installed-app launch and update tests remain required. See the
+[qualification and remaining Mac acceptance](validation/2026-10-29-macos-adhoc-launch.md).
+A future Developer ID signing integration must review this exception again.
+If an affected app cannot start, its updater cannot run either: install the
+corrected published package once it is available. Do not locally re-sign an
+old release or disable system security as a substitute.
 
 Linux AppImage updates use the established Electron updater with HTTPS release
 feeds and payload hashes. Debian packages use administrator-managed upgrades.

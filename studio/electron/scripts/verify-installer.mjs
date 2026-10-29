@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process'
 import { root, platformArtifacts } from './platform-artifacts.mjs'
 import { verifyNativeResources } from './native-resources.mjs'
 import { packageFootprint } from './package-footprint.mjs'
+import { verifyAdhocMacLaunchPolicy } from './macos-signing-policy.mjs'
 
 const artifacts = platformArtifacts()
 const requireSignature = process.env.MNEMION_REQUIRE_CODE_SIGNATURE === '1'
@@ -47,6 +48,7 @@ for (const installer of artifacts.installers) {
 }
 
 let signature = 'not required on this platform'
+let macosLaunchPolicy
 if (process.platform === 'win32') {
   const { extractFile, listPackage } = await import('@electron/asar')
   const archive = join(artifacts.resources, 'app.asar')
@@ -90,6 +92,7 @@ if (process.platform === 'win32') {
   signature = /Signature=adhoc/.test(check.stderr || '') ? 'ad hoc; independent Ed25519 updates' : 'unexpected signature'
   if (signature === 'unexpected signature') throw new Error('The free macOS build requires an intact ad-hoc signature')
   run('codesign', ['--verify', '--deep', '--strict', artifacts.bundle])
+  macosLaunchPolicy = verifyAdhocMacLaunchPolicy(artifacts.bundle)
   const config = JSON.parse(readFileSync(join(root, 'studio/electron/native/sparkle.json'), 'utf8'))
   const build = JSON.parse(readFileSync(join(artifacts.resources, 'macos-updater-build.json'), 'utf8'))
   if (build.fixture !== false || build.public_key !== config.publicKey || build.sparkle_distribution_sha256 !== config.sha256) {
@@ -128,6 +131,7 @@ for (const path of artifacts.installers) {
 }
 writeFileSync(join(artifacts.output, `SHA256SUMS-${process.platform}-${process.arch}.txt`), checksums.join('\n') + '\n')
 console.log(JSON.stringify({ ok: true, platform: process.platform, architecture: process.arch, signature, nativeRuntime,
+  ...(macosLaunchPolicy ? { macos_launch_policy: macosLaunchPolicy } : {}),
   installer_download_budget_bytes: installerDownloadBudget,
   unpacked: packageFootprint(artifacts.bundle, artifacts.resources),
   installers: artifacts.installers.map(path => ({ file: basename(path), bytes: statSync(path).size })) }, null, 2))
