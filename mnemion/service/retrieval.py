@@ -95,9 +95,7 @@ ELIGIBLE = _ELIGIBLE_PREFIX + _ELIGIBLE_FILTERS
 # prevent that CTE from rebuilding chronology eligibility for the whole corpus.
 # Both variants retain identical source, revision, scope and temporal checks.
 SELECTED_ELIGIBLE = (
-    _ELIGIBLE_PREFIX
-    + "      AND m.id=ANY(%(selected_memories)s::uuid[])\n"
-    + _ELIGIBLE_FILTERS
+    _ELIGIBLE_PREFIX + "      AND m.id=ANY(%(selected_memories)s::uuid[])\n" + _ELIGIBLE_FILTERS
 )
 
 

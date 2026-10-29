@@ -29,7 +29,10 @@ def test_passage_ranking_materializes_only_selected_candidates(env, monkeypatch)
             def visit(node):
                 if node.get("Subplan Name") == "CTE eligible":
                     materialized.append(
-                        (node["Actual Rows"] * node["Actual Loops"], len(params["selected_memories"]))
+                        (
+                            node["Actual Rows"] * node["Actual Loops"],
+                            len(params["selected_memories"]),
+                        )
                     )
                 for child in node.get("Plans", []):
                     visit(child)
