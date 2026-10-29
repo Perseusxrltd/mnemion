@@ -36,11 +36,24 @@ one uncontrolled comparison using one normal principal. Post-upgrade backup was
 still pending during the probe. The original fixture failure is preserved;
 default hybrid, cross-user and reported search-failure acceptance remain open.
 
+The [later field-operations report](../validation/2026-10-29-field-operations.md)
+adds one serial and four concurrent default-mode searches with `mode` omitted,
+eight visible activity scopes and separate offline model-policy observations.
+Scope-count changes and unrecorded semantic-score values limit this evidence;
+the full reported workload remains unqualified.
+
+The [4.46.49 chronology correction](../validation/2026-10-29-selected-passage-candidates.md)
+bounds passage eligibility to the already-selected candidates. Its real
+PostgreSQL regression materialized one row instead of 33 for one candidate;
+61 focused retrieval, chronology and permission checks passed. This removes
+redundant database work; production latency and native release acceptance for
+that source remain pending.
+
 | Reported behavior | Current work and retained acceptance | Requirement |
 | --- | --- | --- |
 | Lexical recall took 18.2 seconds; hybrid averaged 8.3 seconds, with longer stalls. | Source 4.46.43 moves the existing grant/source/capture check into statement-scoped RLS sets. The [isolated query check](../validation/2026-10-28-field-reliability.md) passes; the 4.46.44 four-client comparison above records lower observed lexical latency under uncontrolled load. Full reported-scope lexical/hybrid latency, concurrency and clear bounded failures still require field acceptance. Preserve the report's under-60-second and improved hybrid criteria. | F02, R04 |
-| Activity failed for two of eleven spaces. | The same migration optimizes reviewer-scoped audit and private-note reads. Verify all eleven reported spaces in one minute with the reporter's access. A different administrator's smaller accessible corpus is not that acceptance. | A09, R04, V05 |
-| Only the latest 100 audit events were reachable; 87 were empty journal filing events. | Cursor pages and exact action filters are available in source, SDK, MCP and Studio. Empty successful filing passes still update status/scheduling but add no new `journal.organized` event. Existing retained audit history is preserved. Validate the published host. | F08, A09, V05 |
+| Activity failed for two of eleven spaces. | The same migration optimizes reviewer-scoped audit and private-note reads. The normal principal's eight visible scopes returned eight initial pages in 11.354684 seconds. Scope lists changed from 11 to 9 to 8 to 11 without an identified cause. Verify all eleven reported spaces in one minute with the reporter's access; the smaller observed corpus does not satisfy that acceptance. | A09, R04, V05 |
+| Only the latest 100 audit events were reachable; 87 were empty journal filing events. | Cursor pages and exact action filters are available in source, SDK, MCP and Studio. One additional published-host cursor page had zero overlap with its first page; complete-history acceptance remains open. Empty successful filing passes still update status/scheduling but add no new `journal.organized` event. Existing retained audit history is preserved. | F08, A09, V05 |
 | Full memory pages exceeded the MCP response limit. | `summary=true` returns bounded inventories with a subject preview and no content, evidence or arbitrary metadata. A 100-record page passes the actual MCP path. The compact tool now permits an explicitly selected response allowance up to the existing 128 KiB ceiling; its default remains 16 KiB. | F08, R04 |
 | Tenant-wide operations returned an unexplained 403 to a space administrator. | The source error now names the required tenant-administrator role. The [control guide](../service/agent-control.md) explains the two scopes. No role or permission is broadened. | A03, A11 |
 | A suspended connector scope could not be identified or resumed from the caller's view. | Source 4.46.44 adds explicit, paged source diagnostics for tenant administrators and connector operators, with source/connector/operator identities, fixed reasons and supported recovery steps. Other callers get a clear control-scope explanation. The [qualification](../validation/2026-10-28-source-diagnostics.md) verifies privacy, current permissions and sticky pauses. Published-host and reporter acceptance remain open; a space role does not gain another connector's controls. | C01, C09, A03, A12 |
@@ -103,6 +116,13 @@ No production memory cleanup, provider revalidation, vault synchronization or
 real-secret test is authorized by this checklist alone. The deliberate PC note
 publisher pause and independent [Grok Bot acceptance](github-issues.md) remain.
 
+Independent manifest inspection now confirms post-upgrade snapshot and ledger
+delivery, but the original snapshot unit failed at its 45-minute timeout after
+delivery. The original driver was stopped for inspection without replaying the
+migration or capture. Cleanup correction and full guarded-upgrade acceptance
+remain open with [issue 44](https://github.com/Perseusxrltd/mnemion/issues/44);
+the linked field report retains both delivery evidence and the original failure.
+
 V08 telemetry stays **Building**. Its full resource, wire, provider/privacy and
 platform/release acceptance remains required before enabling collection or
-sending its completion notification.
+sending its completion notification. Collection remains unavailable.

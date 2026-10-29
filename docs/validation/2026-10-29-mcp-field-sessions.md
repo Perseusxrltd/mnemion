@@ -85,8 +85,13 @@ The after-upgrade lexical comparison is now recorded, while the reported error,
 full-scope latency and hybrid acceptance remain open. Current release
 availability is tracked separately in [release status](../RELEASE_STATUS.md).
 
-The probes made no memory writes, settings changes or model calls and did not
-initiate the separate host upgrade. Retained probe evidence contains timing,
+The [later field-operations report](2026-10-29-field-operations.md) adds actual
+default-mode searches, eight-scope activity reads and their unresolved scope
+and score-sampling limits. It also records subsequent backup delivery alongside
+the original snapshot unit's timeout; full guarded acceptance remains open.
+
+The lexical probes above made no memory writes, settings changes or model calls
+and did not initiate the separate host upgrade. Retained probe evidence contains timing,
 fixed errors and counts, without memory contents, private identifiers, host
 addresses or credentials. Runtime,
 requirements and release metadata are unchanged by this report.
