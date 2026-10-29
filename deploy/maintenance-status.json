@@ -32,15 +32,33 @@
   ],
   "runs": [
     {
-      "id": 40808620574,
+      "id": 40820612659,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T03:26:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40808620574"
+      "source_commit": "457466f56a83f4d5bb3ee258f9e54b6ced9c525d",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T04:57:41Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 123271963456,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend run test:telemetry"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40820128156,
@@ -55,8 +73,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 7,
-        "completed": 1,
-        "succeeded": 1,
+        "completed": 3,
+        "succeeded": 3,
         "active": [
           {
             "id": 123270458827,
@@ -64,21 +82,12 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
             "id": 123270458829,
             "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install psutil==7.2.2"
-            ]
-          },
-          {
-            "id": 123270458850,
-            "name": "macos / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -91,21 +100,12 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           },
           {
             "id": 123270458896,
             "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 123270458951,
-            "name": "macos / x64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -140,18 +140,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 14,
-        "completed": 11,
-        "succeeded": 10,
+        "completed": 13,
+        "succeeded": 12,
         "active": [
-          {
-            "id": 123269256541,
-            "name": "native / native_database / Database / linux / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
-            ]
-          },
           {
             "id": 123269256571,
             "name": "native / native_database / Database / windows / x64",
@@ -159,15 +150,6 @@
             "runner_assigned": true,
             "steps": [
               "Compile pinned PostgreSQL, vector extension and static libraries"
-            ]
-          },
-          {
-            "id": 123269696372,
-            "name": "native / Service engine / Windows x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m deploy.build_native_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine"
             ]
           }
         ]
@@ -186,15 +168,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418"
     },
     {
-      "id": 40808620485,
+      "id": 40820612636,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "029ffdf6386f3435ae34ff529223349ac93b5e64",
+      "source_commit": "457466f56a83f4d5bb3ee258f9e54b6ced9c525d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T02:49:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40808620485"
+      "updated_at": "2026-10-29T04:57:44Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820612636"
     },
     {
       "id": 40820125119,
@@ -208,5 +190,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T04:52:42+00:00"
+  "observed_at": "2026-10-29T04:58:19+00:00"
 }
