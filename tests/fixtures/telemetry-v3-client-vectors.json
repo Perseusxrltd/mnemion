@@ -1,0 +1,198 @@
+{
+  "groups": ["usage", "reliability", "performance", "resources"],
+  "release": [4, 46, 53],
+  "release_catalog": [
+    {"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"}
+  ],
+  "expanded_release_catalog": [
+    {"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"},
+    {"slot": 1, "major": 4, "minor": 46, "patch": 54, "id": "4.46.54"},
+    {"slot": 2, "major": 4, "minor": 46, "patch": 55, "id": "4.46.55"}
+  ],
+  "cases": [
+    {
+      "name": "failed_without_reason",
+      "draws": [0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+      ],
+      "expect": {"axis": "release", "cohort": "4.46.53", "metrics": {"reason": "sensor_missing", "outcome": "failed"}}
+    },
+    {
+      "name": "deferred_without_reason",
+      "draws": [0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "deferred"}
+      ],
+      "expect": {"metrics": {"reason": "sensor_missing", "outcome": "deferred"}}
+    },
+    {
+      "name": "success_without_reason",
+      "draws": [0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "success"}
+      ],
+      "expect": {"metrics": {"reason": "no_failure", "outcome": "success"}}
+    },
+    {
+      "name": "accepted_without_reason",
+      "draws": [0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "accepted"}
+      ],
+      "expect": {"metrics": {"reason": "no_failure", "outcome": "accepted"}}
+    },
+    {
+      "name": "failed_with_offline",
+      "draws": [0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed", "reason": "offline"}
+      ],
+      "expect": {"metrics": {"reason": "offline", "outcome": "failed"}}
+    },
+    {
+      "name": "mixed_unknown_reason_selected",
+      "draws": [0, 0, 0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "success"},
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+      ],
+      "expect": {"metrics": {"reason": "sensor_missing", "outcome": "success"}}
+    },
+    {
+      "name": "mixed_no_failure_selected",
+      "draws": [0, 0, 1],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "success"},
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+      ],
+      "expect": {"metrics": {"reason": "no_failure", "outcome": "success"}}
+    },
+    {
+      "name": "mixed_failed_outcome_selected",
+      "draws": [0, 1, 0],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "success"},
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+      ],
+      "expect": {"metrics": {"reason": "sensor_missing", "outcome": "failed"}}
+    },
+    {
+      "name": "reliability_disabled_keeps_group_policy",
+      "draws": [0],
+      "groups": ["usage"],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+      ],
+      "expect": {"metrics": {"reason": "group_disabled", "outcome": "failed", "latency_ms": "group_disabled"}}
+    },
+    {
+      "name": "usage_disabled_does_not_invent_no_failure",
+      "draws": [0],
+      "groups": ["reliability"],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed", "reason": "offline"}
+      ],
+      "expect": {"metrics": {"reason": "offline", "outcome": "group_disabled", "feature": "group_disabled"}}
+    },
+    {
+      "name": "usage_disabled_and_no_reason_cell",
+      "draws": [0],
+      "groups": ["reliability"],
+      "observations": [
+        {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "failed"}
+      ],
+      "expect": {"metrics": {"reason": "sensor_missing", "outcome": "group_disabled"}}
+    },
+    {
+      "name": "missing_sensors",
+      "draws": [0],
+      "observations": [
+        {"kind": "submission", "workflow": "memory.recall", "surface": "desktop"}
+      ],
+      "expect": {
+        "metrics": {
+          "feature_family": "memory",
+          "feature": "memory.recall",
+          "reason": "sensor_missing",
+          "latency_ms": "sensor_missing",
+          "cpu_millicores": "sensor_missing"
+        }
+      }
+    },
+    {
+      "name": "disabled_resource_group",
+      "draws": [0],
+      "groups": ["usage"],
+      "observations": [
+        {"kind": "resource", "metric": "cpu_millicores", "value": 20}
+      ],
+      "expect": {
+        "metrics": {
+          "cpu_millicores": "group_disabled",
+          "reason": "group_disabled",
+          "feature_family": "sensor_missing"
+        }
+      }
+    },
+    {
+      "name": "os_axis",
+      "draws": [1],
+      "operating_system": "linux",
+      "observations": [
+        {"kind": "submission", "workflow": "memory.recall", "surface": "desktop"}
+      ],
+      "expect": {"axis": "os", "cohort": "linux", "cohort_index": 2}
+    },
+    {
+      "name": "windows_axis",
+      "draws": [1],
+      "operating_system": "windows",
+      "observations": [
+        {"kind": "submission", "workflow": "memory.recall", "surface": "desktop"}
+      ],
+      "expect": {"axis": "os", "cohort": "windows", "cohort_index": 0}
+    },
+    {
+      "name": "unlisted_release",
+      "draws": [0],
+      "release": [4, 46, 54],
+      "observations": [
+        {"kind": "submission", "workflow": "memory.recall", "surface": "desktop"}
+      ],
+      "expect": {"axis": "release", "cohort": "unlisted", "cohort_index": 1}
+    },
+    {
+      "name": "clipped_latency",
+      "draws": [0, 255],
+      "rows_from": [
+        {
+          "observation": {"kind": "outcome", "workflow": "memory.recall", "surface": "desktop", "outcome": "success", "latency_ms": 0},
+          "metric": "latency_ms",
+          "count": 200
+        },
+        {
+          "observation": {"kind": "outcome", "workflow": "memory.read", "surface": "desktop", "outcome": "success", "latency_ms": 0},
+          "metric": "latency_ms",
+          "count": 200
+        },
+        {
+          "observation": {"kind": "outcome", "workflow": "memory.list", "surface": "desktop", "outcome": "success", "latency_ms": 10},
+          "metric": "latency_ms",
+          "count": 255
+        }
+      ],
+      "expect": {"metrics": {"latency_ms": "10-49", "outcome": "sensor_missing", "reason": "sensor_missing"}}
+    },
+    {"name": "count_above_clip", "draws": [0], "rows": [[0, 256]], "error": true},
+    {"name": "count_zero", "draws": [0], "rows": [[0, 0]], "error": true},
+    {"name": "duplicate_cell", "draws": [0], "rows": [[0, 1], [0, 1]], "error": true},
+    {"name": "none_reason_cell", "draws": [0], "rows": [[9, 1]], "error": true},
+    {"name": "object_row", "draws": [0], "rows": [{"cell": 0, "count": 1}], "error": true},
+    {"name": "empty_rows", "draws": [0], "rows": [], "error": true},
+    {"name": "too_many_rows", "draws": [0], "repeat": 513, "error": true},
+    {"name": "release_coordinate_out_of_range", "draws": [0], "release": [4, 46, 256], "rows": [[0, 1]], "error": true},
+    {"name": "unknown_operating_system", "draws": [0], "operating_system": "android", "rows": [[0, 1]], "error": true},
+    {"name": "unknown_group", "draws": [0], "groups": ["usage", "hardware"], "rows": [[0, 1]], "error": true}
+  ]
+}
