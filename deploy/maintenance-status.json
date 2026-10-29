@@ -156,84 +156,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.46-r2",
       "source_commit": "21a2f377d3bf28585a8ba4ea8f0483798a639252",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T01:35:18Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40793646583"
+    },
+    {
+      "id": 40801321439,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "251ab9c1b227dd7dce880f3cc56ad127e6c8aea4",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T00:39:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40793646583",
+      "updated_at": "2026-10-29T01:35:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801321439",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 123190659559,
-            "name": "native / ubuntu-22.04 / x64",
+            "id": 123209846206,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123190659579,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123190659631,
-            "name": "native / macos-26 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123190659657,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123190659675,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123190659724,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend ci"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 40768286929,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "e1c802901b6491f69d31682dd67b686877a9fa63",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-28T21:00:52Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40768286929"
     },
     {
       "id": 40792614050,
@@ -258,5 +213,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363"
     }
   ],
-  "observed_at": "2026-10-29T00:46:58+00:00"
+  "observed_at": "2026-10-29T01:35:49+00:00"
 }
