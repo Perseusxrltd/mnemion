@@ -19,7 +19,7 @@ install another agent or enable conversation capture.
 | Grok Build | A Claude-compatible plugin with native Grok metadata support. Extract it and run `grok plugin install FOLDER`; use `/mcps` for authentication and `grok mcp doctor mnemion --json` for diagnostics. This is separate from Grok Bot cloud. |
 | Hermes | A YAML `mcp_servers.mnemion` definition with browser OAuth. Merge that entry into the intended profile, run `hermes mcp login mnemion`, then `/reload-mcp`. This is native configuration; inclusion in the Nous catalog needs its own approval. |
 | OpenClaw | A nested `mcp.servers.mnemion` definition with explicit Streamable HTTP and OAuth. Merge it into the intended configuration or use `openclaw mcp set` with that server object; then `openclaw mcp login mnemion` and `openclaw mcp probe mnemion`. This is native configuration, not an OpenClaw SDK extension. |
-| Grok Bot | A connection card and guide to the supported cloud/account flow. It is **not an importable marketplace plugin**. Actual cloud-computer access, enabled connector options and native acceptance remain tracked by [issue 44](https://github.com/Perseusxrltd/mnemion/issues/44). |
+| Grok Bot | A connection card and [cloud setup guide](grok-bot.md). The official route supports an uncatalogued MCP server by URL or a command on the Bot's cloud computer. The package is **not an importable marketplace plugin**; actual authentication, native tools and persistence remain tracked by [issue 44](https://github.com/Perseusxrltd/mnemion/issues/44). |
 
 Every ZIP also contains a machine-readable `connection.json`, its version,
 provider, package kind and authentication method. This card describes the
@@ -81,8 +81,9 @@ OpenClaw's exported OAuth configuration uses the gateway operator's shared
 connection. It does not identify each employee. Per-requester OAuth requires its
 separate gateway configuration and has a documented shared-channel sign-in-link
 limitation; review that provider contract before enabling it for a company.
-Grok Bot can share files, browser sessions and installed apps across the Bots
-on one account. Separate Bot names are not separate credential boundaries.
+Grok Bot shares files, browser sessions, command credentials and apps across the
+Bots on one account. Its [setup guide](grok-bot.md#shared-custody-and-continuity)
+distinguishes connected-app OAuth custody from credentials on the cloud computer.
 
 Cloud assistants must reach the workspace's host over HTTPS. A stable public
 host does not need ngrok; an offline host remains offline regardless of the

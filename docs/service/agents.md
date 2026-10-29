@@ -6,6 +6,10 @@ From **4.39**, download [Perseus XR connection packages](agent-packages.md)
 directly from **Agents**, or generate them through the API, SDKs or native CLI.
 Hermes and OpenClaw also join the local profile installer below.
 
+For the cloud client, follow [Connect Grok Bot](grok-bot.md): the official route
+accepts an MCP URL or cloud-computer command. Grok Build uses its separate local
+profile below; actual Grok Bot acceptance remains open.
+
 Published **4.32.0** adds [guided installation in Studio](desktop-agents.md): select
 the local client and its dedicated application, review the exact file change,
 then install. Configuration backups and other client policies are preserved.
