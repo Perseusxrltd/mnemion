@@ -3,6 +3,12 @@
 **V08 remains Building.** Collection stays unavailable. The current source
 includes the v3 clients, collector and private maintainer reports. The ordinary
 privacy-settings page shows local controls; it does not show fleet data.
+Attribution run 40971963055 made no enabled reservations. Aggregate open/close
+counts and sub-millisecond reserve windows point to the pre-database checks.
+They do not prove the exact guard: the clock bound can change after eligible,
+and a caught exception is still possible. The exact refusal is not yet recorded.
+A later owned read can name the clause. It does not qualify the 2 MiB or 0.5%
+gates, and `resource_acceptance` stays false.
 
 The approved direction is a trusted first-party collector and
 publication-side differential privacy. That is a different promise from wire

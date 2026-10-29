@@ -24,6 +24,8 @@ const marker = value => {
 async function bootstrap() {
   const { app, BrowserWindow, webContents } = await import('electron')
   const allocation = { samples: [], calls: {}, errors: [], enabled: input.attribution === true }
+  if (allocation.enabled) allocation.reserve_guard = null
+  let reserveActive = false
   const phaseMemory = input.phase_memory === true
   const heapStatistics = allocation.enabled || phaseMemory
     ? (await import('node:v8')).getHeapStatistics : null
@@ -56,8 +58,14 @@ async function bootstrap() {
       if (!first) return original.apply(this, args)
       capture(`${name}.before`)
       let value
+      const markingReserve = name === 'delivery.reserve'
+      if (markingReserve) reserveActive = true
       try { value = original.apply(this, args) }
-      catch (error) { capture(`${name}.error`); throw error }
+      catch (error) {
+        if (markingReserve) reserveActive = false
+        capture(`${name}.error`); throw error
+      }
+      if (markingReserve) reserveActive = false
       if (value && typeof value.then === 'function') return value.then(
         result => { capture(`${name}.after`); return result },
         error => { capture(`${name}.error`); throw error })
@@ -105,7 +113,16 @@ async function bootstrap() {
     const { NativeTelemetryStore } = await import('./dist/telemetry-store.js')
     const { NativeTelemetryDelivery } = await import('./dist/telemetry-delivery.js')
     const { NativeNetworkConditions } = await import('./dist/telemetry-network.js')
-    const { DesktopTelemetryConditions } = await import('./dist/telemetry-conditions.js')
+    const { DesktopTelemetryConditions, copyAdmissionGuard } = await import('./dist/telemetry-conditions.js')
+    const readAdmission = DesktopTelemetryConditions.prototype.read
+    // This wrapper is the only opt-in. It is set before read() so a CPU sample
+    // taken in prepare keeps the same class when reserve reuses it.
+    DesktopTelemetryConditions.prototype.read = function () {
+      this.traceAdmission = true
+      const value = readAdmission.call(this)
+      if (reserveActive && allocation.reserve_guard === null) allocation.reserve_guard = copyAdmissionGuard(this.admissionGuard)
+      return value
+    }
     capture('bootstrap.after_telemetry_imports')
     observeFirst(NativeTelemetryStore.prototype, 'open', 'sqlite.open')
     observeFirst(NativeTelemetryStore.prototype, 'closeDatabase', 'sqlite.close')

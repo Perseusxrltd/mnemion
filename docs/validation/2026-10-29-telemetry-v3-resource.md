@@ -83,3 +83,60 @@ file-backed plateau as a named subsystem until that boundary is measured.
 
 V08 remains Building. Collection, destination and route stay false/null/null.
 All 66 requirements remain. The 2 MiB and 0.5% gates stay unaccepted.
+
+## Attribution run 40971963055 failed
+
+Run **40971963055** on source `401c102304f951ebc1baec958831dc102a028b21` completed
+all six fixed cases and correctly failed the journey. It is not a pass and not
+an overhead result. Both enabled cases made **zero** reservations and **zero**
+collector reports. Accepted writes were 65, snapshots 106, and memory cycles
+128. Each case had 387/387 successful fixture API calls. The four
+unavailable and opted-out controls completed. Setup replies were enabled,
+unmetered, disclosure acknowledged, and storage ready. Allocation errors were
+empty. Cleanup was true. Production collection stayed off.
+
+Both enabled call maps were `sqlite.open=133`, `sqlite.close=134`,
+`conditions.prepare=1`, `network_cost.start=1`, `delivery.reserve=1`, with no
+`transport.socket`. The prepare windows were 259.845 ms and 258.973 ms. The
+reserve windows were 0.849 ms and 0.715 ms. `closeDatabase` returns immediately
+when it has no connection, but the attribution wrapper still counts that call.
+Aggregate open/close counts and these sub-millisecond windows do not
+conclusively prove the exact reserve guard. The clock bound can change after
+`eligible`, and a caught exception is still possible. The evidence points to
+the pre-database checks. The exact refusal is not yet recorded. Cohort
+selection and `reviewedDesktopRelease` run only after `open(true)`; these
+counts do not record those later checks as the cause.
+
+`eligible` had already passed the same stamp and clock bound on the way into
+`prepare`. That bound can change before `reserve`. The first CPU sample has no
+prior reading, so `prepare` takes its existing 250 ms delta even when the
+machine is idle. That delay does not identify a busy CPU, a SQLite failure, or
+a mapped library. `prepare` still returns true when the second reading remains
+constrained. `reserve` then uses the live `read()` already installed as its
+environment. The `{ network: 'unknown', constrained: true }` argument is not
+the decision when that reader exists. Which clause refused the reservation was
+not retained.
+
+The source change can record that clause on the same `read()` when the owned
+attribution probe sets `traceAdmission` before the call. Ordinary reads leave
+the guard unset: they do not allocate it or store a reason. The probe does not
+read the gauges again, does not change the returned network or constrained bit,
+and does not change reserve, budgets, permissions, or retry timing. It copies
+`admissionGuard` only while the first `delivery.reserve` is inside that read,
+into `allocation.reserve_guard`. A null `reserve_guard` is the absence of a
+captured first-read diagnostic, not proof of an exact earlier branch. This
+diagnostic has not established the cause. It is not live qualification.
+`resource_acceptance` stays false.
+
+The reviewed follow-up passed the normal Electron build, including its real
+native helper, and **20 focused admission/network checks** on Linux x64 with
+Node 22.22.0. The checks cover the fixed diagnostic fields, single gauge reads,
+ordinary reads without a guard object, sensor order and short-circuit behavior,
+CPU sample comparability, metering, cancellation and native clock boundaries.
+There were no failures or skips. The new guard checks are registered in the
+normal Electron test command. No app journey or resource result is claimed by
+these component checks.
+
+The next bounded action is one attribution journey on this source. Read
+`allocation.reserve_guard.reason` for both enabled cases. Do not rerun the
+phase-memory matrix and do not reclassify run 40971963055.
