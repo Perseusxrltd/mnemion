@@ -1,0 +1,244 @@
+{
+  "verified_at": "2026-10-29T01:36:34.734806+00:00",
+  "repository": "Perseusxrltd/mnemion",
+  "version": "4.46.46",
+  "source_commit": "21a2f377d3bf28585a8ba4ea8f0483798a639252",
+  "release_run": 40793646583,
+  "release_id": 427371272,
+  "release_state": "draft",
+  "assets": 38,
+  "bytes": 2569228572,
+  "checksum_digest": "sha256:0483729eefb97f122cdf7bc13eaddd2b03459a98391a30580b8fa5ecc9c9f9db",
+  "exact_source_production_validator_passed": true,
+  "asset_ids_sizes_digests_unchanged_after_verification": true,
+  "inventory": [
+    {
+      "id": 686970600,
+      "name": "Mnemion-Studio-4.46.46-linux-amd64.deb",
+      "size": 250013492,
+      "digest": "sha256:2a43a0449b58a38ebb87a933d2faa7672c78770ec820ee2c5ae0eefab5876c19"
+    },
+    {
+      "id": 686970598,
+      "name": "Mnemion-Studio-4.46.46-linux-arm64.AppImage",
+      "size": 270230288,
+      "digest": "sha256:5b43dc034d491b2dc8cd845ffcb06f38e16ef020304f54945872a8a567ee2fc9"
+    },
+    {
+      "id": 686970604,
+      "name": "Mnemion-Studio-4.46.46-linux-arm64.deb",
+      "size": 242935672,
+      "digest": "sha256:1efa8f15b3e0f23d58f2e24ac252ead8afc26faa4e3e188145073ca2e774cb6d"
+    },
+    {
+      "id": 686970585,
+      "name": "Mnemion-Studio-4.46.46-linux-x86_64.AppImage",
+      "size": 266781379,
+      "digest": "sha256:6aa4d04814e7b54dfb01d63a76c3a2cb03eaeb8908e5b91b4dc1eda44c7d4db6"
+    },
+    {
+      "id": 686970587,
+      "name": "Mnemion-Studio-4.46.46-macos-arm64.dmg",
+      "size": 263523493,
+      "digest": "sha256:d9f4bbda4d98f1c97b552d01fc7e39aef2de28956a3a15b8fbe1aab25e6a74e8"
+    },
+    {
+      "id": 686971480,
+      "name": "Mnemion-Studio-4.46.46-macos-arm64.dmg.blockmap",
+      "size": 273608,
+      "digest": "sha256:425c3e4d14bd412058947c1e2c6ca6ba1b3d9e38b2ef6aa6a003d53b605128d1"
+    },
+    {
+      "id": 686971520,
+      "name": "Mnemion-Studio-4.46.46-macos-arm64.zip",
+      "size": 267186562,
+      "digest": "sha256:39aa6c0b384cb0ba1e525e41e855057a5680161001100b87fdc476742f2a919e"
+    },
+    {
+      "id": 686971585,
+      "name": "Mnemion-Studio-4.46.46-macos-arm64.zip.blockmap",
+      "size": 265105,
+      "digest": "sha256:d57fa0cba3fcae3713837c0c855157ea88a0252d9f64006ef056aec96f579c83"
+    },
+    {
+      "id": 686971636,
+      "name": "Mnemion-Studio-4.46.46-macos-x64.dmg",
+      "size": 270983940,
+      "digest": "sha256:2fce666c4d13027d147da6954113ba94a15afe95629657596b71d51950700100"
+    },
+    {
+      "id": 686971637,
+      "name": "Mnemion-Studio-4.46.46-macos-x64.dmg.blockmap",
+      "size": 283297,
+      "digest": "sha256:d3f3f71d2d3d23d766407bc1c22b6108586aa1197fb1be37fb24f76bde8b4339"
+    },
+    {
+      "id": 686971662,
+      "name": "Mnemion-Studio-4.46.46-macos-x64.zip",
+      "size": 274728858,
+      "digest": "sha256:2c021b62576f94da0b370815fc632517f92fd7e6d8b244b8bea154468517faaa"
+    },
+    {
+      "id": 686971711,
+      "name": "Mnemion-Studio-4.46.46-macos-x64.zip.blockmap",
+      "size": 272500,
+      "digest": "sha256:59cc7691d23696aad5de7beb112adc8fa7e48ca0ec4e276cd8f5d5d35200b49e"
+    },
+    {
+      "id": 686971734,
+      "name": "Mnemion-Studio-4.46.46-windows-arm64.exe",
+      "size": 219929230,
+      "digest": "sha256:5843a7b245ebf3d05cd4c3891919bff564d423c6fb67107a98ce787892e9e175"
+    },
+    {
+      "id": 686971782,
+      "name": "Mnemion-Studio-4.46.46-windows-arm64.exe.blockmap",
+      "size": 230805,
+      "digest": "sha256:2cd5524b1d0d1f1dcdac8429773f4ec1c0b596348f6053ca57ee3952f109efc7"
+    },
+    {
+      "id": 686971804,
+      "name": "Mnemion-Studio-4.46.46-windows-x64.exe",
+      "size": 225845093,
+      "digest": "sha256:716b6040e4b58249ac69287c1de4f6076f2ae7752319865d6c902df555d3ee91"
+    },
+    {
+      "id": 686972117,
+      "name": "Mnemion-Studio-4.46.46-windows-x64.exe.blockmap",
+      "size": 236479,
+      "digest": "sha256:d672c9ef79e6b806e0f4e4af8cc5b236c2bd632beca6239665d18776888057fa"
+    },
+    {
+      "id": 686972149,
+      "name": "SHA256SUMS-darwin-arm64.txt",
+      "size": 210,
+      "digest": "sha256:eb2f07f78a1fe4f3ca80465999ae843b9307f2af3c5bdd1e987a0a9bd1858e21"
+    },
+    {
+      "id": 686972178,
+      "name": "SHA256SUMS-darwin-x64.txt",
+      "size": 206,
+      "digest": "sha256:818dd75696230f622ea45216e5be2a9d514bf0a86e2798606c46e3cbfe2d8282"
+    },
+    {
+      "id": 686972195,
+      "name": "SHA256SUMS-linux-arm64.txt",
+      "size": 215,
+      "digest": "sha256:c4dd36cb3f53053633c9e4ed9a598099f0cccbfd2a56342880ddde3f7e3b89b3"
+    },
+    {
+      "id": 686972237,
+      "name": "SHA256SUMS-linux-x64.txt",
+      "size": 216,
+      "digest": "sha256:a97a44dd2d289c07e465333f9d8f25921e3c83e5e965c5932b46d57cb6b7b9a6"
+    },
+    {
+      "id": 686972264,
+      "name": "SHA256SUMS-win32-arm64.txt",
+      "size": 199,
+      "digest": "sha256:f56968b5b16bded80598859f166394bcfd2315c326b802b5d40910acbb9c2f08"
+    },
+    {
+      "id": 686972280,
+      "name": "SHA256SUMS-win32-x64.txt",
+      "size": 195,
+      "digest": "sha256:a4d9efde1cb1b555e1bf8fad7fe9800644fcb76d2587c372e0ca7d7e99021f0c"
+    },
+    {
+      "id": 686972305,
+      "name": "SHA256SUMS.txt",
+      "size": 3654,
+      "digest": "sha256:0483729eefb97f122cdf7bc13eaddd2b03459a98391a30580b8fa5ecc9c9f9db"
+    },
+    {
+      "id": 686972329,
+      "name": "cryptography-50.0.2-cp312-abi3-macosx_11_0_x86_64.whl",
+      "size": 3924828,
+      "digest": "sha256:793db5ab5f20903c587223ea2c2abbbe9d16388edfd89603f29927f6fcf0b4bb"
+    },
+    {
+      "id": 686972375,
+      "name": "latest-arm64-linux-arm64.yml",
+      "size": 579,
+      "digest": "sha256:d86224f288401aa23edcc487b79889ae0126fb2f13d2f06ce63bad32c37bdc37"
+    },
+    {
+      "id": 686972405,
+      "name": "latest-arm64-mac.xml",
+      "size": 704,
+      "digest": "sha256:1936e31ffd0933a079215b3c9bb5d17d45c223f4d8150bdc13f10bb3df60f306"
+    },
+    {
+      "id": 686972426,
+      "name": "latest-arm64-mac.yml",
+      "size": 544,
+      "digest": "sha256:4c1222053108d7d19d304d07840eae905b487e40200fcb86e46da0834c2005a2"
+    },
+    {
+      "id": 686972446,
+      "name": "latest-arm64-windows.json",
+      "size": 673,
+      "digest": "sha256:0e8a40bc8e41d1ff0727058f19fbcd60c87e17ede2cf0190e2425d87e8fcd2ee"
+    },
+    {
+      "id": 686972475,
+      "name": "latest-arm64.yml",
+      "size": 379,
+      "digest": "sha256:dc4393aa9f6c26ea925622a9bfe64ecbd327db3eb60702b9462a3290be7d4bd5"
+    },
+    {
+      "id": 686972497,
+      "name": "latest-x64-linux.yml",
+      "size": 581,
+      "digest": "sha256:d3720df4024a10aae9e482b54e1fabbaa4e3b8d2c9724557f9a4dc562924c329"
+    },
+    {
+      "id": 686972517,
+      "name": "latest-x64-mac.xml",
+      "size": 702,
+      "digest": "sha256:282a3ea382cbfc700581dd3f92afff99f153ce715baf3f0f4a4c69dc05ff27be"
+    },
+    {
+      "id": 686972521,
+      "name": "latest-x64-mac.yml",
+      "size": 538,
+      "digest": "sha256:86fe73062eaf8bff7bd3deac1af75b19873ac504bc84e1e12c8f7493379da0bb"
+    },
+    {
+      "id": 686972540,
+      "name": "latest-x64-windows.json",
+      "size": 665,
+      "digest": "sha256:60842874ebebd65a20a2f1ce0c881a297ffc807b60daa38ab802e280c2112b54"
+    },
+    {
+      "id": 686972542,
+      "name": "latest-x64.yml",
+      "size": 375,
+      "digest": "sha256:b13f89bdf1566ffa11275e1bf86521527eba249c0610094c742fbf7aad10818a"
+    },
+    {
+      "id": 686972574,
+      "name": "mnemion-4.46.46-py3-none-any.whl",
+      "size": 4103056,
+      "digest": "sha256:60df8f2fb8f3e356eb37c602de3755bf427a804caede09f83e0922c565b1ad97"
+    },
+    {
+      "id": 686972602,
+      "name": "mnemion-4.46.46.tar.gz",
+      "size": 7441517,
+      "digest": "sha256:30cd737c28a3879fe6c83918ec3292602be33dc6013ac1cf6882bb6878b21818"
+    },
+    {
+      "id": 686972605,
+      "name": "mnemion-client-4.46.46.tgz",
+      "size": 23025,
+      "digest": "sha256:c877514176e84a801d5fc15ee69db8bc573541be79148f36a91de78048e6a772"
+    },
+    {
+      "id": 686972606,
+      "name": "service-update.json",
+      "size": 5710,
+      "digest": "sha256:695fd95e3e117843bb3b5741ee98493c7cfe2e506f148a7c0fd8322830d8dda1"
+    }
+  ]
+}
