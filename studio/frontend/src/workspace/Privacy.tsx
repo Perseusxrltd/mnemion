@@ -142,7 +142,7 @@ export default function Privacy() {
       </section>
       <section className="ws-panel" aria-labelledby="telemetry-preview-heading">
         <h2 id="telemetry-preview-heading">Inspect the report format</h2>
-        <p>View a fixed, synthetic example of the four-byte report body. Viewing it does not send statistics or change your privacy choice.</p>
+        <p>View a fixed, synthetic example of the report body. Viewing it does not send statistics or change your privacy choice.</p>
         <button className="ws-button" disabled={busy} onClick={async () => {
           const request = ++previewRequest.current
           setPreview(undefined)

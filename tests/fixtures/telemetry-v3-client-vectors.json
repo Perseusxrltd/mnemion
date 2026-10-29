@@ -1,6 +1,14 @@
 {
   "groups": ["usage", "reliability", "performance", "resources"],
   "release": [4, 46, 53],
+  "release_catalog": [
+    {"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"}
+  ],
+  "expanded_release_catalog": [
+    {"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"},
+    {"slot": 1, "major": 4, "minor": 46, "patch": 54, "id": "4.46.54"},
+    {"slot": 2, "major": 4, "minor": 46, "patch": 55, "id": "4.46.55"}
+  ],
   "cases": [
     {
       "name": "failed_without_reason",
