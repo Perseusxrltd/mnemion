@@ -78,13 +78,18 @@ class _Parser(argparse.ArgumentParser):
 
 
 class MetadataBoundary:
-    def __init__(self, app):
+    def __init__(self, app, route="/v1/report"):
+        if route not in {"/v1/report", "/v3/report"}:
+            raise ConfigurationError
         self.app = app
+        self.route = route
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
             method = scope.get("method")
-            path = "/v1/report" if scope.get("path") == "/v1/report" else "/"
+            # Only the route selected for this process is preserved. Every other
+            # path, including a near miss, becomes the inert sentinel.
+            path = self.route if scope.get("path") == self.route else "/"
             query = b"?" if scope.get("query_string") else b""
             # Clear the original scope as well as the parser's shared header
             # list. Only fixed routing flags cross into aggregate processing.
@@ -228,12 +233,24 @@ def _systemd_listener(bind: str, port: int) -> socket.socket:
         raise
 
 
-async def _serve(args, store, listener=None):
+def _selected_application(mode: str, state: Path):
+    """Mount one known collector and its own store. Unknown modes are refused."""
+    if mode == "legacy":
+        return MetadataBoundary(Collector(ReportStore(state)), route="/v1/report")
+    if mode == "v3":
+        from .collector_v3 import CollectorV3
+        from .publication_v3 import ReportStore as ReportStoreV3
+
+        return MetadataBoundary(CollectorV3(ReportStoreV3(state)), route="/v3/report")
+    raise ConfigurationError
+
+
+async def _serve(args, application, listener=None):
     # Default asyncio diagnostics can include protocol/transport reprs. This
     # applies only in the isolated collector process, never the workspace app.
     asyncio.get_running_loop().set_exception_handler(lambda _loop, _context: None)
     config = uvicorn.Config(
-        MetadataBoundary(Collector(store)),
+        application,
         host=args.bind,
         port=args.port,
         http=BoundedProtocol,
@@ -268,6 +285,7 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True, parser_class=_Parser)
     serve = commands.add_parser("serve", help="Run one dedicated TLS listener")
     serve.add_argument("--state", type=Path, required=True)
+    serve.add_argument("--mode", choices=("legacy", "v3"), default="legacy")
     serve.add_argument("--bind", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8443)
     serve.add_argument("--certificate", type=Path, required=True)
@@ -298,8 +316,8 @@ def main(argv=None):
         _disable_crash_dumps()
         if args.systemd_socket:
             listener = _systemd_listener(args.bind, args.port)
-        store = ReportStore(args.state)
-        return asyncio.run(_serve(args, store, listener))
+        application = _selected_application(args.mode, args.state)
+        return asyncio.run(_serve(args, application, listener))
     except (ConfigurationError, ValueError, OSError):
         print('{"error":"telemetry_collector_configuration_invalid"}', file=sys.stderr)
         return 2

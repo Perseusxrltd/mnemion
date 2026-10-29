@@ -1,8 +1,10 @@
-"""Reference ingress for v3 summaries. Not mounted by the production server.
+"""Reference ingress for v3 summaries.
 
-The process sees a bounded summary long enough to add it to fixed counters,
-then drops the bytes. It does not read headers, keep a peer row, or accept a
-randomness mode from the request. ``random_below`` is an in-process test hook.
+The dedicated collector mounts this only when started with ``--mode v3``.
+The default serve mode does not. The process sees a bounded summary long
+enough to add it to fixed counters, then drops the bytes. It does not read
+headers, keep a peer row, or accept a randomness mode from the request.
+``random_below`` is an in-process test hook.
 """
 
 from __future__ import annotations
@@ -83,6 +85,9 @@ class CollectorV3:
             await asyncio.sleep(max(0.05, min(3600, end - now)))
             with suppress(WireV3Error):
                 self._advance()
+            # The same wake covers a quiet week whose publication succeeded.
+            # Expired in-memory failure notices age out here; there is no second loop.
+            self._prune_failures()
 
     async def _lifespan(self, receive, send):
         task = None

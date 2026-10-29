@@ -43,7 +43,13 @@ reports or canonical fixed reviewed reports;
 `OPTIONS /v1/report` supplies fixed credential-free CORS headers. There is no
 workspace API, authentication endpoint, live statistics route or report query.
 Legacy wire v1 is refused because it cannot distinguish reviewed from automatic
-reports. The endpoint path remains unchanged.
+reports. The default endpoint path remains `/v1/report`. An explicit `--mode v3` on this
+same process selects `/v3/report`, mounts `CollectorV3`, and uses the separate
+`reports-v3.sqlite3` store. Leaving `--mode` unset, or passing `--mode legacy`,
+keeps the v2 collector and `reports.sqlite3`. See the
+[v3 note](anonymous-product-telemetry-v3.md) for the exact commands. That mode
+does not enable clients or change a host.
+
 Reviewed packets require coordinate `0` and flags `2`; manual preparation uses
 the first permitted view without a category measurement or random draw.
 
