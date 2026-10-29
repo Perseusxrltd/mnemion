@@ -32,15 +32,15 @@
   ],
   "runs": [
     {
-      "id": 40826012101,
+      "id": 40832308336,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
+      "source_commit": "b48438e2c61e6d9184f5d8419280f637212a4187",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T06:23:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826012101"
+      "updated_at": "2026-10-29T07:29:53Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40832308336"
     },
     {
       "id": 40820128156,
@@ -100,50 +100,63 @@
       "workflow": "release.yml",
       "branch": "release/4.46.51",
       "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T06:30:39Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-29T07:24:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40829255129",
       "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 123304345019,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        },
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 123304345152,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Run npm --prefix studio/electron test",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        }
+      ],
       "job_progress": {
-        "total": 14,
-        "completed": 13,
-        "succeeded": 12,
-        "active": [
-          {
-            "id": 123299936224,
-            "name": "native / native_database / Database / windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Compile pinned PostgreSQL, vector extension and static libraries"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+        "total": 23,
+        "completed": 23,
+        "succeeded": 18,
+        "active": []
+      }
     },
     {
-      "id": 40826079935,
+      "id": 40835184620,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "2746f47938576ada3b05aab5fdedada7e50dfab6",
+      "source_commit": "890eec8aa840244f32e3582c8385b9f4309e3cee",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-29T05:54:38Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40826079935"
+      "updated_at": "2026-10-29T07:24:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40835184620"
     },
     {
-      "id": 40829138051,
+      "id": 40832308319,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "d969513adc0455a3b82e1fd093055e8243a1971b",
+      "source_commit": "b48438e2c61e6d9184f5d8419280f637212a4187",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-29T06:26:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40829138051"
+      "updated_at": "2026-10-29T06:57:22Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40832308319"
     },
     {
       "id": 40820125119,
@@ -157,5 +170,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T06:33:56+00:00"
+  "observed_at": "2026-10-29T07:30:33+00:00"
 }
