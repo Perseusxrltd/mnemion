@@ -30,9 +30,10 @@ The [4.46.48 source](releases/4.46.48.md) corrects SDK/MCP retry hints for chang
 search permissions without adding request replay or weakening write restrictions.
 Its [46 Python/MCP and 23 TypeScript checks](validation/2026-10-29-scope-retry-hints.md)
 passed. The installer verifier adds a 400 MiB download ceiling; native qualification
-of this source remains pending. The [four-client live baseline](validation/2026-10-29-mcp-field-sessions.md)
-records 50–62 second lexical searches on the old host, with after-upgrade and
-default hybrid acceptance still open. The [systemd collector crash check](validation/2026-10-29-telemetry-systemd-crash.md)
+of this source remains pending. The [four-client live comparison](validation/2026-10-29-mcp-field-sessions.md)
+records 50–62 second lexical searches before the host upgrade and 11–15 seconds
+after it. This uncontrolled comparison leaves default hybrid, cross-user and
+full field acceptance open. The [systemd collector crash check](validation/2026-10-29-telemetry-systemd-crash.md)
 verifies one automatic restart and cleanup, while full V08 acceptance and all
 66 requirement states remain unchanged.
 

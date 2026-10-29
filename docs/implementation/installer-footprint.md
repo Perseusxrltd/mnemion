@@ -94,6 +94,14 @@ receipt. Retained receipts are `native-44646-r2-macos-arm64-sizes.json` and
 `native-44646-r2-macos-x64-sizes.json`; both bind their completed job logs and
 source `21a2f377d3bf28585a8ba4ea8f0483798a639252`.
 
+The [uploaded-artifact verifier](https://github.com/Perseusxrltd/mnemion/actions/runs/40801321439)
+then passed, and [4.46.46 became public](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.46)
+at **01:39:16 UTC**, with 38 assets. Published metadata matches the four Mac
+sizes above. The Windows x64/ARM64 installers are **225,845,093 / 219,929,230
+bytes**; Linux AppImage/deb packages range from **242,935,672 to 270,230,288
+bytes**. The [automatic website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/40801711006)
+also passed its live download, version, guide and roadmap checks.
+
 The existing installer verifier also records installed regular-file bytes and
 component totals on each platform, alongside download bytes. The live
 [product page](https://www.perseusxr.com/mnemion) displays sizes from the same

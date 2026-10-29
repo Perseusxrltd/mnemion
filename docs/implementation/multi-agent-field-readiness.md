@@ -29,14 +29,16 @@ returns the distinct `scope_changed` conflict while retaining both permission
 checks. All 41 focused scope/reindex/retrieval tests pass. This does not identify
 the cause of the reported live failures or replace their field acceptance.
 
-The [29 October four-client baseline](../validation/2026-10-29-mcp-field-sessions.md)
-records successful but slow lexical requests on 4.46.40 and preserves the original
-fixture failure. After-upgrade measurements, default hybrid performance and the
-reported search-failure acceptance remain open.
+The [29 October four-client comparison](../validation/2026-10-29-mcp-field-sessions.md)
+records lexical requests on 4.46.40 and after the actual 4.46.44 host upgrade.
+Observed mean latency fell from **55.49 to 12.70 seconds**, or **77.1%**, in this
+one uncontrolled comparison using one normal principal. Post-upgrade backup was
+still pending during the probe. The original fixture failure is preserved;
+default hybrid, cross-user and reported search-failure acceptance remain open.
 
 | Reported behavior | Current work and retained acceptance | Requirement |
 | --- | --- | --- |
-| Lexical recall took 18.2 seconds; hybrid averaged 8.3 seconds, with longer stalls. | Source 4.46.43 moves the existing grant/source/capture check into statement-scoped RLS sets. The [isolated query check](../validation/2026-10-28-field-reliability.md) passes; actual all-space lexical and hybrid latency, concurrency and clear bounded failures still require release and field measurement. Preserve the report's under-60-second and improved hybrid criteria. | F02, R04 |
+| Lexical recall took 18.2 seconds; hybrid averaged 8.3 seconds, with longer stalls. | Source 4.46.43 moves the existing grant/source/capture check into statement-scoped RLS sets. The [isolated query check](../validation/2026-10-28-field-reliability.md) passes; the 4.46.44 four-client comparison above records lower observed lexical latency under uncontrolled load. Full reported-scope lexical/hybrid latency, concurrency and clear bounded failures still require field acceptance. Preserve the report's under-60-second and improved hybrid criteria. | F02, R04 |
 | Activity failed for two of eleven spaces. | The same migration optimizes reviewer-scoped audit and private-note reads. Verify all eleven reported spaces in one minute with the reporter's access. A different administrator's smaller accessible corpus is not that acceptance. | A09, R04, V05 |
 | Only the latest 100 audit events were reachable; 87 were empty journal filing events. | Cursor pages and exact action filters are available in source, SDK, MCP and Studio. Empty successful filing passes still update status/scheduling but add no new `journal.organized` event. Existing retained audit history is preserved. Validate the published host. | F08, A09, V05 |
 | Full memory pages exceeded the MCP response limit. | `summary=true` returns bounded inventories with a subject preview and no content, evidence or arbitrary metadata. A 100-record page passes the actual MCP path. The compact tool now permits an explicitly selected response allowance up to the existing 128 KiB ceiling; its default remains 16 KiB. | F08, R04 |
