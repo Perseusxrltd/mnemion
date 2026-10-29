@@ -20,7 +20,8 @@ measurement.
 ## Four comparisons
 
 Matched RSS is enabled or opted-out growth minus the paired unavailable case.
-The main-process maximum is the resource gate. **2,097,152** bytes is 2 MiB.
+The 2 MiB ceiling applies to each participating process. **2,097,152** bytes
+is 2 MiB. Main and renderer observations remain unaccepted.
 
 | Comparison | Main maximum | Where | First-delivery VmRSS | First-delivery file / anonymous |
 | --- | --- | --- | --- | --- |
@@ -66,15 +67,19 @@ No regression suite was run for a change that was not made.
 
 ## Next measurement
 
-Do not repeat this phase-memory workload yet. Phase memory cannot be combined
-with attribution. One `--comparison --attribution` diagnostic on this same
-source, with the same six cases and no new sampler, should read the existing
-captures: `sqlite.open`, `delivery.reserve`, and `transport.before_connect`.
+Do not repeat this phase-memory workload yet. In the existing CLI and
+workflow, comparison and attribution are mutually exclusive journeys, and
+phase memory cannot be combined with attribution. The planned next
+measurement is a separate `--attribution` diagnostic on this same source:
+comparison false, phase memory false, the existing fixed six-case order, and
+no new sampler. Read the existing before/after first-use captures for SQLite,
+reservation and transport: `sqlite.open` before and after, `delivery.reserve`
+before and after, and `transport.before_connect` with `transport.after_close`.
 Those captures record main-process Linux counters only when the method runs.
-An unavailable build does not open SQLite, so pair the enabled capture
-sequence with the unavailable phase checkpoints already measured here. Do not
-add smaps, heap dumps, a process, or a timer. Do not treat the file-backed
-plateau as a named subsystem until that boundary is measured.
+Compare windows and paired controls inside that same attribution run. This
+phase-memory run is context only. Do not subtract samples across different
+runs. Do not add smaps, heap dumps, a process, or a timer. Do not treat the
+file-backed plateau as a named subsystem until that boundary is measured.
 
 V08 remains Building. Collection, destination and route stay false/null/null.
 All 66 requirements remain. The 2 MiB and 0.5% gates stay unaccepted.
