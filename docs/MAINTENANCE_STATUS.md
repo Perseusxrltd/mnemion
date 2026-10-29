@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T04:37:44+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T04:39:18+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.48](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.48). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,7 +18,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40818733364](https://github.com/Perseusxrltd/mnemion/actions/runs/40818733364) |
+| ci\.yml | main | success | [Run 40818733364](https://github.com/Perseusxrltd/mnemion/actions/runs/40818733364) |
 | public-updates\.yml | v4\.46\.48 | success | [Run 40814044656](https://github.com/Perseusxrltd/mnemion/actions/runs/40814044656) |
 | release\.yml | release/4\.46\.48 | success | [Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811) |
 | release\.yml | release/4\.46\.49 | in\_progress | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
@@ -28,10 +28,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | website-release\.yml | v4\.46\.48 | success | [Run 40814041922](https://github.com/Perseusxrltd/mnemion/actions/runs/40814041922) |
 
 ## Active jobs
-
-[Run 40818733364](https://github.com/Perseusxrltd/mnemion/actions/runs/40818733364): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
 
 [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400): 20/21 jobs completed; 19 succeeded.
 
