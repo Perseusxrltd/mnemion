@@ -16,6 +16,10 @@ on:
         description: Six fixed counterbalanced app journeys without allocation attribution
         type: boolean
         default: false
+      phase_memory:
+        description: With comparison only, record fixed main-process residency and V8 counters; never resource acceptance
+        type: boolean
+        default: false
       review_journey:
         description: Real manual review, approval, opt-out and restart; separate from resource measurement
         type: boolean
@@ -53,6 +57,7 @@ jobs:
           REVIEWED_SOURCE: ${{ inputs.source }}
           TELEMETRY_ATTRIBUTION: ${{ inputs.attribution }}
           TELEMETRY_COMPARISON: ${{ inputs.comparison }}
+          TELEMETRY_PHASE_MEMORY: ${{ inputs.phase_memory }}
           TELEMETRY_REVIEW_JOURNEY: ${{ inputs.review_journey }}
         run: |
           python - <<'PY'
@@ -63,12 +68,19 @@ jobs:
           assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == source
           attribution = os.environ['TELEMETRY_ATTRIBUTION'] == 'true'
           comparison = os.environ['TELEMETRY_COMPARISON'] == 'true'
+          phase_memory = os.environ['TELEMETRY_PHASE_MEMORY'] == 'true'
           review = os.environ['TELEMETRY_REVIEW_JOURNEY'] == 'true'
           assert sum((attribution, comparison, review)) <= 1, 'Choose comparison, attribution or report review'
+          assert not phase_memory or (comparison and not attribution and not review), (
+              'Phase-memory counters require comparison without attribution'
+          )
           Path('output/telemetry-renderer').mkdir(parents=True)
           metadata = {'source': source, 'attribution': attribution}
           if comparison:
               metadata['comparison'] = True
+          if phase_memory:
+              metadata['phase_memory'] = True
+              metadata['resource_acceptance'] = False
           if review:
               metadata['review_journey'] = True
           Path('output/telemetry-renderer/source.json').write_text(json.dumps(metadata) + '\n')
@@ -97,11 +109,13 @@ jobs:
         env:
           TELEMETRY_ATTRIBUTION: ${{ inputs.attribution }}
           TELEMETRY_COMPARISON: ${{ inputs.comparison }}
+          TELEMETRY_PHASE_MEMORY: ${{ inputs.phase_memory }}
           TELEMETRY_REVIEW_JOURNEY: ${{ inputs.review_journey }}
         run: |
           args=()
           if [ "$TELEMETRY_ATTRIBUTION" = "true" ]; then args+=(--attribution); fi
           if [ "$TELEMETRY_COMPARISON" = "true" ]; then args+=(--comparison); fi
+          if [ "$TELEMETRY_PHASE_MEMORY" = "true" ]; then args+=(--phase-memory); fi
           if [ "$TELEMETRY_REVIEW_JOURNEY" = "true" ]; then args+=(--review-journey); fi
           xvfb-run -a uv run --no-sync python -m deploy.probe_telemetry_renderer \
             --source "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/output/telemetry-renderer/workload" \

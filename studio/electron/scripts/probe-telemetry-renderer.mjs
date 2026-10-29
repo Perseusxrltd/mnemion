@@ -3,10 +3,14 @@ import { readFileSync, writeFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
+import { readBoundedLinuxStatus, selectHeap, unavailableLinux } from './phase-memory.mjs'
 
 const root = process.env.MNEMION_STUDIO_USER_DATA
 if (!root?.includes('mnemion-owned-renderer-')) throw new Error('Disposable renderer profile required')
 const input = JSON.parse(readFileSync(join(root, 'probe-input.json'), 'utf8'))
+if (input.phase_memory === true && (input.comparison !== true || input.attribution === true)) {
+  throw new Error('Phase-memory counters require comparison without attribution')
+}
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(input.memory.base_url) ||
     !/^https:\/\/localhost:\d+\/v1\/report$/.test(input.destination) ||
     !/^\/assets\/[A-Za-z0-9._-]+\.js$/.test(input.probe_entry)) throw new Error('Owned loopback fixtures required')
@@ -20,24 +24,28 @@ const marker = value => {
 async function bootstrap() {
   const { app, BrowserWindow, webContents } = await import('electron')
   const allocation = { samples: [], calls: {}, errors: [], enabled: input.attribution === true }
-  const heapStatistics = allocation.enabled ? (await import('node:v8')).getHeapStatistics : null
+  const phaseMemory = input.phase_memory === true
+  const heapStatistics = allocation.enabled || phaseMemory
+    ? (await import('node:v8')).getHeapStatistics : null
   const capture = name => {
     if (!allocation.enabled || allocation.samples.length >= 32) return
     try {
       // Only fixed numeric fields: no mappings, paths, network identifiers or
       // application data. This instrumentation is diagnostic overhead, not a
       // resource qualification or a replacement for RSS accounting.
-      const linux = {}
-      if (process.platform === 'linux') {
-        const status = readFileSync('/proc/self/status', 'utf8')
-        for (const field of ['VmRSS', 'VmHWM', 'RssAnon', 'RssFile', 'RssShmem']) {
-          const match = status.match(new RegExp(`^${field}:\\s+(\\d+) kB$`, 'm'))
-          linux[field] = match ? Number(match[1]) * 1024 : null
-        }
-      }
+      const linux = process.platform === 'linux' ? readBoundedLinuxStatus() : {}
       allocation.samples.push({ name, at_ms: Date.now(), monotonic_ms: performance.now(),
         main: process.memoryUsage(), heap: heapStatistics(), os_usage: process.resourceUsage(), linux })
     } catch (error) { allocation.errors.push({ name, error: error.name }) }
+  }
+  const phaseMemorySnapshot = () => {
+    // IO and statistic failures stay null. They are unavailable, not zero,
+    // and the error text is not retained.
+    let linux = unavailableLinux()
+    let heap = selectHeap(null)
+    try { linux = readBoundedLinuxStatus() } catch { linux = unavailableLinux() }
+    try { heap = selectHeap(heapStatistics ? heapStatistics() : null) } catch { heap = selectHeap(null) }
+    return { linux, heap }
   }
   const observeFirst = (prototype, method, name) => {
     const original = prototype[method]
@@ -156,7 +164,7 @@ async function bootstrap() {
         tabs.length === 1 && tabs[0].pid === renderer &&
         metrics.filter(value => value.type === 'Browser').length === 1 &&
         metrics.some(value => value.type === 'Browser' && value.pid === process.pid) }
-    return { name, at_ms: Date.now(), main: process.memoryUsage(), ownership,
+    const sample = { name, at_ms: Date.now(), main: process.memoryUsage(), ownership,
       setup_controls: { attempts: setupControls.attempts, completed: setupControls.completed,
         failed: setupControls.failed, in_flight: setupControls.in_flight },
       processes: metrics.map(value => ({ pid: value.pid, type: value.type,
@@ -165,6 +173,8 @@ async function bootstrap() {
         working_set_bytes: value.memory.workingSetSize * 1024,
         peak_working_set_bytes: value.memory.peakWorkingSetSize * 1024 })),
     }
+    if (phaseMemory) sample.phase_memory = phaseMemorySnapshot()
+    return sample
   }
   globalThis.__mnemionOwnedProbe = {
     counts,
@@ -283,14 +293,18 @@ async function controller() {
       ...result, ...counts, samples, bridge, connection, page_errors: pageErrors,
       setup_controls: setupControls,
       condition: input.condition ?? input.variant, replicate: input.replicate ?? 1, allocation,
-      comparison: input.comparison === true, devtools_auto_open: false,
+      comparison: input.comparison === true, phase_memory: input.phase_memory === true,
+      devtools_auto_open: false,
       process_ownership_verified: samples.every(sample => sample.ownership.valid),
       runtime: await electron.evaluate(() => ({ electron: process.versions.electron, node: process.versions.node,
         platform: process.platform, arch: process.arch, packaged: false })),
       elapsed_ms: last.at_ms - first.at_ms, rss_delta_bytes: total(last) - total(first),
       sampled_peak_rss_delta_bytes: Math.max(...samples.map(total)) - total(first),
       memory_api_operations: result.memory_cycles * 3, forced_gc: false, idle_padding: false,
-      qualification: 'Compiled source UI with real app onboarding, shared renderer SDK and sandboxed IPC; fixed synthetic memory work. Electron working-set sums double-count shared pages. External sampler also covers observed helper descendants. Not installed-platform, stable resource-ceiling, embedding-quality or whole-wire acceptance.',
+      qualification: 'Compiled source UI with real app onboarding, shared renderer SDK and sandboxed IPC; fixed synthetic memory work. Electron working-set sums double-count shared pages. External sampler also covers observed helper descendants. Not installed-platform, stable resource-ceiling, embedding-quality or whole-wire acceptance.'
+        + (input.phase_memory === true
+          ? ' Phase-memory counters are an opt-in main-process diagnostic and do not replace or pass the working-set gate.'
+          : ''),
       production_collection_available: false, model_calls: 0,
     }, null, 2) + '\n', { flag: 'wx' })
   } catch (error) {

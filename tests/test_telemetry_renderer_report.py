@@ -4,7 +4,14 @@ import json
 
 import pytest
 
-from deploy.report_telemetry_renderer import aligned_rss_growth, summarize, verify_process_ownership
+from deploy.report_telemetry_renderer import (
+    PHASE_MEMORY_CHECKPOINTS,
+    aligned_phase_memory,
+    aligned_rss_growth,
+    summarize,
+    verify_phase_memory,
+    verify_process_ownership,
+)
 from mnemion.product_telemetry import policy
 
 
@@ -94,6 +101,9 @@ def test_counterbalanced_results_use_their_own_baselines(tmp_path):
         result["comparisons"][0]["processes"][0]["difference_sampled_peak_rss_growth_bytes"] == 20
     )
     assert result["resource_acceptance"] is False
+    assert result["phase_memory"] is False
+    assert "aligned_phase_memory" not in result["comparisons"][0]
+    assert len(result["limits"]) == 7
 
 
 def setup_result(condition="enabled"):
@@ -381,3 +391,188 @@ def test_cpu_difference_is_reported_for_each_comparable_process(tmp_path):
     row = summarize(tmp_path)["comparisons"][0]["processes"][0]
     assert row["difference_cpu_ms"] == 50
     assert row["difference_cpu_percent_one_core_over_baseline_elapsed"] == 50
+
+
+def phase_counters(rss_anon, vm_rss=1024):
+    return {
+        "linux": {
+            "VmRSS": vm_rss,
+            "VmHWM": 2048,
+            "RssAnon": rss_anon,
+            "RssFile": 4096,
+            "RssShmem": 0,
+        },
+        "heap": {
+            "total_heap_size": 8192,
+            "total_physical_size": 8192,
+            "used_heap_size": 0,
+            "malloced_memory": 0,
+        },
+    }
+
+
+def comparison_sample(name, main_bytes, rss_anon, vm_rss=1024):
+    return {
+        "name": name,
+        "processes": [
+            {
+                "pid": 10,
+                "type": "Browser",
+                "role": "app_main",
+                "working_set_bytes": main_bytes,
+                "cpu_ms": 10,
+            },
+            {
+                "pid": 20,
+                "type": "Tab",
+                "role": "app_renderer",
+                "working_set_bytes": 200,
+                "cpu_ms": 10,
+            },
+        ],
+        "ownership": {
+            "schema_version": 1,
+            "main_pid": 10,
+            "renderer_pid": 20,
+            "app_windows": 1,
+            "all_windows": 1,
+            "devtools_present": False,
+            "renderer_processes": 1,
+            "valid": True,
+        },
+        "phase_memory": phase_counters(rss_anon, vm_rss),
+    }
+
+
+PHASE_CASES = (
+    ("r1-unavailable", "unavailable", 1),
+    ("r1-opted_out", "opted_out", 1),
+    ("r1-enabled", "enabled", 1),
+    ("r2-enabled", "enabled", 2),
+    ("r2-opted_out", "opted_out", 2),
+    ("r2-unavailable", "unavailable", 2),
+)
+
+
+def phase_case_result(label, condition, replicate):
+    rows = []
+    for name in PHASE_MEMORY_CHECKPOINTS:
+        if label == "r1-unavailable" and name == "96_memory_cycles":
+            main, anon, vm_rss = 900_000, 8_000, None
+        elif label == "r1-unavailable":
+            main, anon, vm_rss = 1_000_000, 10_000, 1024
+        elif label == "r1-enabled" and name == "96_memory_cycles":
+            main, anon, vm_rss = 2_100_000, 12_000, 50_000
+        elif label == "r1-enabled":
+            main, anon, vm_rss = 2_000_000, 11_000, 4096
+        else:
+            main, anon, vm_rss = 1_000_000, 10_000, 1024
+        rows.append(comparison_sample(name, main, anon, vm_rss))
+    return {
+        "variant": label,
+        "condition": condition,
+        "replicate": replicate,
+        "comparison": True,
+        "phase_memory": True,
+        "devtools_auto_open": False,
+        "process_ownership_verified": True,
+        "allocation": {"enabled": False},
+        "elapsed_ms": 1000,
+        "samples": rows,
+    }
+
+
+def phase_summary(tmp_path, *, flagged=True):
+    results = [phase_case_result(*case) for case in PHASE_CASES]
+    for result in results:
+        (tmp_path / (result["variant"] + "-processes.json")).write_text("[]\n")
+    (tmp_path / "receipt.json").write_text(
+        json.dumps(
+            {
+                "comparison": True,
+                "attribution": False,
+                "review_journey": False,
+                "phase_memory": flagged,
+                "declared_case_order": [label for label, _, _ in PHASE_CASES],
+                "results": results,
+            }
+        )
+    )
+    return summarize(tmp_path)
+
+
+def test_phase_memory_reports_matched_counters_without_replacing_rss(tmp_path):
+    result = phase_summary(tmp_path)
+    assert result["schema_version"] == 3
+    assert result["phase_memory"] is True
+    assert result["resource_acceptance"] is False
+    assert len(result["limits"]) == 8
+    assert "do not replace working-set RSS" in result["limits"][-1]
+    compared = next(row for row in result["comparisons"] if row["variant"] == "r1-enabled")
+    main = next(
+        row for row in compared["aligned_rss_growth"]["processes"] if row["role"] == "app_main"
+    )
+    assert main["maximum_matched_growth_difference_bytes"] == 200_000
+    memory = compared["aligned_phase_memory"]
+    assert set(memory) == {"phases", "unmatched_phases", "scope"}
+    assert "Not a working-set replacement" in memory["scope"]
+    phase = next(row for row in memory["phases"] if row["phase"] == "96_memory_cycles")
+    assert phase["difference_growth_bytes"]["RssAnon"] == 3_000
+    assert phase["difference_growth_bytes"]["VmRSS"] is None
+    assert phase["difference_growth_bytes"]["used_heap_size"] == 0
+    assert phase["difference_growth_bytes"]["malloced_memory"] == 0
+
+
+def test_null_phase_counter_is_not_treated_as_zero():
+    def row(name, rss_anon, vm_rss):
+        return {"name": name, "phase_memory": phase_counters(rss_anon, vm_rss)}
+
+    aligned = aligned_phase_memory(
+        [
+            row("before_workspace_connect", 0, None),
+            row("96_memory_cycles", 0, None),
+        ],
+        [
+            row("before_workspace_connect", 0, 0),
+            row("96_memory_cycles", 0, 0),
+        ],
+    )
+    difference = aligned["phases"][1]["difference_growth_bytes"]
+    assert difference["RssAnon"] == 0
+    assert difference["VmRSS"] is None
+    assert "maximum_matched_growth_difference_bytes" not in aligned
+
+
+def test_unlabelled_samples_cannot_be_summarized_as_an_old_comparison(tmp_path):
+    with pytest.raises(ValueError, match="cannot carry phase-memory counters"):
+        phase_summary(tmp_path, flagged=False)
+
+
+def test_phase_memory_without_comparison_is_rejected(tmp_path):
+    (tmp_path / "receipt.json").write_text(
+        json.dumps(
+            {
+                "phase_memory": True,
+                "attribution": False,
+                "review_journey": False,
+                "results": [],
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="unattributed comparison"):
+        summarize(tmp_path)
+
+
+@pytest.mark.parametrize("value", [True, "3220 kB", -1, 1.5])
+def test_non_integer_phase_counters_are_rejected(value):
+    result = phase_case_result("r1-enabled", "enabled", 1)
+    result["samples"][0]["phase_memory"]["linux"]["RssFile"] = value
+    with pytest.raises(ValueError, match="non-negative integers or null"):
+        verify_phase_memory(result, required=True)
+
+
+def test_an_extra_phase_memory_string_is_rejected():
+    result = phase_case_result("r1-enabled", "enabled", 1)
+    result["samples"][0]["phase_memory"]["linux"]["Name"] = "bash"
+    with pytest.raises(ValueError, match="fixed counters"):
+        verify_phase_memory(result, required=True)

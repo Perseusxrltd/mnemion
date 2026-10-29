@@ -10,6 +10,111 @@ def process_role(row):
     return row.get("role", row["type"])
 
 
+LINUX_FIELDS = ("VmRSS", "VmHWM", "RssAnon", "RssFile", "RssShmem")
+HEAP_FIELDS = ("total_heap_size", "total_physical_size", "used_heap_size", "malloced_memory")
+PHASE_MEMORY_FIELDS = LINUX_FIELDS + HEAP_FIELDS
+PHASE_MEMORY_CHECKPOINTS = (
+    "before_workspace_connect",
+    "workspace_connected",
+    "first_memory_cycle_and_delivery",
+    "8_memory_cycles",
+    "16_memory_cycles",
+    "32_memory_cycles",
+    "64_memory_cycles",
+    "96_memory_cycles",
+    "128_memory_cycles",
+)
+
+
+def counter_value(value):
+    """Null stays unavailable. A boolean or other type is not a measurement."""
+    if value is None:
+        return None
+    if type(value) is not int or value < 0:
+        raise ValueError("Phase-memory counters must be non-negative integers or null")
+    return value
+
+
+def sample_counters(sample):
+    row = sample.get("phase_memory") if isinstance(sample, dict) else None
+    if (
+        not isinstance(row, dict)
+        or set(row) != {"linux", "heap"}
+        or not isinstance(row.get("linux"), dict)
+        or not isinstance(row.get("heap"), dict)
+        or set(row["linux"]) != set(LINUX_FIELDS)
+        or set(row["heap"]) != set(HEAP_FIELDS)
+    ):
+        raise ValueError("Phase-memory sample is missing its fixed counters")
+    return {
+        name: counter_value(row["linux"][name] if name in LINUX_FIELDS else row["heap"][name])
+        for name in PHASE_MEMORY_FIELDS
+    }
+
+
+def verify_phase_memory(result, *, required=False):
+    """Reject a mix of instrumented samples and an unprofiled comparison label."""
+    samples = result.get("samples") if isinstance(result, dict) else None
+    carried = result.get("phase_memory") is True or any(
+        isinstance(sample, dict) and "phase_memory" in sample for sample in samples or []
+    )
+    if not required:
+        if carried:
+            raise ValueError("Unprofiled results cannot carry phase-memory counters")
+        return False
+    if result.get("phase_memory") is not True or result.get("comparison") is not True:
+        raise ValueError("Phase-memory comparison is missing its explicit result flag")
+    if (result.get("allocation") or {}).get("enabled") is not False:
+        raise ValueError("Phase-memory comparison cannot enable allocation attribution")
+    if not isinstance(samples, list) or [sample.get("name") for sample in samples] != list(
+        PHASE_MEMORY_CHECKPOINTS
+    ):
+        raise ValueError("Phase-memory comparison requires the nine declared checkpoints")
+    for sample in samples:
+        sample_counters(sample)
+    return True
+
+
+def aligned_phase_memory(baseline, current):
+    """Match the same checkpoints. Null is unavailable, not a zero cost."""
+    if len({row["name"] for row in baseline}) != len(baseline) or len(
+        {row["name"] for row in current}
+    ) != len(current):
+        raise ValueError("Duplicate workload phases cannot be aligned")
+    if not baseline or not current or baseline[0]["name"] != current[0]["name"]:
+        raise ValueError("Aligned comparisons require the same initial workload phase")
+    before = {row["name"]: sample_counters(row) for row in baseline}
+    after = {row["name"]: sample_counters(row) for row in current}
+    base_start, current_start = before[baseline[0]["name"]], after[current[0]["name"]]
+    phases = []
+    for row in baseline:
+        name = row["name"]
+        if name not in after:
+            continue
+        difference = {}
+        for field in PHASE_MEMORY_FIELDS:
+            values = (
+                after[name][field],
+                current_start[field],
+                before[name][field],
+                base_start[field],
+            )
+            difference[field] = (
+                None
+                if any(value is None for value in values)
+                else values[0] - values[1] - values[2] + values[3]
+            )
+        phases.append({"phase": name, "difference_growth_bytes": difference})
+    return {
+        "phases": phases,
+        "unmatched_phases": sorted(set(before) ^ set(after)),
+        "scope": (
+            "Main-process checkpoint counters only. Null is unavailable, not zero. "
+            "Not a working-set replacement, a callsite attribution, or resource acceptance."
+        ),
+    }
+
+
 def verify_setup_controls(result, *, required=False):
     """Require real native settings replies, separately from memory API success."""
     controls = result.get("setup_controls")
@@ -222,6 +327,17 @@ def allocation_windows(result):
 
 def summarize(directory: Path) -> dict:
     receipt = json.loads((directory / "receipt.json").read_text())
+    phase_memory = receipt.get("phase_memory", False)
+    if phase_memory is None:
+        phase_memory = False
+    if type(phase_memory) is not bool:
+        raise ValueError("Phase-memory flag must be boolean")
+    if phase_memory and (
+        receipt.get("comparison") is not True
+        or receipt.get("attribution") is not False
+        or receipt.get("review_journey") is not False
+    ):
+        raise ValueError("Phase-memory counters require an unattributed comparison")
     if receipt.get("comparison") is True:
         order = [
             "r1-unavailable",
@@ -237,7 +353,8 @@ def summarize(directory: Path) -> dict:
             or receipt.get("declared_case_order") != order
             or [result["variant"] for result in receipt["results"]] != order
         ):
-            raise ValueError("Unprofiled comparison requires the complete declared six-case order")
+            kind = "Phase-memory comparison" if phase_memory else "Unprofiled comparison"
+            raise ValueError(f"{kind} requires the complete declared six-case order")
     observations = []
     for result in receipt["results"]:
         setup = verify_setup_controls(
@@ -252,7 +369,9 @@ def summarize(directory: Path) -> dict:
             or result.get("process_ownership_verified") is not True
             or result.get("allocation", {}).get("enabled") is not False
         ):
-            raise ValueError("An unprofiled comparison must retain its declared controls")
+            kind = "Phase-memory comparison" if phase_memory else "An unprofiled comparison"
+            raise ValueError(f"{kind} must retain its declared controls")
+        verify_phase_memory(result, required=phase_memory)
         first, last = result["samples"][0], result["samples"][-1]
         initial = {row["pid"]: row for row in first["processes"]}
         observed = {}
@@ -348,6 +467,16 @@ def summarize(directory: Path) -> dict:
                 "aligned_rss_growth": aligned_rss_growth(
                     originals[baseline["variant"]]["samples"], originals[row["variant"]]["samples"]
                 ),
+                **(
+                    {
+                        "aligned_phase_memory": aligned_phase_memory(
+                            originals[baseline["variant"]]["samples"],
+                            originals[row["variant"]]["samples"],
+                        )
+                    }
+                    if phase_memory
+                    else {}
+                ),
                 "difference_electron_cpu_ms": row["electron_cpu_ms"] - baseline["electron_cpu_ms"]
                 if row["electron_cpu_ms"] is not None and baseline["electron_cpu_ms"] is not None
                 else None,
@@ -395,6 +524,7 @@ def summarize(directory: Path) -> dict:
         "observations": observations,
         "comparisons": comparisons,
         "resource_acceptance": False,
+        "phase_memory": phase_memory,
         "limits": [
             "Fixed source-app observations; comparison and attribution each use two counterbalanced triplets. Neither mode is installed-platform or stable overhead acceptance.",
             "New comparison receipts require stable app main/renderer identities with no extra renderer or debugger. Older receipts retain their original ambiguity.",
@@ -403,6 +533,13 @@ def summarize(directory: Path) -> dict:
             "First-call windows can overlap other work, and attribution instrumentation changes allocation and timing. Profiled CPU is not qualification.",
             "Electron CPU comparisons cover processes present at both boundaries; external helpers are sampled separately.",
             "100 ms external sampling can miss short-lived children; negative differences are variance, not savings.",
+            *(
+                [
+                    "Phase-memory counters are an opt-in main-process diagnostic on a comparison run. Null is unavailable, not zero. They do not replace working-set RSS and do not pass the 2 MiB or 0.5 percent gates."
+                ]
+                if phase_memory
+                else []
+            ),
         ],
     }
 

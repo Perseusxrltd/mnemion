@@ -29,7 +29,7 @@ from mnemion.product_telemetry.collector import Collector
 from tests.test_product_telemetry_transport import certificates
 
 from .telemetry_memory_fixture import memory_workspace
-from .report_telemetry_renderer import verify_setup_controls
+from .report_telemetry_renderer import verify_phase_memory, verify_setup_controls
 
 
 def write_json(path, value):
@@ -165,10 +165,19 @@ REVIEW_CHECKS = (
 
 
 async def run(
-    source, output, playwright, *, attribution=False, comparison=False, review_journey=False
+    source,
+    output,
+    playwright,
+    *,
+    attribution=False,
+    comparison=False,
+    review_journey=False,
+    phase_memory=False,
 ):
     if sum((attribution, comparison, review_journey)) > 1:
         raise ValueError("Choose comparison, allocation attribution or review as separate journeys")
+    if phase_memory and (not comparison or attribution or review_journey):
+        raise ValueError("Phase-memory counters require comparison without attribution")
     if sys.platform != "linux":
         raise ValueError("The source-kernel renderer diagnostic is a Linux source-app check")
     output.mkdir(mode=0o700)
@@ -410,6 +419,7 @@ async def run(
                                             "replicate": replicate,
                                             "attribution": attribution,
                                             "comparison": comparison,
+                                            "phase_memory": phase_memory,
                                             "review_journey": review_journey,
                                             "memory": memory,
                                             "destination": destination,
@@ -517,6 +527,12 @@ async def run(
                                         # Preserve the failed native-control counters/replies
                                         # and completed memory work before rejecting the run.
                                         result["setup_controls_verified"] = False
+                                    try:
+                                        result["phase_memory_verified"] = verify_phase_memory(
+                                            result, required=phase_memory
+                                        )
+                                    except ValueError:
+                                        result["phase_memory_verified"] = False
                                 result["journey_completed"] = (
                                     result["memory_results_verified"]
                                     and result["memory_api"]["successful"]
@@ -535,6 +551,7 @@ async def run(
                                     and not result["page_errors"]
                                     and not result.get("allocation", {}).get("errors")
                                     and (review_journey or result["setup_controls_verified"])
+                                    and result.get("phase_memory_verified") is not False
                                     and (
                                         review_journey
                                         or (
@@ -603,10 +620,16 @@ async def run(
             "resource_acceptance": False,
             "attribution": attribution,
             "comparison": comparison,
+            "phase_memory": phase_memory,
             "review_journey": review_journey,
             "setup_controls_required": not review_journey,
             "declared_case_order": [row[0] for row in cases],
-            "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification.",
+            "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification."
+            + (
+                " Phase-memory counters are an opt-in main-process diagnostic. Null is unavailable, not zero. They do not replace working-set RSS and do not pass a resource gate."
+                if phase_memory
+                else ""
+            ),
         },
     )
     if not all(row["journey_completed"] for row in results):
@@ -629,11 +652,20 @@ if __name__ == "__main__":
         help="Six fixed counterbalanced launches without first-activation attribution",
     )
     parser.add_argument(
+        "--phase-memory",
+        action="store_true",
+        help="With --comparison, record fixed main-process residency and V8 counters at the nine phases. Not resource acceptance.",
+    )
+    parser.add_argument(
         "--review-journey",
         action="store_true",
         help="Two Linux source-app launches for actual manual review, TLS delivery and restart",
     )
     args = parser.parse_args()
+    if args.phase_memory and (not args.comparison or args.attribution or args.review_journey):
+        parser.error(
+            "--phase-memory requires --comparison and cannot be combined with attribution or review"
+        )
     asyncio.run(
         run(
             args.source.resolve(),
@@ -642,5 +674,6 @@ if __name__ == "__main__":
             attribution=args.attribution,
             comparison=args.comparison,
             review_journey=args.review_journey,
+            phase_memory=args.phase_memory,
         )
     )
