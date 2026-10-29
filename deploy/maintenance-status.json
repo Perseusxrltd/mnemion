@@ -69,18 +69,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 5,
-        "succeeded": 5,
+        "completed": 7,
+        "succeeded": 7,
         "active": [
-          {
-            "id": 123559925721,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
           {
             "id": 123560030257,
             "name": "supervision (macos-15-intel)",
@@ -88,15 +79,6 @@
             "runner_assigned": true,
             "steps": [
               "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 123560030331,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           },
           {
@@ -181,12 +163,6 @@
       "updated_at": "2026-10-29T15:52:27Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40896509541",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / macos-26 / arm64",
@@ -199,7 +175,13 @@
             "Retain generated desktop-content secret scan receipt"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
+      }
     },
     {
       "id": 40905937596,
@@ -235,5 +217,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40853490883"
     }
   ],
-  "observed_at": "2026-10-29T15:53:09+00:00"
+  "observed_at": "2026-10-29T15:53:44+00:00"
 }
