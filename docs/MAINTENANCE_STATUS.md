@@ -1,12 +1,12 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T15:13:05+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T15:24:57+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.52](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.52). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
-## Open issues (4)
+## Open issues (5)
 
 | Issue | Report | Last activity |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | [#47](https://github.com/Perseusxrltd/mnemion/issues/47) | Field report \(4\.46\.40\): multi-agent usage audit — slow/hanging search, suspended connector scope, noisy activity log, unusable vault over MCP, and features left unused | 2026-10-28T17:01:24Z |
 | [#48](https://github.com/Perseusxrltd/mnemion/issues/48) | Mnemion as the single system: full replacement of LEDGER/DISPATCH/files, plus vault compatibility | 2026-10-28T09:04:09Z |
 | [#49](https://github.com/Perseusxrltd/mnemion/issues/49) | macOS Studio dies at launch: ad-hoc signature rejects Electron Framework | 2026-10-29T15:12:33Z |
+| [#50](https://github.com/Perseusxrltd/mnemion/issues/50) | macOS asks for the login keychain password on every Studio secret | 2026-10-29T15:24:22Z |
 
 ## Relevant builds
 
@@ -30,12 +31,10 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40896509541](https://github.com/Perseusxrltd/mnemion/actions/runs/40896509541): 16/21 jobs completed; 14 succeeded.
+[Run 40896509541](https://github.com/Perseusxrltd/mnemion/actions/runs/40896509541): 18/21 jobs completed; 16 succeeded.
 
-- native / windows-11-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 

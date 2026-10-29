@@ -37,6 +37,15 @@
       "labels": [
         "bug"
       ]
+    },
+    {
+      "number": 50,
+      "title": "macOS asks for the login keychain password on every Studio secret",
+      "updated_at": "2026-10-29T15:24:22Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/50",
+      "labels": [
+        "bug"
+      ]
     }
   ],
   "runs": [
@@ -97,8 +106,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 21,
-        "completed": 16,
-        "succeeded": 14,
+        "completed": 18,
+        "succeeded": 16,
         "active": [
           {
             "id": 123530522451,
@@ -106,16 +115,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123530522515,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -124,16 +124,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 123530522782,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -195,5 +186,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40853490883"
     }
   ],
-  "observed_at": "2026-10-29T15:13:05+00:00"
+  "observed_at": "2026-10-29T15:24:57+00:00"
 }
