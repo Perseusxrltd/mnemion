@@ -18,11 +18,13 @@ failure created yet another cdhash, and the dialog returned.
 ## What this source already does
 
 `workspaceCipher()` on macOS returns one `CredentialProcess`. The first seal or
-open starts `process.execPath` with `--mnemion-keychain-helper`. Later seals
-and opens reuse that process until final `will-quit`. Electron 44.9.3 requests
-the async `safeStorage` encryptor once per process
+open starts `process.execPath` with `--mnemion-keychain-helper`. While that
+child stays healthy, later seals and opens reuse it until final `will-quit`.
+An unavailable result, denial, timeout, or pipe failure discards the child, and
+the next call can start another. Electron 44.9.3 requests the async
+`safeStorage` encryptor once per process
 (`EnsureAsyncEncryptorRequested`); later `encryptStringAsync` /
-`decryptStringAsync` calls use that in-memory key. Chromium's
+`decryptStringAsync` calls in that process use that in-memory key. Chromium's
 `KeychainPassword::GetPassword()` itself calls the keychain on every lookup, so
 a new process is a new lookup. The helper is the same executable as Studio, so
 it is not a second keychain identity.
@@ -43,12 +45,16 @@ is the bundle id plus Team ID, and for this ad-hoc build is the cdhash.
 
 [Apple's keychain prompt](https://support.apple.com/guide/keychain-access/if-youre-asked-for-access-to-your-keychain-kyca1243/mac)
 distinguishes **Allow** / **Allow Once** (this retrieval only) from **Always
-Allow** (trust this app from then on). Allow therefore covers every saved
-connection in the running helper and asks again on the next launch. Always
-Allow covers later launches of that same binary only. The next update or
-re-sign changes the cdhash, so Always Allow does not carry over. The free
-signing policy does not add a Team ID. No code change can make one approval
-survive that new cdhash.
+Allow** (trust this app from then on). After successful access, a healthy
+running helper reuses its encryptor, so later connections in that run do not
+each prompt. Allow asks again on the next launch. A helper restart, a failed
+approval, a locked keychain, or a changed OS access policy can require another
+prompt. Always Allow normally permits the unchanged binary while that
+permission remains valid. The next update or re-sign changes the cdhash, so
+that exact-binary trust does not carry over. The free signing policy does not
+add a Team ID. This implementation's current ad-hoc app identity changes across
+builds and does not preserve that exact-binary trust. This batch adds no
+cross-update credential migration.
 
 ## Acceptance still open
 
@@ -61,3 +67,31 @@ survive that new cdhash.
    stay quiet for that build after Always Allow.
 4. Saved ciphertext from the previous build must still open. Nothing here
    replaces it.
+
+## Handoff follow-up, 30 October 2026
+
+Astra reviewed `6b825566d00c997af9fb3b7f2d6e3a9c205fd963`. The focused
+two-connection regression and comment-only source changes are accepted. The
+original 19-test pass stays valid and was not rerun for this copy correction.
+The sections above keep the 29 October report, source notes, and open
+acceptance list. Item 2 is the healthy-helper case: a replaced helper can
+prompt again in that same launch.
+
+The once-per-launch wording is the normal case only. After successful access, a
+healthy running helper reuses its encryptor. CredentialProcess can discard and
+replace the child after an unavailable result, denial, timeout, or pipe
+failure. A helper restart, failed approval, locked keychain, or changed OS
+access policy can require another prompt. Always Allow normally permits the
+unchanged binary while that permission remains valid. Allow versus Always
+Allow, and the expected prompt on the next update, remain as written above.
+
+The withdrawn claim is that no code change can ever preserve approval across a
+new cdhash. This implementation's current ad-hoc app identity changes across
+builds and does not preserve that exact-binary trust. This batch adds no
+cross-update credential migration. The persistent helper is current behavior;
+this note does not date that lifetime to 4.1.0.
+
+Issue 50 stays open. Normal-helper source and 19 fixture checks are the
+evidence linked from the issue plan. Actual affected-Mac acceptance is still
+open. No Mac keychain was unlocked, no installed Studio was modified, and no
+version was bumped.

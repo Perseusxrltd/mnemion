@@ -31,13 +31,13 @@ If the operating system's secure store is locked or unavailable, the app
 explains this and offers a session-only connection. There is no plaintext key
 fallback. Unlock the OS store before opening a previously saved workspace.
 
-Starting with 4.1.0, macOS credential checks use the asynchronous Keychain API
-in one helper process of the same Studio executable. That helper stays up for
-the life of the running app. Sealing or opening any number of saved connections
-reuses it, so the login keychain is consulted once per launch, not once per
-connection. The helper is not a second app and does not have its own keychain
-identity. A prompt must not freeze the window or prevent the local workspace
-from starting.
+On macOS, credential checks use the asynchronous Keychain API in one helper
+process of the same Studio executable. After successful access, a healthy
+running helper reuses its encryptor, so later saved connections in that run do
+not each prompt. A helper restart, a failed approval, a locked keychain, or a
+changed OS access policy can require another prompt. The helper is not a
+second app and does not have its own keychain identity. A prompt must not
+freeze the window or prevent the local workspace from starting.
 
 The dialog is macOS asking whether this copy of Studio may read the existing
 item `mnemion-studio Safe Storage`. It is not a Mnemion workspace password and
@@ -45,21 +45,27 @@ not an Apple ID password. It can appear while the login keychain is already
 unlocked. Existing encrypted bookmarks stay as they are. Resetting saved
 connections is not required.
 
-**Allow** (shown on some macOS versions as **Allow Once**) permits that single
-read. Studio keeps the result in the helper until quit, so later connections in
-that same launch do not ask. The next launch is a new process and asks again.
+**Allow** (shown on some macOS versions as **Allow Once**) permits that
+retrieval. After successful access, a healthy running helper reuses its
+encryptor, so later connections in that same run do not ask. The next launch
+is a new process and asks again. A helper restart or a failed approval can ask
+again before quit.
 
-**Always Allow** trusts the designated requirement of this exact binary. This
-free build has no Apple Team ID. The requirement is the ad-hoc code-directory
-hash (cdhash) of that binary. The same unchanged Studio, including the helper,
-can then launch and use every saved connection without asking again.
+**Always Allow** normally permits the unchanged binary while that permission
+remains valid. This free build has no Apple Team ID. The requirement is the
+ad-hoc code-directory hash (cdhash) of that binary. The same unchanged Studio,
+including a healthy helper, can then launch and use saved connections without
+asking again. A locked keychain or a changed OS access policy can still
+require a prompt.
 
 The next Studio update, or any local re-sign, produces a new cdhash. macOS
 treats that file as a different app, so **Always Allow does not carry over**.
 The new build asks once. **Always Allow** on that build then covers it until
-the following update. A free ad-hoc signature cannot keep the same trusted
-cdhash across updates. Do not locally re-sign Studio to silence the dialog.
-That creates another cdhash and the dialog returns. After the prompt, choose
+the following update, while that permission remains valid. This app's current
+ad-hoc identity changes across builds and does not preserve that exact-binary
+trust. This batch adds no cross-update credential migration. Do not locally
+re-sign Studio to silence the dialog. That creates another cdhash and the
+dialog returns. After the prompt, choose
 **Retry secure storage** and **Open** beside the saved connection. If you chose
 **Deny**, quit Studio and open it again, then approve the prompt.
 
