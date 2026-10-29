@@ -11,6 +11,7 @@ import csv
 import io
 import json
 from pathlib import Path
+import sqlite3
 
 from .aggregate_v3 import validate
 from .publication_v3 import ReportStore
@@ -21,7 +22,9 @@ from .wire_v3 import METRICS, METRIC_BY_ID, WireV3Error, bucket_label
 def honest_summary(reports: list[dict], publication_failures: list[dict] | None = None) -> dict:
     failures = [] if publication_failures is None else publication_failures
     if any(
-        type(item) is not dict or set(item) != {"window_week", "state"} or item["state"] != "publication_failed"
+        type(item) is not dict
+        or set(item) != {"window_week", "state"}
+        or item["state"] != "publication_failed"
         or type(item["window_week"]) is not int
         for item in failures
     ):
@@ -323,15 +326,29 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
       return;
     }
     weekSel.disabled = false;
-    data.weeks.forEach(function (week) {
+    var ordered = data.weeks.slice().sort(function (a, b) { return a.week - b.week; });
+    ordered.forEach(function (week) {
       var option = el("option", null, "Week " + week.week);
       option.value = String(week.week);
       weekSel.appendChild(option);
     });
+    weekSel.value = String(ordered[ordered.length - 1].week);
+  }
+  function memberKey(ids) {
+    return JSON.stringify(ids.slice().sort());
+  }
+  function weekSpan() {
+    var first = data.weeks[0].week;
+    var last = first;
+    for (var i = 1; i < data.weeks.length; i += 1) {
+      if (data.weeks[i].week < first) first = data.weeks[i].week;
+      if (data.weeks[i].week > last) last = data.weeks[i].week;
+    }
+    return { first: first, last: last };
   }
   function fillCohorts() {
+    var previousIdentity = cohortSel.selectedIndex >= 0 ? cohortSel.options[cohortSel.selectedIndex].textContent : "";
     var previousValue = cohortSel.value;
-    var previousText = cohortSel.selectedIndex >= 0 ? cohortSel.options[cohortSel.selectedIndex].textContent : "";
     clear(cohortSel);
     var week = currentWeek();
     var picked = axis();
@@ -364,14 +381,15 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
     cohortSel.disabled = cohortSel.options.length === 0 || cohortSel.options[0].value === "";
     var matched = false;
     for (var i = 0; i < cohortSel.options.length; i += 1) {
-      if (previousValue !== "" && cohortSel.options[i].value === previousValue) {
+      if (previousIdentity !== "" && cohortSel.options[i].textContent === previousIdentity) {
         cohortSel.selectedIndex = i;
         matched = true;
+        break;
       }
     }
-    if (!matched) {
+    if (!matched && previousValue === "remainder") {
       for (var j = 0; j < cohortSel.options.length; j += 1) {
-        if (previousText !== "" && cohortSel.options[j].textContent === previousText) cohortSel.selectedIndex = j;
+        if (cohortSel.options[j].value === "remainder") cohortSel.selectedIndex = j;
       }
     }
   }
@@ -394,7 +412,8 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
         denominator: row.denominator,
         metrics: row.metrics,
         quantileNote: row.quantiles,
-        label: "suppressed remainder"
+        label: "suppressed remainder " + row.ids.join(" + "),
+        members: row.ids.slice()
       };
     }
     var slot = Number(cohortSel.value);
@@ -419,13 +438,18 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
         return;
       }
       if (cohortSel.value === "remainder") {
-        var grouped = item.remainder[picked];
-        if (grouped) points.push({ week: item.week, value: grouped.denominator });
+        var selected = week.remainder && week.remainder[picked];
+        var key = selected ? memberKey(selected.ids) : "";
+        var grouped = item.remainder && item.remainder[picked];
+        if (grouped && memberKey(grouped.ids) === key) {
+          points.push({ week: item.week, value: grouped.denominator });
+        }
         return;
       }
       var row = (item[picked] || []).filter(function (entry) { return entry.id === identity; })[0];
       if (row) points.push({ week: item.week, value: row.denominator });
     });
+    points.sort(function (a, b) { return a.week - b.week; });
     return points;
   }
   function boundText(metric, key) {
@@ -443,8 +467,9 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
     }
     return key + ": " + item.state;
   }
-  function drawTrend(points) {
+  function drawTrend(points, memberNote) {
     clear(trend);
+    if (memberNote) trend.appendChild(el("p", "members", memberNote));
     if (!points.length) {
       trend.appendChild(el("p", null, "No noisy denominator for this selection."));
       return;
@@ -456,13 +481,14 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
     var width = 640;
     var height = 160;
     var pad = 16;
+    var span = weekSpan();
     var svg = document.createElementNS(svgNs, "svg");
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
     svg.setAttribute("aria-hidden", "true");
-    var coords = points.map(function (point, index) {
-      var x = points.length === 1
+    var coords = points.map(function (point) {
+      var x = span.last === span.first
         ? width / 2
-        : pad + index * (width - 2 * pad) / (points.length - 1);
+        : pad + (point.week - span.first) * (width - 2 * pad) / (span.last - span.first);
       var y = pad + (high - point.value) * (height - 2 * pad) / (high - low);
       return x.toFixed(1) + "," + y.toFixed(1);
     });
@@ -500,7 +526,10 @@ svg { width: 100%; height: auto; display: block; margin: 8px 0; }
     detail.hidden = !picked;
     if (!picked) return;
     denominator.textContent = picked.label + " noisy denominator " + picked.denominator + ". Not unique people.";
-    drawTrend(trendPoints());
+    var memberNote = picked.members
+      ? "Member set: " + picked.members.join(" + ") + ". Weeks with a different suppressed set are not connected."
+      : null;
+    drawTrend(trendPoints(), memberNote);
     clear(metrics);
     picked.metrics.forEach(function (metric) {
       var section = el("section", "metric");
@@ -549,7 +578,9 @@ def _page(view: dict) -> str:
     return _PAGE.replace("__ISLAND__", _json_island(view), 1)
 
 
-def render(reports: list[dict], export_format: str, publication_failures: list[dict] | None = None) -> str:
+def render(
+    reports: list[dict], export_format: str, publication_failures: list[dict] | None = None
+) -> str:
     checked = [validate(report) for report in reports]
     summary = honest_summary(checked, publication_failures)
     if export_format == "json":
@@ -578,14 +609,25 @@ def render(reports: list[dict], export_format: str, publication_failures: list[d
             "reports_are_not_unique_people": True,
             "noise_is_not_independent_user_or_causal_inference": True,
             "report_count": summary["report_count"],
-            "publication_failure_weeks": "+".join(str(item["window_week"]) for item in summary["publication_failures"]),
+            "publication_failure_weeks": "+".join(
+                str(item["window_week"]) for item in summary["publication_failures"]
+            ),
         }
     )
     buffer.write("\n")
     rows = [row for report in checked for row in _rows(report)]
     writer = csv.DictWriter(
         buffer,
-        fieldnames=("week", "scope", "axis", "cohort_id", "metric", "bucket", "noisy_count", "publication_state"),
+        fieldnames=(
+            "week",
+            "scope",
+            "axis",
+            "cohort_id",
+            "metric",
+            "bucket",
+            "noisy_count",
+            "publication_state",
+        ),
     )
     writer.writeheader()
     writer.writerows(rows)
@@ -621,7 +663,7 @@ def main(argv: list[str] | None = None) -> int:
         store = ReportStore(args.state)
         print(render(store.reports(), args.format, store.publication_failures()))
         return 0
-    except (OSError, ValueError, WireV3Error):
+    except (OSError, ValueError, WireV3Error, sqlite3.DatabaseError):
         print(json.dumps({"ok": False, "error": "telemetry_v3_export_rejected"}))
         return 2
 

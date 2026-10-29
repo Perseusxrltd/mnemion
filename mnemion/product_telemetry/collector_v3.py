@@ -20,7 +20,9 @@ from .wire_v3 import PACKET_BYTES, WIRE, WireV3Error
 
 class CollectorV3:
     def __init__(self, publish_closed_window, *, clock=time.time, random_below=None):
-        if not callable(publish_closed_window) or (random_below is not None and not callable(random_below)):
+        if not callable(publish_closed_window) or (
+            random_below is not None and not callable(random_below)
+        ):
             raise TypeError("telemetry_publisher_required")
         self._publish = publish_closed_window
         self._clock = clock
@@ -39,7 +41,11 @@ class CollectorV3:
         kept = {}
         for item in self._publication_failures:
             week = item.get("window_week") if type(item) is dict else None
-            if type(week) is int and low <= week < current and item.get("state") == "publication_failed":
+            if (
+                type(week) is int
+                and low <= week < current
+                and item.get("state") == "publication_failed"
+            ):
                 kept[week] = {"window_week": week, "state": "publication_failed"}
         self._publication_failures = [kept[week] for week in sorted(kept)]
 
@@ -49,7 +55,11 @@ class CollectorV3:
             self._window.discard()
             return False
         if week > self._window.week:
-            result = self._window.seal(self._random_below) if self._random_below is not None else self._window.seal()
+            result = (
+                self._window.seal(self._random_below)
+                if self._random_below is not None
+                else self._window.seal()
+            )
             self._window = AggregateWindow(week)
             prune = getattr(self._publish, "prune", None)
             if callable(prune):
@@ -71,7 +81,9 @@ class CollectorV3:
             self._prune_failures()
             return
         self._prune_failures()
-        self._publication_failures = [item for item in self._publication_failures if item["window_week"] != week]
+        self._publication_failures = [
+            item for item in self._publication_failures if item["window_week"] != week
+        ]
         self._publication_failures.append({"window_week": week, "state": "publication_failed"})
         recorder = getattr(self._publish, "record_publication_failure", None)
         if callable(recorder):

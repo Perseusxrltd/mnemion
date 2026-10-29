@@ -67,7 +67,9 @@ A release id must equal `major.minor.patch`, slots are packed from zero, the
 unlisted id is exactly `unlisted`, and the OS list is exactly those four names
 in that order. Ordered legend bounds are strictly increasing integers. Their
 count and unit must match the compiled metric; the stored edges are the ones
-used to read that report.
+used to read that report. A category row stores only its id and kind.
+Category names are not in schema 2. Export reads those names from the current
+wire-v3 catalog, so a later rename of a category string is not preserved.
 
 The published vector contains the full fixed domain of both axes, including
 cohorts that received nothing. Global figures are the sum of that one noisy

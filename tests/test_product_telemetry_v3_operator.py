@@ -12,7 +12,9 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
+import sqlite3
 import ssl
 import subprocess
 import sys
@@ -24,7 +26,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 import pytest
 
-from mnemion.product_telemetry.aggregate_v3 import NUMERATOR, AggregateWindow
+from mnemion.product_telemetry.aggregate_v3 import NUMERATOR, AggregateWindow, validate
 from mnemion.product_telemetry.collector_v3 import CollectorV3
 from mnemion.product_telemetry.maintainer_v3 import _page, main, render
 from mnemion.product_telemetry.publication_v3 import ReportStore
@@ -123,7 +125,13 @@ def test_metadata_boundary_keeps_only_the_selected_route():
 
     asyncio.run(
         MetadataBoundary(app, route="/v3/report")(
-            {"type": "http", "method": "POST", "path": "/v1/report", "query_string": b"", "headers": []},
+            {
+                "type": "http",
+                "method": "POST",
+                "path": "/v1/report",
+                "query_string": b"",
+                "headers": [],
+            },
             None,
             None,
         )
@@ -190,7 +198,10 @@ def test_operator_errors_do_not_echo_or_create_a_store(tmp_path, capsys):
 
 def test_html_export_keeps_json_csv_legend_and_escapes_script(tmp_path, capsys, monkeypatch):
     current = reporting_week(time.time())
-    clock = lambda: stamp(current)
+
+    def clock() -> int:
+        return stamp(current)
+
     store = ReportStore(tmp_path, clock=clock)
     peaked = AggregateWindow(current - 1)
     for _ in range(2000):
@@ -209,7 +220,9 @@ def test_html_export_keeps_json_csv_legend_and_escapes_script(tmp_path, capsys, 
     document = json.loads(json_text)
     assert document["summary"]["report_count"] == 2
     assert document["summary"]["publication_failures"][0]["state"] == "publication_failed"
-    assert csv_text.splitlines()[0].startswith("record,ordinary_privacy_settings_contain_fleet_data")
+    assert csv_text.splitlines()[0].startswith(
+        "record,ordinary_privacy_settings_contain_fleet_data"
+    )
     assert csv_text.splitlines()[1].endswith("," + str(current - 3))
     assert html.startswith("<!DOCTYPE html>")
     assert "innerHTML" not in html
@@ -226,7 +239,11 @@ def test_html_export_keeps_json_csv_legend_and_escapes_script(tmp_path, capsys, 
     assert "release_os" not in week
     release = next(row for row in week["release"] if row["id"] == "4.46.53")
     assert len(release["metrics"]) == 19
-    assert any(metric["quantiles"]["p50"]["state"] == "bucket_bounds" for metric in release["metrics"] if "quantiles" in metric)
+    assert any(
+        metric["quantiles"]["p50"]["state"] == "bucket_bounds"
+        for metric in release["metrics"]
+        if "quantiles" in metric
+    )
     negative_week = next(item for item in view["weeks"] if item["week"] == current - 2)
     assert negative_week["domain_denominator"] < 0
     assert any(
@@ -241,7 +258,9 @@ def test_html_export_keeps_json_csv_legend_and_escapes_script(tmp_path, capsys, 
     again = island(render([peaked_report], "html"))
     again_latency = next(
         metric
-        for metric in next(item for item in again["weeks"] if item["week"] == current - 1)["release"]
+        for metric in next(item for item in again["weeks"] if item["week"] == current - 1)[
+            "release"
+        ]
         if metric["id"] == "4.46.53"
         for metric in metric["metrics"]
         if metric["id"] == "latency_ms"
@@ -258,7 +277,9 @@ def test_html_export_keeps_json_csv_legend_and_escapes_script(tmp_path, capsys, 
     assert main(["--state", str(tmp_path), "--format", "html"]) == 0
     exported = capsys.readouterr().out
     exported_view = island(exported)
-    assert exported_view["publication_failures"] == [{"window_week": current - 3, "state": "publication_failed"}]
+    assert exported_view["publication_failures"] == [
+        {"window_week": current - 3, "state": "publication_failed"}
+    ]
     assert exported_view["weeks"]
 
     bare = tmp_path / "empty-store"
@@ -286,7 +307,11 @@ def _certificate(folder: Path):
     certificate, private_key = folder / "certificate.pem", folder / "key.pem"
     certificate.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
     private_key.write_bytes(
-        key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
     )
     private_key.chmod(0o600)
     return certificate, private_key
@@ -348,8 +373,10 @@ def _listen(tmp_path: Path, mode: str | None):
         )
         try:
             deadline = time.monotonic() + 8
-            ready = b"OPTIONS /v3/report HTTP/1.1\r\nHost: localhost\r\n\r\n" if mode == "v3" else (
-                b"OPTIONS /v1/report HTTP/1.1\r\nHost: localhost\r\n\r\n"
+            ready = (
+                b"OPTIONS /v3/report HTTP/1.1\r\nHost: localhost\r\n\r\n"
+                if mode == "v3"
+                else (b"OPTIONS /v1/report HTTP/1.1\r\nHost: localhost\r\n\r\n")
             )
             while True:
                 assert child.poll() is None, stderr.read_text()
@@ -379,14 +406,18 @@ def test_local_tls_v3_accepts_its_packet_and_legacy_stays_default(tmp_path):
         + b"\r\n\r\n"
         + body
     )
-    malformed = b"POST /v3/report HTTP/1.1\r\nHost: localhost\r\nContent-Length: 25\r\n\r\n" + (b"\x00" * 25)
+    malformed = b"POST /v3/report HTTP/1.1\r\nHost: localhost\r\nContent-Length: 25\r\n\r\n" + (
+        b"\x00" * 25
+    )
     wrong = (
         b"POST /v1/report HTTP/1.1\r\nHost: localhost\r\nContent-Length: "
         + str(len(body)).encode()
         + b"\r\n\r\n"
         + body
     )
-    queried = b"POST /v3/report?" + CANARY + b" HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\n\r\n"
+    queried = (
+        b"POST /v3/report?" + CANARY + b" HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\n\r\n"
+    )
     with _listen(tmp_path / "v3", "v3") as (context, port, state, stdout, stderr):
         assert _exchange(context, "127.0.0.1", port, good).startswith(b"HTTP/1.1 204")
         assert _exchange(context, "127.0.0.1", port, malformed).startswith(b"HTTP/1.1 400")
@@ -406,3 +437,330 @@ def test_local_tls_v3_accepts_its_packet_and_legacy_stays_default(tmp_path):
         ).startswith(b"HTTP/1.1 404")
         assert (state / "reports.sqlite3").is_file()
         assert not (state / "reports-v3.sqlite3").exists()
+
+
+def _rejected(capsys) -> str:
+    leaked = capsys.readouterr()
+    assert "Traceback" not in leaked.out + leaked.err
+    return leaked.out + leaked.err
+
+
+def test_corrupt_or_locked_export_stays_a_fixed_error(tmp_path, capsys):
+    corrupt = tmp_path / "credential-looking-store"
+    ReportStore(corrupt)
+    target = corrupt / "reports-v3.sqlite3"
+    original = b"not-a-sqlite-database"
+    target.write_bytes(original)
+    assert main(["--state", str(corrupt), "--format", "json"]) == 2
+    leaked = _rejected(capsys)
+    assert leaked == '{"ok": false, "error": "telemetry_v3_export_rejected"}\n'
+    assert "credential-looking-store" not in leaked
+    assert target.read_bytes() == original
+
+    locked = tmp_path / "busy-store"
+    ReportStore(locked)
+    database = locked / "reports-v3.sqlite3"
+    before = database.read_bytes()
+    held = sqlite3.connect(database, isolation_level=None)
+    held.execute("BEGIN EXCLUSIVE")
+    try:
+        assert main(["--state", str(locked), "--format", "html"]) == 2
+    finally:
+        held.rollback()
+        held.close()
+    leaked = _rejected(capsys)
+    assert leaked == '{"ok": false, "error": "telemetry_v3_export_rejected"}\n'
+    assert "busy-store" not in leaked
+    assert "database is locked" not in leaked
+    assert database.read_bytes() == before
+    assert main(["--state", str(locked), "--format", "json"]) == 0
+    assert json.loads(capsys.readouterr().out)["summary"]["report_count"] == 0
+
+
+def test_v3_serve_rejects_a_bad_store_without_replacing_it(tmp_path, capsys):
+    root = tmp_path / "v3-bad-store"
+    ReportStore(root)
+    target = root / "reports-v3.sqlite3"
+    original = b"not-a-sqlite-database"
+    target.write_bytes(original)
+    certificate, private_key = root / "certificate.pem", root / "key.pem"
+    certificate.write_bytes(b"unused-certificate")
+    private_key.write_bytes(b"unused-key")
+    assert (
+        serve_main(
+            [
+                "serve",
+                "--mode",
+                "v3",
+                "--state",
+                str(root),
+                "--certificate",
+                str(certificate),
+                "--private-key",
+                str(private_key),
+            ]
+        )
+        == 2
+    )
+    leaked = _rejected(capsys)
+    assert leaked == '{"error":"telemetry_collector_configuration_invalid"}\n'
+    assert str(root) not in leaked
+    assert target.read_bytes() == original
+
+    busy = tmp_path / "v3-busy-store"
+    ReportStore(busy)
+    database = busy / "reports-v3.sqlite3"
+    before = database.read_bytes()
+    held = sqlite3.connect(database, isolation_level=None)
+    held.execute("BEGIN EXCLUSIVE")
+    try:
+        assert (
+            serve_main(
+                [
+                    "serve",
+                    "--mode",
+                    "v3",
+                    "--state",
+                    str(busy),
+                    "--certificate",
+                    str(certificate),
+                    "--private-key",
+                    str(private_key),
+                ]
+            )
+            == 2
+        )
+    finally:
+        held.rollback()
+        held.close()
+    leaked = _rejected(capsys)
+    assert leaked == '{"error":"telemetry_collector_configuration_invalid"}\n'
+    assert "database is locked" not in leaked
+    assert database.read_bytes() == before
+
+
+def test_category_names_follow_the_live_catalog(monkeypatch):
+    report = validate(AggregateWindow(10).seal(stop))
+    saved = next(item for item in report["domain"]["metric_legend"] if item["id"] == "outcome")
+    assert saved == {"id": "outcome", "kind": "categories"}
+    live = METRIC_BY_ID["outcome"]
+    monkeypatch.setitem(live, "categories", ["renamed-success", *live["categories"][1:]])
+    view = island(render([report], "html"))
+    labels = next(
+        metric["buckets"]
+        for metric in view["weeks"][0]["domain_metrics"]
+        if metric["id"] == "outcome"
+    )
+    assert labels[2]["label"] == "renamed-success"
+    outcome = next(item for item in view["weeks"][0]["frozen_legend"] if item["id"] == "outcome")
+    assert outcome == {"id": "outcome", "kind": "categories"}
+
+
+_TREND_PAGE = r"""
+const fs = require("fs");
+const html = fs.readFileSync(process.argv[2], "utf8");
+const marker = '<script type="application/json" id="fleet-report">';
+const jsonStart = html.indexOf(marker) + marker.length;
+const jsonEnd = html.indexOf("</script>", jsonStart);
+const scriptStart = html.indexOf("<script>", jsonEnd) + "<script>".length;
+const scriptEnd = html.indexOf("</script>", scriptStart);
+const code = html.slice(scriptStart, scriptEnd);
+
+function Element(tag) {
+  this.tag = tag;
+  this.children = [];
+  this.attrs = {};
+  this._text = "";
+  this.className = "";
+  this.style = {};
+  this.hidden = false;
+  this.disabled = false;
+  this._value = "";
+  this.checked = false;
+  this.options = [];
+  this.selectedIndex = -1;
+  this.listeners = {};
+  this.scope = "";
+}
+Object.defineProperty(Element.prototype, "textContent", {
+  get() { return this._text; },
+  set(value) { this._text = String(value); },
+});
+Object.defineProperty(Element.prototype, "value", {
+  get() {
+    if (this.tag === "SELECT" && this.selectedIndex >= 0 && this.options[this.selectedIndex]) {
+      return this.options[this.selectedIndex].value;
+    }
+    return this._value;
+  },
+  set(value) {
+    this._value = String(value);
+    if (this.tag === "SELECT") {
+      for (let index = 0; index < this.options.length; index += 1) {
+        if (this.options[index].value === this._value) this.selectedIndex = index;
+      }
+    }
+  },
+});
+Object.defineProperty(Element.prototype, "firstChild", {
+  get() { return this.children[0] || null; },
+});
+Element.prototype.setAttribute = function (name, value) { this.attrs[name] = String(value); };
+Element.prototype.appendChild = function (child) {
+  this.children.push(child);
+  if (this.tag === "SELECT") {
+    this.options.push(child);
+    if (this.selectedIndex < 0) this.selectedIndex = 0;
+  }
+  return child;
+};
+Element.prototype.removeChild = function (child) {
+  this.children = this.children.filter((item) => item !== child);
+  this.options = this.options.filter((item) => item !== child);
+  if (this.selectedIndex >= this.options.length) this.selectedIndex = this.options.length - 1;
+  return child;
+};
+Element.prototype.addEventListener = function (type, fn) {
+  (this.listeners[type] ||= []).push(fn);
+};
+Element.prototype.dispatch = function (type) {
+  (this.listeners[type] || []).forEach((fn) => fn());
+};
+
+const nodes = {};
+["week", "cohort", "failures", "empty", "detail", "denominator", "trend", "metrics", "fleet-report"].forEach((id) => {
+  nodes[id] = new Element(id === "week" || id === "cohort" ? "SELECT" : "DIV");
+});
+nodes["fleet-report"].textContent = html.slice(jsonStart, jsonEnd);
+const radios = ["release", "os", "domain"].map((value) => {
+  const node = new Element("INPUT");
+  node.value = value;
+  node.checked = value === "release";
+  return node;
+});
+const document = {
+  getElementById(id) { return nodes[id]; },
+  querySelector(selector) {
+    if (selector === 'input[name="axis"]:checked') return radios.find((node) => node.checked) || null;
+    return null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name="axis"]') return radios;
+    return [];
+  },
+  createElement(tag) { return new Element(String(tag).toUpperCase()); },
+  createElementNS(_ns, tag) { return new Element(tag); },
+};
+const vm = require("vm");
+vm.runInNewContext(code, { document: document }, { timeout: 5000 });
+const weekSel = nodes.week;
+const cohortSel = nodes.cohort;
+const initialWeek = weekSel.value;
+weekSel.value = "10";
+weekSel.dispatch("change");
+cohortSel.value = "remainder";
+cohortSel.dispatch("change");
+const trendText = nodes.trend.children.map((node) => node.textContent).join("\n");
+let points = "";
+function walk(node) {
+  if (node.attrs && node.attrs.points) points = node.attrs.points;
+  node.children.forEach(walk);
+}
+walk(nodes.trend);
+const headers = [];
+function walkHeaders(node) {
+  if (node.tag === "TH") headers.push(node.textContent);
+  node.children.forEach(walkHeaders);
+}
+walkHeaders(nodes.trend);
+cohortSel.value = "1";
+cohortSel.dispatch("change");
+const selectedOnOldWeek = cohortSel.options[cohortSel.selectedIndex].textContent;
+weekSel.value = "12";
+weekSel.dispatch("change");
+const selectedAfterWeekChange = cohortSel.options[cohortSel.selectedIndex].textContent;
+const afterIdentity = nodes.denominator.textContent;
+process.stdout.write(JSON.stringify({
+  initialWeek, points, trendText, headers, selectedOnOldWeek, selectedAfterWeekChange, afterIdentity
+}));
+"""
+
+
+def test_remainder_trend_uses_the_same_member_set_and_week_positions(tmp_path):
+    node = shutil.which("node") or "/usr/bin/node"
+    assert Path(node).is_file()
+
+    def week(number: int, members: list[str], denominator: int, releases: list[dict]) -> dict:
+        return {
+            "week": number,
+            "frozen_legend": [],
+            "report_unit": "anonymous_bounded_summary_not_a_person_or_installation",
+            "comparisons": "separate_axes_in_one_week_not_a_joined_profile",
+            "noise_uncertainty_is_not": "independent_user_sampling_or_causal_inference",
+            "domain_label": "sum_of_noisy_full_domain",
+            "domain_denominator": denominator,
+            "domain_metrics": [],
+            "release": releases,
+            "os": [],
+            "remainder": {
+                "release": {
+                    "ids": members,
+                    "denominator": denominator,
+                    "metrics": [],
+                    "quantiles": "not_a_single_population",
+                },
+                "os": None,
+            },
+        }
+
+    page = _page(
+        {
+            "surface": "private_maintainer_export",
+            "ordinary_privacy_settings_contain_fleet_data": False,
+            "reports_are_not_unique_people": True,
+            "noise_is_not_a_population_or_causal_confidence_interval": True,
+            "publication_failures": [],
+            "weeks": [
+                week(
+                    10,
+                    ["aa", "bb"],
+                    3,
+                    [
+                        {"id": "4.46.53", "slot": 0, "denominator": 10, "metrics": []},
+                        {"id": "unlisted", "slot": 1, "denominator": 11, "metrics": []},
+                    ],
+                ),
+                week(
+                    12,
+                    ["aa", "cc"],
+                    9,
+                    [
+                        {"id": "4.46.53", "slot": 0, "denominator": 10, "metrics": []},
+                        {"id": "4.46.54", "slot": 1, "denominator": 77, "metrics": []},
+                        {"id": "unlisted", "slot": 2, "denominator": 22, "metrics": []},
+                    ],
+                ),
+                week(11, ["bb", "aa"], 4, []),
+            ],
+        }
+    )
+    html_path = tmp_path / "trend.html"
+    script_path = tmp_path / "check-trend.js"
+    html_path.write_text(page, encoding="utf-8")
+    script_path.write_text(_TREND_PAGE, encoding="utf-8")
+    ran = subprocess.run(
+        [node, str(script_path), str(html_path)], capture_output=True, text=True, timeout=20
+    )
+    assert ran.returncode == 0, ran.stderr
+    found = json.loads(ran.stdout)
+    assert found["initialWeek"] == "12"
+    assert found["points"].startswith("16.0,")
+    assert "320.0," in found["points"]
+    assert "624.0," not in found["points"]
+    assert found["headers"] == ["Week 10", "Week 11"]
+    assert "Member set: aa + bb" in found["trendText"]
+    assert "different suppressed set" in found["trendText"]
+    assert found["selectedOnOldWeek"] == "unlisted"
+    assert found["selectedAfterWeekChange"] == "unlisted"
+    assert found["afterIdentity"] == "unlisted noisy denominator 22. Not unique people."
+    assert "4.46.54" not in found["afterIdentity"]

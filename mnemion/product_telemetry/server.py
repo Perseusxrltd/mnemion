@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import sqlite3
 import ssl
 import sys
 
@@ -235,14 +236,20 @@ def _systemd_listener(bind: str, port: int) -> socket.socket:
 
 def _selected_application(mode: str, state: Path):
     """Mount one known collector and its own store. Unknown modes are refused."""
-    if mode == "legacy":
-        return MetadataBoundary(Collector(ReportStore(state)), route="/v1/report")
-    if mode == "v3":
-        from .collector_v3 import CollectorV3
-        from .publication_v3 import ReportStore as ReportStoreV3
+    try:
+        if mode == "legacy":
+            boundary = MetadataBoundary(Collector(ReportStore(state)), route="/v1/report")
+        elif mode == "v3":
+            from .collector_v3 import CollectorV3
+            from .publication_v3 import ReportStore as ReportStoreV3
 
-        return MetadataBoundary(CollectorV3(ReportStoreV3(state)), route="/v3/report")
-    raise ConfigurationError
+            boundary = MetadataBoundary(CollectorV3(ReportStoreV3(state)), route="/v3/report")
+        else:
+            raise ConfigurationError
+    except sqlite3.DatabaseError:
+        # A corrupt or locked store is a configuration refusal. The file is left as it is.
+        raise ConfigurationError from None
+    return boundary
 
 
 async def _serve(args, application, listener=None):
