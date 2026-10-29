@@ -25,11 +25,18 @@ import psutil
 import uvicorn
 
 from mnemion.product_telemetry import policy
-from mnemion.product_telemetry.collector import Collector
+from mnemion.product_telemetry.collector_v3 import CollectorV3
+from mnemion.product_telemetry.wire_v3 import PACKET_BYTES, WIRE
 from tests.test_product_telemetry_transport import certificates
 
 from .telemetry_memory_fixture import memory_workspace
-from .report_telemetry_renderer import verify_phase_memory, verify_setup_controls
+from .report_telemetry_renderer import (
+    V3_WIRE_PATH,
+    absorb_reviewed_chunk,
+    retain_reviewed_packet,
+    verify_phase_memory,
+    verify_setup_controls,
+)
 
 
 def write_json(path, value):
@@ -195,10 +202,11 @@ async def run(
     counts = {"reports": 0, "accepted": 0, "body_bytes": 0, "forbidden_metadata": 0}
     reviewed_bodies = []
     published = []
-    collector = Collector(published.append)
+    collector = CollectorV3(published.append)
 
     async def ingress(scope, receive, send):
-        reviewed_body = bytearray()
+        captured = bytearray() if review_journey else None
+        chunks_kept = 0
         is_report = scope.get("type") == "http" and scope.get("method") == "POST"
         if scope["type"] == "http":
             counts["reports"] += int(scope.get("method") == "POST")
@@ -208,11 +216,13 @@ async def run(
             )
 
         async def received():
+            nonlocal captured, chunks_kept
             event = await receive()
             if event["type"] == "http.request":
-                counts["body_bytes"] += len(event.get("body", b""))
-                if review_journey and len(reviewed_body) + len(event.get("body", b"")) <= 4:
-                    reviewed_body.extend(event.get("body", b""))
+                chunk = event.get("body", b"")
+                counts["body_bytes"] += len(chunk) if type(chunk) is bytes else 0
+                if review_journey:
+                    captured, chunks_kept = absorb_reviewed_chunk(captured, chunks_kept, chunk)
             return event
 
         async def sending(event):
@@ -221,9 +231,12 @@ async def run(
             await send(event)
 
         await collector(scope, received, sending)
-        if review_journey and is_report and len(reviewed_bodies) < 8:
-            # Only the disposable fixture's four-byte packet; no real user data.
-            reviewed_bodies.append(reviewed_body.hex())
+        if review_journey and is_report and len(reviewed_bodies) < 8 and captured is not None:
+            retained = retain_reviewed_packet([bytes(captured)], review=True)
+            if retained is not None:
+                reviewed_bodies.append(retained)
+        if captured is not None:
+            captured.clear()
 
     results, roots = [], []
     task = None
@@ -240,7 +253,7 @@ async def run(
             with socket.socket() as listener:
                 listener.bind(("127.0.0.1", 0))
                 listener.listen(8)
-                destination = f"https://localhost:{listener.getsockname()[1]}/v1/report"
+                destination = f"https://localhost:{listener.getsockname()[1]}{V3_WIRE_PATH}"
                 config = uvicorn.Config(
                     ingress,
                     log_config=None,
@@ -338,7 +351,7 @@ async def run(
                                     {
                                         "enabled": enabled,
                                         "expected_revision": 0,
-                                        "disclosure_version": 1,
+                                        "disclosure_version": policy.DISCLOSURE_VERSION,
                                         "connection_mode": "unmetered",
                                     },
                                     policy_path=root / "company-absent.json",
@@ -488,6 +501,9 @@ async def run(
                                 result["collector"] = {
                                     key: counts[key] - before[key] for key in counts
                                 }
+                                result["wire_version"] = WIRE["version"]
+                                result["wire_path"] = V3_WIRE_PATH
+                                result["packet_bytes"] = PACKET_BYTES
                                 result["memory_api"] = dict(memory_counts)
                                 database_file = (
                                     root / "mnemion-product-telemetry" / policy.DATABASE_NAME
@@ -542,7 +558,7 @@ async def run(
                                     == {
                                         "reports": int(enabled),
                                         "accepted": int(enabled),
-                                        "body_bytes": 4 * int(enabled),
+                                        "body_bytes": PACKET_BYTES * int(enabled),
                                         "forbidden_metadata": 0,
                                     }
                                     and result["durable"]["attempts"]
@@ -622,6 +638,9 @@ async def run(
             "comparison": comparison,
             "phase_memory": phase_memory,
             "review_journey": review_journey,
+            "wire_version": WIRE["version"],
+            "wire_path": V3_WIRE_PATH,
+            "packet_bytes": PACKET_BYTES,
             "setup_controls_required": not review_journey,
             "declared_case_order": [row[0] for row in cases],
             "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification."

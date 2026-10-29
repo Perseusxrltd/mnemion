@@ -5,6 +5,12 @@ import hashlib
 import json
 from pathlib import Path
 
+from mnemion.product_telemetry.wire_v3 import PACKET_BYTES
+
+HISTORICAL_PACKET_BYTES = 4
+HISTORICAL_WIRE_PATH = "/v1/report"
+V3_WIRE_PATH = "/v3/report"
+
 
 def process_role(row):
     return row.get("role", row["type"])
@@ -50,6 +56,97 @@ def sample_counters(sample):
         name: counter_value(row["linux"][name] if name in LINUX_FIELDS else row["heap"][name])
         for name in PHASE_MEMORY_FIELDS
     }
+
+
+WIRE_FIELDS = ("wire_version", "packet_bytes", "wire_path")
+REVIEW_CHUNK_BOUND = 8
+
+
+def explicit_wire_contract(row):
+    """Return a complete contract, or None when the row has no wire metadata."""
+    if not isinstance(row, dict):
+        raise ValueError("Telemetry wire metadata must be on an object")
+    present = [key for key in WIRE_FIELDS if key in row]
+    if not present:
+        return None
+    if len(present) != len(WIRE_FIELDS):
+        raise ValueError("Telemetry wire metadata must be complete or absent")
+    version, packet, path = (row[key] for key in WIRE_FIELDS)
+    if type(version) is not int or version not in (2, 3):
+        raise ValueError("Telemetry wire version must be historical v2 or v3")
+    expected = (
+        (2, HISTORICAL_PACKET_BYTES, HISTORICAL_WIRE_PATH)
+        if version == 2
+        else (3, PACKET_BYTES, V3_WIRE_PATH)
+    )
+    if (version, packet, path) != expected:
+        raise ValueError("Telemetry wire metadata conflicts with its declared version")
+    return {
+        "wire_version": version,
+        "wire_label": "historical-v2" if version == 2 else "v3",
+        "wire_path": path,
+        "packet_bytes": packet,
+    }
+
+
+def describe_diagnostic_wire(receipt):
+    """Label a receipt. Missing metadata is historical v2, never an implied v3 run."""
+    if not isinstance(receipt, dict):
+        raise ValueError("Telemetry wire metadata must be on an object")
+    receipt_wire = explicit_wire_contract(receipt)
+    results = receipt.get("results") or []
+    if not isinstance(results, list):
+        raise ValueError("Telemetry results must be a list")
+    case_wires = []
+    for result in results:
+        if not isinstance(result, dict):
+            raise ValueError("Telemetry results must be objects")
+        case_wires.append(explicit_wire_contract(result))
+    if receipt_wire is None:
+        if any(case is not None for case in case_wires):
+            raise ValueError("Historical v2 receipts cannot carry explicit wire metadata")
+        return explicit_wire_contract(
+            {
+                "wire_version": 2,
+                "packet_bytes": HISTORICAL_PACKET_BYTES,
+                "wire_path": HISTORICAL_WIRE_PATH,
+            }
+        )
+    if any(case != receipt_wire for case in case_wires):
+        raise ValueError("Each diagnostic case must identify the same wire contract as its receipt")
+    return receipt_wire
+
+
+def absorb_reviewed_chunk(captured, chunks_kept, chunk):
+    """Stop and clear a review body once it leaves the 25-byte, 8-chunk contract."""
+    chunks_kept += 1
+    if (
+        captured is None
+        or type(chunk) is not bytes
+        or chunks_kept > REVIEW_CHUNK_BOUND
+        or len(captured) + len(chunk) > PACKET_BYTES
+    ):
+        if captured is not None:
+            captured.clear()
+        return None, chunks_kept
+    captured.extend(chunk)
+    return captured, chunks_kept
+
+
+def retain_reviewed_packet(chunks, *, review):
+    """Hex of one exact synthetic v3 packet. Anything else, including a prefix, is dropped."""
+    if not review:
+        return None
+    body = bytearray()
+    for chunk in chunks:
+        if type(chunk) is not bytes or len(body) + len(chunk) > PACKET_BYTES:
+            return None
+        body.extend(chunk)
+    if len(body) != PACKET_BYTES:
+        return None
+    encoded = bytes(body).hex()
+    body.clear()
+    return encoded
 
 
 def verify_phase_memory(result, *, required=False):
@@ -327,6 +424,7 @@ def allocation_windows(result):
 
 def summarize(directory: Path) -> dict:
     receipt = json.loads((directory / "receipt.json").read_text())
+    wire = describe_diagnostic_wire(receipt)
     phase_memory = receipt.get("phase_memory", False)
     if phase_memory is None:
         phase_memory = False
@@ -518,6 +616,10 @@ def summarize(directory: Path) -> dict:
         )
     return {
         "schema_version": 3,
+        "wire_version": wire["wire_version"],
+        "wire_label": wire["wire_label"],
+        "wire_path": wire["wire_path"],
+        "packet_bytes": wire["packet_bytes"],
         "input_receipt_sha256": hashlib.sha256(
             (directory / "receipt.json").read_bytes()
         ).hexdigest(),

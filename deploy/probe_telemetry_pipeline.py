@@ -27,9 +27,12 @@ import tempfile
 import uvicorn
 
 from mnemion.product_telemetry import policy
-from mnemion.product_telemetry.collector import Collector
+from mnemion.product_telemetry.collector_v3 import CollectorV3
+from mnemion.product_telemetry.wire_v3 import PACKET_BYTES, WIRE
 from mnemion.version import __version__
 from tests.test_product_telemetry_transport import certificates
+
+WIRE_PATH = "/v3/report"
 
 
 async def run(source, output, *, memory_workload=False):
@@ -79,7 +82,7 @@ async def run(source, output, *, memory_workload=False):
     assert policy.COLLECTION_AVAILABLE is False and policy.COLLECTOR_URL is None
     counts = {"reports": 0, "accepted": 0, "options": 0, "body_bytes": 0, "forbidden_metadata": 0}
     published = []
-    collector = Collector(published.append)
+    collector = CollectorV3(published.append)
 
     async def ingress(scope, receive, send):
         if scope["type"] != "http":
@@ -146,7 +149,7 @@ async def run(source, output, *, memory_workload=False):
             listener.bind(("127.0.0.1", 0))
             listener.listen(8)
             port = listener.getsockname()[1]
-            destination = f"https://localhost:{port}/v1/report"
+            destination = f"https://localhost:{port}{WIRE_PATH}"
             config = uvicorn.Config(
                 ingress,
                 log_config=None,
@@ -188,7 +191,7 @@ async def run(source, output, *, memory_workload=False):
                                 {
                                     "enabled": enabled,
                                     "expected_revision": 0,
-                                    "disclosure_version": 1,
+                                    "disclosure_version": policy.DISCLOSURE_VERSION,
                                     "connection_mode": "unmetered",
                                 },
                                 policy_path=root / "company-absent.json",
@@ -277,6 +280,9 @@ async def run(source, output, *, memory_workload=False):
                                 )
                             result = json.loads((output / f"{label}.json").read_text())
                             result["collector"] = {key: counts[key] - before[key] for key in counts}
+                            result["wire_version"] = WIRE["version"]
+                            result["wire_path"] = WIRE_PATH
+                            result["packet_bytes"] = PACKET_BYTES
                             with closing(
                                 sqlite3.connect(
                                     root / "mnemion-product-telemetry" / policy.DATABASE_NAME
@@ -317,7 +323,7 @@ async def run(source, output, *, memory_workload=False):
                                 and result.get("fixture_content_absent_from_queue", True)
                                 and result["collector"]["reports"] == int(enabled)
                                 and result["collector"]["accepted"] == int(enabled)
-                                and result["collector"]["body_bytes"] == 4 * int(enabled)
+                                and result["collector"]["body_bytes"] == PACKET_BYTES * int(enabled)
                                 and result["collector"]["options"] == 0
                                 and result["collector"]["forbidden_metadata"] == 0
                                 and result["durable"]["attempts"]
@@ -359,6 +365,9 @@ async def run(source, output, *, memory_workload=False):
         "certificate_profile_removed": not tls_root.exists(),
         "published_aggregate_count": len(published),
         "production_collection_available": False,
+        "wire_version": WIRE["version"],
+        "wire_path": WIRE_PATH,
+        "packet_bytes": PACKET_BYTES,
         "source_disclosure_sha256": hashlib.sha256(production).hexdigest(),
         "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "client_sha256": hashlib.sha256(client_file.read_bytes()).hexdigest(),
