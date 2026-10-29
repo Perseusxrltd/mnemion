@@ -6,6 +6,12 @@ brain. The current [librarian](../service/librarian.md) supports bounded,
 evidence-linked proposals, review, schedules and undo. Continuous consolidation,
 cross-layer maintenance and the decision router below remain implementation work.
 
+The [29 October MemPalace review](2026-10-29-mempalace-product-review.md)
+adds implementation candidates for guided organization repair, provider-native
+capture, bounded session briefs, incremental graph maintenance and optional
+multimodal embeddings. Its acceptance table extends the existing slices without
+renumbering layers or treating upstream proposals as delivered Mnemion features.
+
 The goal is to preserve the useful structure of human memory—rapid experience
 capture, slower consolidation, association and retrieval practice—while adding
 inspectable sources, explicit permissions, reproducible decisions and recovery.

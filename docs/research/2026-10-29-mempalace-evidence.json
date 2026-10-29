@@ -1,0 +1,334 @@
+{
+  "schema": 1,
+  "reviewed_at": "2026-10-29T15:46:53.933458+00:00",
+  "scope": "Selected source/documentation review and arithmetic over stored upstream benchmark metrics; no independent retrieval or native product benchmark.",
+  "mempalace": {
+    "repository": "MemPalace/mempalace",
+    "release": "v3.11.0",
+    "published_at": "2026-10-14T05:25:57Z",
+    "release_commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+    "development_version": "3.12.0",
+    "development_commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+    "release_promotion_open": "https://github.com/MemPalace/mempalace/pull/2860",
+    "license": "MIT",
+    "copyright": "2026 MemPalace Contributors"
+  },
+  "mnemion": {
+    "repository": "Perseusxrltd/mnemion",
+    "release": "v4.46.52",
+    "published_at": "2026-10-29T09:55:54Z",
+    "release_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+    "installer_downloads": [
+      {
+        "name": "Mnemion-Studio-4.46.52-linux-amd64.deb",
+        "size": 250093220,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-linux-amd64.deb"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-linux-arm64.AppImage",
+        "size": 270279573,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-linux-arm64.AppImage"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-linux-arm64.deb",
+        "size": 243007876,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-linux-arm64.deb"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-linux-x86_64.AppImage",
+        "size": 266838591,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-linux-x86_64.AppImage"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-macos-arm64.dmg",
+        "size": 263634931,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-macos-arm64.dmg"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-macos-x64.dmg",
+        "size": 271061061,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-macos-x64.dmg"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-windows-arm64.exe",
+        "size": 220021941,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-windows-arm64.exe"
+      },
+      {
+        "name": "Mnemion-Studio-4.46.52-windows-x64.exe",
+        "size": 225938684,
+        "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.46.52/Mnemion-Studio-4.46.52-windows-x64.exe"
+      }
+    ]
+  },
+  "upstream_selected_files": [
+    {
+      "path": "README.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "3f6c55d2af94d8d1e4ef2876df4fc97eda55bbadb8ad3ae0fb0b6626e1c2e048",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/README.md"
+    },
+    {
+      "path": "LICENSE",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "81dc6cc278d80f0f1b028ecd86af30d61e441b9ae53d9d9a2ed19389ba657a5d",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/LICENSE"
+    },
+    {
+      "path": "pyproject.toml",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "9f0ccf2e77556f02e486d6814e03d4fa144594893fbed19defad92d0dd4b1a5d",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/pyproject.toml"
+    },
+    {
+      "path": "mempalace/palace_audit.py",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "b1320a15636c2badd52ccaad8154d7171bbcb953d6cd17f40fcd10efa01832ea",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/mempalace/palace_audit.py"
+    },
+    {
+      "path": "mempalace/instructions/audit.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "339cd050323cfa4bb44448dcd3adc351adc48eb2bf33e6a8f5b0071b61e88884",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/mempalace/instructions/audit.md"
+    },
+    {
+      "path": "docs/embeddinggemma2.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "97052f917b7c87fbbbf02c0f72c2aa95511b694f03720dfe6781713d50c5cd1f",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/docs/embeddinggemma2.md"
+    },
+    {
+      "path": "docs/rfcs/004-replicated-palace.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "c6ba41f9af0470c7d4df50007d913fc62b8de6c3b58f862e8fb5081c35e2fc73",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/docs/rfcs/004-replicated-palace.md"
+    },
+    {
+      "path": "mempalace/integrations/hermes/__init__.py",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "48dc643b6c54a219c354eb0aabaf17b492b6f3bb286dd8942594688147b3ceb4",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/mempalace/integrations/hermes/__init__.py"
+    },
+    {
+      "path": "website/guide/lightweight-mcp.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "5066356a318665262c6074db85cae021e89e8798ec51a136a7a9e610d682a266",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/website/guide/lightweight-mcp.md"
+    },
+    {
+      "path": "website/guide/shared-brain.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "30dced0c24da29b6a6f14c22e2b94db1e72e38b40c9b96f246f45d1916744254",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/website/guide/shared-brain.md"
+    },
+    {
+      "path": "website/concepts/memory-stack.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "81bb77a5b2a4b83139721bfe09a1379aa5050a2d00392a7b733535ae90774424",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/website/concepts/memory-stack.md"
+    },
+    {
+      "path": "website/concepts/agent-logstream.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "5071da214dbc30b33d986addff8b83fd630f5bcfdfb7f1d2f478b6f540265de6",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/website/concepts/agent-logstream.md"
+    },
+    {
+      "path": "crates/README.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "d943b920d6b5578f1e34157ac7c39001590e04292615c56aac2240063f231d4f",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/crates/README.md"
+    },
+    {
+      "path": "benchmarks/README.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "095af2ffc4f8837736d7c38d20da91b1e871dcea30ae29ee52f07eca44bcfc6e",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/benchmarks/README.md"
+    },
+    {
+      "path": "benchmarks/BENCHMARKS.md",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "0b16b13e38a8c95b1da2279b5f4ce9acf03561f63be34f2337899be9366e52ea",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/benchmarks/BENCHMARKS.md"
+    },
+    {
+      "path": "benchmarks/longmemeval_bench.py",
+      "commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+      "sha256": "c4b4ba3da9e2d7e0e3f27bc93918877fe5f46e202be9ff98b1e90c7e0124628d",
+      "url": "https://github.com/MemPalace/mempalace/blob/602d796c699cabba2971982cd9dccbbf46abfe79/benchmarks/longmemeval_bench.py"
+    },
+    {
+      "path": "README.md",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "eb4a6ad734eacd89c8f0ade51b24e35db622b2bb036ada2ba5d57fb24ce61e86",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/README.md"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "d29e0ecda43db3843c6919bf9c7dc31f3f40861baf3fe742e0d3667763c93b9c",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/CHANGELOG.md"
+    },
+    {
+      "path": "pyproject.toml",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "d6e6a466f37452f9a4a2e18b4b3ed2af7e2a3f2578e6aeb9c4a9400f4ff6869b",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/pyproject.toml"
+    },
+    {
+      "path": "mempalace/hallways.py",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "ca5c3dfe38444b8504f6d637f737b1d30b9437e164e095be0a5164d72d026a05",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/mempalace/hallways.py"
+    },
+    {
+      "path": "mempalace/backends/sqlite_exact.py",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "b38452913487e9d48aad6f47b3cdd4415e3a3b84ea8da7fdb56b5b7eed0eb258",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/mempalace/backends/sqlite_exact.py"
+    },
+    {
+      "path": "mempalace/revisions.py",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "4b14b9275ffaddfad6ecf844af654327cb5b41395d2e1cdb2934180b0b10efbf",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/mempalace/revisions.py"
+    },
+    {
+      "path": "mempalace/palace/writes.py",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "482bdd254aae888dbcde70841c1a4b76d3d8c20d9d549886bfa0268c1b7a9c53",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/mempalace/palace/writes.py"
+    },
+    {
+      "path": "mempalace/sources/registry.py",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "3d54fd385e342e75313e7097660f6a0b2355194c2a13b8e9c14cf6185d2d4590",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/mempalace/sources/registry.py"
+    },
+    {
+      "path": "docs/rfcs/002-source-adapter-plugin-spec.md",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "38595441be525a82db87190f1d31c1fb3f52d6c320d8ff5f653fdf434037a0fd",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/docs/rfcs/002-source-adapter-plugin-spec.md"
+    },
+    {
+      "path": "mempalace/mcp_server/http.py",
+      "commit": "84582fb055a6429261f9c779da86c0561ec80adc",
+      "sha256": "dca32e9ca917f90f4ebe3ac05d8d790719a6d0bff04068807185fd7a63a78567",
+      "url": "https://github.com/MemPalace/mempalace/blob/84582fb055a6429261f9c779da86c0561ec80adc/mempalace/mcp_server/http.py"
+    }
+  ],
+  "mnemion_selected_files": [
+    {
+      "path": "docs/PRODUCT_REQUIREMENTS.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "943d7bd6f4ba1dbcc4c0678a0069cd68819d7de4855bbbdc6c8f5c8aba9cac74",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/PRODUCT_REQUIREMENTS.md"
+    },
+    {
+      "path": "docs/service/agent-packages.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "00ac491ab5a89f8bb899fed7e8950bba3b6d155e8e6cfbdb9f7ee0e502033dc9",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/agent-packages.md"
+    },
+    {
+      "path": "docs/service/agent-control.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "fe0703ae7fe37eb820954fc781bb24f5c9ebf3ca4b3f9ac3218980f82b23b0c7",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/agent-control.md"
+    },
+    {
+      "path": "docs/service/librarian.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "e62999c7c13e97da49e92ed7a9c3555a4faad1c6cdf189f6834a8c9073a9a5bf",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/librarian.md"
+    },
+    {
+      "path": "docs/service/insights.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "546c292739358356bcb4c2d539fb9a31ac440fe76688790fc51da30bc0e280ca",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/insights.md"
+    },
+    {
+      "path": "docs/service/embeddings.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "b9982cbef0c6cddfba806bd2faf544be6a3f2b19b11a8f0dfe4504a9fe4fdb3c",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/embeddings.md"
+    },
+    {
+      "path": "docs/service/desktop-models.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "fa5d71194fdaa234795fbb882b40b1915846e1060284dfdf601969d9c53b501f",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/desktop-models.md"
+    },
+    {
+      "path": "docs/service/retrieval.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "341c59553736ff8005a5b3e43ae44573ea1a684c71e0e0bf50adc3faefd2b6a7",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/service/retrieval.md"
+    },
+    {
+      "path": "docs/implementation/installer-footprint.md",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "a01d5551960b81ed6e62061ed74c949248ff9ea564741daecee1ea0c5a8cc063",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/docs/implementation/installer-footprint.md"
+    },
+    {
+      "path": "mnemion/service/insights.py",
+      "commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "sha256": "529b868426c784d92f91c1f9c943cbd9a5eab69202cc35147d2bcbb2494e6814",
+      "url": "https://github.com/Perseusxrltd/mnemion/blob/839a25055cb3cfe9388eed8ba1a2c0a78b447f2d/mnemion/service/insights.py"
+    }
+  ],
+  "benchmark_arithmetic": {
+    "observed_at": "2026-10-29T15:12:41.291608+00:00",
+    "method": "Arithmetic over stored upstream per-question metrics only; no inference or independent retrieval rerun.",
+    "results": [
+      {
+        "path": "benchmarks/results_mempal_raw_session_20260414_1629.jsonl",
+        "sha256": "2b71b5e514279c28443736561e2ac453045520b0f8832ff092e8a6143965e5d1",
+        "n": 500,
+        "hits": 483.0,
+        "session_hit_at_5": 0.966,
+        "unique_questions": 500
+      },
+      {
+        "path": "benchmarks/results_mempal_hybrid_v4_held_out_session_20260414_1634.jsonl",
+        "sha256": "5f5849e8facdbdec673967dfbd9dd288323983ae824ca787ffa89110dd1b588d",
+        "n": 450,
+        "hits": 443.0,
+        "session_hit_at_5": 0.9844444444444445,
+        "unique_questions": 450
+      }
+    ]
+  },
+  "pypi": {
+    "url": "https://pypi.org/pypi/mempalace/json",
+    "version": "3.11.0",
+    "wheel_bytes": 1073747,
+    "scope": "Core Python wheel only; excludes dependencies, Python and embedding weights; not equivalent to a desktop installer."
+  },
+  "metadata": [
+    {
+      "url": "https://api.github.com/repos/MemPalace/mempalace/releases?per_page=6",
+      "sha256": "3a92e8cd4317107fcef7a025bb8f3050a48d49b8c11e0fabd5d96efc142a4bca"
+    },
+    {
+      "url": "https://api.github.com/repos/MemPalace/mempalace/issues?state=open&sort=updated&direction=desc&per_page=50",
+      "sha256": "8a4435b86bd8c99be8e0dde4f7ae06706be09b24df3ffe60166cf97a27254b96"
+    },
+    {
+      "url": "https://api.github.com/repos/MemPalace/mempalace/commits?per_page=35",
+      "sha256": "108768332c744561301665b8293bd8a7bf74d95db09d53036d25fe321f0a1621"
+    },
+    {
+      "url": "https://pypi.org/pypi/mempalace/json",
+      "sha256": "a48cf2e614d15b5fa3ed2c3d1502acba4b0a6bce5431d6461febc23fece8097c"
+    },
+    {
+      "url": "https://api.github.com/repos/Perseusxrltd/mnemion/git/ref/tags/v4.46.52",
+      "sha256": "9a4f2332d56b4c28dad22e79b6109055362afa29220f522dc45b77f9b84ffe2a"
+    }
+  ]
+}

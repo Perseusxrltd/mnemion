@@ -4,6 +4,11 @@
 
 Research was performed on **9 October 2026**, using live public GitHub metadata, documentation, release notes, and selected implementation files. Repository links below pin the inspected commit. These products were not installed or benchmarked in this study. A documented feature is not an independently verified reliability guarantee.
 
+The [29 October MemPalace product review](../2026-10-29-mempalace-product-review.md)
+updates that project's released/development distinction, compares it with the
+published Mnemion service and records concrete adoption criteria. The dated
+observations below remain historical.
+
 ## The strategic change
 
 Persistent memory, local execution, vector search, and MCP connectivity are now common capabilities. Several projects also offer hybrid retrieval, derived knowledge, user profiles, temporal graphs, and application SDKs. Mnemion cannot differentiate simply by adding these features to a larger tool list.

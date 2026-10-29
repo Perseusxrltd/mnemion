@@ -51,7 +51,15 @@ def test_fresh_operator_stops_owned_process_and_preserves_same_named_external_on
 
 def test_stopping_a_foreground_launcher_also_stops_its_verified_child(controller, tmp_path):
     marker = tmp_path / "child.pid"
-    program = "import subprocess,sys,time;from pathlib import Path; p=subprocess.Popen([sys.executable,'-c','import time;time.sleep(120)']);Path(sys.argv[1]).write_text(str(p.pid));time.sleep(120)"
+    # Existence is our readiness signal: publish only the complete child PID.
+    # write_text creates the pathname before writing, which let a native Mac
+    # observer read an empty file instead of testing process custody.
+    program = (
+        "import subprocess,sys,time;from pathlib import Path;"
+        "p=subprocess.Popen([sys.executable,'-c','import time;time.sleep(120)']);"
+        "marker=Path(sys.argv[1]);pending=marker.with_suffix('.pending');"
+        "pending.write_text(str(p.pid));pending.replace(marker);time.sleep(120)"
+    )
     assert controller.launch([sys.executable, "-c", program, str(marker)])
     child = None
     try:

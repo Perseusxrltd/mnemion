@@ -25,6 +25,17 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**29 October 2026, MemPalace product comparison:**
+The [current upstream review](research/2026-10-29-mempalace-product-review.md)
+compares published MemPalace 3.11 and its unreleased 3.12 branch with Mnemion
+4.46.52. It maps guided health/repair, native agent capture, compact startup
+context, common-corpus evaluations, smaller optional client distributions,
+incremental graph work, durable handoffs and optional multimodal models onto
+existing requirements. Upstream benchmark arithmetic was checked; no new
+head-to-head benchmark or feature completion is claimed. Permission-aware
+replication remains design work. Urgent field repairs and the active milestone
+retain their order; all 66 states remain unchanged.
+
 **29 October 2026, 14:56 UTC, shared-host 4.46.52 upgrade and health:**
 The [actual guarded upgrade](validation/2026-10-29-shared-host-44652.md)
 succeeded from 4.46.44 to 4.46.52 at 12:39 UTC, applying migration 036 after

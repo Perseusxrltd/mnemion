@@ -337,7 +337,7 @@ this addition does not promote those broad requirements to shipped.
 
 | ID | Requested outcome | State | Evidence and remaining acceptance |
 | --- | --- | --- | --- |
-| F01 | Study the entire existing repository; use MemPalace and comparable memory tools to inform an update or rebuild. | Shipped | [Study, evidence and architecture](research/2026-10-09-mnemion-study/README.md). Revisit comparisons when they inform a concrete decision. |
+| F01 | Study the entire existing repository; use MemPalace and comparable memory tools to inform an update or rebuild. | Shipped | [Study, evidence and architecture](research/2026-10-09-mnemion-study/README.md). The [29 October MemPalace refresh](research/2026-10-29-mempalace-product-review.md) compares released products, verifies stored benchmark arithmetic and maps concrete adoption criteria to existing requirements. Revisit comparisons when they inform a concrete decision. |
 | F02 | One organized memory infrastructure for individuals, teams, applications and AI systems across providers and hardware. | Partial | [Shared platform](service/README.md) is available. Complete the access, hosting, onboarding and integration rows below. |
 | F03 | Preserve valuable features from previous versions instead of losing them during the rebuild. | Partial | [V3 parity audit](implementation/v3-feature-parity.md) and [migration](service/migration.md). Continue native migration/recovery validation and explicitly record retained, replaced and deferred behavior. |
 | F04 | Keep Obsidian compatibility for visualization and ordinary Markdown use. | Shipped | [Managed export, annotations and conflicts](../studio/README.md), [knowledge views](service/knowledge.md). All new graph/capture work must preserve this boundary. |
