@@ -45,7 +45,8 @@ def subject(tmp_path, monkeypatch):
 
     monkeypatch.setattr(inspection, "read_review_clock", read)
     state = policy.configure(
-        root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
     )
 
     class Subject:
@@ -138,9 +139,7 @@ def test_pause_can_precede_permission_and_read_only_status_does_not_initialize(
 
 def test_empty_review_does_not_sample_randomness_or_start_a_clock(subject, monkeypatch):
     subject.pause()
-    monkeypatch.setattr(
-        inspection, "prepare", lambda *_, **__: pytest.fail("No input to encode")
-    )
+    monkeypatch.setattr(inspection, "prepare", lambda *_, **__: pytest.fail("No input to encode"))
     result = subject.action("inspect_report")
     assert result["message"] == "no_observations" and result["packet"] is None
     assert subject.clock["reads"] == subject.clock["initializations"] == 0
@@ -192,7 +191,9 @@ def test_approval_claims_exact_packet_once_without_erasing_later_counts(subject,
     pending = subject.stored()["pending"]
     assert subject.action("approve_report")["review"]["outcome"] == "approved"
     monkeypatch.setattr(
-        delivery, "prepare_summary", lambda *_, **__: pytest.fail("Approved bytes cannot be regenerated")
+        delivery,
+        "prepare_summary",
+        lambda *_, **__: pytest.fail("Approved bytes cannot be regenerated"),
     )
     report = subject.reserve()
     assert report is not None and report.preview() == packet

@@ -63,7 +63,9 @@ def checked(state, preference, company, now):
     if result["report"] is not None:
         # Exact structural decoding is separate from bounded storage parsing.
         try:
-            if not packet_matches_groups(bytes(result["report"]["packet"]), result["report"]["groups"]):
+            if not packet_matches_groups(
+                bytes(result["report"]["packet"]), result["report"]["groups"]
+            ):
                 return review.clear_review(result)
         except (ValueError, TypeError):
             return review.clear_review(result)
@@ -242,11 +244,7 @@ def execute(root: Path | None, action: str, request: dict, *, policy_path: Path 
                         release = reviewed_release_coordinate()
                         operating_system = reviewed_operating_system()
                         groups = company["metric_groups"]
-                        usable = [
-                            (row[0], row[1])
-                            for row in rows
-                            if _row_group(row[0]) in groups
-                        ]
+                        usable = [(row[0], row[1]) for row in rows if _row_group(row[0]) in groups]
                         if release is None or operating_system is None or not usable:
                             message = "no_observations"
                         else:

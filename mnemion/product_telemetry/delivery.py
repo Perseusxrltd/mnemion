@@ -177,7 +177,15 @@ class PreparedReport:
     )
 
     def __init__(
-        self, body, token, revision, generation, deadline, monotonic_deadline, groups, review_report=None
+        self,
+        body,
+        token,
+        revision,
+        generation,
+        deadline,
+        monotonic_deadline,
+        groups,
+        review_report=None,
     ):
         self._body = bytearray(body)
         self._token = token

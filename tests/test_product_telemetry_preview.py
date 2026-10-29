@@ -38,7 +38,12 @@ def test_format_preview_is_synthetic_and_read_only(tmp_path, monkeypatch, condit
     budget = delivery.DeliveryBudget(root)
     if condition != "new":
         current = policy.configure(
-            root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
+            root,
+            {
+                "enabled": True,
+                "expected_revision": 0,
+                "disclosure_version": policy.DISCLOSURE_VERSION,
+            },
         )
         assert aggregate.record(
             root,

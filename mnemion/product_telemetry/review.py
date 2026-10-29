@@ -153,10 +153,13 @@ def salvage_stale_review(raw):
 
 def _legacy_manual_report(report):
     """A structurally valid old manual review, not a four-byte fragment."""
-    if (
-        type(report) is not dict
-        or set(report) != {"packet", "stamp", "groups", "binding", "lifetime"}
-    ):
+    if type(report) is not dict or set(report) != {
+        "packet",
+        "stamp",
+        "groups",
+        "binding",
+        "lifetime",
+    }:
         return False
     packet = report["packet"]
     stamp, groups, binding = report["stamp"], report["groups"], report["binding"]

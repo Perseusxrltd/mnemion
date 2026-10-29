@@ -25,7 +25,8 @@ def installation(tmp_path, monkeypatch):
     monkeypatch.setattr(delivery, "_now_ms", lambda: now[0])
     monkeypatch.setattr(aggregate, "_day", lambda: now[0] // delivery.DAY_MS)
     current = policy.configure(
-        root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
     )
     budget = delivery.DeliveryBudget(root, policy_path=company)
 
@@ -413,7 +414,8 @@ def test_old_generation_cannot_send_or_cancel_a_new_store_reservation(installati
     old = f.reserve()
     (f.root / policy.DATABASE_NAME).unlink()
     new = policy.configure(
-        f.root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
+        f.root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
     )
     assert old.generation != new["store_generation"]
     f.fill()

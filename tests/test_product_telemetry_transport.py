@@ -78,7 +78,12 @@ def installation(tmp_path, monkeypatch, certificates):
         authority = endpoint.host if endpoint.port == 443 else f"{endpoint.host}:{endpoint.port}"
         monkeypatch.setattr(policy, "COLLECTOR_URL", f"https://{authority}/v3/report")
         state = policy.configure(
-            root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
+            root,
+            {
+                "enabled": True,
+                "expected_revision": 0,
+                "disclosure_version": policy.DISCLOSURE_VERSION,
+            },
         )
         if not reserve:
             return state

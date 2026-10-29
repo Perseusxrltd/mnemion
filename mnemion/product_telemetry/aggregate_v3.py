@@ -136,7 +136,12 @@ def envelope_radius(parts: int, bins: int) -> int:
     summed radius can be wider than the exact tail. It is not a confidence
     interval for a population percentile.
     """
-    if type(parts) is not int or type(bins) is not int or not 1 <= parts <= 64 or not 1 <= bins <= 256:
+    if (
+        type(parts) is not int
+        or type(bins) is not int
+        or not 1 <= parts <= 64
+        or not 1 <= bins <= 256
+    ):
         raise WireV3Error
     key = (parts, bins)
     cached = _RADIUS_CACHE.get(key)
@@ -174,7 +179,9 @@ def _domain_cohorts() -> tuple[dict, ...]:
         for item in listed
     ]
     cohorts.append({"axis": "release", "id": UNLISTED, "slot": len(listed)})
-    cohorts.extend({"axis": "os", "id": name, "slot": index} for index, name in enumerate(OPERATING_SYSTEMS))
+    cohorts.extend(
+        {"axis": "os", "id": name, "slot": index} for index, name in enumerate(OPERATING_SYSTEMS)
+    )
     return tuple(cohorts)
 
 
@@ -222,7 +229,9 @@ def _domain_document(cohorts) -> dict:
     }
 
 
-def _cumulative_index(counts: list[int], numerator: int, denominator: int, radius: int) -> int | None:
+def _cumulative_index(
+    counts: list[int], numerator: int, denominator: int, radius: int
+) -> int | None:
     """Unique bucket that contains the percentile for every histogram inside the envelope."""
     lower = [max(0, value - radius) for value in counts]
     upper = [value + radius for value in counts]
@@ -276,7 +285,9 @@ def _quantiles(counts: list[int], metric: dict, *, parts: int) -> dict | None:
     }
 
 
-def _metric_rows(counts_per_metric: list[list[int]], *, quantiles: bool, parts: int, specs: list[dict]) -> list[dict]:
+def _metric_rows(
+    counts_per_metric: list[list[int]], *, quantiles: bool, parts: int, specs: list[dict]
+) -> list[dict]:
     rows = []
     for metric, counts in zip(specs, counts_per_metric, strict=True):
         item = {"id": metric["id"], "counts": list(counts)}
@@ -317,11 +328,19 @@ class AggregateWindow:
         except WireV3Error:
             return False
         release_count = sum(row["axis"] == "release" for row in self.cohorts)
-        index = summary.cohort_index if summary.axis == "release" else release_count + summary.cohort_index
+        index = (
+            summary.cohort_index
+            if summary.axis == "release"
+            else release_count + summary.cohort_index
+        )
         if summary.axis not in {"release", "os"} or not 0 <= index < len(self.cohorts):
             return False
         cohort = self.cohorts[index]
-        if cohort["axis"] != summary.axis or cohort["id"] != summary.cohort_id or cohort["slot"] != summary.cohort_index:
+        if (
+            cohort["axis"] != summary.axis
+            or cohort["id"] != summary.cohort_id
+            or cohort["slot"] != summary.cohort_index
+        ):
             return False
         base = index * self._stride
         self._counts[base] += 1
@@ -346,7 +365,9 @@ class AggregateWindow:
             if not epsilon_holds():
                 return None
             random_below = random_below or secrets.randbelow
-            noisy = [round_protected(value + discrete_laplace(random_below)) for value in self._counts]
+            noisy = [
+                round_protected(value + discrete_laplace(random_below)) for value in self._counts
+            ]
             return _publish(self.week, self.cohorts, self._widths, self._stride, noisy)
         finally:
             self.discard()
@@ -375,7 +396,9 @@ def _group(rows: list[dict], specs: list[dict]) -> tuple[list[dict], dict | None
         "axis": rows[0]["axis"],
         "ids": [row["id"] for row in small],
         "denominator": sum(row["denominator"] for row in small),
-        "metrics": _metric_rows(_sum_metrics([row["metrics"] for row in small]), quantiles=False, parts=1, specs=specs),
+        "metrics": _metric_rows(
+            _sum_metrics([row["metrics"] for row in small]), quantiles=False, parts=1, specs=specs
+        ),
         "quantiles": "not_a_single_population",
     }
 
@@ -449,7 +472,11 @@ def _checked_legend(legend: object) -> list[dict]:
         raise WireV3Error
     specs = []
     for metric, item in zip(METRICS, legend, strict=True):
-        if type(item) is not dict or item.get("id") != metric["id"] or item.get("kind") != metric["kind"]:
+        if (
+            type(item) is not dict
+            or item.get("id") != metric["id"]
+            or item.get("kind") != metric["kind"]
+        ):
             raise WireV3Error
         if metric["kind"] == "ordered":
             bounds = item.get("upper_bounds")
@@ -463,20 +490,29 @@ def _checked_legend(legend: object) -> list[dict]:
             ):
                 raise WireV3Error
             specs.append(
-                {"id": metric["id"], "kind": "ordered", "unit": metric["unit"], "upper_bounds": list(bounds)}
+                {
+                    "id": metric["id"],
+                    "kind": "ordered",
+                    "unit": metric["unit"],
+                    "upper_bounds": list(bounds),
+                }
             )
         elif set(item) != {"id", "kind"}:
             raise WireV3Error
         else:
-            specs.append({"id": metric["id"], "kind": "categories", "categories": list(metric["categories"])})
+            specs.append(
+                {"id": metric["id"], "kind": "categories", "categories": list(metric["categories"])}
+            )
     return specs
 
 
 def _checked_domain(domain: object) -> tuple[list[dict], list[dict]]:
-    if (
-        type(domain) is not dict
-        or set(domain) != {"releases", "unlisted_release", "operating_systems", "metric_legend"}
-    ):
+    if type(domain) is not dict or set(domain) != {
+        "releases",
+        "unlisted_release",
+        "operating_systems",
+        "metric_legend",
+    }:
         raise WireV3Error
     releases = domain["releases"]
     if type(releases) is not list or not 1 <= len(releases) <= WIRE["allowlist_maximum_slots"]:
@@ -487,14 +523,24 @@ def _checked_domain(domain: object) -> tuple[list[dict], list[dict]]:
         if type(item) is not dict or set(item) != {"slot", "major", "minor", "patch", "id"}:
             raise WireV3Error
         major, minor, patch = item["major"], item["minor"], item["patch"]
-        if any(type(part) is not int or not 0 <= part <= 255 for part in (major, minor, patch)) or item["slot"] != slot:
+        if (
+            any(type(part) is not int or not 0 <= part <= 255 for part in (major, minor, patch))
+            or item["slot"] != slot
+        ):
             raise WireV3Error
         identity = f"{major}.{minor}.{patch}"
         if item["id"] != identity or identity in seen:
             raise WireV3Error
         seen.add(identity)
         cohorts.append(
-            {"axis": "release", "id": identity, "slot": slot, "major": major, "minor": minor, "patch": patch}
+            {
+                "axis": "release",
+                "id": identity,
+                "slot": slot,
+                "major": major,
+                "minor": minor,
+                "patch": patch,
+            }
         )
     unlisted = domain["unlisted_release"]
     if (
@@ -509,7 +555,12 @@ def _checked_domain(domain: object) -> tuple[list[dict], list[dict]]:
     if type(systems) is not list or len(systems) != len(OPERATING_SYSTEMS):
         raise WireV3Error
     for slot, (item, name) in enumerate(zip(systems, OPERATING_SYSTEMS, strict=True)):
-        if type(item) is not dict or set(item) != {"slot", "id"} or item["slot"] != slot or item["id"] != name:
+        if (
+            type(item) is not dict
+            or set(item) != {"slot", "id"}
+            or item["slot"] != slot
+            or item["id"] != name
+        ):
             raise WireV3Error
         cohorts.append({"axis": "os", "id": name, "slot": slot})
     return cohorts, _checked_legend(domain["metric_legend"])
@@ -524,12 +575,21 @@ def _metrics_ok(rows: object, *, quantiles: bool, parts: int, specs: list[dict])
             type(row) is not dict
             or row.get("id") != metric["id"]
             or type(counts) is not list
-            or len(counts) != (2 + len(metric["upper_bounds"]) if metric["kind"] == "ordered" else 2 + len(metric["categories"]))
+            or len(counts)
+            != (
+                2 + len(metric["upper_bounds"])
+                if metric["kind"] == "ordered"
+                else 2 + len(metric["categories"])
+            )
             or any(type(value) is not int for value in counts)
         ):
             return False
         if quantiles and metric["kind"] == "ordered":
-            if row.get("quantiles") != _quantiles(counts, metric, parts=parts) or set(row) != {"id", "counts", "quantiles"}:
+            if row.get("quantiles") != _quantiles(counts, metric, parts=parts) or set(row) != {
+                "id",
+                "counts",
+                "quantiles",
+            }:
                 return False
         elif set(row) != {"id", "counts"}:
             return False
@@ -540,7 +600,12 @@ def _covers(expected: list[dict], published: list[dict], hidden: list[str]) -> b
     pub = list(published)
     hid = list(hidden)
     for row in expected:
-        if pub and pub[0]["id"] == row["id"] and pub[0]["slot"] == row["slot"] and pub[0]["axis"] == row["axis"]:
+        if (
+            pub
+            and pub[0]["id"] == row["id"]
+            and pub[0]["slot"] == row["slot"]
+            and pub[0]["axis"] == row["axis"]
+        ):
             pub.pop(0)
         elif hid and hid[0] == row["id"]:
             hid.pop(0)
@@ -592,7 +657,8 @@ def validate(result: object) -> dict:
         or result["l1_sensitivity"] != SENSITIVITY
         or result["mechanism_halfwidth_95"] != HALFWIDTH
         or result["publication_rounding"] != 1
-        or result["protected_unit"] != "add_or_remove_one_input_report_including_admission_and_clipping"
+        or result["protected_unit"]
+        != "add_or_remove_one_input_report_including_admission_and_clipping"
         or result["report_unit"] != REPORT_UNIT
         or result["weighting"] != WIRE["contribution"]["weighting"]
         or result["admission"] != ADMISSION
@@ -605,13 +671,15 @@ def validate(result: object) -> dict:
         or type(result["window_week"]) is not int
         or not 0 <= result["window_week"] <= 1000000
         or type(noise) is not dict
-        or noise != {
+        or noise
+        != {
             "distribution": "difference_of_two_geometrics",
             "continue_numerator": NUMERATOR,
             "continue_denominator": DENOMINATOR,
         }
         or type(suppression) is not dict
-        or suppression != {
+        or suppression
+        != {
             "threshold": THRESHOLD,
             "input": "noisy_denominator",
             "singleton_cohorts_remain_published": True,
@@ -645,7 +713,11 @@ def validate(result: object) -> dict:
     remainder = result["suppressed_remainder"]
     grouped: dict[str, dict] = {}
     if remainder is not None:
-        if type(remainder) is not dict or set(remainder) != {"axes"} or type(remainder["axes"]) is not list:
+        if (
+            type(remainder) is not dict
+            or set(remainder) != {"axes"}
+            or type(remainder["axes"]) is not list
+        ):
             raise WireV3Error
         axes = remainder["axes"]
         names = []
@@ -664,7 +736,11 @@ def validate(result: object) -> dict:
                 raise WireV3Error
             names.append(item["axis"])
             grouped[item["axis"]] = item
-        if names != [name for name in ("release", "os") if name in names] or len(names) != len(set(names)) or not names:
+        if (
+            names != [name for name in ("release", "os") if name in names]
+            or len(names) != len(set(names))
+            or not names
+        ):
             raise WireV3Error
     for axis in ("release", "os"):
         expected_axis = [row for row in expected if row["axis"] == axis]

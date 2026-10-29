@@ -41,7 +41,9 @@ def reviewed_release_coordinate(version: str | None = None) -> tuple[int, int, i
 def reviewed_operating_system(platform_name: str | None = None) -> str | None:
     """The same coarse OS map as ``reviewed_cohorts``. Missing names fail closed."""
     if platform_name is None:
-        platform_name = {"win32": "windows", "darwin": "macos", "linux": "linux"}.get(sys.platform, "other")
+        platform_name = {"win32": "windows", "darwin": "macos", "linux": "linux"}.get(
+            sys.platform, "other"
+        )
     if platform_name not in ("windows", "macos", "linux", "other"):
         return None
     return platform_name
@@ -51,7 +53,13 @@ def reviewed_cohorts() -> dict[str, str]:
     """Public OS, CPU family and release family. No machine id and no serial."""
     system = {"win32": "windows", "darwin": "macos", "linux": "linux"}.get(sys.platform, "other")
     machine = platform.machine().lower()
-    architecture = "x64" if machine in {"amd64", "x86_64"} else "arm64" if machine in {"aarch64", "arm64"} else "other"
+    architecture = (
+        "x64"
+        if machine in {"amd64", "x86_64"}
+        else "arm64"
+        if machine in {"aarch64", "arm64"}
+        else "other"
+    )
     cohorts = {
         "platform": system,
         "architecture": architecture,

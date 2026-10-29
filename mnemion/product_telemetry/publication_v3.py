@@ -91,7 +91,8 @@ class ReportStore:
                 or database.execute("PRAGMA user_version").fetchone()[0] != 2
                 or database.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
                 or database.execute("SELECT count(*) FROM reports").fetchone()[0] > RETAINED
-                or database.execute("SELECT count(*) FROM publication_failures").fetchone()[0] > RETAINED
+                or database.execute("SELECT count(*) FROM publication_failures").fetchone()[0]
+                > RETAINED
             ):
                 raise WireV3Error
             return database
@@ -105,7 +106,9 @@ class ReportStore:
         with closing(self._open()) as database:
             database.execute("BEGIN IMMEDIATE")
             database.execute("DELETE FROM reports WHERE week < ?", (current_week - RETAINED,))
-            database.execute("DELETE FROM publication_failures WHERE week < ?", (current_week - RETAINED,))
+            database.execute(
+                "DELETE FROM publication_failures WHERE week < ?", (current_week - RETAINED,)
+            )
             database.commit()
 
     def __call__(self, result: dict):
@@ -120,7 +123,9 @@ class ReportStore:
         with closing(self._open()) as database:
             database.execute("BEGIN IMMEDIATE")
             database.execute("DELETE FROM reports WHERE week < ?", (current - RETAINED,))
-            database.execute("DELETE FROM publication_failures WHERE week < ?", (current - RETAINED,))
+            database.execute(
+                "DELETE FROM publication_failures WHERE week < ?", (current - RETAINED,)
+            )
             try:
                 database.execute("INSERT INTO reports VALUES (?, ?)", (week, raw.decode("utf-8")))
                 database.commit()
@@ -134,7 +139,9 @@ class ReportStore:
             raise WireV3Error
         with closing(self._open()) as database:
             database.execute("BEGIN IMMEDIATE")
-            database.execute("DELETE FROM publication_failures WHERE week < ?", (current - RETAINED,))
+            database.execute(
+                "DELETE FROM publication_failures WHERE week < ?", (current - RETAINED,)
+            )
             try:
                 database.execute(
                     "INSERT INTO publication_failures VALUES (?, 'publication_failed')",
