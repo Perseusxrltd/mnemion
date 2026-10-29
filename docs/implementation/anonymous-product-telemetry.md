@@ -640,6 +640,14 @@ counterexamples prevent extending that bound to identity, lifetime or network
 anonymity. This source-only assessment changes no collection behavior or budget;
 full privacy, resource, platform, provider and useful-population acceptance remain open.
 
+A gated v3 reference now sits beside that wire. It is specified in
+[anonymous product telemetry v3](anonymous-product-telemetry-v3.md). The
+collector would see a bounded summary and publish one noisy closed week, with
+an add-or-remove-one-report bound of `ln(3)` proved for the whole vector.
+That is not v2's local randomizer, and this source does not turn it on.
+`collection_available`, destination and route stay false/null. V08 is not
+complete.
+
 ## Remaining acceptance gates
 
 The [27 October acceptance ledger](../validation/2026-10-27-telemetry-acceptance-ledger.md)

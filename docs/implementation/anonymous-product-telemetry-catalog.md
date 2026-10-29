@@ -804,12 +804,16 @@ and an unavailable sensor produces no observation.
 | Resource `rss_bytes`, `resource_budget_bytes` | Process resident/configured memory bytes: 0, 64 MiB, 256 MiB, 1 GiB, 4 GiB, 16 GiB, 64 GiB, 256 GiB. |
 
 Submission, outcome and fixed-reason cells use the same bounded daily counters.
-The separate resource cells carry no workflow or surface label. Platform/release
-cohorts remain unimplemented and must not become a joinable profile. Fixed
-closed-week aggregation, publication and retention are implemented in source;
-production collection and reporting remain unqualified. Missing sensors or
-terminal outcomes produce no substitute zero/success observation. Sampling
-placement and usefulness still need review.
+The separate resource cells carry no workflow or surface label. Python, browser
+and desktop activity now pass coarse v2 platform, architecture and
+release-family arguments into the single sampled view. They still must not
+become a joinable profile, and collection remains off. The separate
+[v3 reference](anonymous-product-telemetry-v3.md) keeps one public release or
+one coarse OS per week, not a build-by-OS-by-hardware fingerprint. Fixed
+closed-week aggregation, publication and retention for wire v2 are implemented
+in source; production collection and reporting remain unqualified. Missing
+sensors or terminal outcomes produce no substitute zero/success observation.
+Sampling placement and usefulness still need review.
 
 The catalog fixes eight outcomes:
 

@@ -1,6 +1,7 @@
 /** Web delivery is owned by the already-active page, never a service worker. */
 import { TelemetryActivity } from '../../../electron/telemetry-owner'
 import { BrowserConditions } from './telemetry-conditions'
+import { reviewedBrowserCohorts } from './telemetry-cohorts'
 import type { BrowserTelemetry } from './telemetry-policy'
 import type { TelemetryStamp } from '../../../shared/product-telemetry'
 import type { PreparedBrowserTelemetryReport } from './telemetry-delivery'
@@ -42,7 +43,7 @@ export class BrowserTelemetryActivity {
         let report: PreparedBrowserTelemetryReport | null = null
         try {
           if (stop.signal.aborted || !await this.conditions.start(stop.signal) || stop.signal.aborted) return null
-          report = await this.client.delivery.reserve(stamp, this.conditions.read())
+          report = await this.client.delivery.reserve(stamp, this.conditions.read(), reviewedBrowserCohorts())
           return report
         } finally {
           // Keep observations only while a real prepared report has an owner.

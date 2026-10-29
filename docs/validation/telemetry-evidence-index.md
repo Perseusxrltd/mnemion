@@ -19,7 +19,9 @@ reconciles implemented behavior, scoped qualifications and remaining gates;
 the original reports below retain their source bindings and failed evidence.
 
 V08 remains Building with collection/destination/route false/null/null and an
-empty release certificate-authority list.
+empty release certificate-authority list. The
+[29 October v3 reference](2026-10-29-telemetry-v3-reference.md) is a gated
+backend candidate beside wire v2. It does not complete V08.
 The 4.46.13 basic controls and 4.46.22 review-mode/opt-out controls have scoped
 installed evidence; the 4.46.17 candidate passed all
 12 [source CI jobs](https://github.com/Perseusxrltd/mnemion/actions/runs/40299183411)
