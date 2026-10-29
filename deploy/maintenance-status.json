@@ -37,28 +37,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "eef846a30b4da71fe2da18adbcd7dd56a98f587f",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T03:27:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40812214715",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 123244986020,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T04:00:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40812214715"
     },
     {
       "id": 40814044656,
@@ -122,7 +104,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+              "Run npm --prefix studio/electron test"
             ]
           },
           {
@@ -131,7 +113,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci"
+              "Run npm --prefix studio/frontend ci"
             ]
           },
           {
@@ -140,7 +122,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           },
           {
@@ -190,5 +172,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40814041922"
     }
   ],
-  "observed_at": "2026-10-29T03:59:27+00:00"
+  "observed_at": "2026-10-29T04:00:31+00:00"
 }
