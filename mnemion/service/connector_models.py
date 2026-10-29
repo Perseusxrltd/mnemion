@@ -114,7 +114,18 @@ class SourceFileError(Command):
     path: str = Field(min_length=1, max_length=512, pattern=r"^[^\x00-\x1f]+$")
     path_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     error_code: Literal[
-        "source_is_not_utf8_text", "source_contains_binary_data", "source_too_large"
+        "source_is_not_utf8_text",
+        "source_contains_binary_data",
+        "source_too_large",
+        "source_permission_denied",
+        "source_disappeared",
+        "source_link_or_handle_changed",
+        "source_io_failed",
+        "source_handle_unverifiable",
+        "source_outside_selected_root",
+        "source_is_not_regular_file",
+        "source_handle_verification_unavailable",
+        "source_changed_during_read",
     ]
 
     @field_validator("path")

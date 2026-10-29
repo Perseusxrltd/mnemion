@@ -128,8 +128,20 @@ def test_file_replaced_after_checks_cannot_escape_selected_vault(tmp_path, monke
     monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, replace})
     monkeypatch.setattr(source_files.os, "open", replace)
     provider = FilesystemProvider(FilesystemConfig(path=root, **published()))
-    with pytest.raises(ProviderError):
-        list(provider.documents(provider.scopes()[0]))
+    from mnemion.connectors.protocol import Document, SkippedDocument
+
+    results = list(provider.documents(provider.scopes()[0]))
+    assert not any(
+        isinstance(value, Document) and "OUTSIDE_SELECTED_SOURCE" in value.text for value in results
+    )
+    stopped = [value for value in results if isinstance(value, SkippedDocument)]
+    assert stopped and stopped[0].abort_inventory and stopped[0].path == "note.md"
+    assert stopped[0].code in {
+        "source_link_or_handle_changed",
+        "source_outside_selected_root",
+        "source_is_not_regular_file",
+    }
+    assert "OUTSIDE_SELECTED_SOURCE" not in repr(results)
 
 
 def test_real_git_snapshot_ignores_uncommitted_work_and_never_executes_hooks(tmp_path):

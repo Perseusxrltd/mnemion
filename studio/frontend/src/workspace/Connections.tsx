@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
-import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal, type SourceInventory } from "@mnemion/client";
+import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal, type SourceFileError, type SourceInventory } from "@mnemion/client";
 import { DesktopSourceCard } from "./DesktopSource";
 import CaptureAdministration from './CaptureAdministration';
 import { SourceHealthPanel } from './SourceHealth';
@@ -150,14 +150,26 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
 function InventoryDetails({ inventory }: { inventory?: SourceInventory | null }) {
   if (!inventory) return <span className="ws-helper">No file report yet</span>;
   if (!inventory.incomplete_inventory) return <span className="ws-helper">No skipped files</span>;
-  const reasons = {
+  const reasons: Record<SourceFileError["error_code"], string> = {
     source_is_not_utf8_text: "Invalid UTF-8 text",
     source_contains_binary_data: "Contains binary data",
     source_too_large: "Exceeds the configured file size limit",
+    source_permission_denied: "The source runner cannot read this file",
+    source_disappeared: "The file disappeared before it could be read",
+    source_link_or_handle_changed: "The file changed, moved, or is a link the runner will not follow",
+    source_io_failed: "The file could not be read",
+    source_handle_unverifiable: "The opened file could not be verified",
+    source_outside_selected_root: "The opened file is outside the selected source",
+    source_is_not_regular_file: "The path is not a regular file",
+    source_handle_verification_unavailable: "This system cannot verify the opened file",
+    source_changed_during_read: "The file changed while it was being read",
   };
+  const stopped = inventory.file_errors.some(item => item.error_code !== "source_is_not_utf8_text" && item.error_code !== "source_contains_binary_data" && item.error_code !== "source_too_large");
   return <details style={{ minWidth: 180, maxWidth: 380 }}>
     <summary className="ws-link">{inventory.skipped_documents} {inventory.skipped_documents === 1 ? "file needs" : "files need"} attention</summary>
-    <p className="ws-helper">Other valid files keep syncing. Last good data is retained; removal waits for a clean scan.</p>
+    <p className="ws-helper">{stopped
+      ? "The scan stopped at the first file the runner could not verify. Earlier updates remain. Missing files were not deleted. A newer access check does not make this inventory current."
+      : "Other valid files keep syncing. Last good data is retained; removal waits for a clean scan."}</p>
     {inventory.file_errors.map(item => <p key={item.path_sha256} className="ws-helper">
       <code title={`Path SHA-256: ${item.path_sha256}`} style={{ overflowWrap: "anywhere" }}>{item.path}</code><br />{reasons[item.error_code] ?? item.error_code}
     </p>)}

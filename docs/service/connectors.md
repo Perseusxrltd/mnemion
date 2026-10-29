@@ -413,12 +413,35 @@ inventory capability causes the runner to retain fail-closed behavior with
 `text_source_server_upgrade_required`. Migration `024_source_health.sql` adds
 an index and a narrowly scoped health function, with no memory rewrite.
 
-Directory/catalog failures, symlinks, lost permissions and provider read failures
-still suspend the scope. Unreadable JSON/JSONL and partial Git-journal inventories
-also stay fail-closed, because a skipped catalog or denial could expose withdrawn
-evidence. Use [live conversation capture](live-conversations.md) for actively
-appended transcripts. This change does not repair malformed files or bypass
-provider access rules.
+A selected file the runner cannot verify stops that inventory. The scope receipt
+keeps the first failure in `file_errors`: the source-relative path (at most 512
+characters), the SHA-256 of the full relative path, and one fixed category.
+`source_permission_denied` means the runner account was denied access.
+`source_disappeared` means the file was gone at open. `source_link_or_handle_changed`
+means a link, a redirected handle, or a path component that no longer matches the
+checked file. `source_io_failed` is any other input/output failure. Handle checks
+that were already specific keep their own codes: `source_outside_selected_root`,
+`source_is_not_regular_file`, `source_handle_unverifiable`,
+`source_handle_verification_unavailable`, and `source_changed_during_read`.
+Operating-system text, absolute host paths, file bytes, and credentials are not
+stored. The scan does not continue past that file, does not infer deletions, and
+does not advance the last complete checkpoint. The scope is suspended as well.
+A later access-lease refresh clears that suspension and can make ordinary recall
+available again, but it leaves the failed inventory receipt in place, so source
+health keeps `connector_inventory_incomplete` until a later scan completes with
+no file failures. Reader health summaries still omit paths. The connector
+operator sees the path on source status and through `connectors.scopes`. Repair
+the file's access or exclude it, then scan again.
+
+Directory symlinks are still rejected as `source_symlinks_not_supported` before
+their contents are walked. The scan report can name that relative directory, and
+the scope is suspended. That walk rejection does not by itself leave a completed
+inventory receipt, so a later access refresh can clear the suspension before
+another scan records a file failure. Unreadable JSON/JSONL and partial Git-journal
+inventories also stay fail-closed, because a skipped catalog or denial could
+expose withdrawn evidence. Use [live conversation capture](live-conversations.md)
+for actively appended transcripts. This change does not repair malformed files
+or bypass provider access rules.
 
 ## Updates, permissions, and deletion
 

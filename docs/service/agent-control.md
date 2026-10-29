@@ -201,7 +201,7 @@ The hints do not authorize a later write; each command checks access again.
 | `request_source_sync` | Read `connectors.sync_status`, then call `connectors.sync_request` with `connector_id` and that response's `requested_generation` as `body.expected_generation`. The registered runner must be online; queuing a scan does not restore permissions. |
 | `enable_connector` | A tenant administrator reviews and calls `connectors.enable` with `connector_id`, then follows the refreshed diagnosis. |
 | `restore_connector_identity` | A tenant administrator restores an active, dedicated application identity through the organization controls. Connector identities cannot carry tenant-administrator privileges. Recheck status before requesting work. |
-| `repair_source_files` | Inspect the authorized source controls / `connectors.scopes` inventory, repair unreadable source files, and request a new scan. A partial inventory does not authorize deleting retained memories. |
+| `repair_source_files` | Inspect the authorized source controls / `connectors.scopes` inventory, repair unreadable source files, and request a new scan. A partial inventory does not authorize deleting retained memories. An access failure names one source-relative path, its SHA-256, and a fixed category such as `source_permission_denied` or `source_disappeared` on that inventory. A refreshed access lease does not remove the failure or advance the last complete scan. |
 
 In the app, **Connections → Source availability** shows the same affected
 sources and links to existing controls. Python uses

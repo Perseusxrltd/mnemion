@@ -80,6 +80,13 @@ def source_diagnostics(conn, *, after: UUID | None = None, limit: int = 20) -> d
         if row["skipped_documents"]:
             reasons.append("inventory_incomplete")
         ready_identity = not (row["disabled"] or row["operator_disabled"] or row["unsafe_operator"])
+        # A file receipt outranks a lease that was refreshed or clamped by suspension.
+        # Access lost, expiry without a file receipt, and identity problems keep
+        # their own recovery. The path itself stays on the operator scope inventory.
+        file_failure = bool(row["skipped_documents"]) and row["suspension_reason"] in (
+            None,
+            "provider_unavailable",
+        )
         recovery = (
             "restore_connector_identity"
             if row["operator_disabled"] or row["unsafe_operator"]
@@ -87,6 +94,8 @@ def source_diagnostics(conn, *, after: UUID | None = None, limit: int = 20) -> d
             if row["disabled"]
             else "resume_source"
             if row["operator_paused"]
+            else "repair_source_files"
+            if file_failure
             else "request_source_sync"
             if row["suspended"] or row["expired"]
             else "repair_source_files"

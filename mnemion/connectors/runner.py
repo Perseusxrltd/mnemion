@@ -21,6 +21,7 @@ from .capture_errors import InboxError
 from .capture_scheduling import BACKFILL_POLL_SECONDS, backfill_pending
 from .config import ConnectorConfig, read_config
 from .protocol import ConnectorClient, SkippedDocument
+from .source_files import relative_evidence
 from .live_conversations import ConversationProvider
 from .journal_projection import project_documents
 from .provenance import git_commit
@@ -151,6 +152,7 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                 )
                 with context as snapshot:
                     skipped = {"skipped_documents": 0, "file_errors": []}
+                    aborted = {"code": None}
 
                     def items():
                         if snapshot is not None:
@@ -172,6 +174,13 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                                     if len(skipped["file_errors"]) < 50:
                                         skipped["file_errors"].append(value.report())
                                     yield None
+                                    if value.abort_inventory:
+                                        # Stop before the closing access refresh. That refresh
+                                        # would clear suspension and look like a finished inventory.
+                                        # The code stays off the finish command: that model forbids
+                                        # unknown fields, and the file_errors entry already names it.
+                                        aborted["code"] = value.code
+                                        return
                                 else:
                                     yield from value.items()
                         # Validate effective access again before a deletion sweep.
@@ -200,11 +209,26 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                         result["capture"] = snapshot.report
                     if result.get("incomplete_inventory"):
                         report["completed"] = False
+                    if aborted["code"]:
+                        # The run receipt already holds the file diagnostic. Suspend
+                        # afterwards so an unread inventory cannot certify deletions,
+                        # without discarding that receipt.
+                        report["completed"] = False
+                        try:
+                            bridge.suspend(target["space_id"], "provider_unavailable")
+                            result["access_suspended"] = True
+                        except (MnemionError, OSError, httpx.HTTPError):
+                            result["access_suspended"] = False
+                        result["error_code"] = aborted["code"]
                 report["scopes"].append({"external_id": identifier, **result})
             except (ProviderError, OSError, ValueError, MnemionError, httpx.HTTPError) as exc:
                 report["completed"] = False
                 code = getattr(exc, "code", "source_read_failed")
-                entry = {"external_id": identifier, "error_code": code}
+                entry = {
+                    "external_id": identifier,
+                    "error_code": code,
+                    **relative_evidence(getattr(exc, "relative", None)),
+                }
                 # A competing connector run or a service transport failure must
                 # not suspend another agent's valid ingestion lease.
                 if target and not inspect and isinstance(exc, (ProviderError, OSError, ValueError)):

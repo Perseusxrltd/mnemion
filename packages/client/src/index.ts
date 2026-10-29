@@ -160,7 +160,7 @@ export interface Page<T> { items: T[]; next_cursor?: string | null }
 export interface Connector { id: string; name: string; provider: string; principal_id: string; access_mode: 'provider' | 'published'; disabled_at: string | null; created_at: string }
 export interface ConnectorSyncStatus { connector_id: string; requested_generation: number; completed_generation: number; pending: boolean; requested_at: string | null; completed_at: string | null; last_attempt_at: string | null; last_successful: boolean | null; last_duration_seconds: number | null; last_changed: number; last_removed: number; last_unchanged: number; last_error_code: string | null; scanned_commit?: string | null; scanned_at?: string | null; scanned_space_id?: string | null }
 export interface ConnectorBinding { external_id: string; principal_id: string; role: 'reader' | 'reviewer' }
-export interface SourceFileError { path: string; path_sha256: string; error_code: 'source_is_not_utf8_text' | 'source_contains_binary_data' | 'source_too_large' }
+export interface SourceFileError { path: string; path_sha256: string; error_code: 'source_is_not_utf8_text' | 'source_contains_binary_data' | 'source_too_large' | 'source_permission_denied' | 'source_disappeared' | 'source_link_or_handle_changed' | 'source_io_failed' | 'source_handle_unverifiable' | 'source_outside_selected_root' | 'source_is_not_regular_file' | 'source_handle_verification_unavailable' | 'source_changed_during_read' }
 export interface SourceInventory { incomplete_inventory: boolean; skipped_documents: number; file_errors: SourceFileError[] }
 export interface SourceDiagnostic {
   space_id: string; connector_id: string; operator_id: string

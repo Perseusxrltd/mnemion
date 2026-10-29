@@ -24,10 +24,16 @@ class Scope:
 
 @dataclass(frozen=True)
 class SkippedDocument:
-    """A content failure, never an authorization or directory-inventory failure."""
+    """A file the inventory could not accept.
+
+    Content failures leave abort_inventory false so later files still sync.
+    A selected-file access failure sets abort_inventory so the scan stops
+    without treating the unread path as deleted.
+    """
 
     path: str
     code: str
+    abort_inventory: bool = False
 
     def report(self) -> dict:
         return SourceFileError(

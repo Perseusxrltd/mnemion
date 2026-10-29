@@ -11917,7 +11917,16 @@
             "enum": [
               "source_is_not_utf8_text",
               "source_contains_binary_data",
-              "source_too_large"
+              "source_too_large",
+              "source_permission_denied",
+              "source_disappeared",
+              "source_link_or_handle_changed",
+              "source_io_failed",
+              "source_handle_unverifiable",
+              "source_outside_selected_root",
+              "source_is_not_regular_file",
+              "source_handle_verification_unavailable",
+              "source_changed_during_read"
             ],
             "title": "Error Code",
             "type": "string"

@@ -396,3 +396,99 @@ def test_partial_diagnostics_cannot_change_a_deletion_sweep_in_progress(text_sou
     assert refused.value.code == "inventory_already_finalizing"
     final = service.finish(operator, space, sweep, FinishInput(complete_inventory=True))
     assert final["removed"] == 101 and final["checkpoint_committed"]
+
+
+def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
+    env, text_source, monkeypatch
+):
+    import errno
+    import os
+
+    from mnemion.connectors import source_files
+    from mnemion.service.connector_models import ScopeInput, utc_now
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "kept.md").write_text("Postgres kept before denial", encoding="utf-8")
+    (root / "gone.md").write_text("Postgres retained until access scan", encoding="utf-8")
+    real_open = source_files.os.open
+
+    def guarded(path, flags, *args, **kwargs):
+        if os.fsdecode(path) == "denied.md":
+            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "denied.md"))
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, guarded})
+    monkeypatch.setattr(source_files.os, "open", guarded)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        (root / "gone.md").unlink()
+        (root / "denied.md").write_text("Postgres denied body", encoding="utf-8")
+        (root / "later.md").write_text("Postgres later must stay unread", encoding="utf-8")
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0 and report["changed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied"
+        assert scope["access_suspended"] and scope["incomplete_inventory"]
+        assert scope["checkpoint_committed"] is False
+        assert scope["file_errors"] == [
+            {
+                "path": "denied.md",
+                "error_code": "source_permission_denied",
+                "path_sha256": hashlib.sha256(b"denied.md").hexdigest(),
+            }
+        ]
+        assert "PRIVATE_OS_STRING" not in json.dumps(report)
+        assert str(root) not in json.dumps(report)
+        current = service.scopes(people["capture"][0], connection)["items"][0]
+        assert current["completed_at"] == first["completed_at"]
+        assert current["inventory"]["file_errors"][0]["path"] == "denied.md"
+        assert service.sync_status(env.owner, connection)["last_successful"] is False
+        diagnosis = service.health(env.owner, details=True)
+        item = diagnosis["diagnostics"]["items"][0]
+        assert item["recovery"] == "repair_source_files"
+        assert "inventory_incomplete" in item["reasons"]
+        assert "provider_unavailable" in item["reasons"]
+        assert "denied.md" not in json.dumps(diagnosis)
+        assert "PRIVATE_OS_STRING" not in json.dumps(diagnosis)
+        hidden = reader.request(
+            "POST",
+            "/v1/recall",
+            body={"query": "Postgres", "mode": "lexical", "all_accessible": True},
+        )
+        assert hidden["hits"] == [] and "connector_scope_suspended" in hidden["warnings"]
+        service.refresh_scope(
+            people["capture"][0],
+            connection,
+            ScopeInput(
+                external_id=current["external_id"],
+                name="Fixture",
+                members=["employee:reader"],
+                observed_at=utc_now(),
+            ),
+        )
+        refreshed = service.scopes(people["capture"][0], connection)["items"][0]
+        assert refreshed["suspended_at"] is None and refreshed["access_current"]
+        assert refreshed["completed_at"] == first["completed_at"]
+        assert refreshed["inventory"]["file_errors"][0]["error_code"] == "source_permission_denied"
+        health = reader.source_health().model_dump()
+        assert health["unavailable_scopes"] == 0
+        assert health["incomplete_scopes"] == health["skipped_documents"] == 1
+        assert health["attention"] == ["connector_inventory_incomplete"]
+        assert "denied.md" not in str(health)
+        still = reader.request(
+            "POST",
+            "/v1/recall",
+            body={"query": "Postgres", "mode": "lexical", "all_accessible": True},
+        )
+        visible = " ".join(hit["text"] for hit in still["hits"])
+        assert "kept before denial" in visible
+        assert "retained until access scan" in visible
+        assert "later must stay unread" not in visible
+        assert "denied body" not in visible
+        assert "connector_inventory_incomplete" in still["warnings"]

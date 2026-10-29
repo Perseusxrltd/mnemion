@@ -18,14 +18,14 @@ from urllib.parse import quote
 
 from .config import FilesystemConfig, GitConfig, RcloneConfig
 from .protocol import Document, Scope, SkippedDocument
-from .source_files import SourceReadError, read_selected
+from .source_files import INVENTORY_STOP_CODES, SourceReadError, read_selected
 from ..journal.format import journal_candidate
 
 
 class ProviderError(RuntimeError):
-    def __init__(self, code: str, *, access_lost=False):
+    def __init__(self, code: str, *, access_lost=False, relative: str | None = None):
         super().__init__(code)
-        self.code, self.access_lost = code, access_lost
+        self.code, self.access_lost, self.relative = code, access_lost, relative
 
 
 def relative_path(value: str) -> str:
@@ -226,18 +226,22 @@ def filesystem_paths(config, *, verify_files=True):
                 for pattern in config.exclude
             )
         )
-        if any(
-            (Path(parent) / directory).is_symlink() or (Path(parent) / directory).is_junction()
-            for directory in dirs
-        ):
-            raise ProviderError("source_symlinks_not_supported")
+        for directory in dirs:
+            candidate = Path(parent) / directory
+            if candidate.is_symlink() or candidate.is_junction():
+                raise ProviderError(
+                    "source_symlinks_not_supported",
+                    relative=relative_path(candidate.relative_to(root).as_posix()),
+                )
         for filename in sorted(files):
             path = Path(parent) / filename
             rel = relative_path(path.relative_to(root).as_posix())
             if not selected(config, rel):
                 continue
-            if verify_files and (path.is_symlink() or not path.is_file()):
-                raise ProviderError("source_symlinks_not_supported")
+            # A symlink file is opened below with a no-follow handle. Rejecting it
+            # here dropped the selected path and could not survive a later lease refresh.
+            if verify_files and not path.is_symlink() and not path.is_file():
+                raise ProviderError("source_symlinks_not_supported", relative=rel)
             count += 1
             if count > config.max_files:
                 raise ProviderError("source_inventory_limit")
@@ -268,7 +272,12 @@ class FilesystemProvider:
                     yield SkippedDocument(rel, exc.code)
                     yield None
                     continue
-                raise ProviderError(exc.code) from None
+                if exc.code in INVENTORY_STOP_CODES:
+                    # One unverified file ends the inventory. Later files are not skipped
+                    # silently, and this receipt is not a successful scan.
+                    yield SkippedDocument(exc.relative or rel, exc.code, abort_inventory=True)
+                    return
+                raise ProviderError(exc.code, relative=exc.relative) from None
             result = document(
                 self.config,
                 rel,
