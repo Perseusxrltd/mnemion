@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T03:27:51+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T03:28:35+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.47](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.47). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -28,17 +28,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40812214715](https://github.com/Perseusxrltd/mnemion/actions/runs/40812214715): 3/12 jobs completed; 3 succeeded.
+[Run 40812214715](https://github.com/Perseusxrltd/mnemion/actions/runs/40812214715): 5/12 jobs completed; 5 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- service \(3\.13\): in\_progress — Run python -m pip install uv==0\.12\.24.
-- supervision \(macos-15-intel\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- studio: in\_progress — Run npm --prefix studio/electron test.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-26\): in\_progress — Install the native service without building on a managed host.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 [Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811): 20/21 jobs completed; 19 succeeded.
 
