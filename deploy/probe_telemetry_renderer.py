@@ -43,6 +43,20 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
 
 
+def stage_renderer_controller(source: Path, application: Path) -> None:
+    """Place the controller beside ./dist and its phase helper beside the controller.
+
+    The controller's static ./phase-memory.mjs import is loaded for every mode.
+    Node resolves that import from the relocated file, not from scripts/.
+    """
+    scripts = source / "studio/electron/scripts"
+    shutil.copyfile(
+        scripts / "probe-telemetry-renderer.mjs",
+        application / "probe-telemetry-renderer.mjs",
+    )
+    shutil.copyfile(scripts / "phase-memory.mjs", application / "phase-memory.mjs")
+
+
 def copy_source(source, destination):
     files = (
         subprocess.check_output(
@@ -332,10 +346,7 @@ async def run(
                             manifest = json.loads((app / "package.json").read_text())
                             manifest["main"] = "probe-telemetry-renderer.mjs"
                             write_json(app / "package.json", manifest)
-                            shutil.copyfile(
-                                source / "studio/electron/scripts/probe-telemetry-renderer.mjs",
-                                app / "probe-telemetry-renderer.mjs",
-                            )
+                            stage_renderer_controller(source, app)
                             if review_journey:
                                 shutil.copyfile(
                                     source / "studio/electron/scripts/probe-telemetry-review.mjs",
