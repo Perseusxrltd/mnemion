@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T02:46:23+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T02:50:19+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.47](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.47). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,28 +18,37 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40792613991](https://github.com/Perseusxrltd/mnemion/actions/runs/40792613991) |
+| ci\.yml | main | in\_progress | [Run 40808620574](https://github.com/Perseusxrltd/mnemion/actions/runs/40808620574) |
 | public-updates\.yml | v4\.46\.47 | in\_progress | [Run 40808263819](https://github.com/Perseusxrltd/mnemion/actions/runs/40808263819) |
 | release\.yml | release/4\.46\.47 | success | [Run 40801649181](https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181) |
 | release\.yml | release/4\.46\.48 | in\_progress | [Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811) |
 | verify-artifacts\.yml | main | success | [Run 40807818311](https://github.com/Perseusxrltd/mnemion/actions/runs/40807818311) |
-| website-release\.yml | main | success | [Run 40792614050](https://github.com/Perseusxrltd/mnemion/actions/runs/40792614050) |
+| website-release\.yml | main | success | [Run 40808620485](https://github.com/Perseusxrltd/mnemion/actions/runs/40808620485) |
 | website-release\.yml | v4\.46\.47 | success | [Run 40808260569](https://github.com/Perseusxrltd/mnemion/actions/runs/40808260569) |
 
 ## Active jobs
 
+[Run 40808620574](https://github.com/Perseusxrltd/mnemion/actions/runs/40808620574): 4/12 jobs completed; 4 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
 [Run 40808263819](https://github.com/Perseusxrltd/mnemion/actions/runs/40808263819): 1/7 jobs completed; 1 succeeded.
 
-- windows / x64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
-[Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811): 11/14 jobs completed; 10 succeeded.
+[Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811): 13/14 jobs completed; 12 succeeded.
 
-- native / native\_database / Database / linux / x64: in\_progress — Compile pinned PostgreSQL, vector extension and static libraries.
 - native / native\_database / Database / windows / x64: in\_progress — Compile pinned PostgreSQL, vector extension and static libraries.
-- native / Service engine / Windows x64: in\_progress — Run uv run --no-sync python -m deploy\.build\_native\_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine.
 
