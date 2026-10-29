@@ -1,6 +1,6 @@
 # Telemetry evidence index
 
-**Index checkpoint: 28 October 2026.** The
+**Index checkpoint: 29 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)
 owns current scope, invariants and acceptance ceilings. This index links the
 dated reports that own original receipts, source hashes, failed attempts,
@@ -91,6 +91,14 @@ service, unchanged credentials did not, and an inactive service stayed
 inactive. The original fixture's `200/CHDIR` parent-permission failure remains
 retained. This is isolated loopback lifecycle evidence; issuer renewal,
 public/provider privacy, resources and installed delivery remain open.
+
+The [29 October systemd crash qualification](2026-10-29-telemetry-systemd-crash.md)
+records six scoped checks with the same 440-file archive: one owned-process
+`SIGABRT`, no kernel core-dump flag or matching core artifact, one configured
+automatic restart and two successful synthetic TLS reports across the restart.
+Cleanup was independently verified. This host used a file-based core handler;
+the earlier WSL piped-handler results remain separate. Public/provider,
+resource, whole-wire, installed/workflow and full privacy acceptance stay open.
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |

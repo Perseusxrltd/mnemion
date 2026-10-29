@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.47**.
+Reviewed source distribution: **4.46.48**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-29**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,17 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**29 October 2026, actionable search retry hints and installer size limit:**
+The [4.46.48 source](releases/4.46.48.md) corrects SDK/MCP retry hints for changed
+search permissions without adding request replay or weakening write restrictions.
+Its [46 Python/MCP and 23 TypeScript checks](validation/2026-10-29-scope-retry-hints.md)
+passed. The installer verifier adds a 400 MiB download ceiling; native qualification
+of this source remains pending. The [four-client live baseline](validation/2026-10-29-mcp-field-sessions.md)
+records 50–62 second lexical searches on the old host, with after-upgrade and
+default hybrid acceptance still open. The [systemd collector crash check](validation/2026-10-29-telemetry-systemd-crash.md)
+verifies one automatic restart and cleanup, while full V08 acceptance and all
+66 requirement states remain unchanged.
 
 **28 October 2026, vault metadata access for agents:**
 The [4.46.46 source](releases/4.46.46.md) separates metadata-only MCP exposure

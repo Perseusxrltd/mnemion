@@ -29,6 +29,11 @@ returns the distinct `scope_changed` conflict while retaining both permission
 checks. All 41 focused scope/reindex/retrieval tests pass. This does not identify
 the cause of the reported live failures or replace their field acceptance.
 
+The [29 October four-client baseline](../validation/2026-10-29-mcp-field-sessions.md)
+records successful but slow lexical requests on 4.46.40 and preserves the original
+fixture failure. After-upgrade measurements, default hybrid performance and the
+reported search-failure acceptance remain open.
+
 | Reported behavior | Current work and retained acceptance | Requirement |
 | --- | --- | --- |
 | Lexical recall took 18.2 seconds; hybrid averaged 8.3 seconds, with longer stalls. | Source 4.46.43 moves the existing grant/source/capture check into statement-scoped RLS sets. The [isolated query check](../validation/2026-10-28-field-reliability.md) passes; actual all-space lexical and hybrid latency, concurrency and clear bounded failures still require release and field measurement. Preserve the report's under-60-second and improved hybrid criteria. | F02, R04 |

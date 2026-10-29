@@ -9,6 +9,7 @@ import { packageFootprint } from './package-footprint.mjs'
 
 const artifacts = platformArtifacts()
 const requireSignature = process.env.MNEMION_REQUIRE_CODE_SIGNATURE === '1'
+const installerDownloadBudget = 400 * 1024 * 1024
 
 function requireFile(path, minBytes = 1) {
   if (!existsSync(path) || !statSync(path).isFile() || statSync(path).size < minBytes) {
@@ -38,7 +39,12 @@ for (const file of ['LICENSE', 'NOTICE', 'inventory.json', 'sbom.cdx.json']) {
 }
 requireFile(join(artifacts.resources, 'client', process.platform === 'win32' ? 'mnemion-client.exe' : 'mnemion-client'))
 const nativeRuntime = verifyNativeResources(artifacts.resources)
-for (const installer of artifacts.installers) requireFile(installer, 40 * 1024 * 1024)
+for (const installer of artifacts.installers) {
+  requireFile(installer, 40 * 1024 * 1024)
+  if (statSync(installer).size > installerDownloadBudget) {
+    throw new Error(`Installer exceeds the 400 MiB download budget: ${basename(installer)}`)
+  }
+}
 
 let signature = 'not required on this platform'
 if (process.platform === 'win32') {
@@ -122,5 +128,6 @@ for (const path of artifacts.installers) {
 }
 writeFileSync(join(artifacts.output, `SHA256SUMS-${process.platform}-${process.arch}.txt`), checksums.join('\n') + '\n')
 console.log(JSON.stringify({ ok: true, platform: process.platform, architecture: process.arch, signature, nativeRuntime,
+  installer_download_budget_bytes: installerDownloadBudget,
   unpacked: packageFootprint(artifacts.bundle, artifacts.resources),
   installers: artifacts.installers.map(path => ({ file: basename(path), bytes: statSync(path).size })) }, null, 2))

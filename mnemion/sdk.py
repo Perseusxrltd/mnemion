@@ -141,7 +141,11 @@ class MnemionError(RuntimeError):
 
     @property
     def retryable(self) -> bool:
-        return self.status in {408, 429, 502, 503, 504}
+        # A global read can resolve its permitted spaces again. Other 409s
+        # still require their own conflict handling; this hint adds no retry.
+        return self.status in {408, 429, 502, 503, 504} or (
+            self.status == 409 and self.code == "scope_changed"
+        )
 
 
 def _retry_after(response: httpx.Response) -> float | None:

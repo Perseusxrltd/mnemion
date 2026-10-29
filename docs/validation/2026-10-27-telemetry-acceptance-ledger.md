@@ -47,6 +47,18 @@ renewal, public ingress/provider/privacy, installed delivery, whole-wire and
 resource acceptance remain required. Production settings, budgets, all 66
 requirements and V08's Building state are unchanged.
 
+## Actual systemd crash and automatic restart
+
+The [29 October host qualification](2026-10-29-telemetry-systemd-crash.md)
+adds six recorded checks on the same 440-file collector archive. One owned
+`SIGABRT` produced signal termination without the kernel core-dump flag;
+systemd performed one configured automatic restart, with successful synthetic
+TLS reports before and after. Independent cleanup inspection passed.
+The file-handler host result remains distinct from the earlier WSL
+piped-handler checks. Public ingress/provider retention, resources, whole-wire,
+installed platforms/workflows and broader privacy/utility acceptance remain
+open. Production collection and V08's Building state are unchanged.
+
 ## Setup recovery follow-up
 
 The [refused observation follow-up](2026-10-27-telemetry-refused-results.md)

@@ -183,7 +183,9 @@ export class MnemionError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string, public readonly requestId?: string, public readonly retryAfterSeconds?: number) {
     super(message); this.name = 'MnemionError'
   }
-  get retryable() { return [408, 429, 502, 503, 504].includes(this.status) }
+  get retryable() {
+    return [408, 429, 502, 503, 504].includes(this.status) || (this.status === 409 && this.code === 'scope_changed')
+  }
 }
 
 function retryAfter(value: string | null): number | undefined {
