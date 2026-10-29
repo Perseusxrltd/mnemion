@@ -98,3 +98,19 @@ python -m pytest tests/test_product_telemetry_v3_operator.py::test_corrupt_or_lo
 ```
 
 Pinned Ruff on `server.py`, `maintainer_v3.py`, `collector_v3.py`, and `tests/test_product_telemetry_v3_operator.py` reported `4 files already formatted` and `All checks passed!`. A corrupt or locked `reports-v3.sqlite3` stays in place. Export returns `telemetry_v3_export_rejected`. Explicit v3 serve returns `telemetry_collector_configuration_invalid`. The category check renames the live outcome label and leaves the stored legend at `{id, kind}`. The page check keeps a remainder trend on one member set at real week positions, and it keeps `unlisted` selected when the next week reuses that numeric slot for `4.46.54`. V08 stays Building.
+
+## Release cohort preparation
+
+The operator runs above were not repeated. `wire-v3.json` still lists only `4.46.53`. Pinned Ruff format and lint on `deploy/release_automation.py`, `service_tests/test_release_automation.py`, and `tests/test_product_telemetry_v3.py` were clean. The same pinned interpreter:
+
+```text
+python -m pytest service_tests/test_release_automation.py::test_version_preparation_preserves_unrelated_pins_and_is_repeatable service_tests/test_release_automation.py::test_prepare_adds_current_and_target_release_cohorts service_tests/test_release_automation.py::test_prepare_retains_at_most_32_release_cohorts service_tests/test_release_automation.py::test_prepare_rejects_invalid_release_cohorts_without_writing -q --tb=short
+5 passed in 7.06s
+```
+
+```text
+python -m pytest tests/test_product_telemetry_v3.py::test_release_coordinates_keep_their_meaning_and_unknown_values_collapse tests/test_product_telemetry_v3.py::test_suppression_uses_noisy_output_and_does_not_isolate_one_cohort tests/test_product_telemetry_v3.py::test_quantiles_are_bucket_bounds_or_insufficient_precision tests/test_product_telemetry_v3.py::test_closed_report_keeps_its_domain_when_the_allowlist_grows -q --tb=short
+4 passed in 12.59s
+```
+
+Preparation adds the current source release and the target, keeps at most 32 contiguous slots, and does not write when the coordinate or catalog is invalid. A fixed one-release catalog fixture holds the known `4.46.53`, unknown `4.46.54`, and unlisted index 1 checks. V08 stays Building.

@@ -23,6 +23,128 @@ def semver(value: str) -> tuple[int, int, int]:
     return tuple(map(int, value.split(".")))
 
 
+def release_cohorts(
+    existing: list,
+    current: str,
+    target: str,
+    *,
+    maximum_slots: int,
+    component_maximum: int,
+) -> list[dict]:
+    """Reviewed coordinates plus the source release and the preparation target.
+
+    Existing order stays. Missing endpoints are appended. Slots are packed from
+    zero. Above the catalog maximum, the oldest coordinate that is neither
+    endpoint is dropped. The same inputs return the same list.
+    """
+    if (
+        type(maximum_slots) is not int
+        or type(component_maximum) is not int
+        or maximum_slots < 1
+        or component_maximum < 0
+    ):
+        raise ValueError("The v3 release catalog bounds must be integers")
+    current_coord = _cohort_coordinate(current, component_maximum)
+    target_coord = _cohort_coordinate(target, component_maximum)
+    if type(existing) is not list or not existing:
+        raise ValueError("The v3 release catalog must list reviewed coordinates")
+    coordinates = []
+    seen = set()
+    for index, item in enumerate(existing):
+        if (
+            type(item) is not dict
+            or set(item) != {"slot", "major", "minor", "patch", "id"}
+            or any(type(item[name]) is not int for name in ("slot", "major", "minor", "patch"))
+            or item["slot"] != index
+            or any(not 0 <= item[name] <= component_maximum for name in ("major", "minor", "patch"))
+        ):
+            raise ValueError("The v3 release catalog is not a contiguous reviewed allowlist")
+        coordinate = (item["major"], item["minor"], item["patch"])
+        if item["id"] != "%d.%d.%d" % coordinate or coordinate in seen:
+            raise ValueError("The v3 release catalog is not a contiguous reviewed allowlist")
+        seen.add(coordinate)
+        coordinates.append(coordinate)
+    for coordinate in (current_coord, target_coord):
+        if coordinate not in seen:
+            coordinates.append(coordinate)
+            seen.add(coordinate)
+    protected = {current_coord, target_coord}
+    while len(coordinates) > maximum_slots:
+        drop = next(
+            (index for index, coordinate in enumerate(coordinates) if coordinate not in protected),
+            None,
+        )
+        if drop is None:
+            raise ValueError("The v3 release catalog has no room for the prepared versions")
+        del coordinates[drop]
+    return [
+        {
+            "slot": index,
+            "major": major,
+            "minor": minor,
+            "patch": patch,
+            "id": f"{major}.{minor}.{patch}",
+        }
+        for index, (major, minor, patch) in enumerate(coordinates)
+    ]
+
+
+def _cohort_coordinate(version: str, component_maximum: int) -> tuple[int, int, int]:
+    major, minor, patch = semver(version)
+    if major > component_maximum or minor > component_maximum or patch > component_maximum:
+        raise ValueError("Release cohort coordinates must fit in one byte")
+    return major, minor, patch
+
+
+def _prepared_catalog(root: Path, current: str, target: str) -> str:
+    path = root / "mnemion/product_telemetry/wire-v3.json"
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Release metadata must be ordinary repository files")
+    text = path.read_text()
+    try:
+        document = json.loads(text)
+    except json.JSONDecodeError:
+        raise ValueError("The v3 release catalog must be JSON") from None
+    if type(document) is not dict:
+        raise ValueError("The v3 release catalog must list reviewed coordinates")
+    coordinate = document.get("release_coordinate")
+    if (
+        type(coordinate) is not dict
+        or "maximum" not in coordinate
+        or "release_allowlist" not in document
+    ):
+        raise ValueError("The v3 release catalog must list reviewed coordinates")
+    updated = release_cohorts(
+        document["release_allowlist"],
+        current,
+        target,
+        maximum_slots=document.get("allowlist_maximum_slots"),
+        component_maximum=coordinate["maximum"],
+    )
+    if updated == document["release_allowlist"]:
+        return text
+    return _replace_json_array(text, "release_allowlist", updated)
+
+
+def _replace_json_array(text: str, key: str, items: list) -> str:
+    marker = f'"{key}"'
+    start = text.find(marker)
+    array_start = text.find("[", start)
+    if start < 0 or array_start < 0:
+        raise ValueError("The v3 release catalog must list reviewed coordinates")
+    try:
+        _value, end = json.JSONDecoder().raw_decode(text, array_start)
+    except json.JSONDecodeError:
+        raise ValueError("The v3 release catalog must be JSON") from None
+    rendered = json.dumps(items, indent=2)
+    column = array_start - text.rfind("\n", 0, array_start) - 1
+    lines = rendered.split("\n")
+    if column > 0 and len(lines) > 1:
+        pad = " " * column
+        rendered = lines[0] + "\n" + "\n".join(pad + line for line in lines[1:])
+    return text[:array_start] + rendered + text[end:]
+
+
 def prepare(root: Path, version: str) -> list[str]:
     """Update package boundaries once; never invent release notes or completion."""
     semver(version)
@@ -51,10 +173,12 @@ def prepare(root: Path, version: str) -> list[str]:
         if count != 1:
             raise ValueError("The project must have exactly one local lock entry")
     path = Path("mnemion/version.py")
+    version_text = (root / path).read_text()
+    current_release = re.search(r'(?m)^__version__ = "([^"]+)"$', version_text)
     updates[path], count = re.subn(
-        r'(?m)^__version__ = "[^"]+"$', f'__version__ = "{version}"', (root / path).read_text()
+        r'(?m)^__version__ = "[^"]+"$', f'__version__ = "{version}"', version_text
     )
-    if count != 1:
+    if current_release is None or count != 1:
         raise ValueError("Missing canonical version")
     for directory in ("packages/client", "studio/frontend", "studio/electron"):
         for name in ("package.json", "package-lock.json"):
@@ -83,6 +207,9 @@ def prepare(root: Path, version: str) -> list[str]:
     )
     if count != 1:
         raise ValueError("Missing reviewed-source roadmap marker")
+    updates[Path("mnemion/product_telemetry/wire-v3.json")] = _prepared_catalog(
+        root, current_release.group(1), version
+    )
     for path in updates:
         if (root / path).is_symlink():
             raise ValueError("Release metadata must be ordinary repository files")

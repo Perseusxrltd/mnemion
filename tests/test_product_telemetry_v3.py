@@ -95,6 +95,23 @@ def measured() -> list[dict]:
     ]
 
 
+def pin_release_catalog(monkeypatch, releases=None) -> None:
+    """Hold one reviewed coordinate so later catalogs do not change these checks."""
+    from mnemion.product_telemetry import aggregate_v3, wire_v3
+
+    if releases is None:
+        releases = ({"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"},)
+    releases = tuple(releases)
+    monkeypatch.setattr(wire_v3, "ALLOWLIST", releases)
+    monkeypatch.setattr(
+        wire_v3,
+        "RELEASE_BY_COORDINATE",
+        {(item["major"], item["minor"], item["patch"]): item for item in releases},
+    )
+    monkeypatch.setattr(wire_v3, "RELEASE_BY_SLOT", {item["slot"]: item for item in releases})
+    monkeypatch.setattr(aggregate_v3, "ALLOWLIST", releases)
+
+
 def release_packet(*, release=RELEASE, observations=None) -> bytes:
     return summarize(
         observations if observations is not None else measured(),
@@ -128,7 +145,9 @@ def test_contract_keeps_every_catalog_metric_inside_the_daily_budget():
     assert WIRE["client_budget"]["maximum_attempts_per_rolling_week"] == 7
     assert WIRE["client_budget"]["minimum_attempt_spacing_seconds"] == 86400
     assert SENSITIVITY == len(METRICS) + 1 == 20
-    assert WIRE["privacy"]["unit"] == "add_or_remove_one_input_report_including_admission_and_clipping"
+    assert (
+        WIRE["privacy"]["unit"] == "add_or_remove_one_input_report_including_admission_and_clipping"
+    )
     assert WIRE["axis_rule"]["name"] == "per_report_secure_coin"
     assert "even_week" not in WIRE["axis_rule"]
     assert WIRE["admission"]["cross_report_eviction"] is False
@@ -165,7 +184,13 @@ def test_clipping_disabled_groups_and_missing_sensors_keep_one_tick():
     window = AggregateWindow(2900)
     before = window._counts[:]
     assert window.contribute(
-        summarize(repeated, groups=GROUPS, release=RELEASE, operating_system="linux", random_below=pinned(0))
+        summarize(
+            repeated,
+            groups=GROUPS,
+            release=RELEASE,
+            operating_system="linux",
+            random_below=pinned(0),
+        )
     )
     assert vector_l1(before, window._counts) == SENSITIVITY
 
@@ -229,24 +254,30 @@ def _counts(packets: list[bytes]) -> list[int]:
     return window._counts
 
 
-def test_release_coordinates_keep_their_meaning_and_unknown_values_collapse():
+def test_release_coordinates_keep_their_meaning_and_unknown_values_collapse(monkeypatch):
+    by_slot = {item["slot"]: item["id"] for item in WIRE["release_allowlist"]}
+    assert list(by_slot) == list(range(len(by_slot)))
+    reversed_slots = sorted(WIRE["release_allowlist"], key=lambda item: -item["slot"])
+    assert {item["slot"]: item["id"] for item in reversed_slots} == by_slot
+    pin_release_catalog(monkeypatch)
     assert release_slot(4, 46, 53) == 0
     assert release_slot(4, 46, 54) is None
     listed = decode(release_packet())
     unknown = decode(release_packet(release=(4, 46, 54)))
     assert listed.axis == "release" and listed.cohort_id == "4.46.53" and listed.cohort_index == 0
     assert unknown.cohort_id == "unlisted" and unknown.cohort_index == 1
-    assert WIRE["release_allowlist"][0]["id"] == "4.46.53"
-    reversed_slots = sorted(WIRE["release_allowlist"], key=lambda item: -item["slot"])
-    assert {item["slot"]: item["id"] for item in reversed_slots}[0] == "4.46.53"
 
 
-def test_suppression_uses_noisy_output_and_does_not_isolate_one_cohort():
+def test_suppression_uses_noisy_output_and_does_not_isolate_one_cohort(monkeypatch):
+    pin_release_catalog(monkeypatch)
     single = AggregateWindow(2900)
     for _ in range(100):
         assert single.contribute(release_packet())
     exact = single.seal(stop)
-    assert {row["id"]: row["denominator"] for row in exact["cohorts"]} == {"4.46.53": 100, "unlisted": 0}
+    assert {row["id"]: row["denominator"] for row in exact["cohorts"]} == {
+        "4.46.53": 100,
+        "unlisted": 0,
+    }
     assert exact["suppressed_remainder"]["axes"] == [
         {
             "axis": "os",
@@ -289,13 +320,16 @@ def test_suppression_uses_noisy_output_and_does_not_isolate_one_cohort():
     assert mixed["admission"]["cross_report_eviction"] is False
 
 
-def test_quantiles_are_bucket_bounds_or_insufficient_precision():
+def test_quantiles_are_bucket_bounds_or_insufficient_precision(monkeypatch):
+    pin_release_catalog(monkeypatch)
     metric = METRIC_BY_ID["latency_ms"]
     counterexample = [0, 0, 200, 50, 0, 0, 0, 0, 0, 0]
     refused = _quantiles(counterexample, metric, parts=1)
     assert refused["p50"]["state"] == "insufficient_precision"
     assert refused["p95"]["state"] == "insufficient_precision"
-    assert refused["p95"]["qualification"] == "mechanism_envelope_not_a_percentile_confidence_interval"
+    assert (
+        refused["p95"]["qualification"] == "mechanism_envelope_not_a_percentile_confidence_interval"
+    )
     assert "lower_inclusive" not in refused["p95"]
     assert "upper_inclusive" not in refused["p95"]
     measurement = counterexample[2:]
@@ -309,7 +343,9 @@ def test_quantiles_are_bucket_bounds_or_insufficient_precision():
     report = window.seal(stop)
     cohort = next(row for row in report["cohorts"] if row["id"] == "4.46.53")
     cohort_latency = next(item for item in cohort["metrics"] if item["id"] == "latency_ms")
-    global_latency = next(item for item in report["global"]["metrics"] if item["id"] == "latency_ms")
+    global_latency = next(
+        item for item in report["global"]["metrics"] if item["id"] == "latency_ms"
+    )
     assert cohort_latency["quantiles"]["p50"]["state"] == "bucket_bounds"
     assert cohort_latency["quantiles"]["p95"]["state"] == "bucket_bounds"
     assert cohort_latency["quantiles"]["p95"]["lower_exclusive"] == 9
@@ -317,8 +353,14 @@ def test_quantiles_are_bucket_bounds_or_insufficient_precision():
     assert cohort_latency["quantiles"]["p95"]["qualification"] == refused["p95"]["qualification"]
     assert "value" not in cohort_latency["quantiles"]["p95"]
     assert global_latency["quantiles"]["p95"]["state"] == "insufficient_precision"
-    assert global_latency["quantiles"]["p95"]["noise_parts"] > cohort_latency["quantiles"]["p95"]["noise_parts"]
-    assert global_latency["quantiles"]["p95"]["envelope_radius"] > cohort_latency["quantiles"]["p95"]["envelope_radius"]
+    assert (
+        global_latency["quantiles"]["p95"]["noise_parts"]
+        > cohort_latency["quantiles"]["p95"]["noise_parts"]
+    )
+    assert (
+        global_latency["quantiles"]["p95"]["envelope_radius"]
+        > cohort_latency["quantiles"]["p95"]["envelope_radius"]
+    )
     spread = AggregateWindow(2900)
     slow = measured()
     slow[1] = {**slow[1], "latency_ms": 5000}
@@ -469,7 +511,11 @@ def test_utility_model_names_its_limits_at_each_population():
     assert flags[(1000, 2)] == (True, True, True)
     assert flags[(1000, 7)] == (True, True, True)
     assert table["axis_split"] == "each_report_chooses_release_or_os_with_probability_one_half"
-    sparse = next(row for row in table["rows"] if (row["installations"], row["reports_per_installation"]) == (100, 2))
+    sparse = next(
+        row
+        for row in table["rows"]
+        if (row["installations"], row["reports_per_installation"]) == (100, 2)
+    )
     assert sparse["expected_axis_ticks"] == 100
     assert sparse["model_frequency_axis_clears_publish_bar"] == 0.004361
     assert table["rows"][0]["distinct_people"] == "not_identified"
@@ -508,6 +554,7 @@ def test_closed_report_keeps_its_domain_when_the_allowlist_grows(tmp_path, monke
     from mnemion.product_telemetry.reporting import reporting_week
     import time
 
+    pin_release_catalog(monkeypatch)
     current = reporting_week(time.time())
     window = AggregateWindow(current - 1)
     for _ in range(100):
@@ -558,7 +605,13 @@ def test_maximum_release_domain_fits_eight_retained_windows(tmp_path):
 
     triples = [(1, 0, index) for index in range(32)]
     releases = tuple(
-        {"slot": index, "major": major, "minor": minor, "patch": patch, "id": f"{major}.{minor}.{patch}"}
+        {
+            "slot": index,
+            "major": major,
+            "minor": minor,
+            "patch": patch,
+            "id": f"{major}.{minor}.{patch}",
+        }
         for index, (major, minor, patch) in enumerate(triples)
     )
     from mnemion.product_telemetry import aggregate_v3, wire_v3
@@ -570,7 +623,9 @@ def test_maximum_release_domain_fits_eight_retained_windows(tmp_path):
         aggregate_v3.ALLOWLIST,
     )
     wire_v3.ALLOWLIST = releases
-    wire_v3.RELEASE_BY_COORDINATE = {(item["major"], item["minor"], item["patch"]): item for item in releases}
+    wire_v3.RELEASE_BY_COORDINATE = {
+        (item["major"], item["minor"], item["patch"]): item for item in releases
+    }
     wire_v3.RELEASE_BY_SLOT = {item["slot"]: item for item in releases}
     aggregate_v3.ALLOWLIST = releases
     try:
@@ -593,9 +648,16 @@ def test_maximum_release_domain_fits_eight_retained_windows(tmp_path):
             body["window_week"] = week
             store(body)
         assert len(store.reports()) == 8
-        assert (tmp_path / "reports-v3.sqlite3").stat().st_size <= WIRE["storage"]["maximum_database_bytes"]
+        assert (tmp_path / "reports-v3.sqlite3").stat().st_size <= WIRE["storage"][
+            "maximum_database_bytes"
+        ]
     finally:
-        wire_v3.ALLOWLIST, wire_v3.RELEASE_BY_COORDINATE, wire_v3.RELEASE_BY_SLOT, aggregate_v3.ALLOWLIST = saved
+        (
+            wire_v3.ALLOWLIST,
+            wire_v3.RELEASE_BY_COORDINATE,
+            wire_v3.RELEASE_BY_SLOT,
+            aggregate_v3.ALLOWLIST,
+        ) = saved
 
 
 def test_publication_failure_is_observable_and_is_not_resealed(tmp_path):
