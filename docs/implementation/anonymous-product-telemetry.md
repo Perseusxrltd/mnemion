@@ -642,8 +642,9 @@ full privacy, resource, platform, provider and useful-population acceptance rema
 
 A gated v3 reference now sits beside that wire. It is specified in
 [anonymous product telemetry v3](anonymous-product-telemetry-v3.md). The
-collector would see a bounded summary and publish one noisy closed week, with
-an add-or-remove-one-report bound of `ln(3)` proved for the whole vector.
+collector would see a bounded summary and publish one noisy closed week
+containing both axes, with an add-or-remove-one-report bound of `ln(3)` proved
+for the whole vector, including admission and clipping.
 That is not v2's local randomizer, and this source does not turn it on.
 `collection_available`, destination and route stay false/null. V08 is not
 complete.

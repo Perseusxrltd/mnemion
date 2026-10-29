@@ -23,6 +23,7 @@ class CollectorV3:
         self._publish = publish_closed_window
         self._clock = clock
         self._random_below = random_below
+        self.publication_failures = []
         self._window = AggregateWindow(reporting_week(clock()))
 
     def _advance(self) -> bool:
@@ -41,8 +42,18 @@ class CollectorV3:
                 try:
                     self._publish(result)
                 except Exception:
-                    pass
+                    week = result.get("window_week") if type(result) is dict else None
+                    if type(week) is int:
+                        self._record_failure(week)
         return True
+
+    def _record_failure(self, week: int) -> None:
+        notice = {"window_week": week, "state": "publication_failed"}
+        self.publication_failures.append(notice)
+        recorder = getattr(self._publish, "record_publication_failure", None)
+        if callable(recorder):
+            with suppress(Exception):
+                recorder(week)
 
     async def _boundaries(self):
         while True:

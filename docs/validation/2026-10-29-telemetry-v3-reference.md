@@ -1,8 +1,10 @@
 # 29 October 2026 — gated v3 telemetry reference
 
-V08 stays Building. This note records a source candidate on
-`grok/telemetry-aggregate-v3-20261029`. It does not qualify ingress, disclosure,
-installed resources, or a client upload. The app version was not changed.
+V08 stays Building. This note records the corrected source candidate on
+`grok/telemetry-aggregate-v3-20261029`, after Astra's review of `1e03707d`.
+It does not qualify ingress, disclosure, installed resources, or a client
+upload. The app version was not changed. The earlier 13-pass run remains the
+check of that first commit. The run below is the check of this correction.
 
 ## What was checked
 
@@ -11,39 +13,53 @@ Pinned interpreter:
 
 ```text
 python -m pytest tests/test_product_telemetry_v3.py -q --tb=short
-13 passed in 7.40s
+16 passed in 10.73s
 ```
 
-The file checks the 25-byte codec, clipping, disabled groups, missing sensors,
-hostile packets, the L1 of one report, the integer `ln(3)` bound, stable
-release slot 0 for `4.46.53`, noisy suppression without a one-cohort complement,
-bucket-bound quantiles, immutable eight-week storage, absence of the raw packet,
-v2 decode/schema/disclosure, a request header that cannot select the test RNG,
-Python activity cohort arguments, the utility table and the maintainer export.
+The first attempt in this correction failed one export assertion: a single
+closed report groups both release cohorts, so the exported cohort list is
+empty. The check now seals 100 release reports, exports that closed report
+after the allowlist grows, and still reads slot 0 as `4.46.53` and the
+unlisted slot as 1.
+
+The file keeps the original codec, clipping, disabled-group, missing-sensor,
+hostile-packet, whole-vector L1, integer `ln(3)`, stable-slot, suppression,
+storage, v2, header, activity, utility and maintainer checks. It also checks
+the report-local axis coin, admission without cross-report eviction, the
+quantile counterexample, a supported high-volume bucket, an old report after
+an allowlist change, the 32-release domain inside the store limits, and a
+publication failure that is not sealed again. The same 32-release seal, run
+again on this interpreter outside pytest, was 215,576 bytes: above 65,536 and
+inside 786,432, with 33 published release cohorts.
 
 `python -m mnemion.product_telemetry.maintainer_v3 --utility --format json`
-printed the table in the
+prints the table in the
 [v3 implementation note](../implementation/anonymous-product-telemetry-v3.md).
-At 10 installations neither 2 nor 7 modelled reports clears the noise. At 100,
-the denominator can, and a majority bucket can only in the 7-report model. At
-1000, an even 8-bucket split can as well. Those are modelled products, not
-guaranteed counts.
+Each report chooses release or coarse OS with probability 1/2. At 10
+installations neither 2 nor 7 modelled reports clears the lower side of that
+split. At 100, two reports stay under the publish bar; the model frequency of
+clearing 119 on one axis is 0.004361, and the publish flag stays no. Seven
+reports clear a cohort total and a coarse majority bucket. At 1000, an even
+8-bucket split can as well. Those are modelled products, not guaranteed counts.
+
+On the same interpreter, one latency coordinate's envelope radius is 92. A sum
+of six independent noises has radius 254, and a sum of 37 has radius 552.
+The counterexample histogram is `insufficient_precision` for both percentiles.
+A 20,000-tick spike is a 10–49 ms bucket bound on one cohort and
+`insufficient_precision` on the six-cohort sum. Neither label is a percentile
+confidence interval.
 
 The browser activity test file was not executed. This clone has no
-`studio/frontend/node_modules`, so the existing TypeScript test runner could
-not start. The new browser helper did typecheck under a global `tsc` apart
-from Node types, which the electron project normally supplies and which are
-not installed here. Desktop `process` use matches the surrounding electron
-code. That is not a browser run.
-
-The failed full-app resource trials were not repeated. No live Perseus or
-Vercel probe was sent. Connectors and field 47 were not modified.
+`studio/frontend/node_modules`, and this correction did not change frontend
+wiring. No installed-app or native resource trial was repeated. No live
+Perseus or Vercel probe was sent. Connectors and field 47 were not modified.
 
 ## Privacy-model change
 
 Wire v2 still locally randomizes one category. The v3 candidate does not. The
 reference collector adds a bounded summary into one week's counters and the
 seal adds two-sided geometric noise. Epsilon at most `ln(3)` is for adding or
-removing one report from the published vector, including the denominator and
-the cohort partition. It is not a promise about the collector, the network, or
-a person who sends several reports.
+removing one input report from the published vector, including admission and
+clipping. Admission does not evict a different report, so that change stays
+inside L1 20. It is not a promise about the collector, the network, or a
+person who sends several reports.

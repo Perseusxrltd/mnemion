@@ -809,7 +809,8 @@ and desktop activity now pass coarse v2 platform, architecture and
 release-family arguments into the single sampled view. They still must not
 become a joinable profile, and collection remains off. The separate
 [v3 reference](anonymous-product-telemetry-v3.md) keeps one public release or
-one coarse OS per week, not a build-by-OS-by-hardware fingerprint. Fixed
+one coarse OS in each report and publishes both axes in the same week, not a
+build-by-OS-by-hardware fingerprint. Fixed
 closed-week aggregation, publication and retention for wire v2 are implemented
 in source; production collection and reporting remain unqualified. Missing
 sensors or terminal outcomes produce no substitute zero/success observation.

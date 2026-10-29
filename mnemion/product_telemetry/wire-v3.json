@@ -11,11 +11,15 @@
   },
   "reserved_cohort_byte": 0,
   "axis_rule": {
-    "name": "server_week_parity",
-    "even_week": "release",
-    "odd_week": "os",
-    "data_independent": true,
-    "mismatched_packet": "rejected_not_retained"
+    "name": "per_report_secure_coin",
+    "choices": [
+      "release",
+      "os"
+    ],
+    "reads_report_contents": false,
+    "source": "summary_path_secrets_randbelow",
+    "both_axes_in_one_window": true,
+    "joined_release_by_os_profile": false
   },
   "release_coordinate": {
     "components": [
@@ -469,8 +473,13 @@
     "maximum_observations": 512,
     "weighting": "one_clipped_normalized_tick_per_metric_not_uncapped_events"
   },
+  "admission": {
+    "rule": "every_well_formed_report",
+    "cross_report_eviction": false,
+    "per_report_clip": "one_tick_per_metric_after_clip_255"
+  },
   "privacy": {
-    "unit": "add_or_remove_one_bounded_report",
+    "unit": "add_or_remove_one_input_report_including_admission_and_clipping",
     "epsilon": "ln(3)",
     "l1_sensitivity": 20,
     "noise": {
@@ -493,16 +502,21 @@
   "reporting": {
     "window_seconds": 604800,
     "retained_windows": 8,
-    "maximum_reports_per_window": 10000000,
     "schema_name": "aggregate-v3",
-    "schema_version": 1
+    "schema_version": 2
+  },
+  "storage": {
+    "maximum_report_bytes": 786432,
+    "maximum_database_bytes": 7340032,
+    "page_size": 4096,
+    "reviewed_one_axis_32_release_bytes": 209365
   },
   "statements": {
     "reports_are_not_unique_people": true,
     "noise_is_not_independent_user_inference": true,
     "noise_is_not_causal_inference": true,
-    "do_not_join_release_and_os_weeks": true,
-    "quantile_output": "bucket_bounds_or_insufficient_precision",
+    "do_not_join_release_and_os": true,
+    "quantile_output": "conservative_cumulative_bounds_or_insufficient_precision",
     "collector_sees_bounded_summaries": true,
     "published_output_is_not_privacy_from_the_collector": true
   }

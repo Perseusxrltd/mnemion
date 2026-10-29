@@ -18,7 +18,14 @@ from .utility_v3 import modelled_utility
 from .wire_v3 import METRIC_BY_ID, WireV3Error, bucket_label
 
 
-def honest_summary(reports: list[dict]) -> dict:
+def honest_summary(reports: list[dict], publication_failures: list[dict] | None = None) -> dict:
+    failures = [] if publication_failures is None else publication_failures
+    if any(
+        type(item) is not dict or set(item) != {"window_week", "state"} or item["state"] != "publication_failed"
+        or type(item["window_week"]) is not int
+        for item in failures
+    ):
+        raise WireV3Error
     return {
         "surface": "maintainer_export",
         "ordinary_privacy_settings_contain_fleet_data": False,
@@ -28,8 +35,17 @@ def honest_summary(reports: list[dict]) -> dict:
         "collection_available": False,
         "destination": None,
         "report_count": len(reports),
+        "publication_failures": failures,
         "limitations": modelled_utility()["limitations"],
     }
+
+
+def _export_spec(report: dict, metric_id: str) -> dict:
+    saved = next(item for item in report["domain"]["metric_legend"] if item["id"] == metric_id)
+    compiled = METRIC_BY_ID[metric_id]
+    if saved["kind"] == "ordered":
+        return {**compiled, "upper_bounds": saved["upper_bounds"], "unit": saved["unit"]}
+    return compiled
 
 
 def _rows(report: dict) -> list[dict]:
@@ -37,7 +53,7 @@ def _rows(report: dict) -> list[dict]:
 
     def emit(scope: str, axis: str, cohort_id: str, metrics: list[dict], state: str):
         for metric in metrics:
-            spec = METRIC_BY_ID[metric["id"]]
+            spec = _export_spec(report, metric["id"])
             for index, count in enumerate(metric["counts"]):
                 rows.append(
                     {
@@ -52,24 +68,25 @@ def _rows(report: dict) -> list[dict]:
                     }
                 )
 
-    emit("global", report["cohort_axis"], "", report["global"]["metrics"], "noisy_partition_sum")
+    emit("global", "full_domain", "", report["global"]["metrics"], "noisy_full_domain_sum")
     for cohort in report["cohorts"]:
         emit("cohort", cohort["axis"], cohort["id"], cohort["metrics"], "published_noisy_cohort")
     remainder = report["suppressed_remainder"]
     if remainder is not None:
-        emit(
-            "remainder",
-            report["cohort_axis"],
-            "+".join(remainder["ids"]),
-            remainder["metrics"],
-            "combined_suppressed_cohorts",
-        )
+        for axis_row in remainder["axes"]:
+            emit(
+                "remainder",
+                axis_row["axis"],
+                "+".join(axis_row["ids"]),
+                axis_row["metrics"],
+                "combined_suppressed_cohorts",
+            )
     return rows
 
 
-def render(reports: list[dict], export_format: str) -> str:
+def render(reports: list[dict], export_format: str, publication_failures: list[dict] | None = None) -> str:
     checked = [validate(report) for report in reports]
-    summary = honest_summary(checked)
+    summary = honest_summary(checked, publication_failures)
     if export_format == "json":
         return json.dumps({"summary": summary, "reports": checked}, indent=2, allow_nan=False)
     if export_format != "csv":
@@ -83,6 +100,7 @@ def render(reports: list[dict], export_format: str) -> str:
             "reports_are_not_unique_people",
             "noise_is_not_independent_user_or_causal_inference",
             "report_count",
+            "publication_failure_weeks",
         ),
     )
     summary_writer.writeheader()
@@ -93,6 +111,7 @@ def render(reports: list[dict], export_format: str) -> str:
             "reports_are_not_unique_people": True,
             "noise_is_not_independent_user_or_causal_inference": True,
             "report_count": summary["report_count"],
+            "publication_failure_weeks": "+".join(str(item["window_week"]) for item in summary["publication_failures"]),
         }
     )
     buffer.write("\n")
@@ -120,7 +139,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.state is None or not args.state.is_absolute() or args.format is None:
             raise WireV3Error
-        print(render(ReportStore(args.state).reports(), args.format))
+        store = ReportStore(args.state)
+        print(render(store.reports(), args.format, store.publication_failures()))
         return 0
     except (OSError, ValueError, WireV3Error):
         print(json.dumps({"ok": False, "error": "telemetry_v3_export_rejected"}))

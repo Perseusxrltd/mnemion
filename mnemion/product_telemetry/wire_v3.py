@@ -47,16 +47,33 @@ def _check_contract() -> None:
     numerator = privacy["noise"]["continue_numerator"]
     denominator = privacy["noise"]["continue_denominator"]
     sensitivity = privacy["l1_sensitivity"]
+    storage = WIRE["storage"]
     slots = [item["slot"] for item in ALLOWLIST]
+    report_bytes = storage["maximum_report_bytes"]
+    database_bytes = storage["maximum_database_bytes"]
+    page_size = storage["page_size"]
     if (
         WIRE["version"] != 3
         or WIRE["not_v2_local_randomization"] is not True
         or privacy["epsilon"] != "ln(3)"
+        or privacy["unit"] != "add_or_remove_one_input_report_including_admission_and_clipping"
         or sensitivity != len(METRICS) + 1
         or PACKET_BYTES != 6 + len(METRICS)
         or len(METRIC_BY_ID) != len(METRICS)
         or WIRE["state_bins"] != ["group_disabled", "sensor_missing"]
         or OPERATING_SYSTEMS != ("windows", "macos", "linux", "other")
+        or WIRE["axis_rule"] != {
+            "name": "per_report_secure_coin",
+            "choices": ["release", "os"],
+            "reads_report_contents": False,
+            "source": "summary_path_secrets_randbelow",
+            "both_axes_in_one_window": True,
+            "joined_release_by_os_profile": False,
+        }
+        or WIRE["admission"]["cross_report_eviction"] is not False
+        or WIRE["admission"]["rule"] != "every_well_formed_report"
+        or "maximum_reports_per_window" in WIRE["reporting"]
+        or WIRE["reporting"]["schema_version"] != 2
         or not 1 <= len(ALLOWLIST) <= WIRE["allowlist_maximum_slots"]
         or slots != list(range(len(ALLOWLIST)))
         or len({(item["major"], item["minor"], item["patch"]) for item in ALLOWLIST}) != len(ALLOWLIST)
@@ -71,6 +88,14 @@ def _check_contract() -> None:
         or WIRE["client_budget"]["maximum_packet_bytes"] > WIRE["client_budget"]["within_attempt_reservation_bytes"]
         or WIRE["client_budget"]["within_daily_wire_bytes"] != CONTRACT["limits"]["wire_bytes_per_day"]
         or WIRE["statements"]["reports_are_not_unique_people"] is not True
+        or WIRE["statements"]["do_not_join_release_and_os"] is not True
+        or type(report_bytes) is not int
+        or type(database_bytes) is not int
+        or type(page_size) is not int
+        or page_size != 4096
+        or report_bytes <= storage["reviewed_one_axis_32_release_bytes"]
+        or database_bytes <= WIRE["reporting"]["retained_windows"] * report_bytes
+        or database_bytes % page_size != 0
     ):
         raise WireV3Error
 
@@ -92,13 +117,6 @@ class Summary:
         self.cohort_id = cohort_id
         self.cohort_index = cohort_index
         self.buckets = buckets
-
-
-def axis_for_week(week: int) -> str:
-    """Public week parity. It does not read a measurement or a client identity."""
-    if type(week) is not int or not 0 <= week <= 1000000:
-        raise WireV3Error
-    return WIRE["axis_rule"]["even_week"] if week % 2 == 0 else WIRE["axis_rule"]["odd_week"]
 
 
 def bucket_label(metric: dict, index: int) -> str:
@@ -176,18 +194,21 @@ def summarize(
     observations: object,
     *,
     groups: object,
-    axis: str,
-    release: tuple[int, int, int] | None = None,
-    operating_system: str | None = None,
+    release: tuple[int, int, int],
+    operating_system: str,
     random_below=None,
 ) -> bytes:
     """Clip and normalize local observations into one fixed packet.
 
-    Each enabled metric contributes weight 1. Disabled groups and missing
-    sensors use explicit bins, not a fabricated zero. The draw is the defined
-    weighting of a clipped histogram, not the publication privacy mechanism.
+    The first draw chooses release or coarse OS with equal probability. It does
+    not read the observations, and the packet keeps only the chosen marginal.
+    Each enabled metric then contributes weight 1. Disabled groups and missing
+    sensors use explicit bins, not a fabricated zero. Later draws weight a
+    clipped histogram. They are not the publication privacy mechanism.
     ``random_below`` exists for tests; a packet cannot select it.
     """
+    random_below = random_below or secrets.randbelow
+    axis = "release" if _draw(2, random_below) == 0 else "os"
     if (
         type(groups) not in (list, tuple)
         or not 1 <= len(groups) <= len(GROUPS)
@@ -231,7 +252,6 @@ def summarize(
                 _add(weights, metric_id, described["bucket"])
     except (MeasurementError, KeyError, WireV3Error):
         raise WireV3Error from None
-    random_below = random_below or secrets.randbelow
     indexes = []
     for metric in METRICS:
         if metric["group"] not in permitted:
