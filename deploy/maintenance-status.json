@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json"
             ]
           },
           {
@@ -188,5 +188,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40951286816"
     }
   ],
-  "observed_at": "2026-10-29T22:58:25+00:00"
+  "observed_at": "2026-10-29T23:01:42+00:00"
 }
