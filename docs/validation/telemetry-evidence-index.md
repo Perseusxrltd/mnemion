@@ -36,6 +36,10 @@ The [29 October v3 client release checks](2026-10-29-telemetry-v3-release-checks
 record the integrated current-format fixtures, native probe and automated parity
 entry, with original failures and corrected local build results.
 
+The [29 October probe staging fix](2026-10-29-telemetry-probe-staging.md)
+retains the failed first phase-memory run and the focused correction that loads
+the controller's helper. That failed run produced no resource measurement.
+
 ## Controls, ownership and report review
 
 | Date | Original evidence | Scope and boundary |
