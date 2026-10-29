@@ -18,7 +18,7 @@
     {
       "number": 47,
       "title": "Field report (4.46.40): multi-agent usage audit \u2014 slow/hanging search, suspended connector scope, noisy activity log, unusable vault over MCP, and features left unused",
-      "updated_at": "2026-10-28T17:01:24Z",
+      "updated_at": "2026-10-29T15:46:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/47",
       "labels": []
     },
@@ -46,6 +46,13 @@
       "labels": [
         "bug"
       ]
+    },
+    {
+      "number": 51,
+      "title": "Feature: cross-device agent memory continuity and reviewed configuration bundles",
+      "updated_at": "2026-10-29T15:46:04Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/51",
+      "labels": []
     }
   ],
   "runs": [
@@ -106,8 +113,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 21,
-        "completed": 18,
-        "succeeded": 16,
+        "completed": 20,
+        "succeeded": 18,
         "active": [
           {
             "id": 123530522451,
@@ -115,25 +122,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123530522676,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 123530522788,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Packaged window, sandboxed bridge, and local client"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           }
         ]
@@ -186,5 +175,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40853490883"
     }
   ],
-  "observed_at": "2026-10-29T15:25:35+00:00"
+  "observed_at": "2026-10-29T15:46:35+00:00"
 }
