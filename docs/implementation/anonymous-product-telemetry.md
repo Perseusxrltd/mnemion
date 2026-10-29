@@ -1,6 +1,6 @@
 # Anonymous product telemetry — V08
 
-**Building/source implementation; current checkpoint 28 October 2026.** V08
+**Building/source implementation; current checkpoint 29 October 2026.** V08
 retains the full scope in the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md);
 all requirement texts and the other 65 states are unchanged. The
 [shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
@@ -665,7 +665,7 @@ The add-or-remove-one-report bound on the released vector is `ln(3)`, including
 admission and clipping. That bound is not network anonymity, collector
 blindness, a unique-user count, or an exact uncapped event total.
 
-The pending client transition uses disclosure version 2, checks metric groups
+The integrated client source uses disclosure version 2, checks metric groups
 again at final send, and invalidates a stored wire v2 manual approval instead
 of sending it. Real opt-outs, company restrictions, manual controls and the
 minimum request budget stay: seven attempts per rolling week, at least 24 hours

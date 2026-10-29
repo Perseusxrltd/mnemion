@@ -20,8 +20,9 @@ open.** The disclosure remains `collection_available: false` with
 `/v1/report` are the published wire v2 transports. The pending report is the
 [wire v3 contract](../../mnemion/product_telemetry/wire-v3.json): 25 bytes at
 the reference ingress `POST /v3/report`, specified in the
-[v3 reference](anonymous-product-telemetry-v3.md). Client integration of that
-send path is unfinished. The dedicated server defaults to legacy `/v1/report`.
+[v3 reference](anonymous-product-telemetry-v3.md). The Electron, browser and
+Python clients now use this send path in source; installed delivery qualification
+remains open. The dedicated server defaults to legacy `/v1/report`.
 Explicit `--mode v3` mounts CollectorV3 at `/v3/report` with its separate
 `reports-v3.sqlite3` store. That does not activate production collection.
 Nothing here is an installed v3 delivery pass, active collection,

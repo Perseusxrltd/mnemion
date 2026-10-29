@@ -215,10 +215,10 @@ damaged settings.
 In default automatic mode, within one write transaction, reservation rechecks policy, clock, cooldown,
 active lease and both spending limits. It selects permitted bounded cells and
 prepares one body. The published wire v2 reservation prepares one
-[four-byte randomized body](anonymous-product-telemetry-delivery.md). The pending
-wire v3 reservation, once that sender is qualified, prepares one 25-byte bounded
+[four-byte randomized body](anonymous-product-telemetry-delivery.md). The current
+wire v3 source reservation prepares one 25-byte bounded
 summary inside the same 64 KiB attempt reservation and 256 KiB rolling-day guard.
-That sender is not qualified, and collection remains unavailable. Encoding must
+Installed delivery remains unqualified, and collection remains unavailable. Encoding must
 succeed before spending is committed. The transaction
 then records the attempt and reservation, sets the cooldown and private lease,
 and consumes the entire pending measurement queue.
@@ -246,7 +246,7 @@ and available delivery allowance. It reads no performance gauges and spends no
 attempt. The [26 October inspection path](../../mnemion/product_telemetry/inspection.py)
 stores one fixed four-byte wire v2 reviewed report under the
 [wire v2 selection contract](../validation/2026-10-26-telemetry-review-selection.md)
-and consumes only that pending snapshot. The pending client transition stores a
+and consumes only that pending snapshot. The integrated client source stores a
 25-byte bounded summary for a live review. A structurally valid stored wire v2
 manual review — version 1, mode `review`, outcome held or approved, a four-byte
 packet, and wire version 2 or a destination ending in `/v1/report` — is
