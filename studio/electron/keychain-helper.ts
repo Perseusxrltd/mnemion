@@ -1,5 +1,6 @@
-// Same signed executable/app identity and Electron safeStorage ciphertext.
-// OS consent runs outside the UI process and cannot pin its native teardown.
+// Same signed executable as Studio, so the helper has no separate keychain
+// identity. Electron safeStorage ciphertext stays the same. OS consent runs
+// outside the UI process and cannot pin its native teardown.
 import { app, safeStorage } from 'electron'
 import { lstatSync } from 'node:fs'
 import { isAbsolute } from 'node:path'

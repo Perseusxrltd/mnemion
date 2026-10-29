@@ -1,6 +1,6 @@
 # Code signing policy
 
-Updated: **2026-10-29**. Project maintainer: **PERSEUS LEGACY LIMITED**.
+Updated: **2026-10-30**. Project maintainer: **PERSEUS LEGACY LIMITED**.
 
 ## Platform status
 
@@ -36,6 +36,28 @@ A future Developer ID signing integration must review this exception again.
 If an affected app cannot start, its updater cannot run either: install the
 corrected published package once it is available. Do not locally re-sign an
 old release or disable system security as a substitute.
+
+The same ad-hoc identity controls the macOS login-keychain prompt for saved
+connections, tracked in [issue 50](https://github.com/Perseusxrltd/mnemion/issues/50).
+Electron `safeStorage` keeps one keychain item. After successful access, a
+healthy running helper of the same executable reuses its encryptor for later
+saved connections. That child can be discarded and replaced after an
+unavailable result, denial, timeout, or pipe failure. A helper restart, a
+failed approval, a locked keychain, or a changed OS access policy can require
+another prompt. **Allow** covers the successful retrieval in the running
+helper, so the next launch asks again. **Always Allow** normally permits the
+unchanged binary while that permission remains valid. For this free build,
+`codesign` reports `Signature=adhoc` and `TeamIdentifier=not set`, and the
+designated requirement is the cdhash of that exact binary. The next update or
+any re-sign changes the cdhash, so macOS asks once for the new file. Always
+Allow does not survive that change. This implementation's current ad-hoc app
+identity changes across builds and does not preserve that exact-binary trust.
+This batch adds no cross-update credential migration. This is the behavior
+Electron documents for `safeStorage`, and the reason
+electron/electron#43233 was closed as not a bug.
+Do not grant every app access to the item, store a login password, or replace
+existing ciphertext to hide the prompt. See
+[saved connections](service/workspaces.md#remember-a-connection-using-a-key).
 
 Linux AppImage updates use the established Electron updater with HTTPS release
 feeds and payload hashes. Debian packages use administrator-managed upgrades.
