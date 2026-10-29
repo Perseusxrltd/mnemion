@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T16:23:09+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T16:38:27+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.52](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.52). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 40905758692](https://github.com/Perseusxrltd/mnemion/actions/runs/40905758692) |
+| ci\.yml | main | failure | [Run 40905758692](https://github.com/Perseusxrltd/mnemion/actions/runs/40905758692) |
 | database-cache\.yml | main | success | [Run 40861058907](https://github.com/Perseusxrltd/mnemion/actions/runs/40861058907) |
 | public-updates\.yml | v4\.46\.52 | success | [Run 40853494264](https://github.com/Perseusxrltd/mnemion/actions/runs/40853494264) |
 | release\.yml | release/4\.46\.52 | success | [Run 40844389559](https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559) |
@@ -30,13 +30,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | website-release\.yml | main | success | [Run 40905758771](https://github.com/Perseusxrltd/mnemion/actions/runs/40905758771) |
 | website-release\.yml | v4\.46\.52 | success | [Run 40853490883](https://github.com/Perseusxrltd/mnemion/actions/runs/40853490883) |
 
-## Active jobs
-
-[Run 40905758692](https://github.com/Perseusxrltd/mnemion/actions/runs/40905758692): 11/12 jobs completed; 11 succeeded.
-
-- supervision \(macos-26\): queued.
-
-
 ## Unsuccessful jobs
 
+- [Run 40905758692](https://github.com/Perseusxrltd/mnemion/actions/runs/40905758692): supervision \(macos-26\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40896509541](https://github.com/Perseusxrltd/mnemion/actions/runs/40896509541): native / macos-26 / arm64 (failure). Steps: Verify model custody with real native child processes, Retain generated desktop-content secret scan receipt.
