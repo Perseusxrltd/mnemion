@@ -26,6 +26,27 @@ def _family(version: str) -> str:
     return "5_plus"
 
 
+def reviewed_release_coordinate(version: str | None = None) -> tuple[int, int, int] | None:
+    """Three release integers from the same version string the v2 family uses."""
+    text = __version__ if version is None else version
+    parts = text.split(".")
+    if len(parts) != 3 or any(not part.isdigit() for part in parts):
+        return None
+    numbers = tuple(int(part) for part in parts)
+    if any(number > 255 for number in numbers):
+        return None
+    return numbers
+
+
+def reviewed_operating_system(platform_name: str | None = None) -> str | None:
+    """The same coarse OS map as ``reviewed_cohorts``. Missing names fail closed."""
+    if platform_name is None:
+        platform_name = {"win32": "windows", "darwin": "macos", "linux": "linux"}.get(sys.platform, "other")
+    if platform_name not in ("windows", "macos", "linux", "other"):
+        return None
+    return platform_name
+
+
 def reviewed_cohorts() -> dict[str, str]:
     """Public OS, CPU family and release family. No machine id and no serial."""
     system = {"win32": "windows", "darwin": "macos", "linux": "linux"}.get(sys.platform, "other")

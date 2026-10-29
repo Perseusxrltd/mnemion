@@ -1,9 +1,8 @@
 # Anonymous product telemetry — gated v3 reference
 
-**Not a V08 completion.** Collection stays unavailable. This note describes a
-reviewable backend candidate beside wire v2. It does not authorize a production
-upload, a disclosure change, or a claim that an ordinary privacy-settings page
-shows fleet data.
+**V08 remains Building.** Collection stays unavailable. The current source
+includes the v3 clients, collector and private maintainer reports. The ordinary
+privacy-settings page shows local controls; it does not show fleet data.
 
 The approved direction is a trusted first-party collector and
 publication-side differential privacy. That is a different promise from wire
@@ -17,8 +16,9 @@ is turned on.
 `default_enabled` remains true. `collection_available`, the destination and the
 release route remain false/null. The dedicated collector still defaults to
 legacy `/v1/report`. `CollectorV3` is mounted only when that process is started
-with `--mode v3`, on `/v3/report`, writing `reports-v3.sqlite3`. Nothing in the
-client sends a v3 packet. This does not start or change a host.
+with `--mode v3`, on `/v3/report`, writing `reports-v3.sqlite3`. The Electron,
+browser and Python client paths use v3, behind the existing permission and
+budget gates. No production host or collection route is enabled by this change.
 
 ## What one report contains
 
@@ -53,8 +53,7 @@ release-by-OS profile.
 
 The release allowlist is operator-owned. Preparing a release adds the current
 source version and the target stable version, keeps at most 32 coordinates, and
-packs slots from zero. This checkout's catalog still has one slot: `0` means
-`4.46.53`. A coordinate that is not on the allowlist at summary time becomes
+packs slots from zero. A coordinate that is not on the allowlist at summary time becomes
 `unlisted`. The packet cannot invent a slot. It stores the major, minor and
 patch bytes, not the slot. Components are integers from 0 to 255. The coarse OS
 names are `windows`, `macos`, `linux` and `other`.
@@ -264,21 +263,25 @@ cell is unresolved. That residual competes as `sensor_missing`. It is not
 rewritten into `no_failure`. If reliability is disabled, the reason bin stays
 `group_disabled` even when a reason was observed.
 
-These helpers are not called by the Python, Electron, or browser senders.
-Review mode, the disclosure version, and the transport route are unchanged.
-Collection remains off.
+Python, Electron, and browser senders call these helpers when a report is
+prepared. Manual review, the final group check, opt-out, company policy, and
+the delivery budgets stay in front of that call. The request path in source is
+`POST /v3/report` with a 25-byte body. Disclosure version 2 describes a
+collector-visible summary. Collection remains off: `collection_available` is
+false, the destination is null, and the release route address is null.
+`server.py` still mounts only `/v1/report`. A v3 packet is not sent there.
 
 ## Still required before any activation
 
-- Electron, browser and Python clients that encode and send v3, behind the
-  same opt-out, company, GPC, metering and 7-per-week gates. The client worker
-  owns that codec. It is not done here.
+- Installed qualification of the Electron, browser and Python v3 paths, behind
+  the same opt-out, company, GPC, metering and 7-per-week gates.
 - A qualified host. The dedicated collector can select `--mode v3` in source.
   No host was changed or started, and ingress, TLS, log and backup
   qualification for an operated path remain open.
-- A versioned disclosure that says the collector sees bounded summaries and
-  that provider retention was actually inspected. The current disclosure does
-  not say that. `collection_available`, destination and route stay false/null/null.
+- Provider retention qualification. Disclosure version 2 explains that the
+  collector sees bounded summaries and noise protects the published week. It
+  does not claim that provider retention has been inspected.
+  `collection_available`, destination and route stay false/null/null.
 - The installed 2 MiB / 0.5% resource gates. This packet is 25 bytes in source.
   That is not an installed measurement. The failed full-app trials were not
   rerun.

@@ -17,6 +17,7 @@ import ssl
 
 from . import delivery, policy
 from .endpoint import Endpoint
+from .wire_v3 import PACKET_BYTES
 
 MAX_TLS_BYTES = 32768
 MAX_HEADERS = 2048
@@ -154,7 +155,7 @@ class _Channel:
 
     def handoff(self, body: bytes) -> bool:
         """Called only inside the current policy's short final-write lock."""
-        if self.closed or self.raw is None or self.secure is None or len(body) != 4:
+        if self.closed or self.raw is None or self.secure is None or len(body) != PACKET_BYTES:
             return False
         if self.outgoing.pending:
             return False

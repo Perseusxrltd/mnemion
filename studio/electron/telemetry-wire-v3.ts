@@ -2,6 +2,7 @@
  * The caller passes the reviewed wire contract and catalog. This module does
  * not read a config file, send a packet, or apply publication noise.
  */
+import type { TelemetryFormatExample, TelemetryWirePreview } from '../shared/product-telemetry.js'
 import { TelemetryCatalog, type CellDescription } from './telemetry-catalog.js'
 import { secureRandomBelow } from './telemetry-wire.js'
 
@@ -374,5 +375,38 @@ export class TelemetryWireV3 {
     if (slot === 0) return `0-${bounds[0]}`
     if (slot === bounds.length - 1) return `>${bounds[slot - 1]}`
     return `${bounds[slot - 1] + 1}-${bounds[slot]}`
+  }
+
+  matchesGroups(packet: Uint8Array, groups: readonly string[]): boolean {
+    try {
+      const permitted = this.permitted(groups)
+      const decoded = this.decode(packet)
+      return this.metrics.every((metric, index) => (decoded.buckets[index] === 0) !== permitted.has(metric.group))
+    } catch { return false }
+  }
+
+  preview(packet: Uint8Array, reviewed = false): TelemetryWirePreview {
+    const decoded = this.decode(packet)
+    const bytes = Array.from(packet)
+    return {
+      schema_version: this.specification.version,
+      body_base64: globalThis.btoa(String.fromCharCode(...bytes)),
+      body_bytes: packet.length,
+      view: 'bounded_summary',
+      coordinate: decoded.cohortIndex,
+      randomized_sign: null,
+      protected_unit: 'Bounded summary of permitted metrics. The collector can read this summary. Publication noise is added to the closed week, not on this installation. Counts are not unique people.',
+      report_selection: reviewed ? 'reviewed' : 'automatic',
+      aggregation: 'bounded_summary_publication_noise',
+      randomization_privacy_loss: null,
+      per_report_privacy_loss: null,
+      privacy_bound_scope: 'publication_closed_week',
+      participation_or_lifetime_guarantee: false,
+    }
+  }
+
+  formatExample(): TelemetryFormatExample {
+    const packet = this.encode('release', this.metrics.map(() => 1), [4, 46, 53], 'linux')
+    return { kind: 'synthetic_example', body_encoding: 'base64', ...this.preview(packet) }
   }
 }

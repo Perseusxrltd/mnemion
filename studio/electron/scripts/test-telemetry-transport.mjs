@@ -77,7 +77,7 @@ for (const available of [false, true]) test('immutable release trust is parsed o
   const definitions = nativeTelemetryDefinitions()
   const authorities = [cert], encoded = cert.trim().split('\n').slice(1, -1).join('')
   const activity = new DesktopTelemetryActivity('unused', {
-    ...definitions.disclosure, collection_available: available, destination: 'https://localhost/v1/report',
+    ...definitions.disclosure, collection_available: available, destination: 'https://localhost/v3/report',
   }, definitions.catalog, () => ({ network: 'unmetered', constrained: false }), undefined, '127.0.0.1', undefined, authorities)
   authorities[0] = 'PRIVATE_CALLER_REPLACEMENT'
   const original = Buffer.from
@@ -108,7 +108,7 @@ async function peer(t, mode = 'success') {
       if (mode === 'stall_handshake') { enter(); return }
       pending = Buffer.concat([pending, chunk])
       const end = pending.indexOf('\r\n\r\n')
-      if (end < 0 || pending.length < end + 8 || requests.length) return
+      if (end < 0 || pending.length < end + 29 || requests.length) return
       requests.push({ headers: pending.subarray(0, end).toString('ascii'), body: [...pending.subarray(end + 4)] })
       release = () => socket.end(mode === 'redirect'
         ? 'HTTP/1.1 302 Found\r\nLocation: https://private.invalid/secret\r\nContent-Length: 0\r\n\r\n'
@@ -136,7 +136,7 @@ async function installation(t, endpoint, options = {}) {
   const temporary = await mkdtemp(join(tmpdir(), 'mnemion-native-telemetry-'))
   t.after(() => rm(temporary, { recursive: true, force: true }))
   const root = join(temporary, 'private'), company = join(temporary, 'company.json')
-  const destination = `https://${endpoint.authority()}/v1/report`
+  const destination = `https://${endpoint.authority()}/v3/report`
   const invoke = action => run(`
 import json,sys,sqlite3
 from pathlib import Path
@@ -147,7 +147,7 @@ root=Path(request['root'])
 policy.COLLECTION_AVAILABLE=True
 policy.COLLECTOR_URL=request['destination']
 policy.company_policy_file=lambda:Path(request['company'])
-if request['action']=='init':result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':1})
+if request['action']=='init':result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':2})
 elif request['action']=='off':result=policy.configure(root,{'enabled':False,'expected_revision':0})
 else:
  with closing(sqlite3.connect(root/policy.DATABASE_NAME)) as db:
@@ -168,12 +168,12 @@ print(json.dumps(result))
   assert.ok(report)
   const body = [...report.body()]
   return { store, report, body, invoke, cleaned() {
-    assert.deepEqual([...report.body()], [0, 0, 0, 0]); assert.equal(report.closed, true)
+    assert.deepEqual([...report.body()], Array(25).fill(0)); assert.equal(report.closed, true)
     assert.deepEqual(invoke('inspect'), { leases: 0, attempts: 1 })
   } }
 }
 
-test('native TLS sends one fixed four-byte request without DNS or ambient credentials', async t => {
+test('native TLS sends one fixed 25-byte request without DNS or ambient credentials', async t => {
   const server = await peer(t), f = await installation(t, server.endpoint)
   const lookup = dns.lookup
   dns.lookup = () => { throw new Error('DNS must not be used') }
@@ -183,8 +183,8 @@ test('native TLS sends one fixed four-byte request without DNS or ambient creden
   assert.ok(result.encrypted_bytes_charged > 500 && result.encrypted_bytes_charged <= 32768)
   assert.equal(server.connections(), 1); assert.equal(server.requests.length, 1)
   assert.deepEqual(server.requests[0].body, f.body)
-  assert.deepEqual(server.requests[0].headers.split('\r\n'), ['POST /v1/report HTTP/1.1',
-    `Host: ${server.endpoint.authority()}`, 'Content-Type: application/octet-stream', 'Content-Length: 4', 'Connection: close'])
+  assert.deepEqual(server.requests[0].headers.split('\r\n'), ['POST /v3/report HTTP/1.1',
+    `Host: ${server.endpoint.authority()}`, 'Content-Type: application/octet-stream', 'Content-Length: 25', 'Connection: close'])
   f.cleaned()
 })
 
@@ -304,7 +304,7 @@ test('ordinary desktop recording owns a real TLS send without a manual reserve o
   assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp), true)
   await f.store.deliverySettled()
   assert.equal(server.requests.length, 1)
-  assert.equal(server.requests[0].body.length, 4)
+  assert.equal(server.requests[0].body.length, 25)
   assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 1 })
   assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.save', surface: 'desktop' }, f.stamp), true)
   await f.store.deliverySettled()

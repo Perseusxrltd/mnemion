@@ -76,15 +76,17 @@ class Endpoint:
             ):
                 return False
             authority = self.host if self.port == 443 else f"{self.host}:{self.port}"
-            return policy.COLLECTOR_URL == f"https://{authority}/v1/report"
+            return policy.COLLECTOR_URL == f"https://{authority}/v3/report"
         except (TypeError, ValueError):
             return False
 
     def headers(self) -> bytes:
         authority = self.host if self.port == 443 else f"{self.host}:{self.port}"
+        from .wire_v3 import PACKET_BYTES
+
         return (
-            f"POST /v1/report HTTP/1.1\r\nHost: {authority}\r\n"
-            "Content-Type: application/octet-stream\r\nContent-Length: 4\r\n"
+            f"POST /v3/report HTTP/1.1\r\nHost: {authority}\r\n"
+            f"Content-Type: application/octet-stream\r\nContent-Length: {PACKET_BYTES}\r\n"
             "Connection: close\r\n\r\n"
         ).encode("ascii")
 

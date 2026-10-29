@@ -1,7 +1,7 @@
 /** Origin-local review protocol binding, never an analytics payload. */
 import contract from '../../../../mnemion/product_telemetry/disclosure.json'
 import route from '../../../../mnemion/product_telemetry/transport-route.json'
-import wire from '../../../../mnemion/product_telemetry/wire-v2.json'
+import wire from '../../../../mnemion/product_telemetry/wire-v3.json'
 import catalog from '../../../../mnemion/product_telemetry/catalog.json'
 import type { TelemetryReviewAction, TelemetryReviewChoice, TelemetryStatus } from '../../../shared/product-telemetry'
 import { reviewContext } from '../../../electron/telemetry-review'

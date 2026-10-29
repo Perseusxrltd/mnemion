@@ -33,7 +33,7 @@ export function reviewContext(value: unknown): ReviewContext {
   if (!object(binding) || !keys(binding, ['disclosure_version', 'wire_version', 'catalog_version', 'destination', 'route_address']) ||
       !integer(binding.disclosure_version, 1000000) || !integer(binding.wire_version, 255) || !integer(binding.catalog_version, 1000000) ||
       typeof binding.destination !== 'string' || binding.destination.length > 512 ||
-      !/^https:\/\/[^\s/?#@]+\/v1\/report$/.test(binding.destination) ||
+      !/^https:\/\/[^\s/?#@]+\/v3\/report$/.test(binding.destination) ||
       (binding.route_address !== null && (typeof binding.route_address !== 'string' || binding.route_address.length > 45 ||
         !/^[0-9a-f:.]+$/.test(binding.route_address)))) throw invalid()
   const permitted = value.groups
@@ -54,12 +54,57 @@ export function reviewState(value: unknown): ReviewState {
   if (live) {
     const raw = value.report
     if (!object(raw) || !keys(raw, ['packet', 'stamp', 'groups', 'binding', 'lifetime']) ||
-        !Array.isArray(raw.packet) || raw.packet.length !== 4 || raw.packet.some(byte => !integer(byte, 255))) throw invalid()
+        !Array.isArray(raw.packet) || raw.packet.length !== 25 || raw.packet.some(byte => !integer(byte, 255))) throw invalid()
     const context = reviewContext({ stamp: raw.stamp, groups: raw.groups, binding: raw.binding })
     report = { ...context, packet: [...raw.packet], lifetime: reviewLifetime(raw.lifetime) }
   }
   return { version: 1, mode: value.mode as ReviewState['mode'], token: value.token as string | null,
     outcome: value.outcome as ReviewState['outcome'], report }
+}
+
+/** A valid old manual approval cannot authorize a v3 send. Consent and company policy stay put. */
+function legacyManualReport(report: unknown): boolean {
+  if (!object(report) || !keys(report, ['packet', 'stamp', 'groups', 'binding', 'lifetime']) ||
+      !Array.isArray(report.packet) || report.packet.length !== 4 || report.packet.some(byte => !integer(byte, 255)) ||
+      !object(report.stamp) || !keys(report.stamp, ['revision', 'store_generation']) ||
+      !integer(report.stamp.revision, 2147483646) || !token(report.stamp.store_generation) ||
+      !Array.isArray(report.groups) || report.groups.length < 1 || report.groups.length > 4 ||
+      new Set(report.groups).size !== report.groups.length ||
+      report.groups.some(group => typeof group !== 'string' || !groups.includes(group))) return false
+  const binding = report.binding
+  if (!object(binding) || !keys(binding, ['disclosure_version', 'wire_version', 'catalog_version', 'destination', 'route_address']) ||
+      !integer(binding.disclosure_version, 1000000) || !integer(binding.wire_version, 255) ||
+      !integer(binding.catalog_version, 1000000) || typeof binding.destination !== 'string' ||
+      binding.destination.length > 512) return false
+  if (binding.wire_version !== 2 && !binding.destination.endsWith('/v1/report')) return false
+  const route = binding.route_address
+  if (route !== null && (typeof route !== 'string' || route.length > 45 || !/^[0-9a-f:.]+$/.test(route))) return false
+  try { reviewLifetime(report.lifetime); return true } catch { return false }
+}
+
+export function salvageStaleReview(raw: unknown): ReviewState | null {
+  let value: unknown = raw
+  try {
+    if (typeof raw === 'string') {
+      if (raw.length > 4096) return null
+      value = JSON.parse(raw)
+    }
+  } catch { return null }
+  // Automatic state is never rebuilt here. A null report is already valid, and a
+  // four-byte-looking report is not permission to send.
+  if (!object(value) || !keys(value, ['version', 'mode', 'token', 'outcome', 'report']) || value.version !== 1 ||
+      value.mode !== 'review' || !['held', 'approved'].includes(value.outcome as string) || !token(value.token) ||
+      !legacyManualReport(value.report)) return null
+  return { version: 1, mode: 'review', token: value.token, outcome: 'invalidated', report: null }
+}
+
+export function loadReview(raw: unknown): ReviewState {
+  try { return parseReview(raw) }
+  catch {
+    const salvaged = salvageStaleReview(raw)
+    if (salvaged) return salvaged
+    throw invalid()
+  }
 }
 
 export function parseReview(raw: unknown): ReviewState {

@@ -27,7 +27,7 @@ def test_release_route_freezes_only_its_reviewed_authorities(route_file, certifi
         json.dumps({"version": 2, "address": "127.0.0.1", "certificate_authorities": [certificate]})
     )
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     selected = endpoint.release_endpoint()
     assert selected is not None and selected.validate()
     assert selected.certificate_authorities == (certificate,)
@@ -83,6 +83,6 @@ def test_unqualified_release_trust_is_unavailable(route_file, certificates, monk
         value["certificate_authorities"] = [certificate.replace("\n", "\u2028")]
     route_file.write_text(json.dumps(value))
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     assert endpoint.release_endpoint() is None
     assert endpoint.release_address() is None and endpoint.release_certificate_authorities() == ()

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
-import { TelemetryWire } from '../dist/telemetry-wire.js'
+import { TelemetryWireV3 } from '../dist/telemetry-wire-v3.js'
 import { TelemetryFixtureChildren, waitForTelemetryFixture } from './telemetry-fixture-children.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -24,7 +24,7 @@ from mnemion.product_telemetry import policy,aggregate,delivery,inspection
 request=json.loads(sys.stdin.readline())
 root,company=Path(request['root']),Path(request['company'])
 policy.COLLECTION_AVAILABLE=True
-policy.COLLECTOR_URL='https://example.invalid/v1/report'
+policy.COLLECTOR_URL='https://example.invalid/v3/report'
 policy.company_policy_file=lambda:company
 policy.transport_available=lambda:True
 aggregate._day=lambda:request['now']//86400000
@@ -34,14 +34,14 @@ if request.get('wait'):
  print('ready',flush=True)
  sys.stdin.readline()
 action=request['action']
-if action=='init': result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':1})
+if action=='init': result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':2})
 elif action=='off': result=policy.configure(root,{'enabled':False,'expected_revision':0})
 elif action=='on':
  state=policy.status(root)
- result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':1})
+ result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':2})
 elif action=='mode':
  state=policy.status(root)
- result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':1,'connection_mode':request['value']})
+ result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':2,'connection_mode':request['value']})
 elif action=='company':
  company.write_text(json.dumps(request['value']))
  result=True
@@ -87,7 +87,7 @@ async function fixture(t) {
   }
   const definitions = nativeTelemetryDefinitions()
   assert.equal(definitions.disclosure.collection_available, false)
-  const active = { ...definitions.disclosure, collection_available: true, destination: 'https://example.invalid/v1/report' }
+  const active = { ...definitions.disclosure, collection_available: true, destination: 'https://example.invalid/v3/report' }
   const store = new NativeTelemetryDelivery(root, active, definitions.catalog, company, () => now)
   const initial = invoke('init'), stamp = { revision: initial.revision, store_generation: initial.store_generation }
   return { root, company, store, stamp, invoke, request, definitions, active, children,
@@ -102,15 +102,17 @@ test('Python inspection holds native delivery until approval and preserves exact
   await f.fill()
   const inspected = f.invoke('inspect_report')
   assert.equal(inspected.review.outcome, 'held')
-  assert.equal(inspected.packet.body_bytes, 4)
+  assert.equal(inspected.packet.body_bytes, 25)
+  assert.equal(inspected.packet.view, 'bounded_summary')
+  assert.equal(inspected.packet.randomized_sign, null)
   assert.equal(await f.store.reserve(f.stamp, network), null)
   assert.equal(f.invoke('inspect').attempts, 0)
   await f.fill()
   assert.equal(f.invoke('inspect').pending, 1)
   assert.equal(f.invoke('approve_report').review.outcome, 'approved')
-  const prepare = TelemetryWire.prototype.prepare
+  const prepare = TelemetryWireV3.prototype.prepare
   let redraws = 0
-  TelemetryWire.prototype.prepare = function (...args) { redraws++; return prepare.apply(this, args) }
+  TelemetryWireV3.prototype.prepare = function (...args) { redraws++; return prepare.apply(this, args) }
   try {
     const report = await f.store.reserve(f.stamp, network)
     assert.ok(report)
@@ -127,7 +129,7 @@ test('Python inspection holds native delivery until approval and preserves exact
     assert.equal(state.packet, null)
     await f.store.cancel(report)
     assert.equal(await f.store.reserve(f.stamp, network), null)
-  } finally { TelemetryWire.prototype.prepare = prepare }
+  } finally { TelemetryWireV3.prototype.prepare = prepare }
 })
 
 test('a changed full review scope blocks native handoff even when the selected metric group remains allowed', async t => {
@@ -139,13 +141,11 @@ test('a changed full review scope blocks native handoff even when the selected m
   f.invoke('approve_report')
   const report = await f.store.reserve(f.stamp, network)
   assert.ok(report)
-  const wire = new TelemetryWire(JSON.parse(await readFile(new URL('../dist/telemetry-wire-v2.json', import.meta.url), 'utf8')), f.definitions.catalog)
-  const group = wire.specification.views[wire.decode(report.body()).view].group
-  f.invoke('company', { value: { schema_version: 1, enabled: true, metric_groups: [group] } })
+  f.invoke('company', { value: { schema_version: 1, enabled: true, metric_groups: ['usage'] } })
   let writes = 0
   assert.equal(await f.store.guardedWrite(report, () => { writes++; return true }), false)
   assert.equal(writes, 0)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   assert.equal(f.invoke('inspect').attempts, 1)
   assert.equal(f.invoke('inspect').has_lease, false)
 })
@@ -207,12 +207,12 @@ test('native reservation consumes one shared attempt and survives restart, cance
   await f.fill()
   const report = await f.store.reserve(f.stamp, network)
   assert.ok(report)
-  assert.equal(report.body().length, 4)
+  assert.equal(report.body().length, 25)
   assert.equal(await f.store.current(report), true)
   assert.equal(f.invoke('reserve'), false)
   assert.deepEqual([f.invoke('inspect').attempts, f.invoke('inspect').bytes, f.invoke('inspect').pending], [1, 65536, 0])
   await f.store.cancel(report)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   f.invoke('off')
   const state = f.invoke('on'), stamp = { revision: state.revision, store_generation: state.store_generation }
   const restarted = new NativeTelemetryDelivery(f.root, f.active, f.definitions.catalog, f.company, f.now)
@@ -322,11 +322,11 @@ test('Python opt-out defeats a pending native reserve and the final native write
   let calls = 0
   assert.equal(await f.store.guardedWrite(report, () => { calls++; return true }), false)
   assert.equal(calls, 0)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   assert.equal(f.invoke('inspect').has_lease, false)
 })
 
-test('only one final handoff can succeed and its private nonce never enters the four-byte body', async t => {
+test('only one final handoff can succeed and its private nonce never enters the 25-byte body', async t => {
   const f = await fixture(t)
   await f.fill()
   const report = await f.store.reserve(f.stamp, network), writes = []
@@ -336,8 +336,8 @@ test('only one final handoff can succeed and its private nonce never enters the 
   const results = await Promise.all([first, second])
   assert.equal(results.filter(Boolean).length, 1)
   assert.equal(writes.length, 1)
-  assert.equal(writes[0].length, 4)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.equal(writes[0].length, 25)
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   assert.equal(await f.store.current(report), true)
   assert.equal(f.invoke('inspect').has_lease, true)
   await f.store.cancel(report)
@@ -392,7 +392,7 @@ for (const handedOff of [false, true]) for (const abortFails of [false, true]) t
   } finally { clearTimeout(timer) }
   await running
   assert.equal(calls, 1)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   assert.equal(f.invoke('inspect').attempts, 1)
   assert.equal(f.invoke('inspect').has_lease, false)
 })
@@ -409,7 +409,7 @@ test('a stalled wall clock cannot extend a native prepared report lifetime', asy
   let calls = 0
   assert.equal(await store.guardedWrite(report, () => { calls++; return true }), false)
   assert.equal(calls, 0)
-  assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.deepEqual([...report.body()], Array(25).fill(0))
   assert.equal(f.invoke('inspect').has_lease, false)
   assert.equal(f.invoke('inspect').attempts, 1)
 })

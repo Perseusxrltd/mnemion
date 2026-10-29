@@ -29,12 +29,12 @@ export class TelemetryEndpoint {
       typeof this.address === 'string' && !this.address.includes('%') && isIP(this.address) !== 0 &&
       Number.isInteger(this.port) && this.port >= 1 && this.port <= 65535 &&
       validCertificateAuthorities(this.certificateAuthorities) &&
-      destination === `https://${this.authority()}/v1/report`
+      destination === `https://${this.authority()}/v3/report`
   }
   authority(): string { return this.port === 443 ? this.host : `${this.host}:${this.port}` }
   headers(): Buffer {
-    return Buffer.from(`POST /v1/report HTTP/1.1\r\nHost: ${this.authority()}\r\n` +
-      'Content-Type: application/octet-stream\r\nContent-Length: 4\r\nConnection: close\r\n\r\n', 'ascii')
+    return Buffer.from(`POST /v3/report HTTP/1.1\r\nHost: ${this.authority()}\r\n` +
+      'Content-Type: application/octet-stream\r\nContent-Length: 25\r\nConnection: close\r\n\r\n', 'ascii')
   }
 }
 
@@ -148,7 +148,7 @@ class Channel {
   }
 
   async capture(body: Uint8Array): Promise<void> {
-    if (!this.secure || this.stopped.signal.aborted || body.length !== 4) { body.fill(0); return }
+    if (!this.secure || this.stopped.signal.aborted || body.length !== 25) { body.fill(0); return }
     this.phase = 'capture'
     this.original = new Uint8Array(body)
     const request = Buffer.concat([this.endpoint.headers(), body])
@@ -163,7 +163,7 @@ class Channel {
   /** Only this nonblocking raw-socket handoff runs under the privacy lock. */
   handoff(body: Uint8Array): boolean {
     if (this.stopped.signal.aborted || this.phase !== 'capture' || !this.packet?.length || !this.original ||
-      body.length !== 4 || body.some((value, index) => value !== this.original![index]) ||
+      body.length !== 25 || body.some((value, index) => value !== this.original![index]) ||
       this.raw.destroyed || this.raw.writableLength !== 0 || !this.charge(this.packet.length)) return false
     this.phase = 'sent'
     // The socket owns this buffer until its callback. Uncertain writes remain

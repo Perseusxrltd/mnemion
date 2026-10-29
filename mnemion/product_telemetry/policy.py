@@ -552,7 +552,7 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
 def preview(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
     from .aggregate import preview as aggregate_preview
     from .catalog import coverage_specification, specification
-    from .wire import format_example
+    from .wire_v3 import format_example
 
     current = status(root, policy_path=policy_path)
 

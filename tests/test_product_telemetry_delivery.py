@@ -20,12 +20,12 @@ def installation(tmp_path, monkeypatch):
     root, company = tmp_path / "private", tmp_path / "company.json"
     now = [1700000000000]
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     monkeypatch.setattr(policy, "company_policy_file", lambda: company)
     monkeypatch.setattr(delivery, "_now_ms", lambda: now[0])
     monkeypatch.setattr(aggregate, "_day", lambda: now[0] // delivery.DAY_MS)
     current = policy.configure(
-        root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+        root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
     )
     budget = delivery.DeliveryBudget(root, policy_path=company)
 
@@ -93,11 +93,14 @@ def test_spending_survives_crash_restart_cancel_and_opt_out_reenable(installatio
     report = f.reserve()
     assert report is not None and f.budget.current(report)
     before = report.preview()
-    assert before["body_bytes"] == 4
+    assert before["body_bytes"] == 25
+    assert before["view"] == "bounded_summary"
+    assert before["randomized_sign"] is None
+    assert before["aggregation"] == "bounded_summary_publication_noise"
     assert f.sql("SELECT count(*) FROM pending") == [(0,)]
     assert policy.status(f.root)["delivery_budget"]["attempts_in_rolling_week"] == 1
     f.budget.cancel(report)
-    assert report.preview() is None and report._body == b"\0" * 4
+    assert report.preview() is None and report._body == b"\0" * 25
     f.budget = delivery.DeliveryBudget(f.root, policy_path=f.company)
     off = policy.configure(f.root, {"enabled": False, "expected_revision": 0})
     policy.configure(
@@ -106,7 +109,7 @@ def test_spending_survives_crash_restart_cancel_and_opt_out_reenable(installatio
             "enabled": True,
             "expected_revision": off["revision"],
             "expected_generation": off["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
         },
     )
     f.fill()
@@ -156,7 +159,7 @@ def test_clock_rollback_expiry_and_policy_changes_erase_old_report_without_refun
     report = f.reserve()
     f.now[0] -= 1
     assert not f.budget.current(report)
-    assert report._body == b"\0" * 4
+    assert report._body == b"\0" * 25
     assert f.sql("SELECT lease_token, lease_deadline_ms FROM delivery_state") == [(None, 0)]
     assert f.reserve() is None
     assert policy.status(f.root)["delivery_budget"]["state"] == "clock_rollback"
@@ -183,7 +186,7 @@ def test_company_restriction_is_checked_again_at_actual_write_boundary(installat
     )
     writes = []
     assert not f.budget.guarded_write(report, lambda packet: writes.append(packet) or True)
-    assert writes == [] and report._body == b"\0" * 4
+    assert writes == [] and report._body == b"\0" * 25
     assert f.sql("SELECT count(*) FROM delivery_attempts") == [(1,)]
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
 
@@ -194,9 +197,9 @@ def test_completed_and_throwing_handoffs_are_single_use_and_never_refunded(insta
     report = f.reserve()
     writes = []
     assert f.budget.guarded_write(report, lambda packet: writes.append(packet) or True)
-    assert len(writes) == 1 and len(writes[0]) == 4
+    assert len(writes) == 1 and len(writes[0]) == 25
     assert not f.budget.guarded_write(report, lambda packet: writes.append(packet) or True)
-    assert report._body == b"\0" * 4
+    assert report._body == b"\0" * 25
     assert f.budget.current(report)
     f.budget.cancel(report)
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
@@ -259,7 +262,7 @@ print(json.dumps({'enabled':result['user_enabled'],'pending':result['pending_rec
         assert calls == [1]
 
     asyncio.run(run())
-    assert report.preview() is None and report._body == b"\0" * 4
+    assert report.preview() is None and report._body == b"\0" * 25
     assert f.sql("SELECT count(*) FROM delivery_attempts") == [(1,)]
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
 
@@ -283,7 +286,7 @@ def test_concurrent_handoffs_do_not_repeat_or_cancel_the_winning_request(install
         assert sorted(task.result(timeout=10) for task in tasks) == [False, True]
     assert len(writes) == 1
     assert f.budget.current(report)
-    assert report._body == b"\0" * 4
+    assert report._body == b"\0" * 25
     f.budget.cancel(report)
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
 
@@ -341,7 +344,7 @@ def test_v4_upgrade_preserves_spending_and_connection_change_cancels_lease(insta
             "enabled": True,
             "expected_revision": before["revision"],
             "expected_generation": before["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
             "connection_mode": "metered",
         },
     )
@@ -362,7 +365,7 @@ def test_unmetered_declaration_only_resolves_unknown_and_cannot_override_restric
             "enabled": True,
             "expected_revision": f.initial["revision"],
             "expected_generation": f.initial["store_generation"],
-            "disclosure_version": 1,
+            "disclosure_version": policy.DISCLOSURE_VERSION,
             "connection_mode": "unmetered",
         },
     )
@@ -410,7 +413,7 @@ def test_old_generation_cannot_send_or_cancel_a_new_store_reservation(installati
     old = f.reserve()
     (f.root / policy.DATABASE_NAME).unlink()
     new = policy.configure(
-        f.root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
+        f.root, {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION}
     )
     assert old.generation != new["store_generation"]
     f.fill()
@@ -430,6 +433,6 @@ def test_stalled_wall_clock_cannot_extend_a_prepared_report_lifetime(installatio
     elapsed[0] += 5.001
     writes = []
     assert not f.budget.guarded_write(report, lambda packet: writes.append(packet) or True)
-    assert writes == [] and report._body == b"\0" * 4
+    assert writes == [] and report._body == b"\0" * 25
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
     assert f.sql("SELECT count(*) FROM delivery_attempts") == [(1,)]

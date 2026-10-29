@@ -4,7 +4,7 @@
 defaults to enabled. `collection_available` and `effective_enabled` stay false,
 the destination and release route stay null, and no disclosure acknowledgement
 is accepted while collection is unavailable. Published 4.46.54 uses disclosure
-version 1. The pending source transition uses disclosure version 2 and the
+version 1. The current source uses disclosure version 2 and the
 [wire v3 contract](../../mnemion/product_telemetry/wire-v3.json). See
 [release status](../RELEASE_STATUS.md) and the
 [v3 reference](../implementation/anonymous-product-telemetry-v3.md).
@@ -108,8 +108,8 @@ No actual outgoing packet is inspected.
 
 Published 4.46.13 shows the wire v1 example `AQAHAA==` (`01 00 07 00`). Wire v2
 source shows `AgAHAA==` (`02 00 07 00`). Those four-byte strings are examples of
-those older contracts. The pending wire v3 example is a different fixed
-synthetic packet of 25 bytes, taken from the
+those older contracts. The current source uses a fixed synthetic wire v3 packet of 25 bytes,
+taken from the
 [wire v3 contract](../../mnemion/product_telemetry/wire-v3.json). Do not reuse
 `AQAHAA==` or `AgAHAA==` as that body. An installed 4.46.54 preview is not a
 qualified v3 example. Expand **Workflow coverage and exclusions**
@@ -235,8 +235,8 @@ approve or send a report.
 
 A later [compiled Linux source-app journey](../validation/2026-10-26-telemetry-app-review.md)
 passed nine checks covering staging, repeat inspection, native opt-out,
-re-enable, discard, approval and restart. One accepted four-byte TLS report
-matched the inspected body, and manual mode, opt-out and spent allowance
+re-enable, discard, approval and restart. That journey accepted one v2 four-byte
+TLS report matching the inspected body. Manual mode, opt-out and spent allowance
 persisted. This uses isolated source-app fixtures; actual web-browser delivery,
 six installed targets, provider privacy and resource acceptance remain open.
 
@@ -249,7 +249,7 @@ fields. It consumes the current pending snapshot and does not spend delivery
 allowance. Inspecting the held report again preserves its bytes and original
 expiry: at most 15 minutes, possibly less if the observations expire sooner.
 
-Under the pending [wire v3 contract](../../mnemion/product_telemetry/wire-v3.json),
+Under the [wire v3 contract](../../mnemion/product_telemetry/wire-v3.json),
 that body is 25 bytes. It carries 19 bounded metrics and one secure per-report
 marginal: either the full release coordinate or one coarse operating system
 (`windows`, `macos`, `linux` or `other`). A policy-disabled category is
@@ -331,12 +331,11 @@ counts and reserved-byte totals, without exact attempt times or private lease
 tokens. These are local reservations, not measured traffic or successful uploads.
 The budget state `ready` does not enable collection.
 `preview` returns `outbound_state: "not_inspected"`, `outbound_body: null` and
-`outbound_bytes: 0`, plus `illustrative_packet` with `kind: "synthetic_example"`
-and `body_encoding: "base64"`. Published 4.46.13 retains the wire v1 example
-above, `AQAHAA==`, with `body_bytes: 4`. Wire v2 source uses
-`body_base64: "AgAHAA=="` and `body_bytes: 4`. The pending wire v3 illustrative
-packet is a different 25-byte `synthetic_example` from the
-[wire v3 contract](../../mnemion/product_telemetry/wire-v3.json).
+`outbound_bytes: 0`, plus `illustrative_packet` with `kind: "synthetic_example"`,
+`body_encoding: "base64"`, `body_bytes: 25`, `view: "bounded_summary"`, and
+`aggregation: "bounded_summary_publication_noise"`. `randomized_sign` is null.
+Counts in the example are not unique people. Published 4.46.13 retains its
+wire v1 four-byte example above; that example is not the current source packet.
 These example bytes do not identify the next outgoing packet. The null/zero
 actual-body fields are not a traffic counter or proof that another owner has
 no active attempt. The catalog is included; `local_aggregates` stays empty while
@@ -524,10 +523,9 @@ The compatibility change keeps existing saved counts and contribution limits
 under their original meanings. A valid browser v1 queue is read without an
 upgrade write and becomes v2 on its next collection write; new category
 coordinates cannot be disguised as v1 data. Older closed aggregate reports retain their
-original labels. That checkpoint does not enable collection, and it does not
-change the wire v2 four-byte packet it was measured against. The pending
-[wire v3 contract](../../mnemion/product_telemetry/wire-v3.json) is a separate
-transition. It is not active collection.
+original labels. These changes do not enable collection. The current source
+packet is a 25-byte bounded summary, and production collection, destination,
+and route address remain unavailable.
 
 To suppress optional telemetry for one invocation, put `--no-telemetry` before
 the command, for example `mnemion --no-telemetry search "query"`. This does not

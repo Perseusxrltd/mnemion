@@ -14,7 +14,14 @@ import sqlite3
 import time
 
 from . import aggregate, policy, review, review_storage
-from .wire import WireError, decode, prepare, view
+from .wire import WireError
+from .wire_v3 import (
+    WireV3Error,
+    groups_remain_permitted,
+    packet_matches_groups,
+    prepare as prepare_summary,
+    preview as preview_summary,
+)
 
 DAY_MS = 86400000
 WEEK_MS = 7 * DAY_MS
@@ -24,7 +31,41 @@ RESERVED_BYTES = 65536
 DAILY_BYTES = 256 * 1024
 DEADLINE_MS = 5000
 JITTER_MS = 3600000
-_FAILURES = (OSError, sqlite3.Error, policy.PolicyError, WireError, ValueError, OverflowError)
+_FAILURES = (
+    OSError,
+    sqlite3.Error,
+    policy.PolicyError,
+    WireError,
+    WireV3Error,
+    ValueError,
+    OverflowError,
+)
+
+
+def _v3_axes(cohorts):
+    """Release coordinate and coarse OS from the existing providers."""
+    from .cohorts import reviewed_operating_system, reviewed_release_coordinate
+
+    release = reviewed_release_coordinate()
+    system = None
+    if isinstance(cohorts, dict):
+        platform = cohorts.get("platform")
+        if platform in ("windows", "macos", "linux", "other"):
+            system = platform
+    if system is None:
+        system = reviewed_operating_system()
+    return release, system
+
+
+def _usable_rows(rows, groups):
+    from .catalog import describe
+
+    allowed = set(groups)
+    usable = []
+    for cell, count in rows:
+        if describe(cell)["group"] in allowed:
+            usable.append((cell, count))
+    return usable
 
 
 def _now_ms() -> int:
@@ -128,7 +169,7 @@ class PreparedReport:
         "_monotonic_deadline",
         "_used",
         "_closed",
-        "_group",
+        "_groups",
         "_claim_lock",
         "_claimed",
         "_transport_claimed",
@@ -136,7 +177,7 @@ class PreparedReport:
     )
 
     def __init__(
-        self, body, token, revision, generation, deadline, monotonic_deadline, review_report=None
+        self, body, token, revision, generation, deadline, monotonic_deadline, groups, review_report=None
     ):
         self._body = bytearray(body)
         self._token = token
@@ -144,7 +185,7 @@ class PreparedReport:
         self._monotonic_deadline = monotonic_deadline
         self._used = False
         self._closed = False
-        self._group = view(decode(body)[0])["group"]
+        self._groups = tuple(groups)
         from threading import Lock
 
         self._claim_lock = Lock()
@@ -181,11 +222,9 @@ class PreparedReport:
         self._review = None
 
     def preview(self):
-        from .wire import preview
-
         if self._used:
             return None
-        return preview(bytes(self._body))
+        return preview_summary(bytes(self._body), reviewed=self._review is not None)
 
 
 class DeliveryBudget:
@@ -315,6 +354,7 @@ class DeliveryBudget:
                     return None
                 inspection = review_storage.read(connection)
                 review_report = None
+                groups = tuple(company["metric_groups"])
                 if inspection["mode"] == "review":
                     from .inspection import checked
 
@@ -324,7 +364,10 @@ class DeliveryBudget:
                         connection.commit()
                         return None
                     review_report = inspection["report"]
+                    groups = tuple(review_report["groups"])
                     body = bytes(review_report["packet"])
+                    if not packet_matches_groups(body, groups):
+                        return None
                 else:
                     aggregate._prune(connection, now // DAY_MS, company["metric_groups"])
                     rows = connection.execute(
@@ -332,8 +375,19 @@ class DeliveryBudget:
                     ).fetchall()
                     if not rows:
                         return None
+                    release, operating_system = _v3_axes(cohorts)
+                    usable = _usable_rows(rows, groups)
+                    if release is None or operating_system is None or not usable:
+                        return None
                     # Automatic mode prepares exactly once before spending.
-                    body = prepare(rows, groups=company["metric_groups"], cohorts=cohorts)
+                    body = prepare_summary(
+                        usable,
+                        groups=groups,
+                        release=release,
+                        operating_system=operating_system,
+                    )
+                    if not packet_matches_groups(body, groups):
+                        return None
                 token = secrets.token_hex(16)
                 jitter = secrets.randbelow(JITTER_MS + 1)
                 if not _integer(jitter, JITTER_MS):
@@ -371,6 +425,7 @@ class DeliveryBudget:
                 expected_generation,
                 now + DEADLINE_MS,
                 started + DEADLINE_MS / 1000,
+                groups,
                 review_report,
             )
         except _FAILURES:
@@ -396,7 +451,7 @@ class DeliveryBudget:
             and state[0] <= now < state[3]
             and state[3] == report.deadline_ms
             and state[2] == report._token
-            and report._group in company["metric_groups"]
+            and groups_remain_permitted(report._groups, company["metric_groups"])
             and preference["connection_mode"] != "metered"
             and (self.environment is None or self._admitted(preference, self._observed()))
             and aggregate._permitted(preference, company, report.revision, report.generation)

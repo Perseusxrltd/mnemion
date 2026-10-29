@@ -69,10 +69,10 @@ export type TelemetryWirePreview = {
   randomized_sign: number | null
   protected_unit: string
   report_selection: 'automatic' | 'reviewed'
-  aggregation: 'automatic_categorical_estimates' | 'coarse_global_volume_only'
+  aggregation: 'automatic_categorical_estimates' | 'coarse_global_volume_only' | 'bounded_summary_publication_noise'
   randomization_privacy_loss: 'ln(3)' | null
   per_report_privacy_loss: 'ln(3)' | null
-  privacy_bound_scope: 'packet_independent_inclusion' | 'fixed_body_for_permitted_groups'
+  privacy_bound_scope: 'packet_independent_inclusion' | 'fixed_body_for_permitted_groups' | 'publication_closed_week'
   participation_or_lifetime_guarantee: false
 }
 export type TelemetryFormatExample = TelemetryWirePreview & {

@@ -1,7 +1,7 @@
 /** Origin-local spending metadata. Never a request body or analytics identity. */
 import type { TelemetryStatus } from '../../../shared/product-telemetry'
 import { browserTransportAvailable } from './telemetry-capability'
-import { freshReview, reviewState, type ReviewState } from '../../../electron/telemetry-review'
+import { freshReview, reviewState, salvageStaleReview, type ReviewState } from '../../../electron/telemetry-review'
 export const choiceKey = 'mnemion.product-telemetry.choice.v1'
 export const queueKey = 'mnemion.product-telemetry.pending.v1'
 export const budgetKey = 'mnemion.product-telemetry.budget.v1'
@@ -47,7 +47,17 @@ export function budgetState(raw: string, allowLegacy = false): BrowserBudget {
     if (Math.max(...at) !== value.clock_ms || value.next_ms < value.clock_ms + DAY ||
         value.next_ms > value.clock_ms + DAY + JITTER) throw failure()
   } else if (value.clock_ms !== 0 || value.next_ms !== 0 || lease !== null) throw failure()
-  return { ...value, version: 2, review: legacy ? freshReview() : reviewState(value.review) } as BrowserBudget
+  let review: ReviewState
+  if (legacy) review = freshReview()
+  else {
+    try { review = reviewState(value.review) }
+    catch {
+      const salvaged = salvageStaleReview(value.review)
+      if (!salvaged) throw failure()
+      review = salvaged
+    }
+  }
+  return { ...value, version: 2, review } as BrowserBudget
 }
 
 export function serializeBudget(value: BrowserBudget): string {
