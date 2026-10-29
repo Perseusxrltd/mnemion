@@ -108,6 +108,18 @@ adoption. Linked reports compose the conditional category bound at most as
 initial-adoption utility and aggregate privacy/attack evidence remain required;
 no threshold, resource budget or acceptance state changed.
 
+## Joint-category consistency — 29 October follow-up
+
+The [joint-consistency correction](2026-10-29-telemetry-joint-consistency.md)
+withholds a view when its unrounded category intervals cannot contain
+probabilities summing to one. Publication rejects impossible visible intervals
+while treating withheld cells as unknown `[0, 1]`, without reconstructing them.
+All **75 selected tests** passed with zero skips, and Ruff check/format passed;
+the **three original assertion failures** remain retained. Valid historical
+schemas, immutable reports, wiping, `ln(3)` and existing wire/count parameters
+remain unchanged. Sender authentication, general poisoning resistance and full
+population utility remain unqualified; no requirement or acceptance state changes.
+
 ## Receive-window finding and scoped correction
 
 The [Python burst follow-up](2026-10-27-telemetry-receive-window.md) retained an

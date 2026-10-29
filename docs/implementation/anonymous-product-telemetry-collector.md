@@ -85,6 +85,14 @@ passed **67 tests in 17.87 seconds**, including report compatibility and the
 actual TLS minimal runtime; it does not qualify production deployment or
 installed collection.
 
+The [29 October joint-consistency correction](../validation/2026-10-29-telemetry-joint-consistency.md)
+withholds a view if its unrounded category intervals cannot contain probabilities
+summing to one. The publisher rejects impossible visible intervals while leaving
+withheld cells unknown, without reconstructing them. Valid historical reports,
+immutable storage and wiping remain unchanged. This is a consistency check;
+sender authentication, broader poisoning resistance and population utility
+remain unqualified.
+
 The [catalog compatibility follow-up](../validation/2026-10-27-telemetry-catalog-compatibility.md)
 adds the two appended feature labels to new schema-v4 reports. Existing schema
 v1/v2/v3 reports keep their original labels and bytes; they are readable without

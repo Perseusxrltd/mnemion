@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.49**.
+Reviewed source distribution: **4.46.50**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-29**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,15 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**29 October 2026, consistent telemetry category reports:**
+The [4.46.50 source](releases/4.46.50.md) withholds category estimates when their
+confidence intervals cannot contain a distribution totaling 100%. The
+[78 focused checks](validation/2026-10-29-telemetry-joint-consistency.md) cover
+both impossible-total failures, publisher validation, privacy and historical
+report compatibility. Withheld values remain unknown. This is a reporting
+correction; sender authenticity, full utility and V08 acceptance remain open.
+All 66 requirement states remain unchanged, with production collection disabled.
 
 **29 October 2026, actionable search retry hints and installer size limit:**
 The [4.46.48 source](releases/4.46.48.md) corrects SDK/MCP retry hints for changed

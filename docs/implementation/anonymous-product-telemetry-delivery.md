@@ -1,6 +1,6 @@
 # Product telemetry delivery components — V08
 
-**Building/source implementation; current checkpoint 28 October 2026.** The
+**Building/source implementation; current checkpoint 29 October 2026.** The
 [full contract](anonymous-product-telemetry.md) and
 [local catalog/ownership](anonymous-product-telemetry-catalog.md) retain their
 scope. Python/TypeScript packet encoders, a volatile weekly accumulator, an
@@ -405,7 +405,13 @@ uses power-of-two count ranges such as `[4096, 8192)`. All views may remain
 `insufficient_reports` in a document that contains a global volume range.
 A rare/noisy cell whose confidence interval includes zero is
 `insufficient_precision`, with no
-published point estimate or residual. Inconsistent estimates suppress the view.
+published point estimate or residual. The
+[joint-consistency correction](../validation/2026-10-29-telemetry-joint-consistency.md)
+also suppresses a view when its unrounded category intervals, taken together,
+cannot contain probabilities summing to one. The publisher checks visible
+intervals with withheld cells treated as unknown `[0, 1]`; it never reconstructs
+their values. Count buckets, valid historical reports and wiping are preserved.
+This check does not authenticate senders or establish general poisoning resistance.
 Published fractions describe categories sampled from received automatic reports,
 not unique users, all activity or total global feature usage. Reviewed reports
 cannot satisfy a detailed threshold or narrow an interval, and no separate

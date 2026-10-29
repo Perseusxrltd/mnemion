@@ -81,9 +81,21 @@ state remains valid for its own observation time.
 The original snapshot unit nevertheless **failed at its 45-minute timeout after
 delivery**. The original driver was stopped for inspection. No migration or
 backup capture was replayed. Reconciliation retains the timeout and
-`full_guarded_upgrade_acceptance: false`; local cache-housekeeping correction
-and full guarded acceptance remain pending. Delivery confirmation does not
+`full_guarded_upgrade_acceptance: false`. Full guarded acceptance remains
+pending. Delivery confirmation does not
 erase this failure or qualify recovery.
+
+Maintenance was installed at **03:06:04 UTC** after active backup work drained;
+ledger, snapshot and cache-maintenance timers were restored, and the installed
+helper readback matched. The first hourly cleanup unit exited 0 at **03:07:58**
+while ledger capture was busy, but `last-cache-maintenance.json` was absent at
+the **03:11:29** check. This does not qualify successful real garbage collection.
+The new scheduled ledger capture succeeded at **03:08:40**, with remote delivery
+verified at **03:15:59**. A separate manager receipt binds the original
+**03:06:06 → 03:16:30** ledger lifecycle to `JOB_RESULT=done`; the later invocation
+is distinct. That job consumed **31.012 CPU seconds over about 10 minutes
+24 seconds**, with **700 MiB peak memory**. Performance, full cache maintenance
+and guarded acceptance remain open; original capture/cleanup failures are retained.
 
 The field probes made no memory writes or configuration changes. The original
 requirements, feature scope and **V08 Building** state are unchanged; product
@@ -92,9 +104,9 @@ addresses, credentials or private identifiers are published here.
 
 ## Retained evidence
 
-Field receipt names are relative to the retained observation bundle; the last
-two rows identify the separate backup receipts. SHA-256 values bind the exact
-records, including failed and inconclusive observations.
+Field receipt names are relative to the retained observation bundle; delivery
+and maintenance rows identify the separate backup receipts. SHA-256 values bind
+the exact records, including failed and inconclusive observations.
 
 | Receipt | SHA-256 |
 | --- | --- |
@@ -112,3 +124,8 @@ records, including failed and inconclusive observations.
 | `source-lease-followup.json` | `73c41cae909bacea0442186d847524197e4ea899b5f3dec90ca899d44aa3d6ce` |
 | `post-upgrade-delivery.json` | `b46936b74575fcd787e69fe8a791364b099d3bbbe8b6b039211f493f31be0eac` |
 | `delivery-reconciliation.json` | `2235a957ebd93edcca3a92c0ddbb0d10c19de325e58fd808f8af03ac5521deea` |
+| `handover-outcome.json` | `4209502b2cb3a6484b6df09825dd83e47bb30fbaca50a15cfce7fc82711e4c33` |
+| `post-install-backups.json` | `149cd9bf78ac45c49f4aec1e27d0f21ab15ce468f78461f53bb3d5db59a10199` |
+| `maintenance-status-0311.json` | `7e2566a720d9acf677440e8e865b1d1217ae6bd2d38ed1bd7a55f3c9d8c0f303` |
+| `post-install-backups-0317.json` | `9d714872b73ab2b4f45e2a619ce65d55204f12b82954767e80f44624184cad27` |
+| `post-install-ledger-lifecycle.json` | `3675bbf6a1e3b78f3311e23e2df41a72280b7e3f4a64297d046e674c2d04b87b` |
