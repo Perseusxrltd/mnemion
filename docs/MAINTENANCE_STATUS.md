@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T01:39:59+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T01:51:55+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.46](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.46). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,27 +18,36 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40789233444](https://github.com/Perseusxrltd/mnemion/actions/runs/40789233444) |
-| public-updates\.yml | v4\.46\.46 | in\_progress | [Run 40801713765](https://github.com/Perseusxrltd/mnemion/actions/runs/40801713765) |
+| ci\.yml | main | queued | [Run 40802929823](https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823) |
+| public-updates\.yml | v4\.46\.46 | success | [Run 40801713765](https://github.com/Perseusxrltd/mnemion/actions/runs/40801713765) |
 | release\.yml | release/4\.46\.46-r2 | success | [Run 40793646583](https://github.com/Perseusxrltd/mnemion/actions/runs/40793646583) |
 | release\.yml | release/4\.46\.47 | in\_progress | [Run 40801649181](https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181) |
 | verify-artifacts\.yml | main | success | [Run 40801321439](https://github.com/Perseusxrltd/mnemion/actions/runs/40801321439) |
-| website-release\.yml | main | success | [Run 40789233473](https://github.com/Perseusxrltd/mnemion/actions/runs/40789233473) |
+| website-release\.yml | main | success | [Run 40802930121](https://github.com/Perseusxrltd/mnemion/actions/runs/40802930121) |
 | website-release\.yml | v4\.46\.46 | success | [Run 40801711006](https://github.com/Perseusxrltd/mnemion/actions/runs/40801711006) |
 
 ## Active jobs
 
-[Run 40801713765](https://github.com/Perseusxrltd/mnemion/actions/runs/40801713765): 1/7 jobs completed; 1 succeeded.
+[Run 40802929823](https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823): 1/12 jobs completed; 1 succeeded.
 
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- windows / arm64 public upgrade: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
+- lint: in\_progress — Run uv sync --locked --group dev.
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.12\): in\_progress — Initialize containers.
+- dependency-audit: in\_progress — Run python -m pip install uv==0\.12\.24.
+- supervision \(macos-26\): in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- legacy: in\_progress — Set up job.
+- supervision \(macos-15-intel\): in\_progress — Set up job.
+- service \(3\.14\): in\_progress — Initialize containers.
+- service \(3\.13\): in\_progress — Initialize containers.
+- container \(ubuntu-22\.04-arm\): in\_progress.
 
-[Run 40801649181](https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181): 6/8 jobs completed; 5 succeeded.
+[Run 40801649181](https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181): 15/21 jobs completed; 14 succeeded.
 
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- native / native\_database / Private state / Windows / arm64: in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / ubuntu-22\.04 / x64: in\_progress — Linux desktop libraries.
+- native / macos-26 / arm64: in\_progress — Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
+- native / windows-2022 / x64: in\_progress — Run python -m pip install uv==0\.12\.24.
+- native / windows-11-arm / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Linux desktop libraries.
+- native / macos-15-intel / x64: in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
 

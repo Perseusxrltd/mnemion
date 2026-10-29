@@ -32,53 +32,69 @@
   ],
   "runs": [
     {
-      "id": 40789233444,
+      "id": 40802929823,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "21a2f377d3bf28585a8ba4ea8f0483798a639252",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-29T00:12:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40789233444"
-    },
-    {
-      "id": 40801713765,
-      "attempt": 1,
-      "workflow": "public-updates.yml",
-      "branch": "v4.46.46",
-      "source_commit": "21a2f377d3bf28585a8ba4ea8f0483798a639252",
-      "status": "in_progress",
+      "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-29T01:39:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801713765",
+      "updated_at": "2026-10-29T01:51:47Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 7,
+        "total": 12,
         "completed": 1,
         "succeeded": 1,
         "active": [
           {
-            "id": 123211185907,
-            "name": "macos / x64 public upgrade",
+            "id": 123215016274,
+            "name": "lint",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Install public release and observe its automatic update"
+              "Run uv sync --locked --group dev"
             ]
           },
           {
-            "id": 123211185911,
-            "name": "windows / x64 public upgrade",
+            "id": 123215016322,
+            "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Run python deploy/bundle_studio.py"
             ]
           },
           {
-            "id": 123211185916,
-            "name": "windows / arm64 public upgrade",
+            "id": 123215072955,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 123215072959,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 123215072964,
+            "name": "dependency-audit",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 123215072985,
+            "name": "supervision (macos-26)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -86,35 +102,62 @@
             ]
           },
           {
-            "id": 123211185926,
-            "name": "linux / arm64 public upgrade",
+            "id": 123215073046,
+            "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Set up job"
             ]
           },
           {
-            "id": 123211185944,
-            "name": "macos / arm64 public upgrade",
+            "id": 123215073053,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Install public release and observe its automatic update"
+              "Set up job"
             ]
           },
           {
-            "id": 123211185970,
-            "name": "linux / x64 public upgrade",
+            "id": 123215073072,
+            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Initialize containers"
             ]
+          },
+          {
+            "id": 123215073083,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 123215073162,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
           }
         ]
       },
       "failed_jobs": []
+    },
+    {
+      "id": 40801713765,
+      "attempt": 1,
+      "workflow": "public-updates.yml",
+      "branch": "v4.46.46",
+      "source_commit": "21a2f377d3bf28585a8ba4ea8f0483798a639252",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T01:51:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801713765"
     },
     {
       "id": 40793646583,
@@ -135,30 +178,66 @@
       "source_commit": "1278c1a8cf3946eab290185e9669734bc0e707f1",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T01:39:14Z",
+      "updated_at": "2026-10-29T01:51:39Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 8,
-        "completed": 6,
-        "succeeded": 5,
+        "total": 21,
+        "completed": 15,
+        "succeeded": 14,
         "active": [
           {
-            "id": 123211056370,
-            "name": "native / Encrypted files / Windows / arm64",
+            "id": 123215004876,
+            "name": "native / ubuntu-22.04 / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+              "Linux desktop libraries"
             ]
           },
           {
-            "id": 123211056735,
-            "name": "native / native_database / Private state / Windows / arm64",
+            "id": 123215004882,
+            "name": "native / macos-26 / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+            ]
+          },
+          {
+            "id": 123215004890,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 123215004892,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          },
+          {
+            "id": 123215004897,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 123215004954,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
             ]
           }
         ]
@@ -177,15 +256,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801321439"
     },
     {
-      "id": 40789233473,
+      "id": 40802930121,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "21a2f377d3bf28585a8ba4ea8f0483798a639252",
+      "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-28T23:43:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40789233473"
+      "updated_at": "2026-10-29T01:51:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40802930121"
     },
     {
       "id": 40801711006,
@@ -199,5 +278,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801711006"
     }
   ],
-  "observed_at": "2026-10-29T01:39:59+00:00"
+  "observed_at": "2026-10-29T01:51:55+00:00"
 }
