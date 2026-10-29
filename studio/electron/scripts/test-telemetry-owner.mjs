@@ -1,6 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { TelemetryActivity } from '../dist/telemetry-owner.js'
+import { reviewedDesktopCohorts } from '../dist/telemetry-cohorts.js'
+
+test('the compiled desktop cohort helper imports on the Node ESM path', () => {
+  const cohorts = reviewedDesktopCohorts()
+  assert.equal(cohorts.release_family, '4')
+  assert.ok(['windows', 'macos', 'linux', 'other'].includes(cohorts.platform))
+  assert.ok(['x64', 'arm64', 'other'].includes(cohorts.architecture))
+})
 
 const stamp = { revision: 1, store_generation: 'a'.repeat(32) }
 

@@ -642,3 +642,50 @@ def test_publication_failure_is_observable_and_is_not_resealed(tmp_path):
     document = json.loads(render(store.reports(), "json", store.publication_failures()))
     assert document["summary"]["publication_failures"] == [notice]
     assert "denominator" not in document["summary"]["publication_failures"][0]
+
+
+def test_report_metadata_rejects_free_form_labels():
+    sealed = validate(AggregateWindow(2900).seal(stop))
+    for field in ("report_unit", "weighting"):
+        broken = json.loads(json.dumps(sealed))
+        broken[field] = "unexpected_free_form_label"
+        with pytest.raises(WireV3Error):
+            validate(broken)
+
+
+def test_publication_failures_stay_inside_eight_closed_windows(tmp_path):
+    clock = {"now": stamp(2900)}
+    store = ReportStore(tmp_path, clock=lambda: clock["now"])
+    for week in range(2900, 2909):
+        with pytest.raises(WireV3Error):
+            store.record_publication_failure(week)
+    assert store.publication_failures() == []
+    assert store.reports() == []
+    calls = {"n": 0}
+
+    def random_below(limit: int) -> int:
+        calls["n"] += 1
+        return limit - 1
+
+    app = CollectorV3(store, clock=lambda: clock["now"], random_below=random_below)
+    for week in range(2900, 2912):
+        clock["now"] = stamp(week + 1)
+        app._record_failure(week)
+    retained = list(range(2904, 2912))
+    assert [item["window_week"] for item in app.publication_failures] == retained
+    assert [item["window_week"] for item in store.publication_failures()] == retained
+    app._record_failure(2911)
+    store.record_publication_failure(2911)
+    assert [item["window_week"] for item in store.publication_failures()] == retained
+    assert len(app.publication_failures) == 8
+    clock["now"] = stamp(2912)
+    app._record_failure(2912)
+    assert [item["window_week"] for item in app.publication_failures] == retained
+    clock["now"] = stamp(2920)
+    assert app.publication_failures == []
+    assert store.publication_failures() == []
+    assert store.reports() == []
+    assert calls["n"] == 0
+    raw = (tmp_path / "reports-v3.sqlite3").read_bytes()
+    assert b"4.46.53" not in raw
+    assert b"packet" not in raw

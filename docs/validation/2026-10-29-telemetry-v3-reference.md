@@ -63,3 +63,16 @@ removing one input report from the published vector, including admission and
 clipping. Admission does not evict a different report, so that change stays
 inside L1 20. It is not a promise about the collector, the network, or a
 person who sends several reports.
+
+## Integration follow-up
+
+Astra accepted the five mechanism corrections in direction. Pinned Python, same file:
+
+```text
+python -m pytest tests/test_product_telemetry_v3.py -q --tb=short
+18 passed in 14.79s
+```
+
+The two new checks reject `unexpected_free_form_label` on `report_unit` and `weighting`, reject nine current or future failure weeks before insertion, and keep twelve successive closed-week failure notices inside the eight-week window. Repeating a valid week does not add a row. The clock advance drops notices that leave the window. That run drew no publication noise and stored no report body.
+
+The desktop cohort helper no longer imports `package.json` as an ESM JSON module. Node 22.22.0 rejected the compiled import with `ERR_IMPORT_ATTRIBUTE_MISSING`, and this electron tsconfig emits the import without a `type` attribute. The helper reads the manifest beside `dist/` with `readFileSync`, the same shape already emitted for the other desktop JSON files. `scripts/test-telemetry-owner.mjs` imports `dist/telemetry-cohorts.js` and checks the release family. This Windows session did not install Node dependencies and did not run that compiled test. Astra's earlier Electron type-check and six browser activity checks are unchanged by this Python run. Collection stays off. V08 is not complete.

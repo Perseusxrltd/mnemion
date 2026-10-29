@@ -129,9 +129,9 @@ class ReportStore:
 
     def record_publication_failure(self, week: int) -> None:
         """Remember that a sealed week was not stored. No report body, cohort, or count."""
-        if type(week) is not int or not 0 <= week <= 1000000:
-            raise WireV3Error
         current = reporting_week(self._clock())
+        if type(week) is not int or not current - RETAINED <= week < current:
+            raise WireV3Error
         with closing(self._open()) as database:
             database.execute("BEGIN IMMEDIATE")
             database.execute("DELETE FROM publication_failures WHERE week < ?", (current - RETAINED,))
