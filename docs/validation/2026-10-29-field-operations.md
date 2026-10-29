@@ -97,6 +97,20 @@ is distinct. That job consumed **31.012 CPU seconds over about 10 minutes
 24 seconds**, with **700 MiB peak memory**. Performance, full cache maintenance
 and guarded acceptance remain open; original capture/cleanup failures are retained.
 
+The later [scheduled-delivery gate report](2026-10-29-backup-pack-index-repair.md)
+records successful captures followed by a **03:42:06 UTC** Git publication
+failure from stale pack-index references. The guarded upgrade stopped before
+actions and the observed host remained 4.46.44. After four local Git cases,
+production index repair preserved refs and deleted no packs or backup archives;
+publication still exited 1. All three timers were restored active. The follow-up
+guard stopped at **04:09:01** with no actions or additional captures requested.
+Ownership repair then completed at **04:21:38** with archive inventory preserved
+and no memory-service restart. The corrected uploader was installed at
+**04:24:13** after eight real Git cases and three cleanup cases passed; its first
+fixture failure is retained. A fresh-backup OS unit now owns the timer pause and
+`ExecStopPost` restoration. New delivery, performance and the guarded upgrade
+remain pending; the observing guard has requested no migration actions.
+
 The field probes made no memory writes or configuration changes. The original
 requirements, feature scope and **V08 Building** state are unchanged; product
 telemetry collection remains unavailable. No private contents, names, host

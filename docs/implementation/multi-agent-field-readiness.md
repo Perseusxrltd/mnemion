@@ -123,6 +123,16 @@ migration or capture. Cleanup correction and full guarded-upgrade acceptance
 remain open with [issue 44](https://github.com/Perseusxrltd/mnemion/issues/44);
 the linked field report retains both delivery evidence and the original failure.
 
+The [later scheduled-delivery gate](../validation/2026-10-29-backup-pack-index-repair.md)
+held the shared host at 4.46.44 after Git pack-index damage prevented publication.
+Index repair now passed in production with refs and archives preserved, but
+publication exited 1. The follow-up guard stopped at 04:09:01 UTC without
+requesting an upgrade action or extra capture. Ownership repair completed at
+04:21:38; the corrected uploader was installed at 04:24:13. The fresh-backup
+OS unit owns the current timer pause and restores timers through `ExecStopPost`.
+Its observing guard has requested no migration action. Fresh delivery,
+performance, migration 036 and installed vault-auditor acceptance remain pending.
+
 V08 telemetry stays **Building**. Its full resource, wire, provider/privacy and
 platform/release acceptance remains required before enabling collection or
 sending its completion notification. Collection remains unavailable.
