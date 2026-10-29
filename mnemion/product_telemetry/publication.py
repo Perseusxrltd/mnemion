@@ -18,7 +18,7 @@ import time
 from mnemion.private_input import check_private_path
 from mnemion.private_output import private_output
 
-from .reporting import reporting_week
+from .reporting import compatible_category_intervals, reporting_week
 from .wire import VIEWS, WIRE, WireError
 
 MAX_REPORT_BYTES = 65536
@@ -125,6 +125,7 @@ def validate(result: object) -> dict:
         )
         if type(estimates) is not list or len(estimates) != len(values):
             raise WireError
+        intervals = []
         for label, estimate in zip(values, estimates, strict=True):
             if (
                 type(estimate) is not dict
@@ -137,6 +138,9 @@ def validate(result: object) -> dict:
             if estimate["state"] == "insufficient_precision":
                 if estimate["fraction"] is not None or estimate["interval"] is not None:
                     raise WireError
+                # A withheld cell remains unknown. Never reconstruct or
+                # publish a complementary value from the visible cells.
+                intervals.append((0.0, 1.0))
             else:
                 interval = estimate["interval"]
                 if (
@@ -147,6 +151,9 @@ def validate(result: object) -> dict:
                     or not interval[0] <= estimate["fraction"] <= interval[1]
                 ):
                     raise WireError
+                intervals.append(tuple(interval))
+        if not compatible_category_intervals(intervals):
+            raise WireError
     if version >= 2 and (
         minimum_total >= result["report_range"]["maximum_exclusive"]
         # Legacy totals cover only categorical inputs. Version3 also includes

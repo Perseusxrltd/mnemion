@@ -32,6 +32,15 @@ def _range(count: int) -> dict:
     return {"minimum": lower, "maximum_exclusive": lower * 2}
 
 
+def compatible_category_intervals(intervals: list[tuple[float, float]]) -> bool:
+    """Can mutually exclusive categories, including unobserved, sum to one?"""
+    return (
+        all(0 <= lower <= upper <= 1 for lower, upper in intervals)
+        and math.fsum(lower for lower, _ in intervals) <= 1
+        and math.fsum(upper for _, upper in intervals) >= 1
+    )
+
+
 class AggregateWindow:
     """One in-memory window; sealing clears every accumulator exactly once."""
 
@@ -104,10 +113,12 @@ class AggregateWindow:
                     radius = math.sqrt(2 * log_bound / bounds["minimum"]) / 0.5
                     transformed = _transform(sums)
                     estimates = []
+                    intervals = []
                     inconsistent = False
                     for name, coordinate_sum in zip(view["values"], transformed):
                         estimate = coordinate_sum / (count * 0.5)
                         lower, upper = max(0.0, estimate - radius), min(1.0, estimate + radius)
+                        intervals.append((lower, upper))
                         if lower > 1 or upper < 0:
                             inconsistent = True
                         # A rare/noisy cell has no published point value or
@@ -128,6 +139,10 @@ class AggregateWindow:
                                 else None,
                             }
                         )
+                    # Individually plausible bounds can still describe an
+                    # impossible distribution. Check unrounded intervals,
+                    # including cells whose values will be withheld.
+                    inconsistent |= not compatible_category_intervals(intervals)
                     item.update(
                         state="inconsistent_reports" if inconsistent else "estimated",
                         report_range=bounds,
