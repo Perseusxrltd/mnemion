@@ -28,6 +28,15 @@
       "updated_at": "2026-10-28T09:04:09Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/48",
       "labels": []
+    },
+    {
+      "number": 49,
+      "title": "macOS Studio dies at launch: ad-hoc signature rejects Electron Framework",
+      "updated_at": "2026-10-29T08:53:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/49",
+      "labels": [
+        "bug"
+      ]
     }
   ],
   "runs": [
@@ -167,6 +176,35 @@
       }
     },
     {
+      "id": 40844389559,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.52",
+      "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T08:49:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 14,
+        "completed": 13,
+        "succeeded": 12,
+        "active": [
+          {
+            "id": 123348782810,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Compile pinned PostgreSQL, vector extension and static libraries"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
       "id": 40841002758,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -200,5 +238,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119"
     }
   ],
-  "observed_at": "2026-10-29T08:41:16+00:00"
+  "observed_at": "2026-10-29T08:53:55+00:00"
 }
