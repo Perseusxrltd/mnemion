@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-29T09:56:19+00:00",
+  "checked_at": "2026-10-29T09:57:11+00:00",
   "tag_name": "v4.46.52",
   "source_commit": "839a25055cb3cfe9388eed8ba1a2c0a78b447f2d",
   "published_at": "2026-10-29T09:55:54Z",
@@ -80,12 +80,12 @@
     },
     {
       "name": "Live website downloads, version, notes and guides",
-      "status": "pending",
+      "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40853490883",
       "run_id": 40853490883,
-      "updated_at": "2026-10-29T09:56:03Z",
+      "updated_at": "2026-10-29T09:56:31Z",
       "event": "workflow_dispatch",
-      "conclusion": null
+      "conclusion": "success"
     }
   ],
   "requirements": {
