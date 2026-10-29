@@ -73,73 +73,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.54",
       "source_commit": "2cd258274e96c9589191bf1a39276ab1e78eead6",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-29T20:41:52Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40951291442",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 123719883831,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123719883848,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123719883870,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install psutil==7.2.2"
-            ]
-          },
-          {
-            "id": 123719883916,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123719883921,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123719883976,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-29T20:53:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40951291442"
     },
     {
       "id": 40941892068,
@@ -186,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40951286816"
     }
   ],
-  "observed_at": "2026-10-29T20:42:14+00:00"
+  "observed_at": "2026-10-29T20:54:01+00:00"
 }
