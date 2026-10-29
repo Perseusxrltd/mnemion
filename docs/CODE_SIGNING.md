@@ -37,6 +37,23 @@ If an affected app cannot start, its updater cannot run either: install the
 corrected published package once it is available. Do not locally re-sign an
 old release or disable system security as a substitute.
 
+The same ad-hoc identity controls the macOS login-keychain prompt for saved
+connections, tracked in [issue 50](https://github.com/Perseusxrltd/mnemion/issues/50).
+Electron `safeStorage` keeps one keychain item and encrypts locally after a
+single read. Studio performs that read in one helper process of the same
+executable, reused for every saved connection until quit. **Allow** covers that
+process only, so the next launch asks again. **Always Allow** trusts the
+designated requirement macOS stored for that approval. For this free build,
+`codesign` reports `Signature=adhoc` and `TeamIdentifier=not set`, and the
+designated requirement is the cdhash of that exact binary. The next update or
+any re-sign changes the cdhash, so macOS asks once for the new file. Always
+Allow does not survive that change. A free ad-hoc signature cannot keep one
+trusted cdhash across updates. This is the behavior Electron documents for
+`safeStorage` and the reason electron/electron#43233 was closed as not a bug.
+Do not grant every app access to the item, store a login password, or replace
+existing ciphertext to hide the prompt. See
+[saved connections](service/workspaces.md#remember-a-connection-using-a-key).
+
 Linux AppImage updates use the established Electron updater with HTTPS release
 feeds and payload hashes. Debian packages use administrator-managed upgrades.
 Checksums establish payload integrity; they are not an OS publisher certificate.

@@ -5,6 +5,10 @@ import { join } from 'node:path'
 import { CredentialProcess } from './credential-process.js'
 import { boundedCredentialCipher } from './workspace-cipher.js'
 
+// One helper, the same executable as Studio, for every saved connection.
+// Electron reads the login keychain once in that process, then encrypts
+// locally. Allow covers that process only. Always Allow trusts this exact
+// ad-hoc cdhash. The next update's cdhash is a different app to macOS.
 const helper = new CredentialProcess(() => {
   const directory = mkdtempSync(join(app.getPath('temp'), 'mnemion-keychain-'))
   const environment: NodeJS.ProcessEnv = { MNEMION_KEYCHAIN_USER_DATA: directory }

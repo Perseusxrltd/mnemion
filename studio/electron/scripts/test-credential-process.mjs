@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import { CredentialProcess } from '../dist/credential-process.js'
@@ -35,6 +38,20 @@ test('one private helper round-trips multiple requests and is reaped on final cl
   assert.deepEqual(await exited, [null, 'SIGKILL'])
   assert.equal(storage.memoryBytes, 0)
   await assert.rejects(storage.available(), /secure store/)
+  assert.equal(children.length, 1)
+})
+
+test('sealing and opening multiple saved connections reuses one helper', { timeout: 5000 }, async t => {
+  const { storage, children } = transport(t)
+  const root = await mkdtemp(join(tmpdir(), 'mnemion-keychain-connections-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const store = new WorkspaceStore(join(root, 'workspaces'), boundedCredentialCipher(storage))
+  const identity = { principal_id: randomUUID(), tenant_id: randomUUID(), name: 'Test user', tenant_name: 'Test team', administrator: false }
+  const first = await store.save('https://memory.example.com', fixtureCredential, identity)
+  const secondIdentity = { ...identity, principal_id: randomUUID(), name: 'Second user' }
+  const second = await store.save('https://other.example.com', fixtureCredential, secondIdentity)
+  assert.equal((await store.credential(first.id)).credential, fixtureCredential)
+  assert.equal((await store.credential(second.id)).credential, fixtureCredential)
   assert.equal(children.length, 1)
 })
 
