@@ -35,11 +35,23 @@ export async function verifyNativeTelemetry(window: BrowserWindow): Promise<Reco
     }
     location.hash = '/privacy';
     await until(() => checkbox()?.checked && button('Show report format'), 'The installed privacy page did not open');
+    const synthetic = 'AwEELjUAAQEBAQEBAQEBAQEBAQEBAQEBAQ==';
+    const syntheticBytes = [3, 1, 4, 46, 53, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    function exactExample(packet) {
+      if (!packet || packet.kind !== 'synthetic_example' || packet.body_encoding !== 'base64' ||
+          packet.body_base64 !== synthetic || packet.body_bytes !== 25 || packet.schema_version !== 3 ||
+          packet.view !== 'bounded_summary' || packet.coordinate !== 0 || packet.randomized_sign !== null ||
+          packet.report_selection !== 'automatic' || packet.aggregation !== 'bounded_summary_publication_noise' ||
+          packet.randomization_privacy_loss !== null || packet.per_report_privacy_loss !== null ||
+          packet.privacy_bound_scope !== 'publication_closed_week' || packet.participation_or_lifetime_guarantee !== false) return false;
+      const bytes = Uint8Array.from(atob(packet.body_base64), char => char.charCodeAt(0));
+      return bytes.length === syntheticBytes.length && syntheticBytes.every((byte, index) => bytes[index] === byte);
+    }
     await click('Show report format');
-    await until(() => document.querySelector('.ws-privacy pre')?.textContent === 'AgAHAA==', 'The installed report-format example did not render');
+    await until(() => document.querySelector('.ws-privacy pre')?.textContent === synthetic, 'The installed report-format example did not render');
     const shown = await bridge.productTelemetry('telemetry.preview');
     if (shown.outbound_state !== 'not_inspected' || shown.outbound_body !== null || shown.outbound_bytes !== 0 ||
-        shown.illustrative_packet?.kind !== 'synthetic_example' || shown.illustrative_packet?.body_base64 !== 'AgAHAA==' ||
+        !exactExample(shown.illustrative_packet) ||
         shown.status.storage !== 'new' || shown.status.disclosure_version !== 0) {
       throw new Error('The installed format preview changed consent or claimed actual outgoing data');
     }
@@ -64,7 +76,7 @@ export async function verifyNativeTelemetry(window: BrowserWindow): Promise<Reco
       throw new Error('Opt-out lost the saved manual-review choice');
     }
     await click('Show report format');
-    await until(() => document.querySelector('.ws-privacy pre')?.textContent === 'AgAHAA==', 'The opted-out format preview did not render');
+    await until(() => document.querySelector('.ws-privacy pre')?.textContent === synthetic, 'The opted-out format preview did not render');
     // An agent changes only the saved preference, without acknowledging an
     // unseen disclosure. Focus must refresh the app and discard its old view.
     const edited = await bridge.productTelemetry('telemetry.configure', { enabled: true,

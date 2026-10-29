@@ -326,9 +326,9 @@ Preview can describe valid local cells without raw inputs or local day numbers;
 it is not an event history or a serialized outbound report. In the current
 unavailable state, `local_aggregates` is empty, `outbound_body` is null,
 `outbound_bytes` is zero and `transport_available` is false.
-The read-only format preview separately shows a fixed synthetic wire-v2 example
-(`AgAHAA==`), explicitly marked `synthetic_example` and `not_inspected`. It is not
-the next packet. Explicit manual inspection stages exact bytes only after
+The read-only format preview separately shows the fixed synthetic wire v3
+example, 25 bytes, explicitly marked `synthetic_example` and `not_inspected`.
+`AgAHAA==` remains the older wire v2 example. The preview is not the next packet. Explicit manual inspection stages exact bytes only after
 authorized observations exist; see the [review controls](../guides/product-telemetry-controls.md).
 Local `schema` also exposes `transport_catalog`. Source delivery owners already
 connect eligible queues to encoding and shared reservations; reading schema or

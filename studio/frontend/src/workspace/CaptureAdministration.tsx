@@ -119,9 +119,9 @@ function SourcePolicy({ source, client, connection, endpoint, retentionSupported
       <summary>Change the policy for new device authorizations</summary>
       <form className="ws-form" onSubmit={event => { event.preventDefault(); void act(async () => {
         const fresh = await client.request<Review>('GET', route + '/policy-review');
-        const excludedFields = fields.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean).sort();
-        const selected: CapturePolicy = { ...policy, include: include.split('\n').map(value => value.trim()).filter(Boolean),
-          exclude: exclude.split('\n').map(value => value.trim()).filter(Boolean),
+        const excludedFields = fields.split('\n').map((value: string) => value.trim().toLowerCase()).filter((value: string) => value !== '').sort();
+        const selected: CapturePolicy = { ...policy, include: include.split('\n').map((value: string) => value.trim()).filter((value: string) => value !== ''),
+          exclude: exclude.split('\n').map((value: string) => value.trim()).filter((value: string) => value !== ''),
           format: policy.retention === 'expire_after' || policy.format === 'mnemion-capture-policy-v3' ? 'mnemion-capture-policy-v3' : excludedFields.length ? 'mnemion-capture-policy-v2' : policy.format,
           exclude_fields: excludedFields.length ? excludedFields : undefined };
         setCandidate({ id: crypto.randomUUID(), review: fresh, command: { expected_version: fresh.source.version,

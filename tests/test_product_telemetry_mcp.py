@@ -25,7 +25,10 @@ def installation(tmp_path, monkeypatch):
     monkeypatch.setattr(policy, "company_policy_file", lambda: tmp_path / "company.json")
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
     monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/telemetry")
-    policy.configure(root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1})
+    policy.configure(
+        root,
+        {"enabled": True, "expected_revision": 0, "disclosure_version": policy.DISCLOSURE_VERSION},
+    )
     return root
 
 
@@ -201,7 +204,7 @@ def test_local_stdio_report_review_uses_shared_cas_and_remote_callers_cannot_app
 ):
     from mnemion.product_telemetry import inspection
 
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     monkeypatch.setattr(policy, "transport_available", lambda: True)
     monkeypatch.setattr(
         inspection,
@@ -232,7 +235,8 @@ def test_local_stdio_report_review_uses_shared_cas_and_remote_callers_cannot_app
         expected_generation=initial["status"]["store_generation"],
     )
     staged = call(server, "mnemion_telemetry", control("inspect_report", paused.structured_content))
-    assert not staged.is_error and staged.structured_content["packet"]["body_bytes"] == 4
+    assert not staged.is_error and staged.structured_content["packet"]["body_bytes"] == 25
+    assert staged.structured_content["packet"]["schema_version"] == 3
     request = control("approve_report", staged.structured_content)
     denied = call(server, "mnemion_telemetry", request, http_context(server))
     assert denied.is_error and denied.structured_content["code"] == "local_stdio_required"
@@ -502,7 +506,7 @@ def test_legacy_privacy_report_review_and_optout_preserve_shared_fences(installa
     from mnemion.product_telemetry import inspection
 
     monkeypatch.setattr(mcp_server, "_write_heartbeat", lambda *_: pytest.fail("Privacy heartbeat"))
-    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
     monkeypatch.setattr(policy, "transport_available", lambda: True)
     monkeypatch.setattr(
         inspection, "read_review_clock", lambda **_: {"epoch": "a" * 32, "elapsed_ms": 1000}
@@ -528,7 +532,8 @@ def test_legacy_privacy_report_review_and_optout_preserve_shared_fences(installa
         expected_generation=paused["status"]["store_generation"],
     )
     staged = privacy_result(request("inspect_report", paused))
-    assert staged["packet"]["body_bytes"] == 4
+    assert staged["packet"]["body_bytes"] == 25
+    assert staged["packet"]["schema_version"] == 3
     assert "error" in request("approve_report", staged, local=False)
     approved = privacy_result(request("approve_report", staged))
     assert approved["review"]["outcome"] == "approved"

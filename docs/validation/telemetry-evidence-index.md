@@ -32,6 +32,10 @@ before its native release driver continued. Consult [release status](../RELEASE_
 for current availability. All 66 requirement texts and states and the
 2 MiB / 0.5% gates are unchanged.
 
+The [29 October v3 client release checks](2026-10-29-telemetry-v3-release-checks.md)
+record the integrated current-format fixtures, native probe and automated parity
+entry, with original failures and corrected local build results.
+
 ## Controls, ownership and report review
 
 | Date | Original evidence | Scope and boundary |

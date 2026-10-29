@@ -9,7 +9,7 @@ import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { TelemetryWire, secureRandomBelow } from '../dist/telemetry-wire.js'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
-const specification = JSON.parse(readFileSync(new URL('../dist/telemetry-wire-v2.json', import.meta.url), 'utf8'))
+const specification = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/wire-v2.json', import.meta.url), 'utf8'))
 const catalog = new TelemetryCatalog(JSON.parse(readFileSync(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8')))
 const wire = new TelemetryWire(specification, catalog)
 const draws = (...values) => () => values.shift()
