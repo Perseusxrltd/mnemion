@@ -32,7 +32,7 @@
     {
       "number": 49,
       "title": "macOS Studio dies at launch: ad-hoc signature rejects Electron Framework",
-      "updated_at": "2026-10-29T08:53:25Z",
+      "updated_at": "2026-10-29T15:12:33Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/49",
       "labels": [
         "bug"
@@ -85,6 +85,83 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40844389559"
     },
     {
+      "id": 40896509541,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.53",
+      "source_commit": "a50af06b36a827c890dfb42126318381e71328c0",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-29T15:07:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40896509541",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 21,
+        "completed": 16,
+        "succeeded": 14,
+        "active": [
+          {
+            "id": 123530522451,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 123530522515,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 123530522676,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 123530522782,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 123530522788,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": [
+        {
+          "name": "native / macos-26 / arm64",
+          "id": 123530522859,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 40,
+          "steps": [
+            "Verify model custody with real native child processes",
+            "Retain generated desktop-content secret scan receipt"
+          ]
+        }
+      ]
+    },
+    {
       "id": 40852860198,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -118,5 +195,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40853490883"
     }
   ],
-  "observed_at": "2026-10-29T13:42:26+00:00"
+  "observed_at": "2026-10-29T15:13:05+00:00"
 }
