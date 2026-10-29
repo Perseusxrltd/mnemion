@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T00:12:54+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T00:14:21+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.44](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.44). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,14 +18,27 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40789233444](https://github.com/Perseusxrltd/mnemion/actions/runs/40789233444) |
+| ci\.yml | main | in\_progress | [Run 40792613991](https://github.com/Perseusxrltd/mnemion/actions/runs/40792613991) |
 | public-updates\.yml | v4\.46\.44 | failure | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
 | release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
 | release\.yml | release/4\.46\.45 | failure | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
 | release\.yml | release/4\.46\.46 | failure | [Run 40757944923](https://github.com/Perseusxrltd/mnemion/actions/runs/40757944923) |
 | verify-artifacts\.yml | main | skipped | [Run 40768286929](https://github.com/Perseusxrltd/mnemion/actions/runs/40768286929) |
-| website-release\.yml | main | success | [Run 40789233473](https://github.com/Perseusxrltd/mnemion/actions/runs/40789233473) |
+| website-release\.yml | main | success | [Run 40792614050](https://github.com/Perseusxrltd/mnemion/actions/runs/40792614050) |
 | website-release\.yml | v4\.46\.44 | success | [Run 40702700363](https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363) |
+
+## Active jobs
+
+[Run 40792613991](https://github.com/Perseusxrltd/mnemion/actions/runs/40792613991): 5/12 jobs completed; 5 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
 
 ## Unsuccessful jobs
 
