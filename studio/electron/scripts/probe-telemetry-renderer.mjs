@@ -12,7 +12,7 @@ if (input.phase_memory === true && (input.comparison !== true || input.attributi
   throw new Error('Phase-memory counters require comparison without attribution')
 }
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(input.memory.base_url) ||
-    !/^https:\/\/localhost:\d+\/v1\/report$/.test(input.destination) ||
+    !/^https:\/\/localhost:\d+\/v3\/report$/.test(input.destination) ||
     !/^\/assets\/[A-Za-z0-9._-]+\.js$/.test(input.probe_entry)) throw new Error('Owned loopback fixtures required')
 const application = join(root, 'source/studio/electron')
 const marker = value => {

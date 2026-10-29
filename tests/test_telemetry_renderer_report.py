@@ -5,9 +5,13 @@ import json
 import pytest
 
 from deploy.report_telemetry_renderer import (
+    PACKET_BYTES,
     PHASE_MEMORY_CHECKPOINTS,
+    V3_WIRE_PATH,
     aligned_phase_memory,
     aligned_rss_growth,
+    describe_diagnostic_wire,
+    retain_reviewed_packet,
     summarize,
     verify_phase_memory,
     verify_process_ownership,
@@ -104,6 +108,10 @@ def test_counterbalanced_results_use_their_own_baselines(tmp_path):
     assert result["phase_memory"] is False
     assert "aligned_phase_memory" not in result["comparisons"][0]
     assert len(result["limits"]) == 7
+    assert result["wire_label"] == "historical-v2"
+    assert result["wire_version"] == 2
+    assert result["packet_bytes"] == 4
+    assert result["wire_path"] == "/v1/report"
 
 
 def setup_result(condition="enabled"):
@@ -598,3 +606,52 @@ def test_valid_phase_memory_absence_passes_the_normal_journey_gate():
     except ValueError:
         absent = False
     assert absent is False
+
+
+def test_reviewed_v3_capture_keeps_only_an_exact_packet():
+    packet = bytes(range(PACKET_BYTES))
+    assert PACKET_BYTES == 25
+    assert V3_WIRE_PATH == "/v3/report"
+    assert retain_reviewed_packet([packet], review=False) is None
+    assert retain_reviewed_packet([packet], review=True) == packet.hex()
+    assert retain_reviewed_packet([packet[:10], packet[10:]], review=True) == packet.hex()
+    assert retain_reviewed_packet([packet[:4]], review=True) is None
+    assert retain_reviewed_packet([packet + b"\x00"], review=True) is None
+    assert retain_reviewed_packet([packet[:4], b"more than the fixed packet"], review=True) is None
+    assert retain_reviewed_packet([None], review=True) is None
+
+
+def test_v3_diagnostic_is_labelled_and_cannot_reuse_a_v2_result(tmp_path):
+    observed = {
+        "variant": "unavailable",
+        "wire_version": 3,
+        "samples": samples([100, 110, 120], 10),
+        "elapsed_ms": 100,
+    }
+    (tmp_path / "unavailable-processes.json").write_text("[]\n")
+    (tmp_path / "receipt.json").write_text(
+        json.dumps(
+            {
+                "wire_version": 3,
+                "wire_path": "/v3/report",
+                "packet_bytes": 25,
+                "results": [observed],
+            }
+        )
+    )
+    result = summarize(tmp_path)
+    assert result["wire_label"] == "v3"
+    assert result["packet_bytes"] == 25
+    assert result["resource_acceptance"] is False
+    described = describe_diagnostic_wire({"results": []})
+    assert described["wire_label"] == "historical-v2"
+    mixed = {
+        "wire_version": 3,
+        "wire_path": "/v3/report",
+        "packet_bytes": 25,
+        "results": [{"wire_version": 2}],
+    }
+    with pytest.raises(ValueError, match="cannot mix"):
+        describe_diagnostic_wire(mixed)
+    with pytest.raises(ValueError, match="fixed packet size"):
+        describe_diagnostic_wire({"wire_version": 3, "wire_path": "/v3/report", "results": []})

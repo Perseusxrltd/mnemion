@@ -9,7 +9,7 @@ const repository = process.env.MNEMION_PROBE_SOURCE
 const fixture = process.env.MNEMION_STUDIO_USER_DATA
 if (!repository || !fixture?.includes('mnemion-owned-pipeline-')) throw new Error('An isolated resource fixture is required')
 const input = JSON.parse(readFileSync(join(fixture, 'probe-input.json'), 'utf8'))
-if (!/^https:\/\/localhost:\d+\/v1\/report$/.test(input.destination)) throw new Error('Loopback collector required')
+if (!/^https:\/\/localhost:\d+\/v3\/report$/.test(input.destination)) throw new Error('Loopback collector required')
 if (input.memory && !/^http:\/\/127\.0\.0\.1:\d+$/.test(input.memory.base_url)) throw new Error('Disposable loopback workspace required')
 await import(pathToFileURL(join(repository, 'studio/electron/dist/application.js')).href)
 

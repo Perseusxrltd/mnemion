@@ -81,7 +81,7 @@ export async function reviewController({ root, input, application, marker }) {
     assert.equal(held.review.outcome, 'held')
     assert.equal(held.packet, null, 'A status read must not disclose the staged body')
     assert.equal(held.status.delivery_budget.attempts_in_rolling_week, 0)
-    assert.equal(Buffer.from(shown, 'base64').length, 4)
+    assert.equal(Buffer.from(shown, 'base64').length, 25)
     return { shown, held }
   }
   try {

@@ -5,6 +5,12 @@ import hashlib
 import json
 from pathlib import Path
 
+from mnemion.product_telemetry.wire_v3 import PACKET_BYTES
+
+HISTORICAL_PACKET_BYTES = 4
+HISTORICAL_WIRE_PATH = "/v1/report"
+V3_WIRE_PATH = "/v3/report"
+
 
 def process_role(row):
     return row.get("role", row["type"])
@@ -50,6 +56,57 @@ def sample_counters(sample):
         name: counter_value(row["linux"][name] if name in LINUX_FIELDS else row["heap"][name])
         for name in PHASE_MEMORY_FIELDS
     }
+
+
+def describe_diagnostic_wire(receipt):
+    """Label a receipt. Missing metadata is historical v2, never an implied v3 run."""
+    version = receipt.get("wire_version", 2) if isinstance(receipt, dict) else None
+    if version is None:
+        version = 2
+    if type(version) is not int or version not in (2, 3):
+        raise ValueError("Telemetry wire version must be historical v2 or v3")
+    for result in receipt.get("results") or []:
+        if (
+            isinstance(result, dict)
+            and "wire_version" in result
+            and result.get("wire_version") != version
+        ):
+            raise ValueError("One diagnostic receipt cannot mix historical v2 and v3")
+    if version == 2:
+        packet = receipt.get("packet_bytes", HISTORICAL_PACKET_BYTES)
+        path = receipt.get("wire_path", HISTORICAL_WIRE_PATH)
+        if packet != HISTORICAL_PACKET_BYTES or path != HISTORICAL_WIRE_PATH:
+            raise ValueError("Historical v2 receipts stay on the 4-byte /v1/report contract")
+        return {
+            "wire_version": 2,
+            "wire_label": "historical-v2",
+            "wire_path": HISTORICAL_WIRE_PATH,
+            "packet_bytes": HISTORICAL_PACKET_BYTES,
+        }
+    if receipt.get("packet_bytes") != PACKET_BYTES or receipt.get("wire_path") != V3_WIRE_PATH:
+        raise ValueError("A v3 diagnostic must name /v3/report and the fixed packet size")
+    return {
+        "wire_version": 3,
+        "wire_label": "v3",
+        "wire_path": V3_WIRE_PATH,
+        "packet_bytes": PACKET_BYTES,
+    }
+
+
+def retain_reviewed_packet(chunks, *, review):
+    """Hex of one exact synthetic v3 packet. Anything else, including a prefix, is dropped."""
+    if not review:
+        return None
+    body = bytearray()
+    for chunk in chunks:
+        if type(chunk) is not bytes or len(body) + len(chunk) > PACKET_BYTES:
+            return None
+        body.extend(chunk)
+    if len(body) != PACKET_BYTES:
+        return None
+    encoded = bytes(body).hex()
+    body.clear()
+    return encoded
 
 
 def verify_phase_memory(result, *, required=False):
@@ -327,6 +384,7 @@ def allocation_windows(result):
 
 def summarize(directory: Path) -> dict:
     receipt = json.loads((directory / "receipt.json").read_text())
+    wire = describe_diagnostic_wire(receipt)
     phase_memory = receipt.get("phase_memory", False)
     if phase_memory is None:
         phase_memory = False
@@ -518,6 +576,10 @@ def summarize(directory: Path) -> dict:
         )
     return {
         "schema_version": 3,
+        "wire_version": wire["wire_version"],
+        "wire_label": wire["wire_label"],
+        "wire_path": wire["wire_path"],
+        "packet_bytes": wire["packet_bytes"],
         "input_receipt_sha256": hashlib.sha256(
             (directory / "receipt.json").read_bytes()
         ).hexdigest(),
