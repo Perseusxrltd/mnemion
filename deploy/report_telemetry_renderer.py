@@ -58,39 +58,79 @@ def sample_counters(sample):
     }
 
 
-def describe_diagnostic_wire(receipt):
-    """Label a receipt. Missing metadata is historical v2, never an implied v3 run."""
-    version = receipt.get("wire_version", 2) if isinstance(receipt, dict) else None
-    if version is None:
-        version = 2
+WIRE_FIELDS = ("wire_version", "packet_bytes", "wire_path")
+REVIEW_CHUNK_BOUND = 8
+
+
+def explicit_wire_contract(row):
+    """Return a complete contract, or None when the row has no wire metadata."""
+    if not isinstance(row, dict):
+        raise ValueError("Telemetry wire metadata must be on an object")
+    present = [key for key in WIRE_FIELDS if key in row]
+    if not present:
+        return None
+    if len(present) != len(WIRE_FIELDS):
+        raise ValueError("Telemetry wire metadata must be complete or absent")
+    version, packet, path = (row[key] for key in WIRE_FIELDS)
     if type(version) is not int or version not in (2, 3):
         raise ValueError("Telemetry wire version must be historical v2 or v3")
-    for result in receipt.get("results") or []:
-        if (
-            isinstance(result, dict)
-            and "wire_version" in result
-            and result.get("wire_version") != version
-        ):
-            raise ValueError("One diagnostic receipt cannot mix historical v2 and v3")
-    if version == 2:
-        packet = receipt.get("packet_bytes", HISTORICAL_PACKET_BYTES)
-        path = receipt.get("wire_path", HISTORICAL_WIRE_PATH)
-        if packet != HISTORICAL_PACKET_BYTES or path != HISTORICAL_WIRE_PATH:
-            raise ValueError("Historical v2 receipts stay on the 4-byte /v1/report contract")
-        return {
-            "wire_version": 2,
-            "wire_label": "historical-v2",
-            "wire_path": HISTORICAL_WIRE_PATH,
-            "packet_bytes": HISTORICAL_PACKET_BYTES,
-        }
-    if receipt.get("packet_bytes") != PACKET_BYTES or receipt.get("wire_path") != V3_WIRE_PATH:
-        raise ValueError("A v3 diagnostic must name /v3/report and the fixed packet size")
+    expected = (
+        (2, HISTORICAL_PACKET_BYTES, HISTORICAL_WIRE_PATH)
+        if version == 2
+        else (3, PACKET_BYTES, V3_WIRE_PATH)
+    )
+    if (version, packet, path) != expected:
+        raise ValueError("Telemetry wire metadata conflicts with its declared version")
     return {
-        "wire_version": 3,
-        "wire_label": "v3",
-        "wire_path": V3_WIRE_PATH,
-        "packet_bytes": PACKET_BYTES,
+        "wire_version": version,
+        "wire_label": "historical-v2" if version == 2 else "v3",
+        "wire_path": path,
+        "packet_bytes": packet,
     }
+
+
+def describe_diagnostic_wire(receipt):
+    """Label a receipt. Missing metadata is historical v2, never an implied v3 run."""
+    if not isinstance(receipt, dict):
+        raise ValueError("Telemetry wire metadata must be on an object")
+    receipt_wire = explicit_wire_contract(receipt)
+    results = receipt.get("results") or []
+    if not isinstance(results, list):
+        raise ValueError("Telemetry results must be a list")
+    case_wires = []
+    for result in results:
+        if not isinstance(result, dict):
+            raise ValueError("Telemetry results must be objects")
+        case_wires.append(explicit_wire_contract(result))
+    if receipt_wire is None:
+        if any(case is not None for case in case_wires):
+            raise ValueError("Historical v2 receipts cannot carry explicit wire metadata")
+        return explicit_wire_contract(
+            {
+                "wire_version": 2,
+                "packet_bytes": HISTORICAL_PACKET_BYTES,
+                "wire_path": HISTORICAL_WIRE_PATH,
+            }
+        )
+    if any(case != receipt_wire for case in case_wires):
+        raise ValueError("Each diagnostic case must identify the same wire contract as its receipt")
+    return receipt_wire
+
+
+def absorb_reviewed_chunk(captured, chunks_kept, chunk):
+    """Stop and clear a review body once it leaves the 25-byte, 8-chunk contract."""
+    chunks_kept += 1
+    if (
+        captured is None
+        or type(chunk) is not bytes
+        or chunks_kept > REVIEW_CHUNK_BOUND
+        or len(captured) + len(chunk) > PACKET_BYTES
+    ):
+        if captured is not None:
+            captured.clear()
+        return None, chunks_kept
+    captured.extend(chunk)
+    return captured, chunks_kept
 
 
 def retain_reviewed_packet(chunks, *, review):

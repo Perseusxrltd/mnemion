@@ -10,6 +10,7 @@ from deploy.report_telemetry_renderer import (
     V3_WIRE_PATH,
     aligned_phase_memory,
     aligned_rss_growth,
+    absorb_reviewed_chunk,
     describe_diagnostic_wire,
     retain_reviewed_packet,
     summarize,
@@ -619,12 +620,25 @@ def test_reviewed_v3_capture_keeps_only_an_exact_packet():
     assert retain_reviewed_packet([packet + b"\x00"], review=True) is None
     assert retain_reviewed_packet([packet[:4], b"more than the fixed packet"], review=True) is None
     assert retain_reviewed_packet([None], review=True) is None
+    captured, kept = absorb_reviewed_chunk(bytearray(packet), 1, b"\x00")
+    assert captured is None and kept == 2
+    captured = bytearray()
+    kept = 0
+    for _ in range(8):
+        captured, kept = absorb_reviewed_chunk(captured, kept, b"\x01")
+    assert captured is not None and len(captured) == 8
+    captured, kept = absorb_reviewed_chunk(captured, kept, b"\x01")
+    assert captured is None and kept == 9
+    captured, kept = absorb_reviewed_chunk(None, kept, packet)
+    assert captured is None
 
 
 def test_v3_diagnostic_is_labelled_and_cannot_reuse_a_v2_result(tmp_path):
     observed = {
         "variant": "unavailable",
         "wire_version": 3,
+        "wire_path": "/v3/report",
+        "packet_bytes": 25,
         "samples": samples([100, 110, 120], 10),
         "elapsed_ms": 100,
     }
@@ -645,13 +659,17 @@ def test_v3_diagnostic_is_labelled_and_cannot_reuse_a_v2_result(tmp_path):
     assert result["resource_acceptance"] is False
     described = describe_diagnostic_wire({"results": []})
     assert described["wire_label"] == "historical-v2"
-    mixed = {
-        "wire_version": 3,
-        "wire_path": "/v3/report",
-        "packet_bytes": 25,
-        "results": [{"wire_version": 2}],
-    }
-    with pytest.raises(ValueError, match="cannot mix"):
-        describe_diagnostic_wire(mixed)
-    with pytest.raises(ValueError, match="fixed packet size"):
+    historical_body = describe_diagnostic_wire(
+        {"results": [{"collector": {"reports": 1, "accepted": 1, "body_bytes": 4}}]}
+    )
+    assert historical_body["wire_label"] == "historical-v2"
+    assert historical_body["packet_bytes"] == 4
+    v3 = {"wire_version": 3, "wire_path": "/v3/report", "packet_bytes": 25}
+    with pytest.raises(ValueError, match="same wire contract"):
+        describe_diagnostic_wire({**v3, "results": [{}]})
+    with pytest.raises(ValueError, match="conflicts with its declared version"):
+        describe_diagnostic_wire(
+            {**v3, "results": [{"wire_version": 3, "packet_bytes": 4, "wire_path": "/v1/report"}]}
+        )
+    with pytest.raises(ValueError, match="complete or absent"):
         describe_diagnostic_wire({"wire_version": 3, "wire_path": "/v3/report", "results": []})

@@ -32,6 +32,7 @@ from tests.test_product_telemetry_transport import certificates
 from .telemetry_memory_fixture import memory_workspace
 from .report_telemetry_renderer import (
     V3_WIRE_PATH,
+    absorb_reviewed_chunk,
     retain_reviewed_packet,
     verify_phase_memory,
     verify_setup_controls,
@@ -204,7 +205,8 @@ async def run(
     collector = CollectorV3(published.append)
 
     async def ingress(scope, receive, send):
-        reviewed_chunks = []
+        captured = bytearray() if review_journey else None
+        chunks_kept = 0
         is_report = scope.get("type") == "http" and scope.get("method") == "POST"
         if scope["type"] == "http":
             counts["reports"] += int(scope.get("method") == "POST")
@@ -214,17 +216,13 @@ async def run(
             )
 
         async def received():
+            nonlocal captured, chunks_kept
             event = await receive()
             if event["type"] == "http.request":
                 chunk = event.get("body", b"")
-                if type(chunk) is not bytes:
-                    chunk = b""
-                counts["body_bytes"] += len(chunk)
-                # Manual review keeps one exact synthetic packet. Other runs keep none.
-                if review_journey and len(reviewed_chunks) < 8:
-                    reviewed_chunks.append(chunk)
-                elif review_journey:
-                    reviewed_chunks.append(None)
+                counts["body_bytes"] += len(chunk) if type(chunk) is bytes else 0
+                if review_journey:
+                    captured, chunks_kept = absorb_reviewed_chunk(captured, chunks_kept, chunk)
             return event
 
         async def sending(event):
@@ -233,11 +231,12 @@ async def run(
             await send(event)
 
         await collector(scope, received, sending)
-        if review_journey and is_report and len(reviewed_bodies) < 8:
-            retained = retain_reviewed_packet(reviewed_chunks, review=True)
+        if review_journey and is_report and len(reviewed_bodies) < 8 and captured is not None:
+            retained = retain_reviewed_packet([bytes(captured)], review=True)
             if retained is not None:
                 reviewed_bodies.append(retained)
-        reviewed_chunks.clear()
+        if captured is not None:
+            captured.clear()
 
     results, roots = [], []
     task = None
