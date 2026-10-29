@@ -14,8 +14,9 @@ Published controls and the pending report are different. Public 4.46.54 passed
 all six public update tests and has no native v3 qualification. The pending
 report is [wire v3](../../mnemion/product_telemetry/wire-v3.json), described
 below and in the [v3 reference](anonymous-product-telemetry-v3.md). It is not
-the four-byte wire v2 body. Collection stays off. The 2 MiB and 0.5% gates stay
-unaccepted. All 66 requirements stay.
+the four-byte wire v2 body. Collection stays off. The latest compiled-app
+comparison, [run 40967691671](../validation/2026-10-29-telemetry-v3-resource.md),
+still leaves the 2 MiB and 0.5% gates unaccepted. All 66 requirements stay.
 
 The [4.46.13 installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
 and public auto-update gates qualify their recorded release. The later
@@ -567,6 +568,15 @@ bindings each and cleanup. Both enabled main matched maxima still exceed
 All roles and both orders remain in the report; resources still fail, CPU is
 descriptive and no allocation cause or saving is established.
 
+The later [phase-memory comparison](../validation/2026-10-29-telemetry-v3-resource.md),
+run 40967691671 on `1adc472af8874ccdb261f7532eeab0463d888a40`, completed the same
+six-case shape with 2,301 matched inputs per case and one 25-byte report in
+each enabled case. Enabled main matched maxima are **5,271,552** and
+**2,887,680** bytes, still above 2 MiB. File-backed pages of about 1.5–1.9 MiB
+remain after first delivery in both enabled repeats. The r1 96-cycle spike and
+the r1 opted-out final checkpoint are not repeated by r2. No callsite or safe
+source change is established. Run 40965218896 stays failed with no measurement.
+
 The later [browser/Python owner follow-up](../validation/2026-10-27-telemetry-owner-saturation.md)
 reoffers prior committed work after browser Web Lock release and through Python
 completion/resource/early-exhaustion paths. Python keeps one immutable stamp
@@ -692,9 +702,11 @@ required below. It preserves all requirements and failed results.
   and privacy qualification remain open. The 4.46.22 mode/opt-out restart evidence
   does not qualify later source changes or the full restart/update lifecycle.
 - **Resources and architecture:** the fixed compiled-app comparisons still exceed
-  the unchanged **2 MiB / 0.5%** acceptance gates. Ending RSS, matched maxima,
-  other process roles and profiled CPU are retained in the evidence index; no
-  causal improvement or favorable-run selection is accepted. The subsequent
+  the unchanged **2 MiB / 0.5%** acceptance gates. The current result is run
+  40967691671: enabled main maxima **5,271,552 / 2,887,680** bytes, with no
+  evidence-supported patch. Ending RSS, matched maxima, other process roles and
+  profiled CPU are retained in the evidence index; no causal improvement or
+  favorable-run selection is accepted. The subsequent
   [pinned private SQLite experiment](../validation/2026-10-26-telemetry-private-sqlite.md)
   has **60 functional passes / two platform skips**, but is **not adopted**:
   its fixed component sequence showed higher CPU and sampled peak RSS, with an

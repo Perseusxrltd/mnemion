@@ -39,6 +39,9 @@ entry, with original failures and corrected local build results.
 The [29 October probe staging fix](2026-10-29-telemetry-probe-staging.md)
 retains the failed first phase-memory run and the focused correction that loads
 the controller's helper. That failed run produced no resource measurement.
+The corrected [phase-memory comparison](2026-10-29-telemetry-v3-resource.md),
+run 40967691671, completed six cases. Enabled main maxima are 5,271,552 and
+2,887,680 bytes. The 2 MiB and 0.5% gates stay unaccepted.
 
 ## Controls, ownership and report review
 
@@ -145,6 +148,7 @@ claims about the current packet format.
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
+| 29 October | [Phase-memory resource comparison](2026-10-29-telemetry-v3-resource.md) | Run 40967691671 on `1adc472` completed six Linux compiled-Electron cases, 2,301 inputs each, 128 cycles and one 25-byte report when enabled. Enabled main matched maxima 5,271,552 and 2,887,680 bytes stay above 2 MiB. File-backed growth of about 1.5–1.9 MiB is stable after first delivery and is not a named callsite. The r1 96-cycle and r1 opted-out final spikes are not repeated by r2. CPU is descriptive. No source change. Run 40965218896 and the original schema-3 verifier failure stay failed. Resource acceptance stays false. |
 | 29 October | [Shared v3 client encoder](2026-10-29-telemetry-v3-client-encoder.md) | Shared Python and TypeScript encoding of the 25-byte summary, including disabled groups, missing sensors, release and OS axes, and unlisted coordinates. Sender integration, disclosure and transport switching, manual review, the compiled Electron bundle, installed resources and a live collector were not run. This does not accept the fleet or stand in for native release qualification. Production collection stays off. |
 | 29 October | [V3 qualification probe listeners](2026-10-29-telemetry-v3-probes.md) | Probe listeners follow CollectorV3, `/v3/report` and the fixed 25-byte packet. Review retains only that exact synthetic packet. Unlabelled receipts stay historical v2. This does not qualify the pending client integration or rerun a resource comparison. Production collection stays off. |
 | 29 October | [Opt-in phase-memory counters](2026-10-29-telemetry-phase-memory.md) | Client-only diagnostic for a future comparison. At the existing nine checkpoints it can record five Linux residency counters and four numeric V8 heap counters. Missing values stay null. It does not replace working-set RSS, pass the 2 MiB or 0.5 percent gates, or remeasure run 40523504727. Enabled maxima 2,572,288 / 2,859,008 bytes and every earlier resource failure remain failed. Pinned Linux report tests passed 44; the Windows chromadb import failure is an environment mismatch. Node parser tests passed 5. No source optimization and no new app comparison. |
