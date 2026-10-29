@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T07:24:36+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T07:30:33+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,7 +18,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40832308336](https://github.com/Perseusxrltd/mnemion/actions/runs/40832308336) |
+| ci\.yml | main | success | [Run 40832308336](https://github.com/Perseusxrltd/mnemion/actions/runs/40832308336) |
 | public-updates\.yml | v4\.46\.49 | success | [Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156) |
 | release\.yml | release/4\.46\.49 | success | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
 | release\.yml | release/4\.46\.50 | failure | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
@@ -26,13 +26,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | verify-artifacts\.yml | main | skipped | [Run 40835184620](https://github.com/Perseusxrltd/mnemion/actions/runs/40835184620) |
 | website-release\.yml | main | success | [Run 40832308319](https://github.com/Perseusxrltd/mnemion/actions/runs/40832308319) |
 | website-release\.yml | v4\.46\.49 | success | [Run 40820125119](https://github.com/Perseusxrltd/mnemion/actions/runs/40820125119) |
-
-## Active jobs
-
-[Run 40832308336](https://github.com/Perseusxrltd/mnemion/actions/runs/40832308336): 11/12 jobs completed; 11 succeeded.
-
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
 
 ## Unsuccessful jobs
 
