@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-28T23:42:22+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T00:12:54+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.44](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.44). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,18 +18,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | failure | [Run 40786527751](https://github.com/Perseusxrltd/mnemion/actions/runs/40786527751) |
+| ci\.yml | main | success | [Run 40789233444](https://github.com/Perseusxrltd/mnemion/actions/runs/40789233444) |
 | public-updates\.yml | v4\.46\.44 | failure | [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371) |
 | release\.yml | release/4\.46\.44 | success | [Run 40690852078](https://github.com/Perseusxrltd/mnemion/actions/runs/40690852078) |
 | release\.yml | release/4\.46\.45 | failure | [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724) |
 | release\.yml | release/4\.46\.46 | failure | [Run 40757944923](https://github.com/Perseusxrltd/mnemion/actions/runs/40757944923) |
 | verify-artifacts\.yml | main | skipped | [Run 40768286929](https://github.com/Perseusxrltd/mnemion/actions/runs/40768286929) |
-| website-release\.yml | main | success | [Run 40786527984](https://github.com/Perseusxrltd/mnemion/actions/runs/40786527984) |
+| website-release\.yml | main | success | [Run 40789233473](https://github.com/Perseusxrltd/mnemion/actions/runs/40789233473) |
 | website-release\.yml | v4\.46\.44 | success | [Run 40702700363](https://github.com/Perseusxrltd/mnemion/actions/runs/40702700363) |
 
 ## Unsuccessful jobs
 
-- [Run 40786527751](https://github.com/Perseusxrltd/mnemion/actions/runs/40786527751): studio (failure). Steps: Check the lightweight native client before six-platform packaging.
 - [Run 40702705371](https://github.com/Perseusxrltd/mnemion/actions/runs/40702705371): macos / arm64 public upgrade (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40695913724](https://github.com/Perseusxrltd/mnemion/actions/runs/40695913724): native / macos-26 / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
 - [Run 40757944923](https://github.com/Perseusxrltd/mnemion/actions/runs/40757944923): native / windows-2022 / x64 (failure). Steps: Run npm --prefix studio/electron test, Retain generated desktop-content secret scan receipt.
