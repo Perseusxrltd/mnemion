@@ -1,5 +1,5 @@
 /** Native backup preferences, protected keys and one coalesced background job. */
-import { constants } from 'node:fs'
+import { constants, type Stats } from 'node:fs'
 import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
 import { dirname, isAbsolute, join } from 'node:path'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
@@ -22,28 +22,57 @@ export function recoveryKeyId(value: string): string {
   return createHash('sha256').update('mnemion-backup-key-v1\0').update(Buffer.from(recoveryKey(value).slice(7), 'base64url')).digest('hex').slice(0, 24)
 }
 
+function privateBackupFile(info: Stats, allowUnlinked = false): boolean {
+  return info.isFile() && !info.isSymbolicLink() && (info.nlink === 1 || (allowUnlinked && info.nlink === 0)) &&
+    info.size <= 256 * 1024 &&
+    (process.platform === 'win32' || ((info.mode & 0o077) === 0 && info.uid === process.getuid?.()))
+}
+
+function sameBackupVersion(before: Stats, after: Stats): boolean {
+  return before.dev === after.dev && before.ino === after.ino && before.size === after.size &&
+    before.mtimeMs === after.mtimeMs && before.ctimeMs === after.ctimeMs
+}
+
 export async function readBackupDocument(path: string): Promise<any | undefined> {
-  let before
-  try { before = await lstat(path) } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
-    throw new Error(message)
-  }
-  if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size > 256 * 1024 ||
-      (process.platform !== 'win32' && ((before.mode & 0o077) !== 0 || before.uid !== process.getuid?.()))) throw new Error(message)
-  const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
-  try {
-    const actual = await file.stat()
-    if (actual.dev !== before.dev || actual.ino !== before.ino || actual.size !== before.size) throw new Error(message)
-    const bytes = Buffer.alloc(256 * 1024 + 1)
-    let length = 0
-    while (length < bytes.length) {
-      const read = await file.read(bytes, length, bytes.length - length)
-      if (!read.bytesRead) break
-      length += read.bytesRead
+  // Writers replace these documents atomically. Refresh once if that happens
+  // while reading, and validate the new descriptor independently before use.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let before
+    try { before = await lstat(path) } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+      throw new Error(message)
     }
-    if (length !== before.size || length > 256 * 1024) throw new Error(message)
-    return JSON.parse(bytes.subarray(0, length).toString('utf8'))
-  } catch { throw new Error(message) } finally { await file.close() }
+    if (!privateBackupFile(before)) throw new Error(message)
+    let file
+    try {
+      file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
+      const actual = await file.stat()
+      if (!privateBackupFile(actual, true)) throw new Error(message)
+      if (actual.dev !== before.dev || actual.ino !== before.ino || actual.nlink === 0) {
+        if (attempt === 0) continue
+        throw new Error(message)
+      }
+      if (!sameBackupVersion(before, actual)) throw new Error(message)
+      const bytes = Buffer.alloc(256 * 1024 + 1)
+      let length = 0
+      while (length < bytes.length) {
+        const read = await file.read(bytes, length, bytes.length - length)
+        if (!read.bytesRead) break
+        length += read.bytesRead
+      }
+      const after = await file.stat()
+      if (!privateBackupFile(after, true)) throw new Error(message)
+      if (after.nlink === 0) {
+        if (attempt === 0) continue
+        throw new Error(message)
+      }
+      if (!sameBackupVersion(actual, after) || length !== actual.size || length > 256 * 1024) throw new Error(message)
+      return JSON.parse(bytes.subarray(0, length).toString('utf8'))
+    } catch { throw new Error(message) } finally {
+      await file?.close().catch(() => { throw new Error(message) })
+    }
+  }
+  throw new Error(message)
 }
 
 async function writeDocument(path: string, value: unknown, signal?: AbortSignal): Promise<void> {

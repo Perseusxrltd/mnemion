@@ -5,8 +5,125 @@ import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { LocalBackups, createRecoveryKey, recoveryKeyId } from '../dist/local-backups.js'
+import { LocalBackups, createRecoveryKey, recoveryKeyId, readBackupDocument } from '../dist/local-backups.js'
 import { backupResult } from '../dist/local-backup-protocol.js'
+
+async function documentFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'mnemion-backup-document-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const path = join(root, 'backup-policy.json'), replacement = join(root, 'replacement.json')
+  await writeFile(path, '{"revision":1}\n', { mode: 0o600 })
+  await writeFile(replacement, '{"revision":2}\n', { mode: 0o600 })
+  return { root, path, replacement }
+}
+
+for (const point of ['before-open', 'after-open', 'during-read']) {
+  test(`backup metadata snapshot follows one atomic replacement ${point}`, async t => {
+    const f = await documentFixture(t), originalOpen = fs.open
+    let opens = 0
+    const mock = t.mock.method(fs, 'open', async (path, ...args) => {
+      if (path !== f.path) return originalOpen(path, ...args)
+      const first = ++opens === 1
+      if (first && point === 'before-open') await fs.rename(f.replacement, f.path)
+      const file = await originalOpen(path, ...args)
+      if (first && point === 'after-open') await fs.rename(f.replacement, f.path)
+      if (first && point === 'during-read') {
+        const read = file.read.bind(file)
+        let replaced = false
+        file.read = async (...input) => {
+          const result = await read(...input)
+          if (!replaced) { replaced = true; await fs.rename(f.replacement, f.path) }
+          return result
+        }
+      }
+      return file
+    })
+    syncBuiltinESMExports()
+    try {
+      assert.deepEqual(await readBackupDocument(f.path), { revision: 2 })
+      assert.equal(opens, 2)
+    } finally { mock.mock.restore(); syncBuiltinESMExports() }
+  })
+}
+
+test('backup metadata snapshot bounds repeated atomic replacement without resetting data', async t => {
+  const f = await documentFixture(t), originalOpen = fs.open
+  const next = join(f.root, 'next.json')
+  await writeFile(next, '{"revision":3}\n', { mode: 0o600 })
+  let opens = 0
+  const mock = t.mock.method(fs, 'open', async (path, ...args) => {
+    if (path === f.path) {
+      await fs.rename(++opens === 1 ? f.replacement : next, f.path)
+    }
+    return originalOpen(path, ...args)
+  })
+  syncBuiltinESMExports()
+  try {
+    await assert.rejects(readBackupDocument(f.path), /Backup settings could not be read safely/)
+    assert.equal(opens, 2)
+    assert.equal(await readFile(f.path, 'utf8'), '{"revision":3}\n')
+  } finally { mock.mock.restore(); syncBuiltinESMExports() }
+})
+
+test('backup metadata snapshot rejects permissions changed after its path check', { skip: process.platform === 'win32' }, async t => {
+  const f = await documentFixture(t), originalOpen = fs.open
+  let opens = 0
+  const mock = t.mock.method(fs, 'open', async (path, ...args) => {
+    if (path === f.path) { ++opens; await fs.chmod(path, 0o644) }
+    return originalOpen(path, ...args)
+  })
+  syncBuiltinESMExports()
+  try {
+    await assert.rejects(readBackupDocument(f.path), /Backup settings could not be read safely/)
+    assert.equal(opens, 1)
+  } finally { mock.mock.restore(); syncBuiltinESMExports() }
+})
+
+test('backup metadata snapshot rejects an in-place rewrite rather than retrying it', async t => {
+  const f = await documentFixture(t), originalOpen = fs.open
+  let opens = 0
+  const mock = t.mock.method(fs, 'open', async (path, ...args) => {
+    if (path === f.path) { ++opens; await writeFile(path, '{"revision":123456789}\n') }
+    return originalOpen(path, ...args)
+  })
+  syncBuiltinESMExports()
+  try {
+    await assert.rejects(readBackupDocument(f.path), /Backup settings could not be read safely/)
+    assert.equal(opens, 1)
+  } finally { mock.mock.restore(); syncBuiltinESMExports() }
+})
+
+test('backup metadata snapshot rejects corrupt JSON without another open', async t => {
+  const f = await documentFixture(t), originalOpen = fs.open
+  await writeFile(f.path, '{invalid json}\n')
+  let opens = 0
+  const mock = t.mock.method(fs, 'open', async (path, ...args) => {
+    if (path === f.path) ++opens
+    return originalOpen(path, ...args)
+  })
+  syncBuiltinESMExports()
+  try {
+    await assert.rejects(readBackupDocument(f.path), /Backup settings could not be read safely/)
+    assert.equal(opens, 1)
+  } finally { mock.mock.restore(); syncBuiltinESMExports() }
+})
+
+test('backup metadata snapshot rejects a replaced symlink without exposing its path', { skip: process.platform === 'win32' }, async t => {
+  const f = await documentFixture(t), originalOpen = fs.open
+  let opens = 0
+  const mock = t.mock.method(fs, 'open', async (path, ...args) => {
+    if (path === f.path) { ++opens; await fs.unlink(path); await fs.symlink(f.replacement, path) }
+    return originalOpen(path, ...args)
+  })
+  syncBuiltinESMExports()
+  try {
+    await assert.rejects(readBackupDocument(f.path), error => {
+      assert.equal(error.message, 'Backup settings could not be read safely. Existing recovery files were retained.')
+      return true
+    })
+    assert.equal(opens, 1)
+  } finally { mock.mock.restore(); syncBuiltinESMExports() }
+})
 
 test('host inspections retain recovery facts and discard private server settings', () => {
   const stamp = new Date().toISOString(), tenant = randomUUID()

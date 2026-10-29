@@ -46,8 +46,12 @@ The [4.46.49 chronology correction](../validation/2026-10-29-selected-passage-ca
 bounds passage eligibility to the already-selected candidates. Its real
 PostgreSQL regression materialized one row instead of 33 for one candidate;
 61 focused retrieval, chronology and permission checks passed. This removes
-redundant database work; production latency and native release acceptance for
-that source remain pending.
+redundant database work. Version 4.46.49 is now public and its
+[public update rehearsal](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156)
+passed all six desktop targets; actual shared-host upgrade and production
+latency acceptance remain pending. The separate 4.46.50 Linux x64
+[backup-resume gate](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489/job/123273331148)
+failed with no established cause; 4.46.49 remains the latest verified public release.
 
 | Reported behavior | Current work and retained acceptance | Requirement |
 | --- | --- | --- |
@@ -129,9 +133,19 @@ Index repair now passed in production with refs and archives preserved, but
 publication exited 1. The follow-up guard stopped at 04:09:01 UTC without
 requesting an upgrade action or extra capture. Ownership repair completed at
 04:21:38; the corrected uploader was installed at 04:24:13. The fresh-backup
-OS unit owns the current timer pause and restores timers through `ExecStopPost`.
-Its observing guard has requested no migration action. Fresh delivery,
-performance, migration 036 and installed vault-auditor acceptance remain pending.
+unit captured the snapshot and ledger successfully, but Git push timed out at
+05:07:49 after the unchanged 600-second limit. The remote ref remained unchanged,
+all three timers were restored, and the original guard stopped at 05:08:28 with
+no actions requested. The publish-only follow-up at normal snapshot priority
+also failed, before push, on optional multi-pack bitmap generation at 05:20:40.
+Its timers were restored and guard stopped at 05:23:02 with zero actions.
+Ordinary service-account Git connectivity passed with optional indexes disabled.
+Fresh delivery, performance, migration 036 and installed vault-auditor acceptance
+remain pending.
+
+Ordinary Grok Bot cloud-computer wake and terminal inspection do not establish
+native Bot authentication or MCP tools. The [documented connection route](../service/grok-bot.md)
+still requires its separate cloud-client acceptance under issue 44.
 
 V08 telemetry stays **Building**. Its full resource, wire, provider/privacy and
 platform/release acceptance remains required before enabling collection or

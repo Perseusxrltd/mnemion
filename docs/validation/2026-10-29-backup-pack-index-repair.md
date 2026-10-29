@@ -73,15 +73,65 @@ reconstruction/admission cases and three cleanup cases passed**. The initial
 index-placement fixture failed with `Retired or extra archive parts survived`;
 that failure and its correction are retained separately.
 
-One fresh snapshot-and-ledger attempt runs as the service account under its
+One fresh snapshot-and-ledger attempt ran as the service account under its
 original OS unit because the older snapshot exceeded the unchanged **one-hour
-migration freshness gate**. That unit owns the temporary pause of all three
-backup timers; its `ExecStopPost` hook restores them on exit. The new upgrade
+migration freshness gate**. That unit owned the temporary pause of all three
+backup timers and their `ExecStopPost` restoration. The new upgrade
 guard's **04:28:28** observation records **no migration actions and zero extra
-captures requested by the guard**. Fresh delivery, performance, migration 036
-and installed vault-auditor acceptance remain **pending**; the last verified live
-service version is **4.46.44**. Original publication failures and full
-cache-maintenance, post-upgrade and guarded-host acceptance remain open.
+captures requested by the guard**.
+
+The installed isolated-index helper above completed snapshot capture at
+**04:48:15** and ledger capture at **04:50:28**, both with **exit 0**. Git add
+succeeded, but **Git push timed out at 05:07:49** after the unchanged
+**600-second limit**. The independent GitHub ref still matched the previous
+**03:15:59** delivery. All three backup timers were active again at the
+**05:16:04** observation. The original guard stopped at **05:08:28** with an
+empty action list and no replayed mutations; no new off-host delivery or host
+migration was verified.
+
+A separate **publish-only unit** started at **05:17:29**, retaining the same
+captured archives and helper. Its **Nice=0 / I/O priority=4** matched
+`mnemion-backup@snapshot.service`; the earlier isolated unit inherited Nice=10.
+It requested publication at **05:18:46**, with **zero new captures** and the
+unchanged **600-second Git limit**. Repack failed at **05:20:40**: the optional
+multi-pack bitmap could not obtain full object closure (`could not write
+multi-pack bitmap`). This attempt made **no push**. The preceding maintenance
+job also failed on its 600-second command limit (**05:08:30–05:18:36**).
+
+All three backup timers were restored active. The new guard stopped at
+**05:23:02** with **zero actions**. A read-only check as the actual service
+account ran `git fsck --connectivity-only --no-dangling` with
+`core.multiPackIndex=false` and `pack.useBitmaps=false` and exited **0**.
+Ordinary object connectivity passes; this does not qualify every byte,
+performance or a new off-host delivery. The last verified delivery remained
+**03:15:59** at the **05:29:24** observation. A separate publisher omitting
+optional multi-pack/bitmap work from publication was being prepared, with
+installation still pending. The priority change does not establish a cause or
+a performance improvement.
+
+The **05:31:42 ordinary-Git candidate qualification failed its bandwidth gate**.
+First-publication reconstruction and publication with unusable optional metadata
+passed, but unchanged ciphertext was included in the incremental pack. The
+candidate was **not installed**. The live helper remains
+`ac7de7ac749be2aec13ed9b2bf4ba63c5152d795831322ea0713becbe3cff810`.
+Local graph probes retained these results:
+
+| Synthetic graph or walk | Pack objects | Pack bytes |
+| --- | ---: | ---: |
+| Unrelated roots | 5 | 256,403 |
+| Shared empty parent | 5 | 256,463 |
+| Previous commit as parent | 3 | 394 |
+| Parentless commit with identical remote staging tree | 5 | 256,412 |
+| Sparse walk enabled / disabled | 5 each | 256,433 each |
+
+The unrelated-root and shared-empty-parent walks included the unchanged blob;
+the previous-parent walk excluded it. These synthetic comparisons do not qualify
+a production graph change or bandwidth acceptance.
+
+Fresh delivery, performance, migration 036 and installed vault-auditor acceptance
+remain **pending**; the last verified live service version is **4.46.44**.
+Original publication failures and full cache-maintenance, post-upgrade and
+guarded-host acceptance remain open.
 
 Separately, [v4.46.48](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.48)
 was published at **03:46:47 UTC**. The
@@ -95,6 +145,20 @@ they measure download files and do not establish this host's upgrade:
 | Windows ARM64 / x64 | 219,961,051 / 225,876,955 |
 | macOS ARM64 / x64 | 263,513,315 / 271,010,727 |
 | Linux, four installers | 242,965,156–270,242,847 |
+
+Subsequently, [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49)
+became public with **38 assets**. Its
+[public update rehearsal](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156)
+passed all six desktop targets;
+[documentation CI](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659)
+and [website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612636)
+also passed. These release checks do not establish the shared host's migration.
+
+The **4.46.50 Linux x64** native
+[backup-resume gate](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489/job/123273331148)
+failed with `local:backup-status`: “Backup settings could not be read safely.
+Existing recovery files were retained.” Its cause is not established.
+**v4.46.49 remains the latest verified public release.**
 
 All **66 requirement states remain unchanged**. Issues **44, 47 and 48 remain
 open**. **V08 is Building**, with telemetry collection unavailable; neither
@@ -127,3 +191,17 @@ in-progress observations are evidence only for their recorded state.
 | `launched.json` (fresh-backup unit) | `badcd86002671bf4371c5db440ea33554025492a7089d152de94b96fdd4c5af7` |
 | `progress.json` (fresh-backup guard) | `7f93ae39d9d6f108e3e147b5f60b1f6137548c0da29f7f8574cfebbcfd4153e2` |
 | `delivery-observation.json` (fresh-backup unit) | `1d27f90d26d9db98daeda3756bbd9485b638281bf4c6923b1b64d9e4e0b584a5` |
+| `outcome.json` (isolated-index transfer) | `2bc4063165c68c3caab1f07a791c9df8740ec32706bf20de699ecb8c1ef11598` |
+| Stopped guard receipt, 05:08:28 UTC | `88f5da335b620dde0433daf8f3c76ddf48e2e43d2e3b21c7dfe13a655ebb51a1` |
+| `expected.json` (publish-only plan) | `1cb0f34516287eb0cc3bf96ed8cb1130ec8f2946c194c2771c79d6993773282f` |
+| `launch-intent.json` (publish-only plan) | `8853f3cb4b10627f280899521cd5830d15e2e3734d7e1bd5c00f978f000b9846` |
+| `outcome.json` (publish-only failure) | `f5ddba823ac043eb5374d8504eaeedc150f56b5de25df2bfeed3679985e3996b` |
+| `progress.json` (after publish-only failure) | `f80e5a574dc7f808334b86566895a0c6f350c07c34ba96a39c68fb2da0588407` |
+| Stopped guard receipt, 05:23:02 UTC | `fbef84bf8d6762f91f705496d30b09a8081d8c6e038d6e8794937c96fc7e045c` |
+| `original-installed-evidence.json` (4.46.50 Linux x64) | `3d979843edbd928af5337ff039680727777cf16b1e919f94a671254789e244c4` |
+| `original-job.log` (4.46.50 Linux x64) | `183b9a6ed5d8a566af0d81263f1c144edca366b9786cd9d718cdbce1507829c6` |
+| `candidate.json` (undeployed ordinary-Git candidate) | `da0c72a2d1b75c6be0b50a4b4ad10532e5e3dedfc9b3b82a3078fdebb23c4b3e` |
+| `qualification.json` (ordinary-Git bandwidth failure) | `c244e42e2b86daa6b90ff8d21d780386e66e99a2fa3a2ac00a0f14a7a6f816cb` |
+| `graph-probe/result.json` | `a40daabe585903ed8c434068a345ca801721f51c8c2d84323a6d3bfd790013cb` |
+| `graph-probe/identical-tree-result.json` | `7053249495043bd962319b7af63121f6e68eb812fa2d21a2b5fba8c336a479f7` |
+| `graph-probe/sparse-walk-result.json` | `50d8a6ed3e155d242540ab4778561620d6a4eec4a2b5e3db9a78e7d1abc033d2` |

@@ -107,9 +107,16 @@ guard stopped at **04:09:01** with no actions or additional captures requested.
 Ownership repair then completed at **04:21:38** with archive inventory preserved
 and no memory-service restart. The corrected uploader was installed at
 **04:24:13** after eight real Git cases and three cleanup cases passed; its first
-fixture failure is retained. A fresh-backup OS unit now owns the timer pause and
-`ExecStopPost` restoration. New delivery, performance and the guarded upgrade
-remain pending; the observing guard has requested no migration actions.
+fixture failure is retained. Fresh snapshot and ledger captures succeeded and
+Git add completed, but push timed out at **05:07:49** after **600 seconds**.
+The independent remote ref remained unchanged; all three timers were restored.
+The original guard stopped at **05:08:28** without actions. The separate
+publish-only attempt used normal snapshot priority, with no new capture or
+increased Git timeout, but failed before push at **05:20:40** during optional
+multi-pack bitmap generation. All three timers were restored and its guard
+stopped at **05:23:02** with zero actions. Ordinary Git connectivity passed with
+MIDX and bitmaps disabled. New delivery, performance and the guarded upgrade
+remain pending.
 
 The field probes made no memory writes or configuration changes. The original
 requirements, feature scope and **V08 Building** state are unchanged; product
