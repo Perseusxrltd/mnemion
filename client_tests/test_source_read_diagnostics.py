@@ -54,13 +54,32 @@ def test_os_errors_use_fixed_categories_and_drop_host_text():
     )
 
 
-def _inject(monkeypatch, name, error):
+def _inject(monkeypatch, name, error, opened=None):
+    """Raise for one selected file. Windows must hit the no-follow opener, not os.open."""
+    from pathlib import Path
+
     from mnemion.connectors import source_files
 
+    if os.name == "nt":
+        real = source_files._windows_open_unfollowed
+
+        def guarded(path, relative):
+            chosen = Path(path).name
+            if opened is not None:
+                opened.append(chosen)
+            if chosen == name:
+                raise error
+            return real(path, relative)
+
+        monkeypatch.setattr(source_files, "_windows_open_unfollowed", guarded)
+        return
     real = source_files.os.open
 
     def guarded(path, flags, *args, **kwargs):
-        if os.fsdecode(path) == name:
+        chosen = os.fsdecode(path)
+        if opened is not None:
+            opened.append(chosen)
+        if chosen == name:
             raise error
         return real(path, flags, *args, **kwargs)
 
@@ -162,18 +181,12 @@ def test_permission_denial_stops_before_later_files_and_keeps_content_skips(tmp_
     (root / "b-later.md").write_text("synthetic later", encoding="utf-8")
     (root / "c-binary.md").write_bytes(b"\xff")
     opened = []
-    from mnemion.connectors import source_files
-
-    real = source_files.os.open
-
-    def guarded(path, flags, *args, **kwargs):
-        opened.append(os.fsdecode(path))
-        if os.fsdecode(path) == "a-denied.md":
-            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING")
-        return real(path, flags, *args, **kwargs)
-
-    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, guarded})
-    monkeypatch.setattr(source_files.os, "open", guarded)
+    _inject(
+        monkeypatch,
+        "a-denied.md",
+        PermissionError(errno.EACCES, "PRIVATE_OS_STRING"),
+        opened,
+    )
     provider = FilesystemProvider(FilesystemConfig(path=root, **published()))
     results = list(provider.documents(provider.scopes()[0]))
     stopped = [value for value in results if isinstance(value, SkippedDocument)]
@@ -203,3 +216,40 @@ def test_ordinary_text_still_reads_and_oversize_stays_a_content_skip(tmp_path):
     assert [(value.path, value.code, value.abort_inventory) for value in skipped] == [
         ("big.md", "source_too_large", False)
     ]
+
+
+def test_windows_failed_handle_conversion_closes_the_raw_handle(tmp_path, monkeypatch):
+    if os.name != "nt":
+        pytest.skip("Windows HANDLE ownership is checked on a native Windows interpreter")
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "plain.md").write_text("ordinary selected", encoding="utf-8")
+
+    def handles():
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        current = kernel.GetCurrentProcess
+        current.restype = wintypes.HANDLE
+        get = kernel.GetProcessHandleCount
+        get.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        get.restype = wintypes.BOOL
+        count = wintypes.DWORD()
+        if not get(current(), ctypes.byref(count)):
+            raise OSError(ctypes.get_last_error(), "GetProcessHandleCount")
+        return count.value
+
+    def explode(handle, flags):
+        raise OSError(errno.EINVAL, "conversion failed")
+
+    monkeypatch.setattr(msvcrt, "open_osfhandle", explode)
+    before = handles()
+    for _ in range(20):
+        with pytest.raises(SourceReadError) as failed:
+            read_selected(root, "plain.md", 1000)
+        assert failed.value.code == "source_io_failed"
+        assert failed.value.relative == "plain.md"
+        assert "ordinary selected" not in str(failed.value)
+    assert handles() - before < 5

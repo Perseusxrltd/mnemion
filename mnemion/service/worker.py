@@ -191,9 +191,17 @@ class Worker:
                 (job["id"],),
             )
             return False
-        if not conn.execute(
+        # A refreshed root lease is not a new read of a withheld file. The same
+        # deferral covers the check before inference and the check before publish.
+        source_current = conn.execute(
             "SELECT mnemion.embedding_source_current(%s) AS current", (job["space_id"],)
-        ).fetchone()["current"]:
+        ).fetchone()["current"]
+        revision_current = True
+        if source_current and job.get("revision_id"):
+            revision_current = conn.execute(
+                "SELECT mnemion.embedding_revision_current(%s) AS current", (job["revision_id"],)
+            ).fetchone()["current"]
+        if not source_current or not revision_current:
             conn.execute(
                 """UPDATE mnemion.jobs SET state='pending',lease_id=NULL,lease_until=NULL,
                    attempts=greatest(0,attempts-1),available_at=now()+interval '60 seconds',error_code='source_access_unavailable'

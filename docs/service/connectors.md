@@ -436,7 +436,11 @@ as a follow-up. A later access-lease refresh clears that suspension. It can
 show files this scan re-read, and native memories in other spaces. It does not
 reveal withheld items, remove the failed inventory receipt, advance the last
 complete scan, or clear a hold because a run id or root lease changed. A
-body-free retain is not a new read. Source health keeps
+body-free retain is not a new read. Background indexing uses the worker
+login, so reader row policies do not apply to it. A current root lease does
+not make a withheld file eligible to embed. A file this scan did re-read can
+still be indexed. The withheld file becomes eligible again only after a later
+scan reads it. Source health keeps
 `connector_inventory_incomplete` until a later scan reads the withheld files
 and finishes with no access failure. That repair restores the text even when
 the body and source revision are unchanged. Reader health summaries still omit

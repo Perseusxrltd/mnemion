@@ -19,6 +19,34 @@ from mnemion.service.models import GrantInput, KeyInput, MemoryInput, PrincipalI
 from service_tests.test_clients import running as serve
 
 
+def patch_selected_reads(monkeypatch, source_files, blocked):
+    """Fail selected opens by source name. On Windows the no-follow opener is the boundary."""
+    import os
+    from pathlib import Path
+
+    if os.name == "nt":
+        real = source_files._windows_open_unfollowed
+
+        def guarded(path, relative):
+            error = blocked(Path(path).name)
+            if error is not None:
+                raise error
+            return real(path, relative)
+
+        monkeypatch.setattr(source_files, "_windows_open_unfollowed", guarded)
+        return
+    real_open = source_files.os.open
+
+    def guarded(path, flags, *args, **kwargs):
+        error = blocked(os.fsdecode(path))
+        if error is not None:
+            raise error
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, guarded})
+    monkeypatch.setattr(source_files.os, "open", guarded)
+
+
 @pytest.fixture
 def text_source(env, tmp_path):
     service = ConnectorService(env.memory)
@@ -402,7 +430,6 @@ def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
     env, text_source, monkeypatch
 ):
     import errno
-    import os
 
     from mnemion.connectors import source_files
     from mnemion.service.connector_models import ScopeInput, utc_now
@@ -411,15 +438,13 @@ def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
     root = config.provider.path
     (root / "a-kept.md").write_text("Postgres kept before denial", encoding="utf-8")
     (root / "gone.md").write_text("Postgres retained until access scan", encoding="utf-8")
-    real_open = source_files.os.open
 
-    def guarded(path, flags, *args, **kwargs):
-        if os.fsdecode(path) == "denied.md":
-            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "denied.md"))
-        return real_open(path, flags, *args, **kwargs)
+    def blocked(name):
+        if name == "denied.md":
+            return PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "denied.md"))
+        return None
 
-    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, guarded})
-    monkeypatch.setattr(source_files.os, "open", guarded)
+    patch_selected_reads(monkeypatch, source_files, blocked)
     with (
         serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
         Client(url, people["capture"][1]) as client,
@@ -511,7 +536,6 @@ def test_unreadable_selected_file_is_actionable_and_does_not_certify_deletion(
 def test_previously_indexed_denial_stays_hidden_after_root_refresh(env, text_source, monkeypatch):
     """Indexed files stay hidden after denial until a later scan reads them again."""
     import errno
-    import os
 
     from mnemion.connectors import source_files
     from mnemion.service.connector_models import (
@@ -541,13 +565,12 @@ def test_previously_indexed_denial_stays_hidden_after_root_refresh(env, text_sou
     )
     native_id = UUID(native["memory_id"])
     deny = {"on": False}
-    real_open = source_files.os.open
     denied_names = {"m-denied.md", "z-second.md"}
 
-    def guarded(path, flags, *args, **kwargs):
-        if deny["on"] and os.fsdecode(path) in denied_names:
-            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "m-denied.md"))
-        return real_open(path, flags, *args, **kwargs)
+    def blocked(name):
+        if deny["on"] and name in denied_names:
+            return PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "m-denied.md"))
+        return None
 
     def recall(reader):
         return reader.request(
@@ -577,8 +600,7 @@ def test_previously_indexed_denial_stays_hidden_after_root_refresh(env, text_sou
             ),
         )
 
-    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, guarded})
-    monkeypatch.setattr(source_files.os, "open", guarded)
+    patch_selected_reads(monkeypatch, source_files, blocked)
     with (
         serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
         Client(url, people["capture"][1]) as client,
@@ -696,3 +718,115 @@ def test_previously_indexed_denial_stays_hidden_after_root_refresh(env, text_sou
             repaired_items[second_memory]["validated_run"]
             == repaired_items[kept_memory]["validated_run"]
         )
+
+
+def test_withheld_source_is_not_embedded_after_root_refresh(env, text_source, monkeypatch):
+    """A current root lease must not send a held file to the embedder."""
+    import errno
+
+    from mnemion.connectors import source_files
+    from mnemion.service.connector_models import ScopeInput, utc_now
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept beside denial", encoding="utf-8")
+    (root / "m-denied.md").write_text("Postgres indexed before denial", encoding="utf-8")
+    (root / "z-second.md").write_text("Postgres second denial unread", encoding="utf-8")
+    deny = {"on": False}
+    denied_names = {"m-denied.md", "z-second.md"}
+
+    def blocked(name):
+        if deny["on"] and name in denied_names:
+            return PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(root / "m-denied.md"))
+        return None
+
+    def memories(space):
+        with env.db.transaction(people["capture"][0]) as conn:
+            rows = conn.execute(
+                """SELECT m.id, r.content FROM mnemion.memories m
+                   JOIN mnemion.memory_revisions r
+                     ON r.tenant_id=m.tenant_id AND r.id=m.current_revision_id
+                   WHERE m.space_id=%s AND m.deleted_at IS NULL""",
+                (space,),
+            ).fetchall()
+        return {row["content"]: row["id"] for row in rows}
+
+    def lease(space, memory_id):
+        with env.worker_db.worker_transaction(env.owner.tenant_id) as conn:
+            row = conn.execute(
+                """SELECT j.id FROM mnemion.jobs j
+                   JOIN mnemion.memory_revisions r
+                     ON r.tenant_id=j.tenant_id AND r.id=j.revision_id
+                   WHERE j.space_id=%s AND j.kind='embed' AND j.state='pending'
+                     AND r.memory_id=%s ORDER BY j.created_at LIMIT 1""",
+                (space, memory_id),
+            ).fetchone()
+            assert row
+            return conn.execute(
+                """UPDATE mnemion.jobs SET state='leased',lease_id=%s,
+                   lease_until=now()+interval '1 minute',attempts=1
+                   WHERE id=%s RETURNING *""",
+                (uuid4(), row["id"]),
+            ).fetchone()
+
+    def embedded(memory_id):
+        with env.worker_db.worker_transaction(env.owner.tenant_id) as conn:
+            return conn.execute(
+                """SELECT count(*) AS n FROM mnemion.embeddings e
+                   JOIN mnemion.memory_revisions r
+                     ON r.tenant_id=e.tenant_id AND r.id=e.revision_id
+                   WHERE r.memory_id=%s""",
+                (memory_id,),
+            ).fetchone()["n"]
+
+    patch_selected_reads(monkeypatch, source_files, blocked)
+    calls = []
+    original = env.embedder.document
+
+    def inference(text):
+        calls.append(text)
+        return original(text)
+
+    monkeypatch.setattr(env.embedder, "document", inference)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+    ):
+        assert sync(config, client=client)["completed"]
+        scope = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(scope["space_id"])
+        indexed = memories(space)
+        denied_id = indexed["Postgres indexed before denial"]
+        second_id = indexed["Postgres second denial unread"]
+        kept_id = indexed["Postgres kept beside denial"]
+        deny["on"] = True
+        denied = sync(config, client=client)
+        assert not denied["completed"] and denied["removed"] == 0
+        service.refresh_scope(
+            people["capture"][0],
+            connection,
+            ScopeInput(
+                external_id=scope["external_id"],
+                name="Fixture",
+                members=["employee:reader"],
+                observed_at=utc_now(),
+            ),
+        )
+        for memory_id in (denied_id, second_id):
+            assert env.worker.process(lease(space, memory_id)) is False
+            assert embedded(memory_id) == 0
+        assert not any(
+            "indexed before denial" in text or "second denial unread" in text for text in calls
+        )
+        assert env.worker.process(lease(space, kept_id)) is True
+        assert any("kept beside denial" in text for text in calls)
+        assert embedded(kept_id) > 0
+        assert embedded(denied_id) == 0 and embedded(second_id) == 0
+        deny["on"] = False
+        repaired = sync(config, client=client)
+        assert repaired["completed"] and repaired["removed"] == 0 and repaired["changed"] == 0
+        assert env.worker.process(lease(space, denied_id)) is True
+        assert env.worker.process(lease(space, second_id)) is True
+        assert any("indexed before denial" in text for text in calls)
+        assert any("second denial unread" in text for text in calls)
+        assert embedded(denied_id) > 0 and embedded(second_id) > 0

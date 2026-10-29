@@ -116,17 +116,28 @@ def test_file_replaced_after_checks_cannot_escape_selected_vault(tmp_path, monke
         probe.unlink()
     except OSError:
         pytest.skip("Creating test symlinks requires Windows developer mode or privilege")
-    original_open = source_files.os.open
+    if os.name == "nt":
+        original = source_files._windows_open_unfollowed
 
-    def replace(path, flags, *args, **kwargs):
-        if os.fspath(path) in {"note.md", str(source)}:
-            source.unlink()
-            source.symlink_to(outside)
-        return original_open(path, flags, *args, **kwargs)
+        def replace(path, relative):
+            if os.path.basename(os.fspath(path)) == "note.md":
+                source.unlink()
+                source.symlink_to(outside)
+            return original(path, relative)
 
-    # Keep the openat capability set intact while replacing the call itself.
-    monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, replace})
-    monkeypatch.setattr(source_files.os, "open", replace)
+        monkeypatch.setattr(source_files, "_windows_open_unfollowed", replace)
+    else:
+        original_open = source_files.os.open
+
+        def replace(path, flags, *args, **kwargs):
+            if os.fspath(path) in {"note.md", str(source)}:
+                source.unlink()
+                source.symlink_to(outside)
+            return original_open(path, flags, *args, **kwargs)
+
+        # Keep the openat capability set intact while replacing the call itself.
+        monkeypatch.setattr(source_files.os, "supports_dir_fd", {*os.supports_dir_fd, replace})
+        monkeypatch.setattr(source_files.os, "open", replace)
     provider = FilesystemProvider(FilesystemConfig(path=root, **published()))
     from mnemion.connectors.protocol import Document, SkippedDocument
 

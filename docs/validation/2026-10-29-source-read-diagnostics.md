@@ -58,7 +58,36 @@ The indexed-denial test now uses `a-kept.md`, `m-denied.md`, and `z-second.md`. 
 
 `ruff format` reformatted two files, then `ruff check` passed on `mnemion/source_codes.py`, `mnemion/connectors/source_files.py`, `mnemion/service/connector_models.py`, `mnemion/service/connectors.py`, `client_tests/test_source_read_diagnostics.py`, and `service_tests/test_source_health.py`. OpenAPI `info.version` remains `4.46.53`. No public contract field was added.
 
-On Linux, `test_in_root_symlink_is_refused_and_ordinary_file_remains` passed. An in-root symlink and an outside redirect were refused, and the ordinary file was read. The Windows `CreateFileW` / `FILE_FLAG_OPEN_REPARSE_POINT` path did not run: this interpreter is not Windows. The code closes the raw `HANDLE` if `msvcrt.open_osfhandle` raises, and it still checks the opened handle against the root. Actual Windows acceptance of an in-root file symlink, a redirected symlink, and an ordinary file together is still required.
+On Linux, `test_in_root_symlink_is_refused_and_ordinary_file_remains` passed. An in-root symlink and an outside redirect were refused, and the ordinary file was read. That interpreter is not Windows. The native Windows run is recorded below.
+
+## Inference hold and Windows, 29 October 2026
+
+Migration `038_embedding_withhold.sql` adds `embedding_revision_current(revision)`. It does not rewrite rows and does not change `embedding_source_current`. The worker calls it from the same policy that already runs before inference and before publishing vectors. A withheld revision is put back to `pending` with `source_access_unavailable` and is not sent to the embedder. A neighboring item that this scan re-read stays eligible. Reindex backfill still enqueues a held revision, then delays that job for 60 seconds; the worker checks again before any model call. The connector principal is not exempt from this function.
+
+The earlier 13 passes were not repeated. The pinned Linux interpreter ran only the new regression and the migration-count 35 upgrade:
+
+```
+pytest -q --tb=short \
+  service_tests/test_source_health.py::test_withheld_source_is_not_embedded_after_root_refresh \
+  service_tests/test_author_withdrawal_upgrade.py::test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory[35]
+```
+
+Result: 2 passed in 61.59s. Python 3.12.3. The log is `embedding-withhold-checks.txt`. After a root refresh, the fake embedder was not called for `Postgres indexed before denial` or `Postgres second denial unread`, and neither memory had an embedding. The re-read neighbor was embedded. After the denial was removed, the same unchanged bodies were embedded. The upgrade from count 35 still preserved inventoried rows.
+
+Denial fixtures no longer patch only POSIX `os.open`. On Windows they patch `_windows_open_unfollowed`. The replaced-file race does the same. `astra-native-windows-checks-20261029.txt` remains the earlier collection failure: system Python 3.13 had no `pydantic`, so no test ran. That is an environment limit, not a runtime failure.
+
+The native re-run used an isolated venv at `%TEMP%\field47-win-pytest`, Python 3.13.11 (MSC v.1944 64 bit), with only `pydantic==2.14.0`, `pytest==9.1.1`, `httpx==0.28.1`, and `defusedxml==0.7.1`. No embedding or model package was installed. No global interpreter was changed.
+
+```
+pytest -q --tb=short \
+  client_tests/test_source_read_diagnostics.py \
+  client_tests/test_connector_providers.py::test_folder_symlink_cannot_escape_selected_vault_or_certify_deletions \
+  client_tests/test_connector_providers.py::test_file_replaced_after_checks_cannot_escape_selected_vault
+```
+
+Result: 8 passed in 1.32s. No skips. The log is `windows-native-checks.txt`. On this account the checks that ran were: a regular file read, a missing file, an injected denial through the Windows opener, an in-root symlink, an outside redirect, a directory symlink refusal, a file replaced with an outside symlink before `CreateFileW`, and 20 failed `open_osfhandle` conversions whose process handle count did not grow. Symlink creation succeeded here, so the privilege skip did not trigger. This is not a second Windows account and not an installed service.
+
+`ruff format` and `ruff check` passed for `mnemion/service/worker.py`, `mnemion/service/reindex.py`, `service_tests/test_source_health.py`, `client_tests/test_source_read_diagnostics.py`, and `client_tests/test_connector_providers.py`. OpenAPI `info.version` remains `4.46.53`.
 
 Remaining, and not claimed here:
 
@@ -68,6 +97,6 @@ Remaining, and not claimed here:
 - A denied `.json` or `.jsonl` journal still becomes `journal_inventory_unreadable` without this `file_errors` receipt.
 - Reader `health.sources` and administrator diagnostics JSON still omit paths. The operator sees the path on the scope inventory and in Studio File status.
 - Sync control status stays the coarse `incomplete_inventory`. The category is on the scope result and in `file_errors`.
-- App `read_scope` on `embeddings`, `sources`, and `source_revisions` was not given the per-file predicate. Reader recall, fetch, history, and source fetch go through `memories` first. The embedding worker policy is unchanged.
+- App `read_scope` on `embeddings`, `sources`, and `source_revisions` was not given the per-file predicate. Reader recall, fetch, history, and source fetch go through `memories` first. The worker role can still read withheld rows; `embedding_revision_current` is what stops a new embedding. Vectors written before the hold are not deleted.
 - The next scan's opening refresh can clear suspension, so embedding freshness can look current until that scan fails again. The previous incomplete warning remains.
 - Before any incomplete receipt exists, the first failure can still look fresh until that scan finishes.

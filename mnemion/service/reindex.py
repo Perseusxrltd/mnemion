@@ -402,7 +402,13 @@ class ReindexBackfill:
                 {"space": run["space_id"], "cursor": run["cursor_id"], "limit": batch_size},
             ).fetchall()
             for row in rows:
-                enqueue_candidate(
+                # Held source text stays queued, but it is not eligible now.
+                # A later read clears the hold and the same job can run.
+                # Validated neighbors in this batch are enqueued immediately.
+                current = conn.execute(
+                    "SELECT mnemion.embedding_revision_current(%s) AS current", (row["id"],)
+                ).fetchone()["current"]
+                created = enqueue_candidate(
                     conn,
                     tenant=run["tenant_id"],
                     space=run["space_id"],
@@ -412,6 +418,14 @@ class ReindexBackfill:
                     generation=run["generation_id"],
                     created_by=run["created_by"],
                 )
+                if created and not current:
+                    conn.execute(
+                        """UPDATE mnemion.jobs SET available_at=now()+interval '60 seconds',
+                           error_code='source_access_unavailable'
+                           WHERE space_id=%s AND reindex_run_id=%s AND revision_id=%s
+                             AND state='pending'""",
+                        (run["space_id"], run["id"], row["id"]),
+                    )
             conn.execute(
                 """UPDATE mnemion.reindex_runs SET cursor_id=%s,scan_complete=%s,
                    lease_id=NULL,lease_until=NULL,updated_at=now() WHERE space_id=%s AND id=%s""",
