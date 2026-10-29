@@ -8,8 +8,10 @@ gates; no paid service, model call or new signing credential is required.
    `docs/releases/X.Y.Z.md`. Keep unfinished product requirements visible.
 2. Run `python -m deploy.release_automation prepare X.Y.Z` in the locked project
    environment. It updates the Python/npm packages, project lock entries, release
-   targets and reviewed-source marker, generates OpenAPI and agent contracts, and
-   validates the version boundaries. Unrelated dependency pins are preserved.
+   targets, the v3 release allowlist and reviewed-source marker, generates OpenAPI
+   and agent contracts, and validates the version boundaries. The allowlist gains
+   the current source release and the target, keeps existing reviewed coordinates,
+   and stays within 32 contiguous slots. Unrelated dependency pins are preserved.
    It accepts both the original combined roadmap header and the current separate
    source/public-status lines, retaining the live public-availability link.
 3. Run checks appropriate to the change, then commit reviewed source.

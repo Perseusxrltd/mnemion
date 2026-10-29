@@ -51,10 +51,13 @@ deployment flag cannot. The packet stores only the chosen marginal. Both axes
 are accepted in the same week. There is no server-week parity and no joined
 release-by-OS profile.
 
-The release allowlist is operator-owned and currently has one slot:
-`0` means `4.46.53`. A coordinate that is not on the allowlist at summary time
-becomes `unlisted`. The packet cannot invent a slot. Components are integers
-from 0 to 255. The coarse OS names are `windows`, `macos`, `linux` and `other`.
+The release allowlist is operator-owned. Preparing a release adds the current
+source version and the target stable version, keeps at most 32 coordinates, and
+packs slots from zero. This checkout's catalog still has one slot: `0` means
+`4.46.53`. A coordinate that is not on the allowlist at summary time becomes
+`unlisted`. The packet cannot invent a slot. It stores the major, minor and
+patch bytes, not the slot. Components are integers from 0 to 255. The coarse OS
+names are `windows`, `macos`, `linux` and `other`.
 A report never contains a hardware id.
 
 The closed report freezes that week's domain: the release slots, the unlisted

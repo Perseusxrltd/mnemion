@@ -303,6 +303,79 @@ def test_verification_api_failure_does_not_retry_or_publish(fixture, monkeypatch
     assert fixture.release["draft"] and not fixture.calls
 
 
+def _release_tree(
+    tmp_path: Path,
+    *,
+    source: str,
+    target: str,
+    allowlist: list[dict],
+    distribution_separator: str = " ",
+    maximum_slots: int = 32,
+) -> None:
+    def write(name, text):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+
+    for directory, name in (
+        (Path("."), "mnemion"),
+        (Path("studio/client"), "mnemion-desktop-build"),
+    ):
+        write(directory / "pyproject.toml", f'[project]\nname = "{name}"\nversion = "{source}"\n')
+        write(
+            directory / "uv.lock",
+            f'[[package]]\nname = "{name}"\nversion = "{source}"\n\n'
+            '[[package]]\nname = "unrelated"\nversion = "4.2.2"\n',
+        )
+    write("mnemion/version.py", f'__version__ = "{source}"\n')
+    write(f"docs/releases/{target}.md", f"# Mnemion {target}\n\nConcrete changes.\n")
+    write(
+        "docs/ROADMAP.md",
+        f"Reviewed source distribution: **{source}**."
+        + distribution_separator
+        + "Roadmap updated: **2026-10-13**.\n\nUnfinished scope remains.\n",
+    )
+    write(
+        "deploy/release-targets.json",
+        json.dumps({"version": source, "platforms": ["windows", "macos", "linux"]}),
+    )
+    write(
+        "mnemion/product_telemetry/wire-v3.json",
+        json.dumps(
+            {
+                "release_coordinate": {"minimum": 0, "maximum": 255},
+                "allowlist_maximum_slots": maximum_slots,
+                "release_allowlist": allowlist,
+            },
+            indent=2,
+        )
+        + "\n",
+    )
+    for directory in ("packages/client", "studio/frontend", "studio/electron"):
+        for name in ("package.json", "package-lock.json"):
+            write(
+                f"{directory}/{name}",
+                json.dumps(
+                    {
+                        "version": source,
+                        "packages": {
+                            "": {"version": source},
+                            "../../packages/client": {"version": source},
+                            "node_modules/unrelated": {"version": "4.2.2"},
+                        },
+                    }
+                ),
+            )
+
+
+def _tree_text(tmp_path: Path) -> dict[str, str]:
+    return {
+        path.relative_to(tmp_path).as_posix(): path.read_text()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+
+
 @pytest.mark.parametrize(
     "distribution_separator",
     [
@@ -313,46 +386,13 @@ def test_verification_api_failure_does_not_retry_or_publish(fixture, monkeypatch
 def test_version_preparation_preserves_unrelated_pins_and_is_repeatable(
     tmp_path, distribution_separator
 ):
-    def write(name, text):
-        path = tmp_path / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
-
-    for directory, name in (
-        (Path("."), "mnemion"),
-        (Path("studio/client"), "mnemion-desktop-build"),
-    ):
-        write(directory / "pyproject.toml", f'[project]\nname = "{name}"\nversion = "4.2.2"\n')
-        write(
-            directory / "uv.lock",
-            f'[[package]]\nname = "{name}"\nversion = "4.2.2"\n\n[[package]]\nname = "unrelated"\nversion = "4.2.2"\n',
-        )
-    write("mnemion/version.py", '__version__ = "4.2.2"\n')
-    write("docs/releases/4.2.3.md", "# Mnemion 4.2.3\n\nConcrete changes.\n")
-    write(
-        "docs/ROADMAP.md",
-        "Reviewed source distribution: **4.2.2**."
-        + distribution_separator
-        + "Roadmap updated: **2026-10-13**.\n\nUnfinished scope remains.\n",
+    _release_tree(
+        tmp_path,
+        source="4.2.2",
+        target="4.2.3",
+        allowlist=[{"slot": 0, "major": 4, "minor": 2, "patch": 2, "id": "4.2.2"}],
+        distribution_separator=distribution_separator,
     )
-    write(
-        "deploy/release-targets.json", '{"version":"4.2.2","platforms":["windows","macos","linux"]}'
-    )
-    for directory in ("packages/client", "studio/frontend", "studio/electron"):
-        for name in ("package.json", "package-lock.json"):
-            write(
-                f"{directory}/{name}",
-                json.dumps(
-                    {
-                        "version": "4.2.2",
-                        "packages": {
-                            "": {"version": "4.2.2"},
-                            "../../packages/client": {"version": "4.2.2"},
-                            "node_modules/unrelated": {"version": "4.2.2"},
-                        },
-                    }
-                ),
-            )
     assert subject.prepare(tmp_path, "4.2.3")
     assert subject.prepare(tmp_path, "4.2.3") == []
     assert 'name = "unrelated"\nversion = "4.2.2"' in (tmp_path / "uv.lock").read_text()
@@ -365,6 +405,91 @@ def test_version_preparation_preserves_unrelated_pins_and_is_repeatable(
         + f"Roadmap updated: **{subject.datetime.now(subject.timezone.utc).date().isoformat()}**."
         + "\n\nUnfinished scope remains.\n"
     )
+
+
+def test_prepare_adds_current_and_target_release_cohorts(tmp_path):
+    _release_tree(
+        tmp_path,
+        source="4.2.2",
+        target="4.2.3",
+        allowlist=[{"slot": 0, "major": 4, "minor": 2, "patch": 1, "id": "4.2.1"}],
+    )
+    changed = subject.prepare(tmp_path, "4.2.3")
+    assert "mnemion/product_telemetry/wire-v3.json" in changed
+    catalog = json.loads((tmp_path / "mnemion/product_telemetry/wire-v3.json").read_text())
+    assert catalog["release_allowlist"] == [
+        {"slot": 0, "major": 4, "minor": 2, "patch": 1, "id": "4.2.1"},
+        {"slot": 1, "major": 4, "minor": 2, "patch": 2, "id": "4.2.2"},
+        {"slot": 2, "major": 4, "minor": 2, "patch": 3, "id": "4.2.3"},
+    ]
+    assert (tmp_path / "mnemion/version.py").read_text() == '__version__ = "4.2.3"\n'
+    assert subject.prepare(tmp_path, "4.2.3") == []
+
+
+def test_prepare_retains_at_most_32_release_cohorts(tmp_path):
+    _release_tree(
+        tmp_path,
+        source="1.0.0",
+        target="1.0.32",
+        allowlist=[
+            {"slot": index, "major": 1, "minor": 0, "patch": index, "id": f"1.0.{index}"}
+            for index in range(32)
+        ],
+    )
+    subject.prepare(tmp_path, "1.0.32")
+    catalog = json.loads((tmp_path / "mnemion/product_telemetry/wire-v3.json").read_text())
+    cohorts = catalog["release_allowlist"]
+    assert [item["slot"] for item in cohorts] == list(range(32))
+    assert len(cohorts) == catalog["allowlist_maximum_slots"]
+    identities = [item["id"] for item in cohorts]
+    assert identities[0] == "1.0.0"
+    assert identities[-1] == "1.0.32"
+    assert "1.0.1" not in identities
+    assert subject.prepare(tmp_path, "1.0.32") == []
+
+
+def test_prepare_rejects_invalid_release_cohorts_without_writing(tmp_path):
+    _release_tree(
+        tmp_path,
+        source="4.2.2",
+        target="4.2.256",
+        allowlist=[{"slot": 0, "major": 4, "minor": 2, "patch": 2, "id": "4.2.2"}],
+    )
+    before = _tree_text(tmp_path)
+    with pytest.raises(ValueError, match="Release cohort coordinates must fit in one byte"):
+        subject.prepare(tmp_path, "4.2.256")
+    assert _tree_text(tmp_path) == before
+
+    broken = tmp_path / "broken-catalog"
+    _release_tree(
+        broken,
+        source="4.2.2",
+        target="4.2.3",
+        allowlist=[{"slot": 5, "major": 4, "minor": 2, "patch": 2, "id": "4.2.2"}],
+    )
+    before = _tree_text(broken)
+    with pytest.raises(ValueError, match="not a contiguous reviewed allowlist"):
+        subject.prepare(broken, "4.2.3")
+    assert _tree_text(broken) == before
+
+    linked = tmp_path / "linked-catalog"
+    _release_tree(
+        linked,
+        source="4.2.2",
+        target="4.2.3",
+        allowlist=[{"slot": 0, "major": 4, "minor": 2, "patch": 2, "id": "4.2.2"}],
+    )
+    catalog = linked / "mnemion/product_telemetry/wire-v3.json"
+    payload = catalog.read_text()
+    outside = tmp_path / "outside-catalog.json"
+    outside.write_text(payload)
+    catalog.unlink()
+    catalog.symlink_to(outside)
+    before = _tree_text(linked)
+    with pytest.raises(ValueError, match="ordinary repository files"):
+        subject.prepare(linked, "4.2.3")
+    assert _tree_text(linked) == before
+    assert outside.read_text() == payload
 
 
 @pytest.mark.parametrize(
