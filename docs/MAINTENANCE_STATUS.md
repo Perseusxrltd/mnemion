@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T01:51:55+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T01:52:39+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.46](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.46). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,7 +18,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 40802929823](https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823) |
+| ci\.yml | main | in\_progress | [Run 40802929823](https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823) |
 | public-updates\.yml | v4\.46\.46 | success | [Run 40801713765](https://github.com/Perseusxrltd/mnemion/actions/runs/40801713765) |
 | release\.yml | release/4\.46\.46-r2 | success | [Run 40793646583](https://github.com/Perseusxrltd/mnemion/actions/runs/40793646583) |
 | release\.yml | release/4\.46\.47 | in\_progress | [Run 40801649181](https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181) |
@@ -28,26 +28,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40802929823](https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823): 1/12 jobs completed; 1 succeeded.
+[Run 40802929823](https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823): 5/12 jobs completed; 5 succeeded.
 
-- lint: in\_progress — Run uv sync --locked --group dev.
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.12\): in\_progress — Initialize containers.
-- dependency-audit: in\_progress — Run python -m pip install uv==0\.12\.24.
-- supervision \(macos-26\): in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- legacy: in\_progress — Set up job.
-- supervision \(macos-15-intel\): in\_progress — Set up job.
-- service \(3\.14\): in\_progress — Initialize containers.
-- service \(3\.13\): in\_progress — Initialize containers.
-- container \(ubuntu-22\.04-arm\): in\_progress.
+- studio: in\_progress — Run npm --prefix studio/electron test.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 [Run 40801649181](https://github.com/Perseusxrltd/mnemion/actions/runs/40801649181): 15/21 jobs completed; 14 succeeded.
 
-- native / ubuntu-22\.04 / x64: in\_progress — Linux desktop libraries.
+- native / ubuntu-22\.04 / x64: in\_progress — Run npm --prefix packages/client ci.
 - native / macos-26 / arm64: in\_progress — Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
-- native / windows-2022 / x64: in\_progress — Run python -m pip install uv==0\.12\.24.
-- native / windows-11-arm / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Linux desktop libraries.
-- native / macos-15-intel / x64: in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- native / windows-2022 / x64: in\_progress — Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
+- native / windows-11-arm / arm64: in\_progress — Select the service interpreter independently of the desktop client.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Run npm --prefix studio/electron ci.
+- native / macos-15-intel / x64: in\_progress — Locked native service build dependencies.
 

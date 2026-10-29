@@ -37,41 +37,23 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "d106f6884f4e7c72f43155abc1101f56259f0a7f",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-29T01:51:47Z",
+      "updated_at": "2026-10-29T01:51:53Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40802929823",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 1,
-        "succeeded": 1,
+        "completed": 5,
+        "succeeded": 5,
         "active": [
-          {
-            "id": 123215016274,
-            "name": "lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv sync --locked --group dev"
-            ]
-          },
           {
             "id": 123215016322,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          },
-          {
-            "id": 123215072955,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run npm --prefix studio/electron test"
             ]
           },
           {
@@ -80,16 +62,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 123215072964,
-            "name": "dependency-audit",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -98,7 +71,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -107,7 +80,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           },
           {
@@ -116,7 +89,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
@@ -125,7 +98,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -134,15 +107,8 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
-          },
-          {
-            "id": 123215073162,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
           }
         ]
       },
@@ -192,7 +158,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Run npm --prefix packages/client ci"
             ]
           },
           {
@@ -210,7 +176,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install uv==0.12.24"
+              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
             ]
           },
           {
@@ -219,7 +185,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Select the service interpreter independently of the desktop client"
             ]
           },
           {
@@ -228,7 +194,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Run npm --prefix studio/electron ci"
             ]
           },
           {
@@ -237,7 +203,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Locked native service build dependencies"
             ]
           }
         ]
@@ -278,5 +244,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40801711006"
     }
   ],
-  "observed_at": "2026-10-29T01:51:55+00:00"
+  "observed_at": "2026-10-29T01:52:39+00:00"
 }
