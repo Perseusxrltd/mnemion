@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T04:39:18+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T04:47:38+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.48](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.48). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,15 +21,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | ci\.yml | main | success | [Run 40818733364](https://github.com/Perseusxrltd/mnemion/actions/runs/40818733364) |
 | public-updates\.yml | v4\.46\.48 | success | [Run 40814044656](https://github.com/Perseusxrltd/mnemion/actions/runs/40814044656) |
 | release\.yml | release/4\.46\.48 | success | [Run 40806507811](https://github.com/Perseusxrltd/mnemion/actions/runs/40806507811) |
-| release\.yml | release/4\.46\.49 | in\_progress | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
-| release\.yml | release/4\.46\.50 | pending | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
-| verify-artifacts\.yml | main | success | [Run 40813597891](https://github.com/Perseusxrltd/mnemion/actions/runs/40813597891) |
+| release\.yml | release/4\.46\.49 | success | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
+| release\.yml | release/4\.46\.50 | in\_progress | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
+| verify-artifacts\.yml | main | in\_progress | [Run 40819658418](https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418) |
 | website-release\.yml | main | success | [Run 40818733400](https://github.com/Perseusxrltd/mnemion/actions/runs/40818733400) |
 | website-release\.yml | v4\.46\.48 | success | [Run 40814041922](https://github.com/Perseusxrltd/mnemion/actions/runs/40814041922) |
 
 ## Active jobs
 
-[Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400): 20/21 jobs completed; 19 succeeded.
+[Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489): 4/8 jobs completed; 3 succeeded.
 
-- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
+- native / Encrypted files / Windows / x64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / Encrypted files / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / native\_database / Private state / Windows / x64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / native\_database / Private state / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+
+[Run 40819658418](https://github.com/Perseusxrltd/mnemion/actions/runs/40819658418): 0/1 jobs completed; 0 succeeded.
+
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
