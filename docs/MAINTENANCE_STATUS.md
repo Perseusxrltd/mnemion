@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-29T04:58:19+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-29T04:59:39+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,7 +18,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40820612659](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659) |
+| ci\.yml | main | success | [Run 40820612659](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659) |
 | public-updates\.yml | v4\.46\.49 | in\_progress | [Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156) |
 | release\.yml | release/4\.46\.49 | success | [Run 40812422400](https://github.com/Perseusxrltd/mnemion/actions/runs/40812422400) |
 | release\.yml | release/4\.46\.50 | in\_progress | [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489) |
@@ -28,15 +28,10 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40820612659](https://github.com/Perseusxrltd/mnemion/actions/runs/40820612659): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
-
-[Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156): 3/7 jobs completed; 3 succeeded.
+[Run 40820128156](https://github.com/Perseusxrltd/mnemion/actions/runs/40820128156): 4/7 jobs completed; 4 succeeded.
 
 - linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
 [Run 40815491489](https://github.com/Perseusxrltd/mnemion/actions/runs/40815491489): 13/14 jobs completed; 12 succeeded.
