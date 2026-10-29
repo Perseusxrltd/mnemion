@@ -403,8 +403,9 @@ async function createWindow() {
   })
 
   mainWindow.once('ready-to-show', () => {
-    const background = process.argv.includes('--background')
-      || (process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin)
+    // A deliberate foreground update restart can override inherited login args.
+    const background = updates?.consumeBackgroundRelaunch() ?? (process.argv.includes('--background')
+      || (process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin))
     if (!background || process.env.MNEMION_STUDIO_SMOKE_FILE) mainWindow?.show()
     else if (process.platform === 'linux') { mainWindow?.show(); mainWindow?.minimize() }
   })

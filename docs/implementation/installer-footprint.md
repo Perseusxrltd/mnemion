@@ -109,14 +109,24 @@ validated release assets as its download links, including the recommended
 download and all platform choices. Future public releases update these values
 through the existing Git-driven synchronization, without a page edit.
 
-Source 4.46.48 adds a **400 MiB (419,430,400-byte) per-installer publication check**
+Source 4.46.48 added a **400 MiB (419,430,400-byte) per-installer publication check**
 in the [installer verifier](../../studio/electron/scripts/verify-installer.mjs).
 It rejects enumerated installer/archive downloads larger than that limit and
 records the budget in the verification receipt. This bounds download bytes,
-not installed application size. The JavaScript syntax check passed locally;
-the native gate on this new source remains pending. The earlier candidate runs
-do not qualify this added check. Existing signature, payload, feature-parity
-and native installation/recovery checks remain required.
+not installed application size. At its initial review, the JavaScript syntax
+check had passed locally and the new native gate was still pending; the earlier
+candidate runs did not qualify the added check. Existing signature, payload,
+feature-parity and native installation/recovery checks remain required.
+
+At **06:13 UTC on 29 October**, the published
+[4.46.49](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.49)
+Windows installers were **219,971,156 bytes (220.0 MB) for ARM64** and
+**225,888,882 bytes (225.9 MB) for x64**. The largest of its eight installer
+downloads was the Mac Intel disk image at **270,997,730 bytes (271.0 MB)**;
+all eight were below the unchanged 400 MiB ceiling. These are download sizes,
+not new installed-footprint measurements. The retained
+`published-44649-installer-sizes.json` receipt has SHA-256
+`ed8635e6bfdecb11bf5f782258e1e5b32dce94e1863f79d28b6d99530d294a4c`.
 
 ## Further reduction and acceptance
 

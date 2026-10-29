@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.51**.
+Reviewed source distribution: **4.46.52**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-29**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,17 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**29 October 2026, background update relaunch and smaller public downloads:**
+The [4.46.52 source](releases/4.46.52.md) preserves background presentation across
+automatic updates while keeping deliberate visible restarts visible. Its
+[focused controller and file checks](validation/2026-10-29-background-relaunch.md)
+passed on Linux and Windows; native installation and publication remain pending.
+The [actual Windows 4.46.49 update](validation/2026-10-29-windows-44649-update.md)
+preserved the saved administrator connection and preferences, and exposed the
+relaunch defect addressed by this new source. Public 4.46.49 installer downloads
+are approximately 220–271 MB, below the unchanged 400 MiB ceiling. All 66
+requirement states remain unchanged; telemetry collection remains disabled.
 
 **29 October 2026, consistent telemetry category reports:**
 The [4.46.50 source](releases/4.46.50.md) withholds category estimates when their

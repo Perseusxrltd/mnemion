@@ -5,6 +5,9 @@ release targets now cover Windows, macOS and Linux on x64 and ARM64. Download pu
 [the official product page](https://www.perseusxr.com/mnemion).
 See [the published releases](https://github.com/Perseusxrltd/mnemion/releases)
 for changes and measured limits.
+The size beside a download is the installer file size. Installed application
+space and optional model downloads are separate; see the
+[measured installer and installed sizes](../implementation/installer-footprint.md).
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
@@ -69,15 +72,18 @@ hosted services follow the [deployment guide](deployment.md).
 ## Update behavior and resource limits
 
 Checks begin 1–2 minutes after startup and repeat approximately every six hours,
-with jitter to spread organizational bandwidth. Only the official repository's
-stable release feed is used. Architectures have separate feeds; prereleases and
-downgrades are excluded. Errors remain visible and are retried without blocking
-access to memory. Users can pause updates and administrators can manage them.
+with up to fifteen minutes of jitter to spread organizational bandwidth. Only
+the official repository's stable release feed is used. Architectures have
+separate feeds; prereleases and downgrades are excluded. Errors remain visible
+and are retried without blocking access to memory. Users can pause updates and
+administrators can manage them.
 
 From 4.1.5, a failed desktop check or download schedules up to three additional
 attempts after approximately one, five and fifteen minutes, with 0–25% added
 jitter. Continued failure returns to the regular six-hour schedule. A successful
 check or download clears retries; pausing updates or quitting cancels them.
+**Up to date** describes the last completed check; a release can appear before
+the next scheduled check.
 **Check for updates** starts a fresh attempt without overlapping a pending check.
 All normal signature, size, timeout and restart checks remain required.
 
@@ -86,6 +92,20 @@ provided Studio has no visible, restored focused window, no vault/API transfer i
 input remains open. Close a completed editor or navigate away to release its
 draft guard. On Mac and Windows, a normal quit cancels a staged update; a later check can
 retry it. This prevents a cancelled update from installing after the app exits.
+
+If the status says **Update ready · waiting for Mnemion to be in the background**,
+minimize the main window, or close it with **Keep running in background** enabled.
+The same inactivity and work checks still apply. An
+[actual Windows 4.46.49 update](../validation/2026-10-29-windows-44649-update.md)
+completed automatically after minimization; its relaunched window was visible
+without taking the foreground.
+
+[Source 4.46.52](../validation/2026-10-29-background-relaunch.md), with background
+mode enabled, returns automatic restarts and deliberate restarts from hidden or
+minimized windows to the background. A deliberate restart from a visible,
+restored window returns visibly. The app starting the update must already
+contain this fix: it cannot preserve an older client's presentation retroactively.
+Packaged/native relaunch acceptance for this source remains pending.
 
 Version 4.2.0 also recognizes an OS-reported locked session: a window
 reopened behind the lock screen no longer holds an otherwise safe update on

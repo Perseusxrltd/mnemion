@@ -9,6 +9,7 @@ import { createWindowsUpdateFetch } from './windows-update-network.js'
 import { refreshLinuxLoginEntry } from './linux-startup.js'
 import { UpdateMeasurement, type MaintenanceStore } from './maintenance-measurement.js'
 import type { TelemetryWorkflow } from './telemetry-workflow.js'
+import { clearUpdateRelaunch, consumeUpdateRelaunch, rememberUpdateRelaunch } from './update-relaunch.js'
 
 let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
@@ -34,6 +35,7 @@ export class DesktopUpdates {
   private stopped = false
   private readonly measurements: UpdateMeasurement
   private readonly path = join(app.getPath('userData'), 'desktop-preferences.json')
+  private readonly relaunchPath = join(app.getPath('userData'), 'desktop-update-relaunch.json')
   private readonly managed = process.env.MNEMION_AUTO_UPDATE === '0'
   private readonly supported = app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE
     && !process.env.MNEMION_STUDIO_SMOKE_HEADLESS
@@ -112,6 +114,7 @@ export class DesktopUpdates {
         catch { this.setStatus({ state: 'Startup setup needs attention' }) }
       })
       autoUpdater.on('error', () => {
+        clearUpdateRelaunch(this.relaunchPath)
         if (this.installing) this.restartCancelled()
         this.downloaded = false
         this.installing = false
@@ -138,6 +141,11 @@ export class DesktopUpdates {
   get enabled() { return this.supported && !this.managed && this.preferences.automaticUpdates }
   get policyManaged() { return this.managed }
   get canRequestRestart() { return this.enabled && this.downloaded && !this.installing }
+  consumeBackgroundRelaunch(): boolean | null {
+    if (!app.isPackaged || process.env.MNEMION_STUDIO_SMOKE_FILE || process.env.MNEMION_STUDIO_SMOKE_HEADLESS) return null
+    const background = consumeUpdateRelaunch(this.relaunchPath, app.getVersion())
+    return background === null ? null : background && this.preferences.background
+  }
   inspect() {
     let idleSeconds: number | null = null
     try {
@@ -192,11 +200,13 @@ export class DesktopUpdates {
       this.clearRetry()
       this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
     } else if (event.state === 'error') {
+      clearUpdateRelaunch(this.relaunchPath)
       if (this.installing) this.restartCancelled()
       this.downloaded = false
       this.installing = false
       this.scheduleRetry()
     } else if (event.state === 'cancelled') {
+      clearUpdateRelaunch(this.relaunchPath)
       this.measurements.finish('cancelled')
       this.downloaded = false
       this.installing = false
@@ -334,6 +344,13 @@ export class DesktopUpdates {
     this.waitingToRestart(reason)
     return reason === null
   }
+  private rememberRelaunch(requested: boolean) {
+    if (!this.readyVersion) throw new Error('No update is ready')
+    const window = this.window()
+    const background = this.preferences.background
+      && (!requested || !window || !window.isVisible() || window.isMinimized())
+    rememberUpdateRelaunch(this.relaunchPath, this.readyVersion, background)
+  }
   async restartIfSafe(requested = false) {
     if (this.installing || !await this.restartIsSafe(requested)) return
     // A second timer can finish its renderer check while the first starts installing.
@@ -355,18 +372,25 @@ export class DesktopUpdates {
         this.installing = false; this.restartCancelled(); return
       }
       if (this.mac) {
+        this.rememberRelaunch(requested)
         if (this.mac.install()) void measurement?.finish('accepted')
-        else { measurement?.discard(); this.installing = false; this.restartCancelled() }
+        else { clearUpdateRelaunch(this.relaunchPath); measurement?.discard(); this.installing = false; this.restartCancelled() }
       } else if (this.windows) {
-        const started = await this.windows.install(() => this.restartIsSafe(requested))
+        const started = await this.windows.install(async () => {
+          if (!await this.restartIsSafe(requested)) return false
+          this.rememberRelaunch(requested)
+          return true
+        })
         if (started) { void measurement?.finish('accepted'); app.quit() }
-        else { measurement?.discard(); this.installing = false; this.restartCancelled() }
+        else { clearUpdateRelaunch(this.relaunchPath); measurement?.discard(); this.installing = false; this.restartCancelled() }
       } else {
+        this.rememberRelaunch(requested)
         autoUpdater.quitAndInstall(true, true)
         // Best effort after the actual handoff; never flush or hold up shutdown.
         void measurement?.finish('accepted')
       }
     } catch {
+      clearUpdateRelaunch(this.relaunchPath)
       void measurement?.finish('failed', 'other_failure')
       this.installing = false
       this.restartCancelled()

@@ -1,7 +1,7 @@
 /** Exercise the actual controller across asynchronous shutdown/install guards. */
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, mock, test } from 'node:test'
@@ -26,6 +26,7 @@ const app = Object.assign(new EventEmitter(), {
 const automatic = Object.assign(new EventEmitter(), {
   setFeedURL: () => {},
   checkForUpdates: async () => ({}),
+  quitAndInstall: () => { quits++; app.emit('will-quit') },
 })
 class PlatformBridge {
   async check() {}
@@ -56,9 +57,9 @@ function fixture(t, { ready = true, telemetry, verificationMode = 'stage' } = {}
   for (const key of keys) delete process.env[key]
   process.env.APPIMAGE = join(directory, 'fixture.AppImage')
   idle = 0; idleState = 'active'; quits = 0
-  const state = { safe: true, focused: true, busy: false, drains: 0, cancelled: 0, attempts: 0, installs: 0, checks: 0,
+  const state = { safe: true, focused: true, visible: true, minimized: false, busy: false, drains: 0, cancelled: 0, attempts: 0, installs: 0, checks: 0,
     drain: async () => true, beforeFinalGuard: () => {} }
-  const window = { isFocused: () => state.focused, isVisible: () => true, isMinimized: () => false,
+  const window = { isFocused: () => state.focused, isVisible: () => state.visible, isMinimized: () => state.minimized,
     webContents: { executeJavaScript: async () => state.safe } }
   const controller = new DesktopUpdates(() => window, () => state.busy,
     async () => { state.drains++; return await state.drain() }, () => {}, () => { state.cancelled++ }, telemetry)
@@ -85,7 +86,7 @@ function fixture(t, { ready = true, telemetry, verificationMode = 'stage' } = {}
       else process.env[key] = previous[key]
     }
   })
-  return { state, controller }
+  return { state, controller, directory }
 }
 
 function localAction(controller, action, input = {}, signal = new AbortController().signal) {
@@ -436,6 +437,71 @@ test('overlapping restart requests perform only one drain and installation', asy
   await Promise.all([first, second])
   assert.equal(state.installs, 1)
   assert.equal(quits, 1)
+})
+
+for (const platform of ['Windows', 'Mac', 'Linux']) {
+  for (const mode of ['automatic', 'requested', 'requested-minimized', 'requested-hidden', 'background-disabled']) {
+    test(`${platform} handoff preserves ${mode} presentation through one relaunch`,
+      { skip: platform === 'Linux' && process.platform !== 'linux' }, async t => {
+      const { state, controller, directory } = fixture(t)
+      if (platform !== 'Windows') controller.windows = undefined
+      if (platform === 'Mac') controller.mac = { install: () => { state.installs++; return true } }
+      state.focused = false; idle = 600
+      state.minimized = mode === 'requested-minimized'
+      state.visible = mode !== 'requested-hidden'
+      controller.preferences.background = mode !== 'background-disabled'
+      await controller.restartIfSafe(mode.startsWith('requested'))
+      const path = join(directory, 'desktop-update-relaunch.json')
+      assert.equal(existsSync(path), true, 'Only a successful installer handoff leaves a relaunch hint')
+      // The new process reads its installed version, not the updater's old one.
+      t.mock.method(app, 'getVersion', () => '4.0.12')
+      assert.equal(controller.consumeBackgroundRelaunch(),
+        ['automatic', 'requested-minimized', 'requested-hidden'].includes(mode))
+      assert.equal(controller.consumeBackgroundRelaunch(), null, 'Later deliberate launches use normal startup')
+      assert.equal(existsSync(path), false)
+    })
+  }
+}
+
+test('Windows presentation follows the final guard after asynchronous installer validation', async t => {
+  const { state, controller } = fixture(t)
+  state.beforeFinalGuard = () => { state.minimized = true }
+  await controller.restartIfSafe(true)
+  t.mock.method(app, 'getVersion', () => '4.0.12')
+  assert.equal(controller.consumeBackgroundRelaunch(), true)
+})
+
+test('work starting at the final guard cannot leave a background relaunch hint', async t => {
+  const { state, controller, directory } = fixture(t)
+  state.beforeFinalGuard = () => { state.safe = false }
+  await controller.restartIfSafe(true)
+  assert.equal(state.installs, 0)
+  assert.equal(existsSync(join(directory, 'desktop-update-relaunch.json')), false)
+})
+
+for (const failure of ['refused', 'throw', 'late-error', 'cancelled']) {
+  test(`${failure} installation removes its one-use relaunch state`, async t => {
+    const { controller, directory } = fixture(t)
+    controller.windows.install = async guard => {
+      assert.equal(await guard(), true)
+      if (failure === 'throw') throw new Error('Disposable installer refusal')
+      return failure !== 'refused'
+    }
+    await controller.restartIfSafe(true)
+    if (failure === 'late-error' || failure === 'cancelled') {
+      controller.platformEvent({ state: failure === 'late-error' ? 'error' : 'cancelled' })
+    }
+    assert.equal(existsSync(join(directory, 'desktop-update-relaunch.json')), false)
+  })
+}
+
+test('a newer background preference overrides the consumed hint', async t => {
+  const { state, controller } = fixture(t)
+  state.focused = false; idle = 600
+  await controller.restartIfSafe()
+  controller.preferences.background = false
+  t.mock.method(app, 'getVersion', () => '4.0.12')
+  assert.equal(controller.consumeBackgroundRelaunch(), false)
 })
 
 async function advance(t, milliseconds) {
