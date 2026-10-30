@@ -29,8 +29,23 @@ export function canonicalTerminalMarker(phase, completed, known = true) {
   if (phase !== 'finished' && phase !== 'closed' && phase !== 'failed') {
     throw new Error('Terminal marker required')
   }
-  if (known === false || !Number.isInteger(completed) || completed < 0 || completed > 128) {
-    return { phase, completed_known: false }
+  const bounded = Number.isInteger(completed) && completed >= 0 && completed <= 128
+  if (known === false) {
+    return bounded ? { phase, completed, completed_known: false } : { phase, completed_known: false }
   }
+  if (!bounded) return { phase, completed_known: false }
   return { phase, completed, completed_known: true }
+}
+
+/** Lower bound stays. The current total is unknown while a batch is still running. */
+export function resourceProgress(state, event) {
+  const previous = state && Number.isInteger(state.verified) && state.verified >= 0 && state.verified <= 128
+    ? state.verified
+    : undefined
+  if (event === 'inflight') return { verified: previous, progressKnown: false }
+  const settled = event && event.settled
+  if (Number.isInteger(settled) && settled >= 0 && settled <= 128) {
+    return { verified: settled, progressKnown: true }
+  }
+  return { verified: previous, progressKnown: false }
 }

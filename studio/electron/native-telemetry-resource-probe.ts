@@ -3,7 +3,7 @@ import type { BrowserWindow } from 'electron'
 import { app } from 'electron'
 import { renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker } from './canonical-memory-cycles.mjs'
+import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker, resourceProgress } from './canonical-memory-cycles.mjs'
 import { settleInstalledTelemetryDelivery } from './service-bridge.js'
 
 const CHECKPOINTS = [
@@ -139,13 +139,9 @@ async function verifiedCycles(window: BrowserWindow): Promise<number | undefined
 export async function verifyInstalledTelemetryResource(window: BrowserWindow, config: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!app.isPackaged) throw new Error('Installed telemetry resource workload requires the packaged application')
   const fixture = resourceConfig(config)
-  let verified: number | undefined
-  let progressKnown = false
-  const remember = (count: unknown) => {
-    if (typeof count === 'number' && Number.isInteger(count) && count >= 0 && count <= 128) {
-      verified = count
-      progressKnown = true
-    }
+  let progress: { verified?: number; progressKnown: boolean } = { progressKnown: false }
+  const settleCount = (count: unknown) => {
+    progress = resourceProgress(progress, { settled: typeof count === 'number' ? count : undefined })
   }
   try {
     marker('starting')
@@ -156,18 +152,20 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
     marker('workspace_connected')
     const ready = await window.webContents.executeJavaScript(clientScript())
     if (ready?.ready !== true) throw new Error('The packaged memory client did not start')
-    remember(await window.webContents.executeJavaScript(cyclesScript(1, fixture.spaceId)))
+    progress = resourceProgress(progress, 'inflight')
+    settleCount(await window.webContents.executeJavaScript(cyclesScript(1, fixture.spaceId)))
     await settleInstalledTelemetryDelivery()
     marker('first_memory_cycle_and_delivery')
     for (const [number, completed] of canonicalRemainingBatches(true)) {
-      remember(await window.webContents.executeJavaScript(cyclesScript(number, fixture.spaceId)))
+      progress = resourceProgress(progress, 'inflight')
+      settleCount(await window.webContents.executeJavaScript(cyclesScript(number, fixture.spaceId)))
       await settleInstalledTelemetryDelivery()
       marker(`${completed}_memory_cycles`)
     }
     const result = await window.webContents.executeJavaScript(resultScript())
-    remember(result?.memory_cycles)
-    marker('finished', verified, progressKnown)
-    if (!result || result.memory_results_verified !== true || result.memory_cycles !== verified) {
+    settleCount(result?.memory_cycles)
+    marker('finished', progress.verified, progress.progressKnown)
+    if (!result || result.memory_results_verified !== true || result.memory_cycles !== progress.verified) {
       throw new Error('Canonical memory workload did not complete')
     }
     const evidence = {
@@ -204,11 +202,11 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
   } catch (error) {
     try {
       const reached = await verifiedCycles(window)
-      if (reached !== undefined) remember(reached)
-    } catch { /* A failed query keeps the last trustworthy count. */ }
-    try { marker('failed', verified, progressKnown) } catch { /* Keep the original failure. */ }
+      if (reached !== undefined) progress = resourceProgress(progress, { settled: reached })
+    } catch { /* A failed query keeps the last trustworthy count and leaves the total unknown. */ }
+    try { marker('failed', progress.verified, progress.progressKnown) } catch { /* Keep the original failure. */ }
     throw error
   } finally {
-    try { marker('closed', verified, progressKnown) } catch { /* Keep the original failure. */ }
+    try { marker('closed', progress.verified, progress.progressKnown) } catch { /* Keep the original failure. */ }
   }
 }

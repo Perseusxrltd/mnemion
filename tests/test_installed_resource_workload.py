@@ -307,7 +307,7 @@ def test_matching_counts_do_not_grant_resource_acceptance():
     ) is False
     assert installed_resource_case_completed(
         evidence, {"canonical_operations_completed": 128, "resource_acceptance": False}
-    ) is True
+    ) is False
 
 
 def test_public_errors_drop_paths_and_fixture_material():

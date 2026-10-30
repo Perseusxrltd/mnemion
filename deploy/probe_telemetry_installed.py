@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from collections.abc import Mapping
 from contextlib import closing
 import hashlib
 import json
@@ -83,6 +84,40 @@ def read_delivery_store(profile: Path, secret: bytes) -> dict:
         "queue_cells": pending[0],
         "fixture_content_absent": b"PRIVATE_RENDERER_MEMORY_CANARY" not in raw
         and secret not in raw,
+    }
+
+
+def read_resource_profile_store(profile: Path) -> dict:
+    """Attempt counts for one case. A missing store is zero attempts, not an error."""
+    from mnemion.product_telemetry.policy import DATABASE_NAME
+
+    database = profile / "mnemion-product-telemetry" / DATABASE_NAME
+    if not database.is_file():
+        return {
+            "present": False,
+            "attempts": 0,
+            "reserved_bytes": 0,
+            "fixture_content_absent": True,
+        }
+    from mnemion.product_telemetry.policy import APPLICATION_ID, STORAGE_VERSION
+
+    raw = database.read_bytes()
+    with closing(sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)) as connection:
+        if (
+            connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
+            or connection.execute("PRAGMA user_version").fetchone()[0] != STORAGE_VERSION
+        ):
+            raise ValueError("resource_store_unreadable")
+        row = connection.execute(
+            "SELECT count(*), coalesce(sum(reserved_bytes), 0) FROM delivery_attempts"
+        ).fetchone()
+    if row is None:
+        raise ValueError("resource_store_unreadable")
+    return {
+        "present": True,
+        "attempts": int(row[0]),
+        "reserved_bytes": int(row[1]),
+        "fixture_content_absent": b"PRIVATE_RENDERER_MEMORY_CANARY" not in raw,
     }
 
 
@@ -318,6 +353,47 @@ def _run_inherited(
     except subprocess.TimeoutExpired:
         _stop_process(process)
         raise TimeoutError("Installed application journey exceeded its finite timeout")
+    if process.poll() is None:
+        _stop_process(process)
+        raise TimeoutError("Installed application journey did not exit")
+    return subprocess.CompletedProcess(command, code)
+
+
+def _run_resource_smoke(command, cwd, env, timeout, on_line) -> subprocess.CompletedProcess:
+    """Read case lines as they finish. Stdout is not stored in the uploaded evidence."""
+    process = _popen(command, cwd, env, subprocess.PIPE)
+    assert process.stdout is not None
+
+    def pump() -> None:
+        pending = b""
+        try:
+            while True:
+                chunk = process.stdout.read(4096)
+                if not chunk:
+                    break
+                pending += chunk
+                while b"\n" in pending:
+                    raw, pending = pending.split(b"\n", 1)
+                    if b"PRIVATE_RENDERER_MEMORY_CANARY" in raw or b"mnm_" in raw:
+                        continue
+                    if len(raw) <= 2048:
+                        sys.stdout.buffer.write(raw + b"\n")
+                        sys.stdout.buffer.flush()
+                    text = raw.decode("utf-8", "replace").strip()
+                    if text.startswith("RESOURCE_CASE "):
+                        on_line(text)
+        except Exception:
+            return
+
+    reader = threading.Thread(target=pump, daemon=True)
+    reader.start()
+    try:
+        code = process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _stop_process(process)
+        reader.join(timeout=5)
+        raise TimeoutError("Installed application journey exceeded its finite timeout")
+    reader.join(timeout=30)
     if process.poll() is None:
         _stop_process(process)
         raise TimeoutError("Installed application journey did not exit")
@@ -802,7 +878,7 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
 
 def select_owned_observer(environ: object, *, platform_name: str) -> str:
     """The native client interpreter. Windows ARM must not reuse the x64 engine."""
-    if type(environ) is not dict:
+    if not isinstance(environ, Mapping):
         raise RuntimeError("Resource accounting requires MNEMION_OWNED_LAUNCH_PYTHON")
     observer = environ.get("MNEMION_OWNED_LAUNCH_PYTHON")
     if type(observer) is not str or not observer.strip():
@@ -829,6 +905,66 @@ def linux_resource_launch_allowed(*, mode, probe_mode, returncode, stdout, euid)
     )
 
 
+# The existing 128-cycle workload is save, fetch and lexical recall.
+CANONICAL_MEMORY_RESULTS = 384
+_REPORT_HEX = re.compile(r"[0-9a-f]{50}\Z")
+
+
+def note_resource_ingress(captured, reviewed, counts) -> dict:
+    """Keep one exact body. A null capture is a rejected body and is not cleared."""
+    from deploy.report_telemetry_renderer import retain_reviewed_packet
+
+    malformed = captured is None
+    retained = None
+    if captured is not None and len(reviewed) < 8:
+        retained = retain_reviewed_packet([bytes(captured)], review=True)
+        if retained is not None:
+            reviewed.append(retained)
+    if captured is not None:
+        captured.clear()
+    rejected = malformed or retained is None
+    if rejected:
+        counts["malformed_body"] = counts.get("malformed_body", 0) + 1
+    return {"malformed": rejected, "body_hex": retained}
+
+
+def resource_observation_complete(
+    condition: object,
+    *,
+    attempts: object,
+    reserved_bytes: object,
+    events: object,
+    memory_successful: object,
+    memory_api_operations: object,
+    inspected_body_hex: object,
+) -> bool:
+    """Per-case telemetry outside the app. Global totals are not enough."""
+    if (
+        type(memory_successful) is not int
+        or memory_successful < CANONICAL_MEMORY_RESULTS
+        or memory_api_operations != CANONICAL_MEMORY_RESULTS
+        or type(events) is not list
+        or type(attempts) is not int
+        or type(reserved_bytes) is not int
+    ):
+        return False
+    if condition in ("unavailable", "opted_out"):
+        return attempts == 0 and reserved_bytes == 0 and events == []
+    if condition != "enabled":
+        return False
+    if attempts != 1 or reserved_bytes != 65536 or len(events) != 1:
+        return False
+    event = events[0]
+    if type(event) is not dict or event.get("malformed") is True:
+        return False
+    body = event.get("body_hex")
+    if type(body) is not str or not _REPORT_HEX.fullmatch(body):
+        return False
+    if inspected_body_hex is not None and inspected_body_hex != body:
+        return False
+    return True
+
+
 def installed_resource_case_completed(evidence, owned) -> bool:
     """Matching verified counts are not resource acceptance."""
     if type(evidence) is not dict or type(owned) is not dict:
@@ -845,7 +981,15 @@ def installed_resource_case_completed(evidence, owned) -> bool:
         return False
     if evidence.get("resource_acceptance") is not False or owned.get("resource_acceptance") is not False:
         return False
-    return True
+    return resource_observation_complete(
+        evidence.get("condition"),
+        attempts=evidence.get("telemetry_attempts"),
+        reserved_bytes=evidence.get("telemetry_reserved_bytes"),
+        events=evidence.get("telemetry_events"),
+        memory_successful=evidence.get("memory_successful"),
+        memory_api_operations=evidence.get("memory_api_operations"),
+        inspected_body_hex=evidence.get("inspected_body_hex"),
+    )
 
 
 def bind_resource_packages(*, source: str, active: Path, inactive: Path) -> dict:
@@ -949,19 +1093,28 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
         active_dir = ""
         inactive_dir = ""
     published = []
-    counts = {"reports": 0, "accepted": 0, "body_bytes": 0, "forbidden_metadata": 0}
+    counts = {
+        "reports": 0,
+        "accepted": 0,
+        "body_bytes": 0,
+        "forbidden_metadata": 0,
+        "malformed_body": 0,
+    }
     reviewed = []
+    events = []
+    observation_lock = threading.Lock()
 
     async def ingress(scope, receive, send):
         captured = bytearray()
         chunks = 0
         report = scope.get("type") == "http" and scope.get("method") == "POST"
         if report:
-            counts["reports"] += 1
-            counts["forbidden_metadata"] += bool(
-                {name for name, _ in scope.get("headers", [])}
-                & {b"cookie", b"authorization", b"referer", b"user-agent"}
-            )
+            with observation_lock:
+                counts["reports"] += 1
+                counts["forbidden_metadata"] += bool(
+                    {name for name, _ in scope.get("headers", [])}
+                    & {b"cookie", b"authorization", b"referer", b"user-agent"}
+                )
 
         async def received():
             nonlocal captured, chunks
@@ -969,21 +1122,21 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
             if report and event["type"] == "http.request":
                 chunk = event.get("body", b"")
                 if type(chunk) is bytes:
-                    counts["body_bytes"] += len(chunk)
+                    with observation_lock:
+                        counts["body_bytes"] += len(chunk)
                     captured, chunks = absorb_reviewed_chunk(captured, chunks, chunk)
             return event
 
         async def sending(event):
             if event["type"] == "http.response.start" and event["status"] == 204:
-                counts["accepted"] += 1
+                with observation_lock:
+                    counts["accepted"] += 1
             await send(event)
 
         await CollectorV3(published.append)(scope, received, sending)
-        if report and captured is not None and len(reviewed) < 8:
-            retained = retain_reviewed_packet([bytes(captured)], review=True)
-            if retained is not None:
-                reviewed.append(retained)
-        captured.clear()
+        if report:
+            with observation_lock:
+                events.append(note_resource_ingress(captured, reviewed, counts))
 
     certificate, key_path, public = _require_loopback_material(material)
     inactive_copy = copy.parent / "inactive-source"
@@ -1169,7 +1322,37 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                         smoke = command
                     else:
                         smoke = ["node", "studio/electron/scripts/smoke-installed-hosting.mjs"]
-                    probe = await _inherited(smoke, copy, smoke_env, 90 * 60)
+                    case_snapshots = []
+                    event_cursor = {"index": 0, "memory": 0}
+
+                    def on_case_line(text: str) -> None:
+                        if len(text) > 2200 or "PRIVATE_RENDERER_MEMORY_CANARY" in text:
+                            return
+                        try:
+                            payload = json.loads(text[len("RESOURCE_CASE ") :])
+                        except json.JSONDecodeError:
+                            return
+                        if type(payload) is not dict or type(payload.get("label")) is not str:
+                            return
+                        with observation_lock:
+                            fresh = list(events[event_cursor["index"] :])
+                            event_cursor["index"] = len(events)
+                            current = memory_counts["successful"]
+                            delta = current - event_cursor["memory"]
+                            event_cursor["memory"] = current
+                        if type(delta) is not int:
+                            delta = None
+                        case_snapshots.append(
+                            {
+                                "label": payload["label"],
+                                "events": fresh,
+                                "memory_successful": delta,
+                            }
+                        )
+
+                    probe = await asyncio.to_thread(
+                        _run_resource_smoke, smoke, copy, smoke_env, 90 * 60, on_case_line
+                    )
                     evidence = _load_app_evidence(
                         copy / "build-tmp/telemetry-installed-resources.json", secret
                     )
@@ -1180,6 +1363,11 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                     }
                     cases = []
                     diagnostics = False
+                    snapshots = {
+                        item["label"]: item
+                        for item in case_snapshots
+                        if type(item.get("label")) is str
+                    }
                     for row in resource_counterbalance_cases():
                         owned_path = copy / "build-tmp" / f"{row['label']}-owned-launch.json"
                         raw = {}
@@ -1196,6 +1384,11 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                         if raw.get("delivery_diagnostics_enabled") is True:
                             diagnostics = True
                         app = app_cases.get(row["label"]) or {}
+                        snap = snapshots.get(row["label"]) or {}
+                        case_events = snap.get("events") if type(snap.get("events")) is list else []
+                        inspected = app.get("inspected_body_hex")
+                        if type(inspected) is not str or not _REPORT_HEX.fullmatch(inspected):
+                            inspected = None
                         completed = installed_resource_case_completed(
                             {
                                 "memory_cycles": app.get("memory_cycles"),
@@ -1203,6 +1396,13 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                                 "checkpoints": app.get("checkpoints"),
                                 "model_calls": app.get("model_calls"),
                                 "resource_acceptance": app.get("resource_acceptance"),
+                                "condition": row["condition"],
+                                "memory_api_operations": app.get("memory_api_operations"),
+                                "telemetry_attempts": app.get("telemetry_attempts"),
+                                "telemetry_reserved_bytes": app.get("telemetry_reserved_bytes"),
+                                "telemetry_events": case_events,
+                                "memory_successful": snap.get("memory_successful"),
+                                "inspected_body_hex": inspected,
                             },
                             {
                                 "canonical_operations_completed": raw.get(
@@ -1213,6 +1413,16 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                         )
                         observed = raw.get("canonical_operations_completed")
                         cycles = app.get("memory_cycles")
+                        sent = None
+                        if len(case_events) == 1 and type(case_events[0]) is dict:
+                            body = case_events[0].get("body_hex")
+                            if type(body) is str and _REPORT_HEX.fullmatch(body):
+                                sent = body
+                        agreement = None
+                        if inspected is not None and sent is not None:
+                            agreement = inspected == sent
+                        elif inspected is not None:
+                            agreement = False
                         cases.append(
                             {
                                 "label": row["label"],
@@ -1223,7 +1433,34 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                                 "canonical_operations_completed": observed
                                 if type(observed) is int
                                 else None,
+                                "canonical_operations_known": raw.get("canonical_operations_known")
+                                if type(raw.get("canonical_operations_known")) is bool
+                                else None,
                                 "resource_acceptance": False,
+                                "telemetry": {
+                                    "attempts": app.get("telemetry_attempts")
+                                    if type(app.get("telemetry_attempts")) is int
+                                    else None,
+                                    "reserved_bytes": app.get("telemetry_reserved_bytes")
+                                    if type(app.get("telemetry_reserved_bytes")) is int
+                                    else None,
+                                    "reports": sum(
+                                        1
+                                        for event in case_events
+                                        if type(event) is dict and event.get("malformed") is not True
+                                    ),
+                                    "malformed": sum(
+                                        1
+                                        for event in case_events
+                                        if type(event) is dict and event.get("malformed") is True
+                                    ),
+                                    "sent_body_hex": sent,
+                                    "inspected_body_hex": inspected,
+                                    "body_agreement": agreement,
+                                    "memory_successful": snap.get("memory_successful")
+                                    if type(snap.get("memory_successful")) is int
+                                    else None,
+                                },
                                 "owned": retain_owned_launch(raw),
                             }
                         )
@@ -1286,7 +1523,7 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                             "unknown_progress_is_explicit",
                             "phase_cpu_is_sampled_descriptive",
                             "lifetime_cpu_is_separate",
-                            "windows_nsis_second_product_registration_is_unverified",
+                            "windows_product_switch_is_sequential_and_was_not_executed_here",
                         ],
                         "scope": _RESOURCE_SCOPE,
                     }
@@ -1377,12 +1614,17 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--loopback-material", type=Path)
     parser.add_argument("--read-store", type=Path)
+    parser.add_argument("--read-resource-store", type=Path)
     parser.add_argument(
         "--resource-comparison",
         action="store_true",
         help="Run the optional installed resource comparison. Omit it to keep all-six delivery.",
     )
     args = parser.parse_args()
+    if args.read_resource_store:
+        json.dump(read_resource_profile_store(args.read_resource_store), sys.stdout)
+        sys.stdout.write("\n")
+        return
     if args.read_store:
         secret = sys.stdin.buffer.read()
         json.dump(read_delivery_store(args.read_store, secret), sys.stdout)

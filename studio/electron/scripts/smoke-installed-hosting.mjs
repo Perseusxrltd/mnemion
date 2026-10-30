@@ -13,6 +13,7 @@ import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
+import { finishResourceCleanup, inspectedBodyHex, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps } from './installed-resource-report.mjs'
 
 const artifacts = platformArtifacts()
 // Production NSIS owns registry entries. Run only on a fresh hosted CI machine,
@@ -40,6 +41,9 @@ if (telemetryDelivery && telemetryResource) throw new Error('Installed delivery 
 const evidenceFile = join(root, telemetryResource ? 'build-tmp/telemetry-installed-resources.json' : telemetryDelivery ? 'build-tmp/telemetry-installed-delivery.json' : 'build-tmp/installed-hosting-evidence.json')
 const uninstallDirs = []
 const resourceCases = []
+const resourceInstallations = []
+const removedInstallationIds = new Set()
+const cleanupFailures = []
 let executable
 let child
 let stdout = '', stderr = ''
@@ -288,6 +292,45 @@ function loadResourceManifest() {
   return manifest
 }
 
+function boundedCleanupCode(error) {
+  const code = String(error && error.message || '')
+  if (code === 'uninstall_unreadable' || code === 'uninstall_missing' || code === 'uninstall_failed') return code
+  return 'uninstall_failed'
+}
+
+function uninstallWindowsProduct(directory) {
+  let names
+  try { names = readdirSync(directory) } catch { throw new Error('uninstall_unreadable') }
+  const uninstaller = names.find(name => /^Uninstall .*\.exe$/.test(name))
+  if (!uninstaller) throw new Error('uninstall_missing')
+  try { run(join(directory, uninstaller), ['/S']) } catch { throw new Error('uninstall_failed') }
+}
+
+function retireInstallation(item) {
+  if (removedInstallationIds.has(item.id)) return
+  if (process.platform === 'win32') uninstallWindowsProduct(item.directory)
+  else rmSync(item.directory, { recursive: true, force: true })
+  removedInstallationIds.add(item.id)
+}
+
+function publishResourceCleanup() {
+  if (!cleanupFailures.length || !existsSync(evidenceFile)) return
+  try {
+    const evidence = JSON.parse(readFileSync(evidenceFile, 'utf8'))
+    evidence.cleanup_failures = cleanupFailures.slice(0, 8)
+    evidence.workload_completed = false
+    writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
+  } catch { /* The process exit still reports the cleanup failure. */ }
+}
+
+function readResourceStore(profile) {
+  const result = spawnSync(python, ['-m', 'deploy.probe_telemetry_installed', '--read-resource-store', profile], {
+    cwd: root, encoding: 'utf8', timeout: 30000, maxBuffer: 64 * 1024,
+  })
+  if (result.status !== 0 || !result.stdout) return { present: false, attempts: null, reserved_bytes: null, fixture_content_absent: false }
+  try { return JSON.parse(result.stdout) } catch { return { present: false, attempts: null, reserved_bytes: null, fixture_content_absent: false } }
+}
+
 function resourceWorkloadCompleted(app, owned) {
   return Number.isInteger(app?.memory_cycles)
     && app.memory_cycles === owned?.canonical_operations_completed
@@ -297,33 +340,6 @@ function resourceWorkloadCompleted(app, owned) {
     && app.resource_acceptance === false
     && owned?.resource_acceptance === false
     && owned?.delivery_diagnostics_enabled !== true
-}
-
-function publicOwnedReport(report) {
-  const executable = report?.observer?.executable
-  return {
-    qualification: 'unqualified',
-    resource_acceptance: false,
-    launched: report?.launched !== false,
-    canonical_operations_completed: Number.isInteger(report?.canonical_operations_completed) ? report.canonical_operations_completed : null,
-    hosting_ready: report?.hosting_ready === true,
-    root_exit_code: Number.isInteger(report?.root_exit_code) ? report.root_exit_code : null,
-    failure_stage: typeof report?.failure_stage === 'string' ? report.failure_stage : null,
-    delivery_diagnostics_enabled: report?.delivery_diagnostics_enabled === true,
-    lifetime_cpu_microseconds: Number.isInteger(report?.lifetime_cpu_microseconds) ? report.lifetime_cpu_microseconds : null,
-    active_cpu_microseconds: Number.isInteger(report?.active_cpu_microseconds) ? report.active_cpu_microseconds : null,
-    active_wall_microseconds: Number.isInteger(report?.active_wall_microseconds) ? report.active_wall_microseconds : null,
-    identities_missing: Number.isInteger(report?.identities_missing) ? report.identities_missing : null,
-    missing_recorded_as_zero: false,
-    observation_error: typeof report?.observation_error === 'string' ? report.observation_error : null,
-    cleanup: report?.cleanup && typeof report.cleanup === 'object'
-      ? { ok: report.cleanup.ok === true, failure: typeof report.cleanup.failure === 'string' ? report.cleanup.failure : null, retried: report.cleanup.retried === true }
-      : { ok: false, failure: null, retried: false },
-    phases: Array.isArray(report?.phases) ? report.phases.filter(phase => phase && typeof phase.name === 'string').map(phase => ({
-      name: phase.name, active: phase.active === true, cpu_microseconds: Number.isInteger(phase.cpu_microseconds) ? phase.cpu_microseconds : null,
-    })) : [],
-    observer: typeof executable === 'string' && !executable.includes('/') && !executable.includes('\\') ? { executable } : {},
-  }
 }
 
 function publicHosting(hosting) {
@@ -345,6 +361,7 @@ function publicHosting(hosting) {
     forced_gc: hosting?.forced_gc === true,
     idle_padding: hosting?.idle_padding === true,
     memory_api_operations: hosting?.memory_api_operations,
+    inspected_body_hex: inspectedBodyHex(hosting?.approved_body_hex),
     production_collection_available: false,
     resource_acceptance: hosting?.resource_acceptance === false ? false : null,
     qualification: 'installed resource workload',
@@ -363,19 +380,38 @@ async function runInstalledTelemetryResources() {
   if (!/^[a-f0-9-]{36}$/.test(spaceId || '') || typeof credential !== 'string' || credential.length < 16 ||
       credential.length > 256 || /\s/.test(credential)) throw new Error('Resource package preparation is missing')
   const manifest = loadResourceManifest()
-  if (process.platform === 'win32') refuseExistingWindowsProduct()
   const destinations = {
     inactive: join(temporary, 'inactive-package'),
     active: join(temporary, 'active-package'),
   }
-  for (const condition of ['inactive', 'active']) {
-    await install(destinations[condition], manifest.packages[condition].installer, false)
-    installedExecutables.set(destinations[condition], executable)
-  }
   const buildTmp = join(root, 'build-tmp')
   mkdirSync(buildTmp, { recursive: true })
-  for (const row of manifest.cases) {
-    const destination = destinations[row.package]
+  const steps = resourceInstallSteps(manifest.cases)
+  for (const step of steps) {
+    if (step.action === 'refuse-preexisting') {
+      if (process.platform === 'win32') refuseExistingWindowsProduct()
+      continue
+    }
+    if (step.action === 'install') {
+      const destination = destinations[step.package]
+      await install(destination, manifest.packages[step.package].installer, true)
+      resourceInstallations.push({ id: step.id, directory: destination, package: step.package })
+      installedExecutables.set(destination, executable)
+      continue
+    }
+    if (step.action === 'uninstall') {
+      const item = resourceInstallations.find(entry => entry.id === step.id)
+      if (!item) throw new Error('Resource package preparation is missing')
+      try { retireInstallation(item) }
+      catch (error) {
+        cleanupFailures.push(boundedCleanupCode(error))
+        throw new Error('uninstall_failed')
+      }
+      continue
+    }
+    const row = manifest.cases.find(entry => entry.label === step.label)
+    if (!row) throw new Error('Resource package preparation is missing')
+    const destination = destinations[step.package]
     const exe = installedExecutables.get(destination)
     if (!exe || !existsSync(exe)) throw new Error('Resource package preparation is missing')
     const profile = join(temporary, row.label)
@@ -431,19 +467,38 @@ async function runInstalledTelemetryResources() {
     }
     const pidFile = join(profile, 'mnemion-local-workspace/database/postmaster.pid')
     const postgresLeft = existsSync(pidFile)
+    const store = readResourceStore(profile)
+    const telemetryReady = resourceCaseStoreReady(row, store)
     const summary = {
       label: row.label, condition: row.condition, replicate: row.replicate, package_condition: row.package,
       package_sha256: manifest.packages[row.package].sha256, source: manifest.source,
       memory_cycles: Number.isInteger(hosting.memory_cycles) ? hosting.memory_cycles : null,
       memory_results_verified: hosting.memory_results_verified === true,
+      memory_api_operations: Number.isInteger(hosting.memory_api_operations) ? hosting.memory_api_operations : null,
       checkpoints: hosting.checkpoints, model_calls: hosting.model_calls,
       canonical_operations_completed: owned.canonical_operations_completed ?? null,
+      canonical_operations_known: owned.canonical_operations_known === true ? true : owned.canonical_operations_known === false ? false : null,
+      telemetry_attempts: Number.isInteger(store.attempts) ? store.attempts : null,
+      telemetry_reserved_bytes: Number.isInteger(store.reserved_bytes) ? store.reserved_bytes : null,
+      telemetry_present: store.present === true,
+      inspected_body_hex: hosting.inspected_body_hex || null,
       resource_acceptance: hosting.resource_acceptance === false ? false : null, hosting_ready: owned.hosting_ready === true,
       root_exit_code: owned.root_exit_code ?? null, failure_stage: owned.failure_stage ?? null,
       delivery_diagnostics_enabled: owned.delivery_diagnostics_enabled === true,
-      workload_completed: resourceWorkloadCompleted(hosting, owned) && result.status === 0 && !postgresLeft,
+      workload_completed: resourceWorkloadCompleted(hosting, owned) && telemetryReady && result.status === 0 && !postgresLeft,
     }
     resourceCases.push(summary)
+    console.log('RESOURCE_CASE ' + JSON.stringify({
+      label: summary.label,
+      condition: summary.condition,
+      attempts: summary.telemetry_attempts,
+      reserved_bytes: summary.telemetry_reserved_bytes,
+      present: summary.telemetry_present,
+      memory_cycles: summary.memory_cycles,
+      memory_results_verified: summary.memory_results_verified,
+      memory_api_operations: summary.memory_api_operations,
+      inspected_body_hex: summary.inspected_body_hex,
+    }))
     if (postgresLeft) throw new Error('The installed app left its private PostgreSQL cluster running')
     if (result.error || result.status !== 0 || summary.workload_completed !== true) {
       throw new Error('Owned resource launch failed: ' + row.label)
@@ -455,6 +510,7 @@ async function runInstalledTelemetryResources() {
     production_collection_available: false,
     delivery_compared: false,
     workload_completed: resourceCases.length === RESOURCE_CASES.length && resourceCases.every(row => row.workload_completed === true),
+    cleanup_failures: cleanupFailures.slice(0, 8),
     platform: process.platform,
     architecture: process.arch,
     source: manifest.source,
@@ -656,13 +712,18 @@ try {
       else { try { process.kill(-child.pid, 'SIGKILL') } catch {} }
     }
   }
-  if (process.platform === 'win32' && installationComplete) {
+  if (process.platform === 'win32' && installationComplete && !telemetryResource) {
     for (const directory of uninstallDirs) {
       let names = []
       try { names = readdirSync(directory) } catch { continue }
       const uninstaller = names.find(name => /^Uninstall .*\.exe$/.test(name))
       if (uninstaller) run(join(directory, uninstaller), ['/S'])
     }
+  }
+  if (telemetryResource) {
+    cleanupFailures.push(...finishResourceCleanup(resourceInstallations, removedInstallationIds, retireInstallation))
+    publishResourceCleanup()
+    if (succeeded && cleanupFailures.length) throw new Error('uninstall_failed')
   }
   // NSIS can return while its temporary self-deletion helper still holds the
   // installation directory. Retry transient Windows locks with a finite budget;

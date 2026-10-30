@@ -6,3 +6,7 @@ export function canonicalTerminalMarker(
   completed?: number,
   known?: boolean,
 ): { phase: string; completed?: number; completed_known: boolean }
+export function resourceProgress(
+  state: { verified?: number; progressKnown: boolean },
+  event: 'inflight' | { settled?: number },
+): { verified?: number; progressKnown: boolean }

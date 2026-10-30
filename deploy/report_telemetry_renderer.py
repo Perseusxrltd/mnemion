@@ -424,6 +424,9 @@ def allocation_windows(result):
 
 
 _OWNED_PHASE = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
+_SAFE_TOKEN = re.compile(r"[A-Za-z0-9_.:-]{1,80}\Z")
+_IDENTITY = re.compile(r"[0-9]{1,10}:[0-9]{1,20}\Z")
+_FRACTION = re.compile(r"[0-9]{1,6}\.[0-9]{6}\Z")
 _OWNED_ACTIVE = {
     "measuring",
     "before-workspace-connect",
@@ -483,6 +486,11 @@ class OwnedPhaseCursor:
     def __init__(self):
         self.seen = None
         self.completed = 0
+        self.completed_known = False
+        self.have_lower_bound = False
+        self.rejected = None
+        self.marker_failed = False
+        self.observation_failure = None
 
 
 def owned_counterbalance(attribution: bool, comparison: bool) -> bool:
@@ -576,19 +584,69 @@ def owned_phase_from_marker(
     return name, active, count
 
 
+def observation_failure_code(error: BaseException) -> str:
+    """A bounded code. Exception text, paths and fixture data stay out."""
+    if not isinstance(error, BaseException):
+        return "observation_failed"
+    code = getattr(error, "code", None)
+    if type(code) is not str:
+        code = type(error).__name__
+    if _SAFE_TOKEN.fullmatch(code):
+        return code
+    return "observation_failed"
+
+
 def apply_owned_marker(launch, marker: object, cursor: OwnedPhaseCursor) -> None:
+    """Apply one marker only after accounting accepts it.
+
+    A failed mark does not advance the cursor and is not retried. An in-flight
+    terminal keeps the verified lower bound and records that the total is unknown.
+    """
     if type(marker) is not dict:
         return
     reported = marker.get("completed")
-    if marker.get("completed_known") is False or type(reported) is not int or not 0 <= reported <= 128:
-        reported = None
-    decided = owned_phase_from_marker(marker.get("phase"), cursor.completed, reported)
-    if decided is None or decided[0] == cursor.seen:
+    known_flag = marker.get("completed_known")
+    uncertain = known_flag is False
+    usable = type(reported) is int and 0 <= reported <= 128
+    phase_reported = reported if known_flag is True and usable else None
+    decided = owned_phase_from_marker(marker.get("phase"), cursor.completed, phase_reported)
+    if decided is None:
         return
     name, active, count = decided
+    if name == cursor.rejected:
+        return
+    if uncertain and usable:
+        if not cursor.have_lower_bound:
+            count = reported
+        else:
+            count = cursor.completed
+    if name == cursor.seen:
+        if name in _TERMINAL and known_flag is not True:
+            cursor.completed_known = False
+        return
+    try:
+        launch.mark_phase(name, canonical_operations_completed=count, active=active)
+    except Exception as error:
+        cursor.rejected = name
+        cursor.marker_failed = True
+        cursor.completed_known = False
+        if cursor.observation_failure is None:
+            cursor.observation_failure = observation_failure_code(error)
+        return
     cursor.seen = name
     cursor.completed = count
-    launch.mark_phase(name, canonical_operations_completed=count, active=active)
+    if name in _TERMINAL and known_flag is True and usable:
+        cursor.completed_known = True
+        cursor.have_lower_bound = True
+    elif name in _TERMINAL:
+        cursor.completed_known = False
+        if usable or cursor.have_lower_bound:
+            cursor.have_lower_bound = True
+    elif name.endswith("-memory-cycles") or name == "first-memory-cycle-and-delivery":
+        cursor.completed_known = True
+        cursor.have_lower_bound = True
+    else:
+        cursor.completed_known = False
 
 
 def read_owned_marker(root: Path) -> dict | None:
@@ -712,8 +770,89 @@ def owned_scope_command(
     return prefix + list(command), "systemd_service_delegate"
 
 
+def _token(value: object) -> str | None:
+    if type(value) is str and _SAFE_TOKEN.fullmatch(value):
+        return value
+    return None
+
+
+def _count(value: object, limit: int = 2**62) -> int | None:
+    if type(value) is int and 0 <= value <= limit:
+        return value
+    return None
+
+
+def _flag(value: object) -> bool | None:
+    if type(value) is bool:
+        return value
+    return None
+
+
+def _optional_count(value: object, limit: int = 2**62) -> int | None:
+    if value is None:
+        return None
+    return _count(value, limit)
+
+
+def _bounded_number(value: object, low: float, high: float) -> float | None:
+    if type(value) is bool or type(value) not in (int, float):
+        return None
+    number = float(value)
+    if not low < number <= high:
+        return None
+    return number
+
+
+def _ledger_row(row: object) -> dict | None:
+    if type(row) is not dict:
+        return None
+    pid = row.get("pid")
+    creation = row.get("creation")
+    if type(pid) is not int or not 0 < pid < 2**32:
+        return None
+    if type(creation) is not str or not creation.isdigit() or len(creation) > 20:
+        return None
+    identity = f"{pid}:{creation}"
+    if row.get("identity") != identity:
+        return None
+    return {
+        "pid": pid,
+        "creation": creation,
+        "identity": identity,
+        "peak_working_set_bytes": _optional_count(row.get("peak_working_set_bytes")),
+        "first_working_set_bytes": _optional_count(row.get("first_working_set_bytes")),
+        "last_working_set_bytes": _optional_count(row.get("last_working_set_bytes")),
+        "kernel_high_water_while_observed": row.get("kernel_high_water_while_observed") is True,
+    }
+
+
+def _coverage(value: object) -> dict:
+    source = value if type(value) is dict else {}
+    copied = {
+        key: _token(source.get(key))
+        for key in ("platform", "status", "rss_high_water", "process_lifetime_count")
+    }
+    for key in (
+        "cpu_lifetime_complete",
+        "cpu_includes_exited_descendants",
+        "sampled_pid_cpu_is_complete",
+        "rss_high_water_covers_unseen_exited_processes",
+        "cgroup_memory_peak_is_per_process_rss",
+    ):
+        copied[key] = _flag(source.get(key))
+    return copied
+
+
+def _numeric_object(value: object, ints: tuple[str, ...], flags: tuple[str, ...]) -> dict | None:
+    if type(value) is not dict:
+        return None
+    copied = {key: _optional_count(value.get(key)) for key in ints}
+    copied.update({key: _flag(value.get(key)) for key in flags})
+    return copied
+
+
 def retain_owned_launch(report: object) -> dict:
-    """Copy adapter fields. A null stays null. Partial coverage is not a pass."""
+    """Copy allowlisted accounting fields. A null stays null. Acceptance stays false."""
     if type(report) is not dict:
         return {
             "present": False,
@@ -721,55 +860,147 @@ def retain_owned_launch(report: object) -> dict:
             "qualification": "unqualified",
             "missing_recorded_as_zero": False,
         }
-    coverage = report.get("coverage") if type(report.get("coverage")) is dict else {}
-    cleanup = report.get("cleanup") if type(report.get("cleanup")) is dict else None
+    coverage = _coverage(report.get("coverage"))
+    cleanup_raw = report.get("cleanup") if type(report.get("cleanup")) is dict else None
     phases = []
     for phase in report.get("phases") or []:
-        if type(phase) is not dict or type(phase.get("name")) is not str:
+        if type(phase) is not dict or _token(phase.get("name")) is None:
             continue
-        cpu = phase.get("cpu_microseconds")
         phases.append(
             {
                 "name": phase["name"],
-                "active": phase.get("active") if type(phase.get("active")) is bool else None,
-                "cpu_microseconds": cpu if type(cpu) is int else None,
+                "active": _flag(phase.get("active")),
+                "cpu_microseconds": _optional_count(phase.get("cpu_microseconds")),
+                "start_offset_ns": _optional_count(phase.get("start_offset_ns")),
+                "end_offset_ns": _optional_count(phase.get("end_offset_ns")),
+                "canonical_operations_at_start": _optional_count(
+                    phase.get("canonical_operations_at_start"), 1_000_000
+                ),
+                "canonical_operations_at_end": _optional_count(
+                    phase.get("canonical_operations_at_end"), 1_000_000
+                ),
             }
         )
+        if len(phases) >= 64:
+            break
     unavailable = report.get("unavailable_counters")
-    if type(unavailable) is not list or any(type(name) is not str for name in unavailable):
+    if type(unavailable) is list:
+        unavailable = [_token(name) for name in unavailable if _token(name)][:32]
+    else:
         unavailable = None
-    lifetime = report.get("lifetime_cpu_microseconds")
-    active = report.get("active_cpu_microseconds")
-    wall = report.get("active_wall_microseconds")
-    missing = report.get("identities_missing")
-    complete = coverage.get("cpu_lifetime_complete")
-    cleanup_ok = None if cleanup is None else cleanup.get("ok")
-    if type(cleanup_ok) is not bool:
-        cleanup_ok = None
-    failure = None if cleanup is None else cleanup.get("failure")
-    if failure is not None and type(failure) is not str:
-        failure = None
-    observer = report.get("observer_in_measured_group")
+    cleanup_ok = None if cleanup_raw is None else _flag(cleanup_raw.get("ok"))
+    failure = None if cleanup_raw is None else _token(cleanup_raw.get("failure"))
+    cold_raw = report.get("cold_start") if type(report.get("cold_start")) is dict else {}
+    processes = []
+    for row in cold_raw.get("processes") or []:
+        if type(row) is not dict or not _IDENTITY.fullmatch(str(row.get("identity") or "")):
+            continue
+        working = row.get("working_set_bytes")
+        if type(working) is not int or working < 0:
+            continue
+        processes.append({"identity": row["identity"], "working_set_bytes": working})
+        if len(processes) >= 512:
+            break
+    ledger = []
+    for row in report.get("ledger") or []:
+        copied = _ledger_row(row)
+        if copied is None:
+            continue
+        ledger.append(copied)
+        if len(ledger) >= 512:
+            break
+    bounds_raw = report.get("bounds") if type(report.get("bounds")) is dict else {}
+    fraction = report.get("active_core_fraction")
+    known = report.get("canonical_operations_known")
     return {
         "present": True,
         "launched": report.get("launched") is not False and not report.get("honest_unsupported"),
-        "honest_unsupported": report.get("honest_unsupported")
-        if type(report.get("honest_unsupported")) is str
-        else None,
+        "honest_unsupported": _token(report.get("honest_unsupported")),
         "resource_acceptance": False,
         "qualification": "unqualified",
-        "coverage_status": coverage.get("status") if type(coverage.get("status")) is str else None,
-        "cpu_lifetime_complete": complete if type(complete) is bool else None,
-        "lifetime_cpu_microseconds": lifetime if type(lifetime) is int else None,
-        "active_cpu_microseconds": active if type(active) is int else None,
-        "active_wall_microseconds": wall if type(wall) is int else None,
-        "identities_missing": missing if type(missing) is int else None,
+        "coverage_status": coverage.get("status"),
+        "cpu_lifetime_complete": coverage.get("cpu_lifetime_complete"),
+        "lifetime_cpu_microseconds": _optional_count(report.get("lifetime_cpu_microseconds")),
+        "active_cpu_microseconds": _optional_count(report.get("active_cpu_microseconds")),
+        "active_wall_microseconds": _optional_count(report.get("active_wall_microseconds")),
+        "active_core_fraction": fraction if type(fraction) is str and _FRACTION.fullmatch(fraction) else None,
+        "identities_missing": _optional_count(report.get("identities_missing")),
         "unavailable_counters": unavailable,
-        "observer_in_measured_group": observer if type(observer) is bool else None,
+        "observer_in_measured_group": _flag(report.get("observer_in_measured_group")),
         "cleanup_ok": cleanup_ok,
         "cleanup_failure": failure,
         "phases": phases,
         "missing_recorded_as_zero": False,
+        "platform_method": _token(report.get("platform_method")),
+        "canonical_operations_completed": _optional_count(
+            report.get("canonical_operations_completed"), 1_000_000
+        ),
+        "canonical_operations_known": known if type(known) is bool else None,
+        "observation_error": _token(report.get("observation_error")),
+        "marker_applied": False if report.get("marker_applied") is False else None,
+        "coverage": coverage,
+        "cold_start": {
+            "kind": "first_observed_absolute"
+            if cold_raw.get("kind") == "first_observed_absolute"
+            else None,
+            "subtracted": _flag(cold_raw.get("subtracted")),
+            "processes": processes,
+        },
+        "ledger": ledger,
+        "ledger_truncated": _flag(report.get("ledger_truncated")),
+        "sampled_peaks": _numeric_object(
+            report.get("sampled_peaks"),
+            ("sum_working_set_bytes",),
+            (
+                "sum_double_counts_shared",
+                "not_a_budget_measurement",
+                "sampled_pid_cpu_is_complete",
+            ),
+        ),
+        "kernel": _numeric_object(
+            report.get("kernel"),
+            (
+                "total_user_100ns",
+                "total_kernel_100ns",
+                "total_processes",
+                "active_processes",
+                "processes_no_longer_active",
+                "terminated_by_limit",
+                "peak_process_commit_bytes",
+                "peak_job_commit_bytes",
+                "cpu_usage_usec",
+                "cgroup_memory_peak_bytes",
+                "wait4_direct_child_cpu_microseconds",
+            ),
+            (
+                "commit_counters_are_working_set",
+                "cpu_usage_includes_descendant_cgroups",
+                "cgroup_memory_peak_is_per_process_rss",
+                "includes_only_reaped_descendants",
+                "footprint_used_as_rss",
+            ),
+        ),
+        "cleanup": {
+            "ok": cleanup_ok,
+            "failure": failure,
+            "retried": False if cleanup_raw is None else cleanup_raw.get("retried") is True,
+            "terminated_owned_group": None
+            if cleanup_raw is None
+            else _flag(cleanup_raw.get("terminated_owned_group")),
+        },
+        "bounds": {
+            "lifetime_seconds_cap": _bounded_number(bounds_raw.get("lifetime_seconds_cap"), 0, 120),
+            "timed_out": _flag(bounds_raw.get("timed_out")),
+            "sample_seconds": _bounded_number(bounds_raw.get("sample_seconds"), 0, 1),
+            "sample_truncated": _flag(bounds_raw.get("sample_truncated")),
+            "sample_error": _token(bounds_raw.get("sample_error")),
+        },
+        "budget": {
+            "additional_rss_bytes_per_process": 8_388_608,
+            "cpu_one_core_fraction": 0.005,
+            "status": "UNACCEPTED",
+            "compared": False,
+        },
     }
 
 

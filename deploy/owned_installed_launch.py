@@ -27,6 +27,7 @@ from deploy.owned_launch_accounting import (
 from deploy.report_telemetry_renderer import (
     OwnedPhaseCursor,
     apply_owned_marker,
+    observation_failure_code,
     owned_unsupported_report,
     read_owned_marker,
 )
@@ -103,8 +104,26 @@ def _emit(path: Path, report: dict) -> None:
     path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
 
-def _annotate(report: dict, *, cursor, exit_code, hosting_ready, failure_stage, environ) -> dict:
+def _progress_fields(report: dict, cursor) -> None:
     report["canonical_operations_completed"] = cursor.completed
+    known = getattr(cursor, "completed_known", None)
+    report["canonical_operations_known"] = known if type(known) is bool else None
+    failure = getattr(cursor, "observation_failure", None)
+    if type(failure) is str and not report.get("observation_error"):
+        report["observation_error"] = failure
+    if getattr(cursor, "marker_failed", False):
+        report["marker_applied"] = False
+
+
+def _remember_marker_failure(cursor, error: BaseException) -> None:
+    cursor.marker_failed = True
+    cursor.completed_known = False
+    if getattr(cursor, "observation_failure", None) is None:
+        cursor.observation_failure = observation_failure_code(error)
+
+
+def _annotate(report: dict, *, cursor, exit_code, hosting_ready, failure_stage, environ) -> dict:
+    _progress_fields(report, cursor)
     report["resource_acceptance"] = False
     report["root_exit_code"] = exit_code
     report["hosting_ready"] = hosting_ready
@@ -201,7 +220,7 @@ def finalize_owned_launch(launch, cursor, observe) -> dict:
             raise OwnedLaunchError("observation_failed")
         hosting_ready, failure_stage, exit_code = observed
     except Exception as error:
-        observation_error = getattr(error, "code", None) or type(error).__name__
+        observation_error = error
         try:
             exit_code = _root_exit_code(launch)
         except Exception:
@@ -209,18 +228,18 @@ def finalize_owned_launch(launch, cursor, observe) -> dict:
     try:
         report = launch.finish(canonical_operations_completed=cursor.completed)
     except Exception as error:
-        code = getattr(error, "code", None) or "finish_failed"
-        report = _unfinished_report(str(code))
+        code = getattr(error, "code", None)
+        report = _unfinished_report(code if type(code) is str else "finish_failed")
     if type(report) is not dict:
         report = _unfinished_report("finish_failed")
     if type(exit_code) is not int or exit_code == _STILL_ACTIVE:
         exit_code = None
-    if observation_error:
-        report["observation_error"] = str(observation_error)
+    if isinstance(observation_error, BaseException):
+        report["observation_error"] = observation_failure_code(observation_error)
     report["root_exit_code"] = exit_code
     report["hosting_ready"] = hosting_ready is True
     report["failure_stage"] = failure_stage if type(failure_stage) is str else None
-    report["canonical_operations_completed"] = cursor.completed
+    _progress_fields(report, cursor)
     report["resource_acceptance"] = False
     return report
 
@@ -267,8 +286,8 @@ def run_spec(spec_path: Path) -> int:
         while time.monotonic() < deadline:
             try:
                 apply_owned_marker(launch, read_owned_marker(profile), cursor)
-            except Exception:
-                pass
+            except Exception as error:
+                _remember_marker_failure(cursor, error)
             stage = _smoke_stage(smoke_file)
             if stage == "hosting-ready":
                 hosting_ready = True
@@ -288,15 +307,15 @@ def run_spec(spec_path: Path) -> int:
             while time.monotonic() < shutdown:
                 try:
                     apply_owned_marker(launch, read_owned_marker(profile), cursor)
-                except Exception:
-                    pass
+                except Exception as error:
+                    _remember_marker_failure(cursor, error)
                 if launch.wait_root(_POLL_SECONDS):
                     root_done = True
                     break
         try:
             apply_owned_marker(launch, read_owned_marker(profile), cursor)
-        except Exception:
-            pass
+        except Exception as error:
+            _remember_marker_failure(cursor, error)
         try:
             exit_code = _root_exit_code(launch)
         except Exception:
@@ -317,6 +336,8 @@ def run_spec(spec_path: Path) -> int:
     except OSError:
         return 1
     cleanup = report.get("cleanup") if type(report.get("cleanup")) is dict else {}
+    if report.get("observation_error") or report.get("marker_applied") is False:
+        return 1
     if owned_launch_succeeded(
         report.get("hosting_ready") is True,
         report.get("root_exit_code"),
