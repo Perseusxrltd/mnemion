@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T05:24:38+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T05:25:57+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.56](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.56). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41008163470](https://github.com/Perseusxrltd/mnemion/actions/runs/41008163470) |
+| ci\.yml | main | success | [Run 41008163470](https://github.com/Perseusxrltd/mnemion/actions/runs/41008163470) |
 | public-updates\.yml | v4\.46\.56 | success | [Run 41000798048](https://github.com/Perseusxrltd/mnemion/actions/runs/41000798048) |
 | release\.yml | release/4\.46\.56 | success | [Run 40995339188](https://github.com/Perseusxrltd/mnemion/actions/runs/40995339188) |
 | release\.yml | release/4\.46\.57 | in\_progress | [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980) |
@@ -30,10 +30,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | website-release\.yml | v4\.46\.56 | success | [Run 41000796006](https://github.com/Perseusxrltd/mnemion/actions/runs/41000796006) |
 
 ## Active jobs
-
-[Run 41008163470](https://github.com/Perseusxrltd/mnemion/actions/runs/41008163470): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
 
 [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980): 20/21 jobs completed; 19 succeeded.
 
