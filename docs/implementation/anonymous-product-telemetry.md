@@ -21,9 +21,13 @@ matching inspected-report delivery, opt-out/reload persistence and cleanup in
 both engines. This uses disposable loopback TLS and does not qualify production
 trust, native Safari or fleet statistics. The
 [owned-launch accounting source](../validation/2026-10-30-telemetry-owned-launch.md)
-passed launch-ownership and cleanup checks on all six native targets. Its
-recorded coverage limits remain; it has not yet measured or qualified installed
-app overhead.
+passed launch-ownership and cleanup checks on all six native targets. The first
+owned Linux compiled-workload run, 41013901369 on source `c8f75870`, completed
+768 cycles and 2,322 successful fixture API calls, delivered two reports totaling
+50 bytes, and passed all cleanup. Its CPU/RSS observations remain descriptive:
+polled terminal accounting counts stop at 96 despite functional proof of 128
+cycles per case, and high-water coverage remains partial. It does not qualify
+installed or all-platform overhead or the 8 MiB/0.5% resource budgets.
 
 Release 4.46.55 includes the v3 clients, collector and private reporting tools.
 Its installed controls have the scoped qualification below; production
@@ -31,7 +35,7 @@ collection stays off. The 25-byte report uses
 [wire v3](../../mnemion/product_telemetry/wire-v3.json), described below and in
 the [v3 reference](anonymous-product-telemetry-v3.md). Current publication and
 public update results are maintained in [release status](../RELEASE_STATUS.md).
-The latest qualified compiled-app
+The earlier compiled-app
 comparison, [run 40967691671](../validation/2026-10-29-telemetry-v3-resource.md),
 failed the initial 2 MiB and 0.5% gates. The
 [30 October budget revision](telemetry-resource-budget-2026-10-30.md)

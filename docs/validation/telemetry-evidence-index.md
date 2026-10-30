@@ -14,8 +14,11 @@ Collection stays disabled.
 
 The [owned-launch accounting review](2026-10-30-telemetry-owned-launch.md)
 records the corrected native measurement adapter, 13 focused source checks,
-and six successful native launch/cleanup jobs. Installed-overhead qualification
-remains open; the recorded partial measurement coverage is preserved.
+six successful native launch/cleanup jobs, and the first owned Linux compiled
+workload. Its six cases completed 768 memory cycles and all cleanup, with two
+25-byte reports sent only by enabled cases. CPU/RSS results, the incomplete
+terminal phase count and high-water limits are retained. Installed-overhead
+and resource-budget qualification remain open.
 
 **Index checkpoint: 30 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)

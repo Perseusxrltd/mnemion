@@ -53,8 +53,8 @@ separate from actual cleanup and did not authorize a retry.
 Astra reviewed these original artifacts without repeating the self-checks.
 They qualify attaching the adapter to the existing 128-cycle workload and fixed
 counterbalance, using equivalent ownership capability. They do not qualify app
-overhead, the 8 MiB/0.5% budgets, or production collection. The next compiled
-Linux workload also cannot establish installed acceptance on the other targets.
+overhead, the 8 MiB/0.5% budgets, or production collection. The compiled
+Linux workload cannot establish installed acceptance on the other targets.
 
 ## Compiled-workload attachment
 
@@ -69,4 +69,64 @@ are sampled and descriptive; lifetime CPU is retained separately.
 Astra reviewed the source for this one measurement. Five focused source cases
 passed before the execution-identity correction; only the changed identity case
 was repeated and passed. The installed launcher is not attached by this change,
-and no compiled-workload result or resource-budget pass is claimed yet.
+and the first compiled-workload result below does not establish a resource-budget pass.
+
+## First owned compiled-workload result
+
+[Run 41013901369](https://github.com/Perseusxrltd/mnemion/actions/runs/41013901369)
+completed on source `c8f75870ca0c3df1e8bd4af5e4456a403f80bbba`. Its original
+provenance/functional qualification binds all 2,351 source files and the fixed
+six-case order. Each case completed 128 cycles and 387 successful fixture API
+calls: 768 cycles and 2,322 successful calls total. Only the two enabled cases
+sent reports, one 25-byte report each (50 bytes total).
+
+All six groups recorded complete Linux cgroup lifetime CPU including exited
+descendants, with the observer outside the group. All cleanup passed without
+retries or forced group termination. No sampler error, sample truncation or
+ledger truncation occurred. The retained cleanup receipt confirms isolated
+profiles and certificate removal, collector shutdown and unchanged production
+disclosure. Astra reviewed the original evidence; no rerun was requested.
+
+CPU seconds, descriptive only. Group totals include the controller; sampled
+Electron CPU covers a different process set and interval.
+
+| Case | Group lifetime CPU | Group active-phase CPU | Sampled Electron CPU |
+| --- | ---: | ---: | ---: |
+| r1 unavailable | 4.853519 | 1.275025 | 1.090 |
+| r1 opted out | 4.865988 | 1.308331 | 1.070 |
+| r1 enabled | 5.031845 | 1.406734 | 1.170 |
+| r2 enabled | 5.013637 | 1.365476 | 1.180 |
+| r2 opted out | 5.070468 | 1.307697 | 1.080 |
+| r2 unavailable | 5.060712 | 2.493675 | 1.130 |
+
+Matched RSS growth differences against the unavailable case in the same
+replicate, in MiB. Each cell is maximum matched difference / final checkpoint
+difference. All nine checkpoints matched; maxima include the zero initial
+difference. These are sampled growth differences, not causal allocations or
+unsampled peaks.
+
+| Case | Main RSS difference | Renderer RSS difference |
+| --- | ---: | ---: |
+| r1 opted out | +0.297 / -0.367 | +0.637 / +0.637 |
+| r1 enabled | +3.270 / +3.270 | +0.754 / +0.648 |
+| r2 enabled | +5.660 / +5.660 | 0.000 / -5.512 |
+| r2 opted out | +0.277 / +0.188 | 0.000 / -6.594 |
+
+Phase boundaries are polled. Every owned accounting report ends with a recorded
+canonical count of 96 because the transient 128-cycle marker was overwritten
+before observation; the separate functional receipt proves 128 completed
+cycles per case. Four cases also miss the `finished` marker and classify the
+interval until `closed` as active. Native attachment should carry actual
+cumulative counts in terminal markers rather than infer missing counts. These
+limitations do not invalidate the retained lifetime counter or functional result.
+
+The r2-unavailable connection phases account for 1.415371 CPU seconds versus
+0.209794 in r1, while its startup phase falls from 2.015347 to 1.274261 seconds.
+The active-total difference does not establish a saving or causal overhead.
+Linux `cgroup_memory_peak_bytes` and lifetime identity count remain unavailable;
+per-process kernel high-water covers observed live processes, not unseen exited
+processes. Missing values remain null, and overall coverage remains partial.
+
+This is Linux x64 compiled-source evidence only. It does not qualify installed
+or all-platform resource behavior, the 8 MiB/0.5% budgets, or production
+collection. All prior failures and their original results remain unchanged.
