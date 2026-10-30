@@ -10,6 +10,12 @@ address and an empty certificate-authority list. Source controls, owners,
 senders and collector components exist.
 **No production product collection or qualified anonymous ingress is active.**
 
+The [live release-catalog review](../validation/2026-10-30-telemetry-live-catalog.md)
+qualifies source for a separate daily public catalog refresh and weekly collector
+adoption. Nine selected Linux checks passed with real runtime dependencies.
+The collector keeps its restriction on outbound connections; no live download or
+deployed catalog service was qualified by those checks.
+
 The [local v3 systemd check](../validation/2026-10-30-telemetry-v3-systemd-local.md)
 passed socket activation, TLS delivery, credential isolation and cleanup.
 The [installed delivery journeys](../validation/2026-10-30-telemetry-installed-driver.md)
@@ -56,8 +62,12 @@ preserves that state. The correction passed 19 focused Python checks and five
 Node checks. The package-to-source correction is also reviewed: each installer
 is verified against its own prepared source, with ordinary verification and
 all integrity checks preserved. It passed 33 focused Python and six Node checks.
-A corrected native comparison is still required. The fixed 128-cycle workload, accounting and budgets
-remain unqualified; the earlier delivery passes retain their scope.
+Corrected native comparison
+[41056963518](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518)
+on `aae0f9e02f15110e751dc203df5ef027c9537479` completed with all six resource
+jobs failing. Its workload scope and failure causes remain under review.
+The fixed 128-cycle workload, accounting and budgets remain unqualified;
+the earlier delivery passes retain their scope.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and
 production hosting unresolved. The
@@ -773,6 +783,21 @@ The add-or-remove-one-report bound on the released vector is `ln(3)`, including
 admission and clipping. That bound is not network anonymity, collector
 blindness, a unique-user count, or an exact uncapped event total.
 
+The collector can adopt a validated local release catalog at startup and when
+a new reporting week opens. A separate bounded daily systemd oneshot fetches
+only the fixed public Mnemion GitHub `wire-v3.json`, refuses redirects, validates
+at most 32 listed releases and atomically replaces public local metadata.
+The collector performs no outbound fetch. A refresh leaves the open week's
+mapping and counters intact; closed reports retain their own domain. Unknown
+versions remain `unlisted` until a later adopted snapshot includes them.
+Missing, stale or malformed files retain the last valid snapshot, or the bundled
+allowlist when none has been adopted. The parser correction also contains deep
+malformed JSON so it cannot skip publication of an already sealed week.
+Packet layout, 19 metrics, release-or-OS axes, publication noise and eight-week
+retention stay unchanged. It adds no identity fields or persistence of raw
+summaries or open counters. See the [source qualification](../validation/2026-10-30-telemetry-live-catalog.md)
+and [operator setup](anonymous-product-telemetry-collector.md#deployment-template).
+
 The integrated client source uses disclosure version 3. An enabled installation
 that acknowledged version 2 requires a fresh explicit acknowledgement before
 the changed automatic network behavior can apply. Editing connection settings
@@ -787,8 +812,9 @@ plus jitter, 64 KiB reserved per attempt, and a 256 KiB rolling-day guard.
 stay false/null. Synthetic format examples are labelled examples, not sent
 reports. Private maintainer HTML, CSV and JSON exist on the accepted combined
 source. Ordinary Privacy settings do not show fleet data. This source does not
-turn collection on. Installed v3 delivery is not qualified. The current
-8 MiB and 0.5% acceptance gates remain open. V08 is not complete.
+turn collection on. The installed journeys above qualify scoped v3 delivery
+on all six targets across four sources; full installed acceptance remains open.
+The current 8 MiB and 0.5% acceptance gates remain open. V08 is not complete.
 All 66 requirements stay.
 
 ## Remaining acceptance gates
@@ -799,8 +825,9 @@ required below. It preserves all requirements and failed results.
 
 - **Coverage and installed behavior:** finish the action-by-action ownership and
   exclusion review, including autonomous work and unknown remote clients. All
-  six native targets still need installed staged-report approval/delivery,
-  current-owner, cancellation, storage-loss and pressure/sensor journeys. Web has
+  six native targets have scoped installed review/delivery evidence across four
+  sources. Full current-owner, cancellation, storage-loss and pressure/sensor
+  journeys remain open. Web has
   [scoped compiled-app review/delivery and restart evidence](../validation/2026-10-26-telemetry-browser-admission.md);
   production trust and remaining owner, cancellation, storage-loss, sensor/resource
   and privacy qualification remain open. The 4.46.22 mode/opt-out restart evidence
