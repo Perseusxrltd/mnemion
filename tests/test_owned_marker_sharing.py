@@ -11,7 +11,9 @@ import pytest
 
 from deploy.report_telemetry_renderer import read_owned_marker
 
-_MODULE = Path(__file__).resolve().parents[1] / "studio" / "electron" / "canonical-memory-cycles.mjs"
+_MODULE = (
+    Path(__file__).resolve().parents[1] / "studio" / "electron" / "canonical-memory-cycles.mjs"
+)
 _TIMEOUT = 10
 
 
@@ -256,7 +258,9 @@ def test_symlink_snapshot_is_unknown(tmp_path: Path):
     progress = tmp_path / "owned-progress"
     progress.mkdir()
     target = tmp_path / "real.json"
-    target.write_text('{"phase":"finished","completed":128,"completed_known":true}', encoding="utf-8")
+    target.write_text(
+        '{"phase":"finished","completed":128,"completed_known":true}', encoding="utf-8"
+    )
     try:
         (progress / "01.json").symlink_to(target)
     except OSError:
