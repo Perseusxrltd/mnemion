@@ -472,6 +472,79 @@ test('a complete workflow shares one bounded transaction and validates both obse
   assert.deepEqual(invoke('preview'), before, 'invalid outcome did not leave a new submission')
 })
 
+test('validation keeps published v1 and v2 coordinates and the cell limit', () => {
+  const definitions = nativeTelemetryDefinitions()
+  const current = new NativeTelemetryStore('unused', definitions.disclosure, definitions.catalog).catalog
+  const legacy = JSON.parse(readFileSync(new URL('../../../tests/fixtures/telemetry-catalog-v1.json', import.meta.url), 'utf8'))
+  const previous = new NativeTelemetryStore('unused', definitions.disclosure, legacy.catalog).catalog
+  const retained = { kind: 'submission', workflow: 'vault.export', surface: 'desktop' }
+  previous.validateObservation(retained)
+  current.validateObservation(retained)
+  assert.deepEqual(previous.observation(retained), { scope: 93 * 4, cells: [93 * 512] })
+  assert.deepEqual(current.observation(retained), { scope: 93 * 4, cells: [93 * 512] })
+  const added = { kind: 'submission', workflow: 'models.test', surface: 'desktop' }
+  current.validateObservation(added)
+  assert.deepEqual(current.observation(added), { scope: 95 * 4, cells: [95 * 512] })
+  assert.throws(() => previous.validateObservation(added), /^Error: telemetry_invalid_measurement$/)
+  const recalled = { kind: 'outcome', workflow: 'memory.recall', surface: 'desktop', outcome: 'success', latency_ms: 0 }
+  current.validateObservation(recalled)
+  assert.deepEqual(current.observation(recalled), { scope: 48, cells: [6145, 6165] })
+  const resource = { kind: 'resource', metric: 'rss_bytes', value: 0 }
+  current.validateObservation(resource)
+  assert.deepEqual(current.observation(resource), { scope: 513, cells: [61456] })
+  const failed = { kind: 'outcome', workflow: 'memory.recall', surface: 'desktop', outcome: 'failed', reason: 'offline' }
+  assert.deepEqual(current.observation(failed), { scope: 48, cells: [6151, 6159] })
+  const tightSpecification = structuredClone(definitions.catalog)
+  tightSpecification.limits.cells_per_observation = 2
+  const limited = new NativeTelemetryStore('unused', definitions.disclosure, tightSpecification).catalog
+  limited.validateObservation(failed)
+  assert.deepEqual(limited.observation(failed), { scope: 48, cells: [6151, 6159] })
+  const excess = { ...failed, latency_ms: 0 }
+  assert.throws(() => limited.validateObservation(excess), /^Error: telemetry_invalid_measurement$/)
+  assert.throws(() => limited.observation(excess), /^Error: telemetry_invalid_measurement$/)
+  for (const value of [
+    { ...recalled, query: 'PRIVATE_SENTINEL' },
+    { ...recalled, workflow: 'vault.export', reported_tokens: 1 },
+    { ...recalled, reason: 'authorization' },
+    { ...recalled, latency_ms: -1 },
+    { ...recalled, latency_ms: Number.NaN },
+    { ...recalled, latency_ms: Number.POSITIVE_INFINITY },
+    { ...recalled, latency_ms: Number.MAX_SAFE_INTEGER + 1 },
+    { kind: 'resource', metric: 'PRIVATE_SENTINEL', value: 0 },
+  ]) assert.throws(() => current.validateObservation(value), /^Error: telemetry_invalid_measurement$/)
+})
+
+test('an invalid workflow member never reaches the recording port', async () => {
+  const catalog = new NativeTelemetryStore('unused', nativeTelemetryDefinitions().disclosure, nativeTelemetryDefinitions().catalog).catalog
+  const calls = []
+  const store = {
+    available: true, catalog,
+    snapshot: async () => ({ revision: 1, store_generation: 'a'.repeat(32) }),
+    recordMany: async values => { calls.push(values.map(value => ({ ...value }))); return true },
+  }
+  const paired = await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop', () => 8)
+  await paired.resources([{ metric: 'rss_bytes', value: 0 }, { metric: 'cpu_millicores', value: -1 }])
+  await paired.finish('success', 'offline')
+  const numbers = await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop', () => 8)
+  await numbers.resources([{ metric: 'rss_bytes', value: Number.NaN }])
+  await numbers.resources([{ metric: 'queue_drops', value: Number.POSITIVE_INFINITY }])
+  await numbers.resources([{ metric: 'cpu_millicores', value: Number.MAX_SAFE_INTEGER + 1 }])
+  await numbers.resources([{ metric: 'PRIVATE_SENTINEL', value: 1 }])
+  await numbers.finish('failed', 'invalid_input', { result_items: -1 })
+  const vault = await TelemetryWorkflow.begin(store, 'vault.export', 'desktop', () => 8)
+  await vault.finish('failed', 'other_failure', { reported_tokens: 1 })
+  assert.deepEqual(calls, [])
+  const admitted = await TelemetryWorkflow.begin(store, 'memory.recall', 'desktop', () => 8)
+  await admitted.resources([{ metric: 'rss_bytes', value: 0 }])
+  await admitted.finish('success', 'none', { result_items: 0 })
+  assert.deepEqual(calls[0], [{ kind: 'resource', metric: 'rss_bytes', value: 0 }])
+  assert.deepEqual(calls[1][0], { kind: 'submission', workflow: 'memory.recall', surface: 'desktop' })
+  assert.equal(calls[1][1].outcome, 'success')
+  assert.equal(calls[1][1].result_items, 0)
+  assert.equal(calls[1][1].latency_ms, 0)
+  assert.equal(calls.length, 2)
+})
+
 test('concurrent callers share one process storage slot and never queue SQLite handles', async t => {
   const { root, company, store, definitions } = await fixture(t)
   const other = new NativeTelemetryStore(root, store.disclosure, definitions.catalog, company)

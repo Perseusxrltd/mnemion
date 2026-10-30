@@ -41,7 +41,7 @@ export class TelemetryWorkflow {
     try {
       if (!Array.isArray(samples) || !samples.length || samples.length > 2) return
       const values = samples.map(sample => ({ kind: 'resource', metric: sample.metric, value: sample.value }))
-      for (const value of values) this.store.catalog.observation(value)
+      for (const value of values) this.store.catalog.validateObservation(value)
       await this.store.recordMany(values, this.stamp)
     } catch { /* Unavailable sensors and optional storage never affect work. */ }
   }
@@ -70,7 +70,7 @@ export class TelemetryWorkflow {
         ...metrics, ...(timed ? { latency_ms: Math.max(0, (completedAt ?? this.clock()) - this.started) } : {}) }
       // Validate before admitting even the submission. The store immediately
       // turns these primitives into fixed numeric cells before its first await.
-      this.store.catalog.observation(result)
+      this.store.catalog.validateObservation(result)
       await this.store.recordMany([{ kind: 'submission', workflow, surface: this.surface }, result], this.stamp)
     } catch { /* An optional measurement never changes the original action. */ }
   }

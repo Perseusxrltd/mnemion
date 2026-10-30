@@ -360,7 +360,7 @@ export class BrowserTelemetry {
     let serialized: string, recorded: boolean
     try {
       if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) return false
-      for (const input of inputs) telemetryCatalog.observation(input)
+      for (const input of inputs) telemetryCatalog.validateObservation(input)
       let state = pendingState(this.storage().getItem(queueKey))
       recorded = false
       for (const input of inputs) {
@@ -446,7 +446,7 @@ export async function recordBrowserTelemetryMany(inputs: unknown[], stamp: Telem
     // to another tab. Neither later argument mutation nor a newer choice can
     // relabel an observation that began under an older generation.
     if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) return false
-    for (const input of inputs) telemetryCatalog.observation(input)
+    for (const input of inputs) telemetryCatalog.validateObservation(input)
     const values = inputs.map(input => ({ ...(input as Record<string, unknown>) }))
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
     const recorded = await navigator.locks.request(choiceKey, { ifAvailable: true }, lock => lock ? browser.recordMany(values, expected) : false)

@@ -60,6 +60,19 @@ export class TelemetryCatalog {
   }
 
   observation(value: unknown): EncodedObservation {
+    const encoded = this.walk(value, true)
+    if (!encoded) throw invalid()
+    return encoded
+  }
+
+  /** Same refusal as observation(), without a cell list or encoded object to discard. */
+  validateObservation(value: unknown): void {
+    this.walk(value, false)
+  }
+
+  private walk(value: unknown, encode: true): EncodedObservation
+  private walk(value: unknown, encode: false): void
+  private walk(value: unknown, encode: boolean): EncodedObservation | void {
     if (!isObject(value) || typeof value.kind !== 'string') throw invalid()
     const catalog = this.specification
     if (value.kind === 'resource') {
@@ -67,7 +80,9 @@ export class TelemetryCatalog {
           typeof value.metric !== 'string') throw invalid()
       const index = this.resourceNames.indexOf(value.metric)
       if (index < 0) throw invalid()
-      return { scope: 512 + index, cells: [61440 + index * 16 + this.bucket(value.value, this.resources[index][1].upper_bounds)] }
+      const bucket = this.bucket(value.value, this.resources[index][1].upper_bounds)
+      if (!encode) return
+      return { scope: 512 + index, cells: [61440 + index * 16 + bucket] }
     }
     if (!['submission', 'outcome'].includes(value.kind) || typeof value.workflow !== 'string' || typeof value.surface !== 'string') throw invalid()
     const workflow = this.workflows.indexOf(value.workflow), surface = catalog.surfaces.indexOf(value.surface)
@@ -75,22 +90,30 @@ export class TelemetryCatalog {
     const scope = workflow * 4 + surface, base = scope * 128
     if (value.kind === 'submission') {
       if (Object.keys(value).length !== 3) throw invalid()
+      if (!encode) return
       return { scope, cells: [base] }
     }
     if (Object.keys(value).some(key => !this.outcomeFields.includes(key)) || typeof value.outcome !== 'string' ||
         !catalog.outcomes.includes(value.outcome)) throw invalid()
     const reason = value.reason === undefined ? 'none' : value.reason
     if (typeof reason !== 'string' || !catalog.reasons.includes(reason) || (reason !== 'none' && ['success', 'accepted'].includes(value.outcome))) throw invalid()
-    const cells = [base + 1 + catalog.outcomes.indexOf(value.outcome)]
-    if (reason !== 'none') cells.push(base + 1 + catalog.outcomes.length + catalog.reasons.indexOf(reason))
+    // Counting is enough to enforce the cell limit. The array exists only for the encoder.
+    const cells = encode ? [base + 1 + catalog.outcomes.indexOf(value.outcome)] : undefined
+    let count = 1
+    if (reason !== 'none') {
+      count += 1
+      cells?.push(base + 1 + catalog.outcomes.length + catalog.reasons.indexOf(reason))
+    }
     const family = this.workflowFamilies[workflow]
     for (const [name, offset, metric] of this.slots) {
       if (!Object.hasOwn(value, name)) continue
       if (metric.families !== 'all' && !metric.families?.includes(family)) throw invalid()
-      cells.push(base + offset + this.bucket(value[name], metric.upper_bounds))
+      const bucket = this.bucket(value[name], metric.upper_bounds)
+      count += 1
+      if (cells) cells.push(base + offset + bucket)
     }
-    if (cells.length > catalog.limits.cells_per_observation) throw invalid()
-    return { scope, cells }
+    if (count > catalog.limits.cells_per_observation) throw invalid()
+    if (cells) return { scope, cells }
   }
 
   describe(cell: number): CellDescription {

@@ -38,9 +38,14 @@ test('old browser cells and spent budgets survive catalog expansion without rela
   for (const workflow of old.workflows) for (const surface of fixture.catalog.surfaces) {
     const value = { kind: 'submission', workflow, surface }
     assert.deepEqual(telemetryCatalog.observation(value), old.observation(value))
+    telemetryCatalog.validateObservation(value)
+    old.validateObservation(value)
   }
   const oldValue = { kind: 'submission', workflow: 'vault.export', surface: 'browser' }
   const encoded = old.observation(oldValue)
+  assert.deepEqual(encoded, { scope: 93 * 4 + 1, cells: [93 * 512 + 128] })
+  old.validateObservation(oldValue)
+  telemetryCatalog.validateObservation(oldValue)
   const raw = JSON.stringify({ catalog_version: 1, entries: [{ cell: encoded.cells[0], count: 64, window_day: 20000 }],
     contributions: [{ scope: encoded.scope, count: 64, window_day: 20000 }] })
   const read = pendingState(raw)
@@ -421,10 +426,20 @@ test('old browser preferences retain opt-out and gain a private generation on ex
 test('the browser cannot turn invalid cells, duplicate rows or arbitrary sizes into measurements', () => {
   for (const bad of [null, true, -1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, 'PRIVATE_SENTINEL', { secret: 'PRIVATE_SENTINEL' }]) {
     assert.throws(() => telemetryCatalog.observation(measured({ latency_ms: bad })), /^Error: telemetry_invalid_measurement$/)
+    assert.throws(() => telemetryCatalog.validateObservation(measured({ latency_ms: bad })), /^Error: telemetry_invalid_measurement$/)
   }
-  for (const bad of [measured({ workflow: '__proto__' }), measured({ workflow: 'vault.write', payload_bytes_sent: 15 }), measured({ token: 'PRIVATE_SENTINEL' })]) {
+  for (const bad of [measured({ workflow: '__proto__' }), measured({ workflow: 'vault.write', payload_bytes_sent: 15 }), measured({ token: 'PRIVATE_SENTINEL' }), measured({ reason: 'authorization' })]) {
     assert.throws(() => telemetryCatalog.observation(bad), /telemetry_invalid_measurement/)
+    assert.throws(() => telemetryCatalog.validateObservation(bad), /telemetry_invalid_measurement/)
   }
+  const { TelemetryCatalog } = load(new URL('../../electron/telemetry-catalog.ts', import.meta.url))
+  const tight = new TelemetryCatalog(structuredClone(telemetryCatalog.specification))
+  tight.specification.limits.cells_per_observation = 2
+  const counted = { kind: 'outcome', workflow: 'memory.recall', surface: 'desktop', outcome: 'failed', reason: 'offline' }
+  tight.validateObservation(counted)
+  assert.deepEqual(tight.observation(counted), { scope: 48, cells: [6151, 6159] })
+  assert.throws(() => tight.validateObservation({ ...counted, latency_ms: 0 }), /^Error: telemetry_invalid_measurement$/)
+  assert.throws(() => tight.observation({ ...counted, latency_ms: 0 }), /^Error: telemetry_invalid_measurement$/)
   assert.throws(() => pendingState(JSON.stringify({ catalog_version: 1, entries: [{ cell: 65535, count: 1, window_day: 20000 }], contributions: [] })))
   const state = collect(pendingState(null), measured(), 20000, ['usage']).state
   state.entries.push({ ...state.entries[0] })
@@ -593,6 +608,51 @@ test('an unavailable browser lock drops a paired observation without retry or st
   assert.equal(instance.storage.getItem(queueKey), null)
   assert.equal(await exported.recordBrowserTelemetry(measured({ secret: 'PRIVATE_SENTINEL' }), current), false)
   assert.equal(instance.attempts(), 1)
+}))
+
+test('invalid measurements never reach a browser lock or the desktop recording port', async () => browserGlobals(async instance => {
+  const client = instance.client()
+  const current = client.configure({ enabled: true, expected_revision: 0, disclosure_version: contract.version })
+  const ipc = []
+  window.mnemion = {
+    productTelemetrySnapshot: async () => ({ revision: 4, store_generation: 'c'.repeat(32) }),
+    productTelemetryRecord: async values => { ipc.push(values); return true },
+  }
+  const { TelemetryWorkflow } = load(new URL('../../electron/telemetry-workflow.ts', import.meta.url))
+  const refused = await TelemetryWorkflow.begin(exported.productWorkflowStore, 'memory.recall', 'desktop', () => 10)
+  assert.ok(refused)
+  await refused.resources([{ metric: 'rss_bytes', value: 1024 }, { metric: 'rss_bytes', value: Number.POSITIVE_INFINITY }])
+  await refused.finish('failed', 'invalid_input', { result_items: -1 })
+  const wrongFamily = await TelemetryWorkflow.begin(exported.productWorkflowStore, 'vault.write', 'desktop', () => 10)
+  await wrongFamily.finish('failed', 'other_failure', { reported_tokens: 3 })
+  const wrongReason = await TelemetryWorkflow.begin(exported.productWorkflowStore, 'memory.recall', 'desktop', () => 10)
+  await wrongReason.finish('accepted', 'conflict')
+  assert.deepEqual(ipc, [])
+  const admitted = await TelemetryWorkflow.begin(exported.productWorkflowStore, 'memory.recall', 'desktop', () => 10)
+  await admitted.resources([{ metric: 'rss_bytes', value: 1024 }])
+  await admitted.finish('success')
+  assert.equal(ipc.length, 2)
+  assert.deepEqual(ipc[0], [{ kind: 'resource', metric: 'rss_bytes', value: 1024 }])
+  assert.equal(ipc[1][0].kind, 'submission')
+  assert.equal(ipc[1][1].outcome, 'success')
+  assert.equal(ipc[1][1].latency_ms, 0)
+  const submission = { kind: 'submission', workflow: 'memory.recall', surface: 'browser' }
+  for (const values of [
+    [submission, measured({ token: 'PRIVATE_SENTINEL' })],
+    [submission, measured({ workflow: 'vault.write', payload_bytes_sent: 15 })],
+    [submission, measured({ reason: 'authorization' })],
+    [submission, measured({ latency_ms: -1 })],
+    [submission, measured({ latency_ms: NaN })],
+    [submission, measured({ latency_ms: Infinity })],
+    [submission, measured({ latency_ms: Number.MAX_SAFE_INTEGER + 1 })],
+    [{ kind: 'resource', metric: 'rss_bytes', value: 1024 }, { kind: 'resource', metric: 'queue_drops', value: Number.MAX_SAFE_INTEGER + 2 }],
+  ]) assert.equal(await exported.recordBrowserTelemetryMany(values, current), false)
+  assert.equal(instance.attempts(), 0)
+  assert.equal(instance.storage.getItem(queueKey), null)
+  assert.equal(client.recordMany([submission, measured({ secret: 'PRIVATE_SENTINEL' })], current), false)
+  assert.equal(instance.storage.getItem(queueKey), null)
+  assert.equal(client.recordMany([submission, measured()], current), true)
+  assert.equal(pendingState(instance.storage.getItem(queueKey)).contributions.length, 1)
 }))
 
 for (const ending of ['ready', 'opted_out', 'page_exit']) test('queued browser delivery survives refused collection: ' + ending, async t => {
