@@ -65,3 +65,8 @@ hosted job can say that.
 Installed apps, whole-wire cost, provider privacy, and resource acceptance
 remain separate. The workflow is manual. It does not change release workflows
 or published installer feeds.
+
+The hosted command has a 25-minute outer deadline and a 10-second kill grace
+period. Artifact upload runs even when the command fails. This bounds a stuck
+CLI teardown independently of its internal task cancellation; a timeout is a
+failed journey and never qualifies cleanup or delivery.

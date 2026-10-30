@@ -76,7 +76,7 @@ jobs:
         run: node "$RUNNER_TEMP/telemetry-browser/node_modules/playwright/cli.js" install --with-deps firefox webkit
       - name: Exercise one journey in each engine
         run: |
-          xvfb-run -a uv run --no-sync python -m deploy.probe_telemetry_browser \
+          timeout --signal=TERM --kill-after=10s 25m xvfb-run -a uv run --no-sync python -m deploy.probe_telemetry_browser \
             --source "$GITHUB_WORKSPACE" \
             --output "$GITHUB_WORKSPACE/output/telemetry-browser-journeys" \
             --playwright-module "$RUNNER_TEMP/telemetry-browser/node_modules/playwright/index.mjs"
