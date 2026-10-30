@@ -1,5 +1,10 @@
 # RAM budgets and local resource controls
 
+The [whole-product efficiency contract](../implementation/runtime-efficiency.md)
+covers idle/tray work, foreground priority and resource-aware maintenance.
+The implemented controls and scoped measurements below are its current
+foundation; full hardware and background-load acceptance remains open.
+
 ## Shared local models in 4.2.5
 
 Linux/macOS services launched by `mnemion-service supervise` now keep local

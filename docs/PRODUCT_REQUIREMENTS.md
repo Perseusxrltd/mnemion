@@ -4,6 +4,12 @@ Updated **2026-10-30**. This is the persistent checklist for the Mnemion rebuild
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 
+The [30 October runtime-efficiency clarification](implementation/runtime-efficiency.md)
+retains the requirement that the whole app stay light while idle or in the
+background, with on-demand work, shared models and resource-aware scheduling.
+It extends F06/R04 and existing background/librarian work; all 66 requirement
+texts and states remain unchanged. Telemetry overhead alone cannot qualify it.
+
 The [complete-milestone audit](implementation/completion-audit.md) decomposes all
 42 partial requirements into missing acceptance work, dependencies and evidence.
 It retains every requirement and keeps effort estimates unknown until inspected.

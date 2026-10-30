@@ -19,6 +19,13 @@ repairs take precedence. Preserve failed reports and unfinished scope until
 their actual acceptance passes. The [release process](MAINTENANCE.md) keeps
 issue review, publication and version-linked closure together.
 
+The [30 October whole-product efficiency requirement](implementation/runtime-efficiency.md)
+applies to every milestone: keep idle/tray work light, load models on demand,
+prioritize foreground work and schedule maintenance within current resource
+limits. It extends F06/R04 without changing the 66 requirement states or
+interrupting the current telemetry fixes. Whole-product measurements remain
+separate from telemetry's own overhead allowance.
+
 ## Current delivery checkpoint
 
 These entries preserve dated source and acceptance evidence as historical
