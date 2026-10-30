@@ -246,9 +246,16 @@ store still opens, with that fact stated.
 
 The summary says the export is not the local privacy page, that ticks are not
 people, and that the noise is not an independent-user or causal interval.
-Publication failures appear as the week and the fixed state, without cohort
-ids or counts. Bucket labels for an ordered metric come from the legend stored
-in that report. `--utility` prints the model below. It does not read a fleet.
+`collection_available` and `destination` are copied from the exporting build's
+release disclosure. They are that build's configured availability and public
+destination. The summary labels them with
+`collection_fields_describe_exporting_build_configuration` and
+`collection_fields_are_live_collector_or_network_observation`. They are not a
+live collector or network observation, and a sealed week does not make the
+collector active. The current disclosure stays false and null. Publication
+failures appear as the week and the fixed state, without cohort ids or counts.
+Bucket labels for an ordered metric come from the legend stored in that
+report. `--utility` prints the model below. It does not read a fleet.
 
 ## Modelled utility
 

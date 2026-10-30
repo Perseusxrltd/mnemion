@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from starlette.testclient import TestClient
 
-from mnemion.product_telemetry import CONTRACT, catalog, wire
+from mnemion.product_telemetry import CONTRACT, catalog, policy, wire
 from mnemion.product_telemetry.aggregate_v3 import (
     DENOMINATOR,
     HALFWIDTH,
@@ -33,7 +33,7 @@ from mnemion.product_telemetry.aggregate_v3 import (
 from mnemion.product_telemetry.cohorts import reviewed_cohorts
 from mnemion.product_telemetry.collector import Collector
 from mnemion.product_telemetry.collector_v3 import CollectorV3
-from mnemion.product_telemetry.maintainer_v3 import main, render
+from mnemion.product_telemetry.maintainer_v3 import honest_summary, main, render
 from mnemion.product_telemetry.publication import validate as validate_v2
 from mnemion.product_telemetry.publication_v3 import MAX_REPORT_BYTES, ReportStore
 from mnemion.product_telemetry.utility_v3 import modelled_utility
@@ -540,6 +540,11 @@ def test_maintainer_export_is_validated_and_is_not_a_privacy_page(tmp_path, caps
     assert document["summary"]["reports_are_not_unique_people"] is True
     assert document["summary"]["noise_is_not_independent_user_or_causal_inference"] is True
     assert document["summary"]["collection_available"] is False
+    assert document["summary"]["destination"] is None
+    assert document["summary"]["collection_fields_describe_exporting_build_configuration"] is True
+    assert (
+        document["summary"]["collection_fields_are_live_collector_or_network_observation"] is False
+    )
     table = list(csv.DictReader(io.StringIO(render(store.reports(), "csv"))))
     assert table[0]["record"] == "summary"
     assert table[0]["reports_are_not_unique_people"] == "True"
@@ -550,6 +555,40 @@ def test_maintainer_export_is_validated_and_is_not_a_privacy_page(tmp_path, caps
     exported = json.loads(capsys.readouterr().out)
     assert exported["summary"]["report_count"] == 1
     assert main(["--state", "relative", "--format", "json"]) == 2
+
+
+def test_export_collection_metadata_follows_release_disclosure(tmp_path, monkeypatch):
+    """Inactive source, a validated active disclosure, and a sealed store stay offline."""
+    from mnemion.product_telemetry.reporting import reporting_week
+    import time
+
+    disclosure = policy.disclosure()
+    inactive = honest_summary([])
+    assert inactive["collection_available"] is disclosure["collection_available"] is False
+    assert inactive["destination"] is disclosure["destination"] is None
+    assert inactive["collection_fields_describe_exporting_build_configuration"] is True
+    assert inactive["collection_fields_are_live_collector_or_network_observation"] is False
+    assert inactive["report_count"] == 0
+
+    current = reporting_week(time.time())
+    store = ReportStore(tmp_path, clock=lambda: stamp(current))
+    store(AggregateWindow(current - 1).seal(stop))
+    sealed = json.loads(render(store.reports(), "json"))
+    assert sealed["summary"]["collection_available"] is False
+    assert sealed["summary"]["destination"] is None
+    assert sealed["summary"]["report_count"] == 1
+    assert (tmp_path / "reports-v3.sqlite3").is_file()
+    reports = sealed["reports"]
+
+    monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v3/report")
+    active = json.loads(render(store.reports(), "json"))
+    assert active["summary"]["collection_available"] is True
+    assert active["summary"]["destination"] == "https://example.invalid/v3/report"
+    assert active["summary"]["collection_fields_describe_exporting_build_configuration"] is True
+    assert active["summary"]["collection_fields_are_live_collector_or_network_observation"] is False
+    assert active["reports"] == reports
+    assert policy.COLLECTION_AVAILABLE is True and policy.disclosure()["destination"].endswith("/v3/report")
 
 
 def test_closed_report_keeps_its_domain_when_the_allowlist_grows(tmp_path, monkeypatch, capsys):

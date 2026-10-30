@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import sqlite3
 
+from . import policy
 from .aggregate_v3 import validate
 from .publication_v3 import ReportStore
 from .utility_v3 import modelled_utility
@@ -29,14 +30,18 @@ def honest_summary(reports: list[dict], publication_failures: list[dict] | None 
         for item in failures
     ):
         raise WireV3Error
+    # Package disclosure for this exporting build. A sealed report is not a probe.
+    configured = policy.disclosure()
     return {
         "surface": "maintainer_export",
         "ordinary_privacy_settings_contain_fleet_data": False,
         "reports_are_not_unique_people": True,
         "noise_is_not_independent_user_or_causal_inference": True,
         "v2_local_privacy": False,
-        "collection_available": False,
-        "destination": None,
+        "collection_available": configured["collection_available"],
+        "destination": configured["destination"],
+        "collection_fields_describe_exporting_build_configuration": True,
+        "collection_fields_are_live_collector_or_network_observation": False,
         "report_count": len(reports),
         "publication_failures": failures,
         "limitations": modelled_utility()["limitations"],
