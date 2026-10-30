@@ -3,9 +3,9 @@
 30 October 2026. The third through sixth installed journeys qualify scoped
 delivery on all six targets across four original sources. No complete matrix
 has passed on one source. The earlier failures remain below. The first resource
-comparison failed preparation on all six targets; its package-to-source
-correction is reviewed, while installed overhead and production collection
-remain unqualified.
+comparison failed preparation on all six targets. The corrected comparison
+reached memory workloads but failed all six resource jobs; installed overhead
+and production collection remain unqualified.
 
 The driver builds an unpublished copy with one disposable localhost TLS
 certificate. The normal app entry, bridge and delivery owner stay in use.
@@ -482,5 +482,43 @@ commands. Formatting preserved the Python AST; lint passed.
 The missing-report correction above is preserved. No installed workload or
 resource-budget pass is claimed by these source tests. The original six-job
 failure and its 36 rejected placeholder case claims remain intact. A corrected
-installed comparison is required before evaluating the unchanged 8 MiB RAM and
-0.5% CPU budgets. Production collection remains disabled.
+installed comparison is recorded below; the unchanged 8 MiB RAM and 0.5% CPU
+budgets remain unaccepted. Production collection remains disabled.
+
+## Corrected installed resource run: final runtime evidence
+
+Original r2 [run 41056963518](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518),
+attempt 1 on source
+[`aae0f9e02f15110e751dc203df5ef027c9537479`](https://github.com/Perseusxrltd/mnemion/commit/aae0f9e02f15110e751dc203df5ef027c9537479),
+finished with all 11 preparation jobs passing and all six resource jobs failing.
+Six artifact ZIP digests and 95 extracted files were verified once. Source
+bytes were not reconstructed and the runtime was not replayed.
+
+| Target | Successful memory API requests | Cases at 128 cycles / completed by driver | Accepted 25-byte reports | Recorded stop |
+|---|---|---|---|---|
+| [Linux x64](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518/job/124070360361) | 385/385 | 1 / 0 | 0 | First unavailable case: `hosting_ready=true`, root exit `0`, no `failure_stage`; cleanup failed with `cgroup_rmdir_failed`. |
+| [Windows x64](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518/job/124070360307) | 385/385 | 1 / 1 | 0 | First case completed; next installer refused an existing Mnemion installation. |
+| [Windows ARM64](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518/job/124070360255) | 385/385 | 1 / 1 | 0 | First case completed; next installer refused an existing Mnemion installation. |
+| [Linux ARM64](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518/job/124070360218) | 1,977/1,977 | 5 / 5 | 2 | Last unavailable case: `startup-error`, canonical count 16; cleanup failed with `cgroup_rmdir_failed`. |
+| [macOS ARM64](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518/job/124070360278) | 1,929/1,929 | 5 / 5 | 2 | Last unavailable case: `startup-error`, canonical count 0; cleanup passed. |
+| [macOS x64](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518/job/124070360275) | 1,935/1,935 | 5 / 5 | 2 | Last unavailable case: `startup-error`, canonical count 2; cleanup passed. |
+
+All 6,996 memory API requests succeeded. Eighteen cases reached 128 cycles,
+but the driver marks only 17 complete: Linux x64 finished its memory work and
+then failed cleanup. Linux ARM64 and both Macs completed their first five cases and
+accepted two fixture reports each, six reports in total. Their last unavailable
+cases record `hosting_ready=false` and root exit `0`. These observed stages
+and cleanup codes do not establish deeper root causes.
+
+All available accounting coverage is partial; missing cases remain
+absent. No budget comparison completed or passed (`compared=false` throughout),
+and `resource_acceptance` remains false. The private evidence directory
+`telemetry-owned-resources/installed-native-run-r2/` retains `runtime-review.json`,
+`matrix-observation.json` and the exact artifact reports and failed-job logs
+in `original-evidence/`.
+
+Original r1 remains six preparation failures, zero workloads and 36 rejected
+placeholder claims. Earlier scoped delivery passes still cover six targets
+across four sources. Collection stays off, hosting remains pending, and there
+are no qualified fleet statistics, public telemetry release or completion
+email. All 66 requirement texts and states are unchanged; V08 remains Building.

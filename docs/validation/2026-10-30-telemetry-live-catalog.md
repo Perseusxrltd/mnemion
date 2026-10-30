@@ -5,8 +5,9 @@ or restart. Grok's implementation was adopted with attribution in
 [`35cc1e042c9d32bb9d111e82523d0f694ddf06ab`](https://github.com/Perseusxrltd/mnemion/commit/35cc1e042c9d32bb9d111e82523d0f694ddf06ab),
 followed by the parser correction in
 [`408a56ace3730b544d762d8980204280fc15cc5c`](https://github.com/Perseusxrltd/mnemion/commit/408a56ace3730b544d762d8980204280fc15cc5c).
-This report qualifies the reviewed source and local fixtures. Production
-collection remains disabled, hosting is undecided and no collector is deployed.
+This report qualifies the reviewed source, local fixtures and one real public
+catalog download. Production collection remains disabled, hosting is undecided
+and no collector is deployed.
 
 ## Behavior
 
@@ -79,6 +80,16 @@ They do not perform a live GitHub download or start the catalog systemd service.
 These source checks do not qualify deployed hosting, public ingress, provider
 privacy, live fleet usefulness or installed resource budgets.
 
+Separately, at 13:26:26 UTC, one real public catalog CLI download on source
+[`9dabc8fb1bd224c5a20dfe35386625a52f57346b`](https://github.com/Perseusxrltd/mnemion/commit/9dabc8fb1bd224c5a20dfe35386625a52f57346b)
+passed in 0.824 seconds. The 786-byte local catalog validated releases
+4.46.53–4.46.57; disposable state was removed and source hashes stayed unchanged.
+No collector was started and no telemetry reports were sent. The retained
+`intent.json`, `result.json` and public `release-catalog.json` are in the private
+automation evidence at `telemetry-fleet/live-catalog-review/live-download/`.
+This download does not qualify operation of the systemd catalog service/timer
+or production acceptance; it is separate from the nine fixture checks above.
+
 ## Remaining acceptance
 
 The [client disclosure](../../mnemion/product_telemetry/disclosure.json) remains
@@ -90,9 +101,14 @@ occurred.
 
 Corrected installed-resource comparison
 [41056963518](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518)
-on `aae0f9e02f15110e751dc203df5ef027c9537479` completed with all six resource
-jobs failing. Its workload scope and failure causes remain under review;
-resource acceptance stays open. Original run
+on `aae0f9e02f15110e751dc203df5ef027c9537479` passed all 11 preparation jobs
+and failed all six resource jobs. The
+[final runtime review](2026-10-30-telemetry-installed-driver.md#corrected-installed-resource-run-final-runtime-evidence)
+records 6,996 successful API requests out of 6,996, 18 cases reaching 128 cycles
+and 17 completed by the driver; Linux x64 failed cleanup. Six 25-byte fixture
+reports were accepted across Linux ARM64 and both Macs. Accounting coverage
+remains partial, no budget comparison completed or passed, and deeper failure
+causes remain unproven. Resource acceptance stays open. Original run
 [41039553671](https://github.com/Perseusxrltd/mnemion/actions/runs/41039553671)
 remains six preparation failures, zero completed workload cases and 36 rejected
 placeholder claims. Earlier scoped delivery passes cover six targets across

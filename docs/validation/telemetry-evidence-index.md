@@ -1,11 +1,13 @@
 # Telemetry evidence index
 
 The [live release-catalog source review](2026-10-30-telemetry-live-catalog.md)
-records nine selected Linux checks passing in 2.25 seconds with real Starlette
-and Uvicorn. Daily public metadata synchronization is separate from the
-collector; adoption preserves each week's mapping and handles malformed files.
-The earlier Windows checks remain unqualified. No live download, catalog
-service, fleet or host acceptance follows from this source selection.
+records nine selected Linux fixture checks passing in 2.25 seconds with real
+Starlette and Uvicorn and no network calls. Daily public metadata synchronization
+is separate from the collector; adoption preserves each week's mapping and
+handles malformed files.
+The earlier Windows checks remain unqualified. A separate real public catalog
+CLI download passed local validation and cleanup on `9dabc8fb`; catalog
+service/timer, fleet and host acceptance remain open.
 
 The [local v3 systemd check](2026-10-30-telemetry-v3-systemd-local.md) passed
 socket activation, TLS delivery, credential isolation and cleanup.
@@ -56,12 +58,17 @@ serialization correction passed 19 focused Python checks and five Node checks.
 It preserves absent reports through both readers and leaves metadata-only launch
 status unknown. The [package-to-source correction](2026-10-30-telemetry-installed-driver.md#binding-each-installed-package-to-its-prepared-source)
 is reviewed, with 33 focused Python and six Node checks passing. Each package
-keeps independent source and inventory verification. Corrected native comparison
+keeps independent source and inventory verification. The
+[final corrected resource review](2026-10-30-telemetry-installed-driver.md#corrected-installed-resource-run-final-runtime-evidence)
+records native comparison
 [41056963518](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518)
-on `aae0f9e02f15110e751dc203df5ef027c9537479` completed with all six resource
-jobs failing. Its workload scope and failure causes remain under review;
-accounting and budgets remain unqualified. The installed
-report retains the earlier five-failures/one-running observation as chronology.
+on `aae0f9e02f15110e751dc203df5ef027c9537479`: 11 preparation jobs passed,
+six resource jobs failed, and all 6,996 memory API requests succeeded. Eighteen
+cases reached 128 cycles; the driver marks 17 complete because Linux x64 failed
+cleanup. Linux ARM64 and both Macs accepted six 25-byte fixture reports in
+total. Coverage remains partial, no budget comparison completed or passed,
+and deeper failure causes remain unproven. The installed report retains the
+original r1 preparation failure and its earlier partial observation separately.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
 production hosting unresolved. The
@@ -267,7 +274,7 @@ resource, whole-wire, installed/workflow and full privacy acceptance stay open.
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
-| 30 October | [Live release-catalog adoption](2026-10-30-telemetry-live-catalog.md) | Reviewed implementation `35cc1e04` and parser correction `408a56ac`: nine selected Linux checks passed in 2.25 seconds with real dependencies and unchanged source; all six Python files already formatted, lint passed and AST unchanged. Startup/weekly adoption, frozen domains, unknown versions, invalid/stale/missing fallback, deep-parser recovery and separate sync wiring are covered. Original Windows missing-dependency and stub-path failures remain unqualified. No live catalog download/service, production, fleet or resource acceptance. |
+| 30 October | [Live release-catalog adoption](2026-10-30-telemetry-live-catalog.md) | Reviewed implementation `35cc1e04` and parser correction `408a56ac`: nine selected Linux fixture checks passed in 2.25 seconds with real dependencies and unchanged source; all six Python files already formatted, lint passed and AST unchanged. Startup/weekly adoption, frozen domains, unknown versions, invalid/stale/missing fallback, deep-parser recovery and separate sync wiring are covered. Original Windows missing-dependency and stub-path failures remain unqualified. One separate real public CLI download on `9dabc8fb` passed local validation and cleanup in 0.824 seconds. Catalog service/timer, production, fleet and resource acceptance remain open. |
 | 29 October | [Joint-category consistency](2026-10-29-telemetry-joint-consistency.md) | Three original assertion failures retained. Unrounded intervals must admit probabilities summing to one; the publisher rejects impossible visible intervals while leaving withheld cells unknown. All 75 selected tests passed without failures or skips; Ruff check and format passed. Valid historical schemas, immutable reports, wiping, ln(3), wire parameters and count buckets remain unchanged. Sender authentication, general poisoning resistance and full population utility remain open; no production activation or full V08 acceptance. |
 | 27 October | [Collector serving-process crashes](2026-10-27-telemetry-collector-crash.md) | Tests-only follow-up on `62b9ab71`: 21 passes, no failures/skips, including two real TLS-process crashes with standalone/fixture-inherited listeners. Linux/WSL2's piped core handler produced no kernel core dump; fixture logs/state and fresh report export stayed clean. 435 inputs matched. Earlier 19-case source evidence remains; production/provider, installed and non-Linux qualification stay open. |
 | 27 October | [Browser/Python owners after saturation](2026-10-27-telemetry-owner-saturation.md) | Two original real Python TLS failures, an unwanted standalone activity import and one browser-source POST failure retained. Python: 137 distinct passes (136 unchanged plus the corrected MCP schema case); browser-source: 96 passes, zero skips, with mocked fetch/locks/admission. The legacy CI schema failure reproduced locally; its test now includes classic_cli and proves inspection adds no measurement. SDK/frontend builds passed; 852 inputs matched. Existing owners alone can reoffer prior work, with unchanged cadence, permission and budgets. The prior app comparison excludes these changes; no release, activation or full acceptance. |

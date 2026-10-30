@@ -12,9 +12,10 @@ senders and collector components exist.
 
 The [live release-catalog review](../validation/2026-10-30-telemetry-live-catalog.md)
 qualifies source for a separate daily public catalog refresh and weekly collector
-adoption. Nine selected Linux checks passed with real runtime dependencies.
-The collector keeps its restriction on outbound connections; no live download or
-deployed catalog service was qualified by those checks.
+adoption. Nine selected Linux fixture checks passed with real runtime dependencies
+and no network calls. A separate real public catalog CLI download passed local
+validation and cleanup on `9dabc8fb`. The collector keeps its restriction on
+outbound connections; catalog service/timer operation remains unqualified.
 
 The [local v3 systemd check](../validation/2026-10-30-telemetry-v3-systemd-local.md)
 passed socket activation, TLS delivery, credential isolation and cleanup.
@@ -62,12 +63,16 @@ preserves that state. The correction passed 19 focused Python checks and five
 Node checks. The package-to-source correction is also reviewed: each installer
 is verified against its own prepared source, with ordinary verification and
 all integrity checks preserved. It passed 33 focused Python and six Node checks.
-Corrected native comparison
+The [final corrected resource review](../validation/2026-10-30-telemetry-installed-driver.md#corrected-installed-resource-run-final-runtime-evidence)
+records native comparison
 [41056963518](https://github.com/Perseusxrltd/mnemion/actions/runs/41056963518)
-on `aae0f9e02f15110e751dc203df5ef027c9537479` completed with all six resource
-jobs failing. Its workload scope and failure causes remain under review.
-The fixed 128-cycle workload, accounting and budgets remain unqualified;
-the earlier delivery passes retain their scope.
+on `aae0f9e02f15110e751dc203df5ef027c9537479`: all 11 preparation jobs passed
+and all six resource jobs failed. All 6,996 memory API requests succeeded;
+18 cases reached 128 cycles, but only 17 are complete in the driver because
+Linux x64 failed cleanup. Linux ARM64 and both Macs accepted six 25-byte
+fixture reports in total. Recorded accounting coverage remains partial and
+no budget comparison completed or passed. Deeper failure causes remain
+unproven; the earlier delivery passes retain their scope.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and
 production hosting unresolved. The
