@@ -14,8 +14,12 @@ The [live release-catalog review](../validation/2026-10-30-telemetry-live-catalo
 qualifies source for a separate daily public catalog refresh and weekly collector
 adoption. Nine selected Linux fixture checks passed with real runtime dependencies
 and no network calls. A separate real public catalog CLI download passed local
-validation and cleanup on `9dabc8fb`. The collector keeps its restriction on
-outbound connections; catalog service/timer operation remains unqualified.
+validation and cleanup on `9dabc8fb`. The later
+[local catalog systemd check](../validation/2026-10-30-telemetry-catalog-systemd.md)
+passed one real restricted sync, timer scheduling and cleanup on `dc7f6c41`.
+The collector keeps its restriction on outbound connections. A later daily
+firing, collector week rollover under systemd and production operation remain
+unqualified.
 
 The [local v3 systemd check](../validation/2026-10-30-telemetry-v3-systemd-local.md)
 passed socket activation, TLS delivery, credential isolation and cleanup.

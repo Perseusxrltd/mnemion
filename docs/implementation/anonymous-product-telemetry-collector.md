@@ -8,6 +8,11 @@ disclosed destination and release-owned route remain unset. See the
 [full V08 contract](anonymous-product-telemetry.md) and
 [source validation](../validation/2026-10-25-telemetry-collector-service.md).
 
+The [30 October catalog systemd check](../validation/2026-10-30-telemetry-catalog-systemd.md)
+passed one real public catalog refresh under the service's restrictions,
+verified its scheduled timer and removed the isolated fixture. It started no
+collector and does not qualify a later daily firing or public deployment.
+
 The [26 October read-only ingress review](../validation/2026-10-26-telemetry-ingress-review.md)
 confirms that the production collector/listener is not installed. An existing
 free certificate and active renewal timer offer a candidate; one verified TLS

@@ -90,6 +90,12 @@ automation evidence at `telemetry-fleet/live-catalog-review/live-download/`.
 This download does not qualify operation of the systemd catalog service/timer
 or production acceptance; it is separate from the nine fixture checks above.
 
+The later [local systemd qualification](2026-10-30-telemetry-catalog-systemd.md)
+on `dc7f6c41` passed one actual catalog sync under its restrictions, real timer
+scheduling and cleanup. Its original journal records one successful invocation
+in 5.206312 seconds. This separately qualifies local operation; a later daily
+firing, collector week rollover under systemd and production remain open.
+
 ## Remaining acceptance
 
 The [client disclosure](../../mnemion/product_telemetry/disclosure.json) remains

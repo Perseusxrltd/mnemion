@@ -6,8 +6,11 @@ Starlette and Uvicorn and no network calls. Daily public metadata synchronizatio
 is separate from the collector; adoption preserves each week's mapping and
 handles malformed files.
 The earlier Windows checks remain unqualified. A separate real public catalog
-CLI download passed local validation and cleanup on `9dabc8fb`; catalog
-service/timer, fleet and host acceptance remain open.
+CLI download passed local validation and cleanup on `9dabc8fb`; fleet and host
+acceptance remain open. The later
+[catalog systemd check](2026-10-30-telemetry-catalog-systemd.md) on `dc7f6c41`
+passed one actual restricted sync, timer scheduling and cleanup. It does not
+qualify a later daily firing, collector week rollover or public operation.
 
 The [local v3 systemd check](2026-10-30-telemetry-v3-systemd-local.md) passed
 socket activation, TLS delivery, credential isolation and cleanup.
