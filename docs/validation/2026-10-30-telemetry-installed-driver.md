@@ -210,3 +210,29 @@ this is not one complete passing matrix. A separate installed resource correctio
 is active, with resource budgets still unaccepted. All 66 requirement states
 remain unchanged, V08 remains Building, public collection stays off, and full
 installed, production and resource acceptance remain open.
+
+## Windows admission correction after the fourth run
+
+Grok commit `ad8126a9` replaces repeated permission-helper startup with an
+asynchronous `readPrivateStore` call in the existing native module. The helper
+and module share the unchanged Windows owner/DACL routine. Each read checks
+current permissions; a missing export, busy slot or timeout refuses. A timed-out
+call keeps its slot until the native work settles, and its late result cannot
+grant that read. The 25 ms producer deadline, consent and generation checks, and
+transaction-scoped SQLite lifetime are unchanged. The one-second caller timeout
+does not establish a native-operation or shutdown deadline.
+
+Astra's source review, full Electron build and source-digest regression passed.
+The Windows x64 module and helper compiled with the existing MSVC toolchain.
+The actual Python/Node ABI check passed. A disposable Windows fixture exercised
+the compiled production wrapper without injected permission results: private
+access, changed/restored DACLs, hardlink and junction refusal, oversized-file
+refusal, malformed native inputs and concurrent-read refusal all passed. The
+helper agreed on valid private state, and fixture cleanup passed. The first
+direct module check took 7.847 ms; this is not an installed IPC or resource-budget
+measurement. The seven original mock/source checks are retained separately and
+were not repeated by Astra.
+
+Native ARM64 compilation and corrected Windows installed delivery remain to be
+qualified on the matching runners. The earlier failures remain evidence; this
+local component result does not qualify production collection or resource budgets.
