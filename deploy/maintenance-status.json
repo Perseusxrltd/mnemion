@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Run npm --prefix studio/electron test"
             ]
           }
         ]
@@ -152,5 +152,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T10:10:08+00:00"
+  "observed_at": "2026-10-30T10:10:49+00:00"
 }
