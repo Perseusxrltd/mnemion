@@ -1,0 +1,50 @@
+name: Native residency counters
+run-name: Residency counters ${{ inputs.source }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact reviewed source commit (40 hex characters)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Manual two-target counter check only. Not owned-launch, not a six-platform
+# rerun, and not telemetry or resource-budget acceptance.
+jobs:
+  counters:
+    name: ${{ matrix.os }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-26, arch: arm64 }
+          - { os: macos-15-intel, arch: x64 }
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source }}
+          persist-credentials: false
+      - name: Compile and run the residency probe once
+        shell: python3 {0}
+        env:
+          REVIEWED_SOURCE: ${{ inputs.source }}
+          RUNNER_ARCH: ${{ matrix.arch }}
+        run: |
+          import os
+          import sys
+          sys.path.insert(0, os.getcwd())
+          from deploy.darwin_residency_receipt import main
+          raise SystemExit(main())
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: residency-counters-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 14
+          if-no-files-found: error
+          path: output/darwin-residency/*
