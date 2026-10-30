@@ -62,28 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "1ab761ee7826d96d89701376e2a248634b832451",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T05:58:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41011337874",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 123917755950,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Independent host control through the real desktop profile and native engine"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T06:00:06Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41011337874"
     },
     {
       "id": 41010370711,
@@ -141,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T05:59:56+00:00"
+  "observed_at": "2026-10-30T06:00:41+00:00"
 }
