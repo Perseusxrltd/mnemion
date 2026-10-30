@@ -149,7 +149,7 @@ def _pgserver(directory: Path):
 
 
 @asynccontextmanager
-async def memory_workspace(root):
+async def memory_workspace(root, *, studio_dist: Path | None = None):
     # Imports and server/model construction belong to the unmeasured parent.
     from mnemion.service.api import create_app
     from service_tests.conftest import env, postgres
@@ -163,6 +163,11 @@ async def memory_workspace(root):
         dsn = server.get_uri()
         cleanup = server.cleanup
     counts = {"requests": 0, "successful": 0}
+    # API counters exist only when this fixture also serves the built Studio.
+    # Desktop diagnostics keep the original two fields.
+    if studio_dist is not None:
+        counts["api_requests"] = 0
+        counts["api_successful"] = 0
     try:
         with ExitStack() as resources:
             isolated = {
@@ -173,6 +178,11 @@ async def memory_workspace(root):
                 MNEMION_LIBRARIAN_DISABLED="1",
                 MNEMION_EVALUATIONS_DISABLED="1",
             )
+            if studio_dist is not None:
+                selected = Path(studio_dist).resolve()
+                if not (selected / "index.html").is_file() or not (selected / "assets").is_dir():
+                    raise RuntimeError("Studio dist is not a built frontend")
+                isolated["MNEMION_STUDIO_DIST"] = str(selected)
             resources.enter_context(patch_environment(isolated))
             database = postgres.__wrapped__(None)
             connections = next(database)
@@ -184,16 +194,23 @@ async def memory_workspace(root):
                 database=workspace.db,
                 embedder=workspace.embedder,
                 mcp_enabled=False,
-                studio_enabled=False,
+                studio_enabled=studio_dist is not None,
             )
 
             async def ingress(scope, receive, send):
-                if scope["type"] == "http":
+                http = scope["type"] == "http"
+                path = scope.get("path", "") if http else ""
+                memory_call = http and (path == "/v1" or path.startswith("/v1/"))
+                if http:
                     counts["requests"] += 1
+                    if "api_requests" in counts:
+                        counts["api_requests"] += int(memory_call)
 
                 async def counted(event):
                     if event["type"] == "http.response.start" and 200 <= event["status"] < 300:
                         counts["successful"] += 1
+                        if memory_call and "api_successful" in counts:
+                            counts["api_successful"] += 1
                     await send(event)
 
                 await application(scope, receive, counted)

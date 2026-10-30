@@ -28,6 +28,23 @@ def changed_repository(root, paths):
     return {"before": before, "after": git("rev-parse", "HEAD")}
 
 
+def test_browser_journey_files_stay_on_the_manual_diagnostic(tmp_path):
+    event = changed_repository(
+        tmp_path,
+        [
+            ".github/workflows/telemetry-browser-journeys.yml",
+            "deploy/probe_telemetry_browser.py",
+            "deploy/probe_telemetry_browser.mjs",
+            "tests/test_telemetry_browser_journey.py",
+            "docs/implementation/telemetry-browser-journeys-2026-10-30.md",
+        ],
+    )
+    assert scope(tmp_path, event, event_name="push") == {
+        "runtime": False,
+        "reason": "diagnostic_only",
+    }
+
+
 def test_isolated_renderer_changes_do_not_reserve_product_runners(tmp_path):
     event = changed_repository(
         tmp_path,

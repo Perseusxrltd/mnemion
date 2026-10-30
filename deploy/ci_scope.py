@@ -19,16 +19,20 @@ METADATA = {
     "docs/website/content.schema.json",
 }
 
-# These files only prepare or run the separately dispatched, disposable
-# renderer diagnostic. No application/release builder imports them. Keep this
-# explicit: runtime, release workflows and unknown files still run all checks.
+# These files only prepare or run separately dispatched diagnostics. No
+# application/release builder imports them. Keep this explicit: runtime,
+# release workflows and unknown files still run all checks.
 RENDERER_DIAGNOSTICS = {
+    ".github/workflows/telemetry-browser-journeys.yml",
     ".github/workflows/telemetry-renderer.yml",
+    "deploy/probe_telemetry_browser.mjs",
+    "deploy/probe_telemetry_browser.py",
     "deploy/probe_telemetry_renderer.py",
     "deploy/report_telemetry_renderer.py",
     "deploy/telemetry_memory_fixture.py",
     "studio/electron/scripts/probe-telemetry-renderer.mjs",
     "studio/frontend/scripts/build-telemetry-probe.mjs",
+    "tests/test_telemetry_browser_journey.py",
 }
 
 # Only these existing component boundaries may use telemetry push checks.
