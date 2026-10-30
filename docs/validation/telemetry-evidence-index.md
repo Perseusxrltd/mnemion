@@ -10,20 +10,28 @@ The r3 Windows `no_observations` and Linux ARM64 `connection_pending` failures
 remain retained. Fourth run 41022011070 (`497af0ab`) selected those three targets.
 Linux ARM64 completed 21 successful API calls, delivered one matching inspected
 25-byte report, and passed all 11 review controls with persistence across two
-launches. This yields four
-scoped passing targets across two sources, not a complete passing matrix on one
-source; the r3 passes were not repeated.
+launches. Fifth run 41028940251 (`d8dc845e`) selected only Windows x64 and ARM64.
+Windows x64 passed 21 successful API calls, six admitted/committed observations,
+one matching inspected 25-byte report, all 11 review controls and two clean
+launches with persisted opt-out/manual-review mode. Five scoped targets now
+have passing evidence across three original sources, not a complete passing
+matrix on one source; the earlier passes were not repeated.
 
-Both Windows targets completed 9 successful API calls and sent no reports. Each
+In the fourth run, both Windows targets completed 9 successful API calls and
+sent no reports. Each
 recorded two snapshot admission deadlines, two successful ACL checks below 50 ms
 and zero observation-write attempts. This proves loss at the 25 ms admission
 deadline. The timing buckets cannot determine whether ACL work alone exceeded
 25 ms or separate process startup, IPC, scheduling and store-open costs. Original
 artifact/source bindings and package/collector evidence limits are recorded in
-the report. A source correction preserving fresh Windows native checks and a
-separate installed resource correction are in progress, without new acceptance.
-Full installed, production and resource acceptance remain open; public collection
-is disabled and production hosting unresolved. The
+the report. Fifth-run Windows ARM64 failed with `The installed privacy page did
+not open` after 3 successful API calls, at cycle 0 with all observation and ACL
+counters zero. This neither reproduces nor clears its earlier admission failure.
+The cause is unproven; Grok's diagnosis/correction is underway. The original
+failure is retained, and the separate installed resource correction remains
+unaccepted. Full installed, production and resource acceptance remain open;
+there are no qualified fleet statistics. Public collection is disabled and
+production hosting unresolved. The
 [Firefox/WebKit journey evidence](2026-10-30-telemetry-browser-journeys.md)
 retains the original failures and the successful fourth run: real memory
 actions, two matching 25-byte reports, opt-out/reload persistence and cleanup.

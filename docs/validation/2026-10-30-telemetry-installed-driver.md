@@ -1,9 +1,10 @@
 # Installed telemetry diagnostic source qualification
 
 30 October 2026. Grok's installed delivery driver was reviewed and integrated
-with the browser admission correction. The third and fourth installed runs below
-qualify scoped delivery on four targets across two sources; no complete matrix
-has passed on one source.
+with the browser admission correction. The third, fourth and fifth installed
+runs below qualify scoped delivery on five targets across three original
+sources; no complete matrix has passed on one source. Windows ARM64 remains
+unqualified after the fifth run's Privacy-page failure before observations.
 
 The driver builds an unpublished copy with one disposable localhost TLS
 certificate. The normal app entry, bridge and delivery owner stay in use.
@@ -233,6 +234,74 @@ direct module check took 7.847 ms; this is not an installed IPC or resource-budg
 measurement. The seven original mock/source checks are retained separately and
 were not repeated by Astra.
 
-Native ARM64 compilation and corrected Windows installed delivery remain to be
-qualified on the matching runners. The earlier failures remain evidence; this
-local component result does not qualify production collection or resource budgets.
+Native ARM64 compilation and corrected Windows installed delivery remained
+pending at this component checkpoint. The fifth run below records the subsequent
+build and installed outcomes. The earlier failures remain evidence; this local
+component result does not qualify production collection or resource budgets.
+
+## Fifth installed run: Windows x64 pass and ARM64 Privacy-page failure
+
+[Run 41028940251](https://github.com/Perseusxrltd/mnemion/actions/runs/41028940251)
+used source `d8dc845efbf92d7af1aa081943d1d0aa381c3b20`, original attempt 1,
+and selected only Windows x64 and ARM64. The required native prerequisites and
+both package builds passed, including compilation of the shared `private-store.c`
+routine into each desktop target's addon and helper. Windows x64 passed scoped
+installed fixture delivery. Windows ARM64 failed, so the workflow conclusion
+remains failure.
+
+Windows x64 completed three real UI save/fetch/lexical-search cycles and all
+21 fixture API requests. Six snapshots were admitted below 5 ms and six
+observations committed; none lost the unchanged 25 ms deadline. Twenty native
+ACL checks accepted in the below-50-ms bucket. These are this journey's
+observations, not a general latency or resource guarantee. The collector
+accepted one 25-byte report matching the inspected body, with no forbidden
+request metadata. All 11 review controls passed across two clean launches:
+disclosure and deferral, manual mode before permission, fresh acknowledgement,
+stable inspection, native opt-out invalidation, empty re-enable, discard without
+spending, exact approved delivery, final opt-out and restart persistence.
+Final opt-out and manual-review mode persisted with no queued cells or held
+report; one spent reservation `[1, 65536]` remained and its lease was cleared.
+The private store scan found neither fixture content nor its credential.
+The source-bound successful journey also qualified clean shutdown and disposable
+fixture cleanup. No aggregate was published.
+
+The x64 installed runtime was packaged Electron 44.9.3 / Node 24.22.0 with
+x64 desktop, engine and database, without emulation. ARM64 package verification
+recorded a native ARM64 desktop with the same-source x64 engine and database
+under emulation. The original run's artifact metadata and successful import
+steps bind both packages to that diagnostic engine and verified database.
+Package verification is not release-signature qualification; these were
+unpublished diagnostic NSIS packages.
+
+Windows ARM64 stopped with `Error: The installed privacy page did not open`.
+The retained `startup-error` occurred after workspace join and 3 successful
+fixture API requests, at cycle 0 with every observation and ACL counter zero.
+The app window and tray existed, but no memory observation, report delivery,
+review-control completion or restart persistence was qualified. Its receipt's
+`packaged: false` and `runtime: null` are missing-success-evidence defaults;
+they do not mean an unpackaged executable ran. The failed journey does not
+qualify clean restart or complete cleanup. This earlier Privacy-page stop
+neither reproduces nor clears the fourth run's ARM64 admission-deadline failure.
+Grok's diagnosis and correction are underway; the cause, including any
+navigation-race hypothesis, has not been established.
+
+Astra reviewed the original cached artifacts without rerunning the workflow,
+apps or tests. Both retained ZIPs matched their metadata and all eight extracted
+files per target. All 2,357 frozen source files matched the input registry;
+the Windows tracked-source digest was independently reproduced with the
+repository's line-ending attributes and 140 CRLF conversions. The packet and
+private store are not separately retained: exact-body equality and durable
+state come from the source-bound original driver and receipts. Installer and
+native-runtime archive binaries are also not retained for independent local
+rehashing. These evidence limits remain explicit.
+
+The private review is
+`telemetry-installed-delivery/windows-native-fix-run/matrix-review.json`, with
+the original receipts, package logs and failure log in `original-evidence/`.
+The ARM64 error is at `failed-job-123974697637.log:1690`. The earlier r3 passes
+(Linux x64 and both Macs on `c8f75870`) and r4 Linux ARM64 pass (`497af0ab`)
+retain their original source attribution. Windows x64 adds the fifth scoped
+pass on `d8dc845e`; no six-target result on one source is implied. All original
+failures remain intact. All 66 requirement texts and states remain unchanged,
+V08 stays Building, collection stays off, and resource, production-ingress and
+fleet-statistics qualification remain open.

@@ -19,18 +19,25 @@ one inspected 25-byte report and opt-out/manual-review persistence across two
 launches. Fourth run 41022011070 on `497af0ab` selected only the two Windows
 targets and Linux ARM64. Linux ARM64 passed the same scoped journey: 21 successful
 API calls, one matching 25-byte report, all 11 review controls and persistence
-across two launches. Four targets have scoped passing evidence across these two
-sources; this is not a complete passing matrix on one source.
+across two launches. Fifth run 41028940251 on `d8dc845e` selected only Windows
+x64 and ARM64. Windows x64 passed: 21 successful API calls, six admitted and
+committed observations, one matching inspected 25-byte report, all 11 review
+controls, two clean launches and persisted opt-out/manual-review mode. Five
+targets have scoped passing evidence across these three original sources;
+this is not a complete passing matrix on one source.
 
-Both Windows targets completed 9 successful API calls but sent no reports. Each
-lost both snapshot admissions to the 25 ms deadline and attempted no observation
-writes. Both native ACL checks succeeded in the below-50-ms bucket. The deadline
-loss is established; those coarse timings cannot isolate ACL/process startup,
-IPC, scheduling or store-open latency. A Windows source correction preserving
-fresh native checks and a separate installed resource correction are in progress;
-neither has a new acceptance result. Full installed, production and resource
-acceptance remain open. Public collection remains off and production hosting
-unresolved. The
+The fourth run's Windows failures remain: each completed 9 successful API calls
+but lost both snapshot admissions to the 25 ms deadline and sent no report.
+Both native ACL checks succeeded in the below-50-ms bucket; those timings cannot
+isolate ACL/process startup, IPC, scheduling or store-open latency. In the fifth
+run, Windows ARM64 instead failed with `The installed privacy page did not open`
+after 3 successful API calls, before any observation cycle or ACL check. That
+stop neither reproduces nor clears its fourth-run admission failure.
+Grok's diagnosis and correction are underway; the Privacy-page failure's cause
+is not established. The separate installed resource correction remains
+unaccepted. Full installed, production and resource acceptance remain open;
+there are no qualified fleet statistics. Public collection remains off and
+production hosting unresolved. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
 retain their original failures. The fourth run passed real memory actions,
 matching inspected-report delivery, opt-out/reload persistence and cleanup in
