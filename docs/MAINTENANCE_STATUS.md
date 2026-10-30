@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T22:38:59+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T22:55:48+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,15 +21,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41137496201](https://github.com/Perseusxrltd/mnemion/actions/runs/41137496201) |
+| ci\.yml | main | success | [Run 41137496201](https://github.com/Perseusxrltd/mnemion/actions/runs/41137496201) |
 | database-cache\.yml | main | success | [Run 41043904215](https://github.com/Perseusxrltd/mnemion/actions/runs/41043904215) |
 | website-release\.yml | main | success | [Run 41139411974](https://github.com/Perseusxrltd/mnemion/actions/runs/41139411974) |
-
-## Active jobs
-
-[Run 41137496201](https://github.com/Perseusxrltd/mnemion/actions/runs/41137496201): 9/12 jobs completed; 9 succeeded.
-
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
