@@ -60,6 +60,12 @@ resource budgets or installed delivery, and they do not establish the cause of
 the retained failed run 40971963055. See the same resource report for the
 originals and their limits.
 
+The [explicit v3 service setup](2026-10-30-telemetry-collector-v3-service.md)
+adds a mode-only drop-in to the shared Linux collector template, retaining the
+legacy default and both report stores. Three focused template/CLI and real TLS
+checks passed. The operator guide includes mode changes and private exports;
+no deployed systemd, provider, resource or fleet-collection acceptance follows.
+
 ## Controls, ownership and report review
 
 | Date | Original evidence | Scope and boundary |

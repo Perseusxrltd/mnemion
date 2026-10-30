@@ -14,8 +14,10 @@ StateDirectory=mnemion-telemetry
 StateDirectoryMode=0700
 WorkingDirectory=/opt/mnemion-telemetry/source
 Environment=PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
+# legacy is the installed default. The optional v3 drop-in overrides this one variable.
+Environment=MNEMION_TELEMETRY_MODE=legacy
 UnsetEnvironment=SSLKEYLOGFILE PYTHONPATH PYTHONHOME PYTHONSTARTUP PYTHONINSPECT
-ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.server serve --state /var/lib/mnemion-telemetry --bind 0.0.0.0 --port 8443 --certificate %d/tls.pem --private-key %d/tls.pem --systemd-socket
+ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.server serve --mode ${MNEMION_TELEMETRY_MODE} --state /var/lib/mnemion-telemetry --bind 0.0.0.0 --port 8443 --certificate %d/tls.pem --private-key %d/tls.pem --systemd-socket
 # One atomically replaced bundle prevents mixed certificate/key generations.
 # No workspace credential or authentication header belongs in this service.
 LoadCredential=tls.pem:/etc/mnemion-telemetry/tls.pem

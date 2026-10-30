@@ -47,10 +47,11 @@ reports. The default endpoint path remains `/v1/report`. An explicit `--mode v3`
 same process selects `/v3/report`, mounts `CollectorV3`, and uses the separate
 `reports-v3.sqlite3` store. Leaving `--mode` unset, or passing `--mode legacy`,
 keeps the v2 collector and `reports.sqlite3`. See the
-[v3 note](anonymous-product-telemetry-v3.md) for the exact commands. That mode
-does not enable clients or change a host.
+[v3 note](anonymous-product-telemetry-v3.md) for its 25-byte summary contract.
+The [deployment steps below](#deployment-template) include an explicit v3
+systemd drop-in. Selecting a server mode does not enable clients.
 
-Reviewed packets require coordinate `0` and flags `2`; manual preparation uses
+In legacy mode, reviewed packets require coordinate `0` and flags `2`; manual preparation uses
 the first permitted view without a category measurement or random draw.
 
 | Boundary | Behavior |
@@ -72,6 +73,35 @@ lifetime anonymity.
 
 ## Storage and reports
 
+Current v3 clients need `--mode v3`. That mode keeps at most eight immutable
+closed weeks in `reports-v3.sqlite3`, with a 7,340,032-byte database ceiling and
+a 786,432-byte maximum report body. It publishes noisy distributions for 19
+metrics by release or coarse OS, with explicit missing/disabled observations,
+publication failures and insufficient precision. These are bounded report
+contributions, not people or exact usage totals. The first-party collector sees
+the bounded input summary; publication noise protects the released weekly
+vector. The [v3 reference](anonymous-product-telemetry-v3.md) owns the complete
+privacy, retention and interpretation rules.
+
+Use the dedicated v3 maintainer command from the reviewed source directory,
+with the existing state owner's permissions:
+
+```sh
+cd /opt/mnemion-telemetry/source
+sudo -u mnemion-telemetry /opt/mnemion-telemetry/venv/bin/python \
+  -m mnemion.product_telemetry.maintainer_v3 \
+  --state /var/lib/mnemion-telemetry --format html
+```
+
+Use `--format json` or `--format csv` for machine-readable exports. Output goes
+to stdout; save an HTML export in a private file to open it locally. An empty
+store is labelled empty. The command reads retained closed weeks and does not
+create a public dashboard or query raw users. The legacy `server reports`
+command below reads only `reports.sqlite3`; it does not export v3 data.
+
+### Legacy storage and export
+
+The following schema and precision details apply to `--mode legacy` only.
 The current weekly accumulator stays in memory. Only validated, immutable
 closed-week reports can enter the private SQLite publisher, with at most eight
 retained weeks and a 1 MiB database ceiling.
@@ -210,17 +240,65 @@ the earlier two-file template. The hook consumes an existing renewal setup;
 the credential tool does not issue certificates.
 
 Review the listener first: the socket template opens `0.0.0.0:8443`; keep its
-`ListenStream` and the service's `--bind`/`--port` values matched. Then install
-both units and enable/start the service only for the intended, qualified
-deployment:
+`ListenStream` and the service's `--bind`/`--port` values matched. Install both
+units for the intended, qualified deployment:
 
 ```sh
 sudo systemd-sysusers deploy/collector/mnemion-telemetry.sysusers
 sudo install -m 0644 deploy/collector/mnemion-telemetry.service \
   deploy/collector/mnemion-telemetry.socket /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now mnemion-telemetry.service
 ```
+
+The service explicitly defaults `MNEMION_TELEMETRY_MODE` to `legacy`. It passes
+`${MNEMION_TELEMETRY_MODE}` as one `--mode` argument; an unsupported or empty
+value is refused by the server. To serve the current v3 clients, install the
+optional [mode-only drop-in](../../deploy/collector/mnemion-telemetry.service.d/v3.conf)
+before starting or restarting the service:
+
+```sh
+sudo install -d -m 0755 /etc/systemd/system/mnemion-telemetry.service.d
+sudo install -m 0644 deploy/collector/mnemion-telemetry.service.d/v3.conf \
+  /etc/systemd/system/mnemion-telemetry.service.d/v3.conf
+sudo systemctl daemon-reload
+sudo systemctl cat mnemion-telemetry.service
+sudo systemctl show mnemion-telemetry.service --property=Environment,ExecStart
+```
+
+This drop-in changes only the mode variable. The shared start command, account,
+socket, credentials and sandbox remain in the base unit. Other local drop-ins
+can override it, so inspect the merged configuration and selected environment.
+For a legacy deployment, omit this drop-in and run the same reload/inspection
+commands. Once the configuration is correct, a first installation starts with:
+
+```sh
+sudo systemctl enable --now mnemion-telemetry.service
+sudo systemctl show mnemion-telemetry.service --property=ActiveState,SubState,Result
+```
+
+`enable --now` does not restart an already running collector. After changing
+the mode of an existing service, apply it explicitly:
+
+```sh
+sudo systemctl restart mnemion-telemetry.service
+sudo systemctl show mnemion-telemetry.service --property=ActiveState,SubState,Result
+```
+
+To return to the base legacy default, remove only the v3 drop-in installed
+above, then reload, inspect and restart:
+
+```sh
+sudo rm /etc/systemd/system/mnemion-telemetry.service.d/v3.conf
+sudo systemctl daemon-reload
+sudo systemctl show mnemion-telemetry.service --property=Environment,ExecStart
+sudo systemctl restart mnemion-telemetry.service
+sudo systemctl show mnemion-telemetry.service --property=ActiveState,SubState,Result
+```
+
+Neither selection migrates or deletes either report database. Closed legacy and
+v3 reports remain separately exportable. Restarting discards the current
+in-memory, unsealed week; schedule a mode change with that limitation in mind.
+The client release route still needs its own reviewed configuration and
+qualification. Installing this template does not turn client collection on.
 
 Enabling and starting the service also starts its required socket; the socket
 does not need separate enablement.
@@ -273,15 +351,17 @@ To shut the collector down, stop both units so the listener cannot reactivate it
 sudo systemctl stop mnemion-telemetry.service mnemion-telemetry.socket
 ```
 
-For an isolated local TLS check, the command below defaults to loopback. Paths
+For an isolated local v3 TLS check, the command below defaults to loopback. Paths
 must be absolute, and the caller must protect the certificate's private key:
 
 ```sh
-python -m mnemion.product_telemetry.server serve \
+python -m mnemion.product_telemetry.server serve --mode v3 \
   --state /absolute/private/collector-state \
   --certificate /absolute/certificate.pem \
   --private-key /absolute/private-key.pem
 ```
+
+Use `--mode legacy` (or omit `--mode`) to check the legacy endpoint instead.
 
 Before a public destination is selected, the actual certificate, address,
 ingress, OS/provider logging, retention and resource behavior remain to be

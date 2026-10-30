@@ -141,6 +141,99 @@ def test_metadata_boundary_keeps_only_the_selected_route():
         MetadataBoundary(app, route="/v3/report?week=1")
 
 
+def _service_settings(text: str) -> dict[str, list[str]]:
+    section = None
+    found: dict[str, list[str]] = {}
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1]
+            continue
+        if section != "Service" or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        found.setdefault(key.strip(), []).append(value.strip())
+    return found
+
+
+def _environment(assignments: list[str]) -> dict[str, str]:
+    merged: dict[str, str] = {}
+    for assignment in assignments:
+        if assignment == "":
+            merged.clear()
+            continue
+        for token in assignment.split():
+            name, separator, value = token.partition("=")
+            assert separator == "="
+            merged[name] = value
+    return merged
+
+
+def test_shipped_service_mode_contract_preserves_both_stores(tmp_path, capsys):
+    """Check the shipped template contract, not a running systemd installation."""
+    unit = _service_settings((ROOT / "deploy/collector/mnemion-telemetry.service").read_text())
+    drop_in = _service_settings(
+        (ROOT / "deploy/collector/mnemion-telemetry.service.d/v3.conf").read_text()
+    )
+    assert set(drop_in) == {"Environment"}
+    assert drop_in["Environment"] == ["MNEMION_TELEMETRY_MODE=v3"]
+    command = unit["ExecStart"]
+    assert len(command) == 1
+    parts = command[0].split()
+    assert parts.count("--mode") == 1
+    assert parts[parts.index("--mode") + 1] == "${MNEMION_TELEMETRY_MODE}"
+    assert "MNEMION_TELEMETRY_MODE" not in unit["UnsetEnvironment"][0]
+    shipped = _environment(unit["Environment"])
+    assert shipped["MNEMION_TELEMETRY_MODE"] == "legacy"
+    assert shipped["PYTHONNOUSERSITE"] == "1"
+    assert shipped["PYTHONDONTWRITEBYTECODE"] == "1"
+    selected = _environment([*unit["Environment"], *drop_in["Environment"]])
+    assert selected["MNEMION_TELEMETRY_MODE"] == "v3"
+    assert selected["PYTHONNOUSERSITE"] == "1"
+    assert selected["PYTHONDONTWRITEBYTECODE"] == "1"
+
+    legacy_root = tmp_path / "legacy"
+    legacy = _selected_application(shipped["MNEMION_TELEMETRY_MODE"], legacy_root)
+    assert legacy.route == "/v1/report"
+    assert (legacy_root / "reports.sqlite3").is_file()
+    assert not (legacy_root / "reports-v3.sqlite3").exists()
+    current = _selected_application(selected["MNEMION_TELEMETRY_MODE"], legacy_root)
+    assert current.route == "/v3/report"
+    assert type(current.app) is CollectorV3
+    assert (legacy_root / "reports-v3.sqlite3").is_file()
+    assert (legacy_root / "reports.sqlite3").is_file()
+    restored = _selected_application(shipped["MNEMION_TELEMETRY_MODE"], legacy_root)
+    assert restored.route == "/v1/report"
+    assert (legacy_root / "reports-v3.sqlite3").is_file()
+
+    rejected = "PRIVATE_MODE_CANARY"
+    state = tmp_path / "unused"
+    assert (
+        serve_main(
+            [
+                "serve",
+                "--mode",
+                rejected,
+                "--state",
+                str(state),
+                "--certificate",
+                str(tmp_path / "certificate.pem"),
+                "--private-key",
+                str(tmp_path / "private-key.pem"),
+            ]
+        )
+        == 2
+    )
+    leaked = capsys.readouterr()
+    assert leaked.out == ""
+    assert json.loads(leaked.err) == {"error": "telemetry_collector_configuration_invalid"}
+    assert rejected not in leaked.err
+    assert not state.exists()
+    assert (legacy_root / "reports-v3.sqlite3").is_file()
+
+
 def test_modes_mount_the_real_collector_and_an_isolated_store(tmp_path):
     legacy_root = tmp_path / "legacy"
     legacy = _selected_application("legacy", legacy_root)

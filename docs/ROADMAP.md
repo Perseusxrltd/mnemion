@@ -39,6 +39,11 @@ precision explicit. No production fleet data is collected. Installed actual
 delivery, resource budgets and production ingress/retention remain unqualified;
 V08 stays Building and all 66 requirement states remain unchanged.
 
+The [collector deployment follow-up](validation/2026-10-30-telemetry-collector-v3-service.md)
+adds an explicit v3 service option and matching setup/export instructions,
+preserving legacy operation and both report stores. Three focused contract and
+real TLS checks passed. The production collector remains inactive.
+
 **29 October 2026, MemPalace product comparison:**
 The [current upstream review](research/2026-10-29-mempalace-product-review.md)
 compares published MemPalace 3.11 and its unreleased 3.12 branch with Mnemion
