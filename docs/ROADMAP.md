@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.55**.
+Reviewed source distribution: **4.46.56**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-30**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,15 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**30 October 2026, workspace sign-in hotfix:**
+The [reviewed transport correction](validation/2026-10-30-workspace-network-diagnostics.md)
+extends password login and invitation acceptance to 60 seconds after an
+observed server session outlived the old client deadline. Known connection
+failures now receive static, private-data-free guidance. The Electron build
+and 76 focused checks passed; requests are not automatically replayed.
+This joins the telemetry validation optimization in the 4.46.56 source batch.
+Live fleet collection remains off and broader workspace acceptance stays open.
 
 **30 October 2026, current telemetry controls and delivery evidence:**
 Public 4.46.55 passed all six native and public-update targets. Its

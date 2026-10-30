@@ -11,7 +11,7 @@ type Classified = Transport | 'unknown'
 export type WorkspaceNetworkBoundary = 'sign-in' | 'identity'
 
 const CODE = /^[A-Z][A-Z0-9_]{1,63}$/
-const NET_CODE = /^net::(ERR_[A-Z0-9_]+)$/
+const NET_CODE = /^net::(ERR_[A-Z0-9_]{1,60})$/
 const NAME = /^[A-Za-z][A-Za-z0-9]{1,63}$/
 
 const signInUnknown = 'The workspace could not confirm this sign-in request. Check the connection and sign in again.'
@@ -105,7 +105,7 @@ assign(byName, 'proxy', ['ProxyConnectionError', 'SecureProxyConnectionError', '
 
 type Read = { state: 'absent' | 'accessor' | 'failed' } | { state: 'value'; value: unknown }
 
-/** Own data properties only. Accessors and proxy traps are not executed. */
+/** Own data properties only. Getters are not called; descriptor traps are caught. */
 function readData(value: object, key: string): Read {
   try {
     const descriptor = Object.getOwnPropertyDescriptor(value, key)
@@ -126,7 +126,7 @@ function listed(table: Record<string, Transport>, key: string): Transport | unde
 /** A string code, an exact `net::ERR_*` token, or nothing. Any other code is alien. */
 function readToken(value: object): string | 'alien' | 'failed' | undefined {
   const code = readData(value, 'code')
-  if (code.state === 'failed') return 'failed'
+  if (code.state === 'failed' || code.state === 'accessor') return 'failed'
   if (code.state === 'value' && code.value != null && code.value !== '') {
     const token = code.value
     if (typeof token === 'number' && Number.isFinite(token)) {
@@ -141,7 +141,7 @@ function readToken(value: object): string | 'alien' | 'failed' | undefined {
     }
   }
   const message = readData(value, 'message')
-  if (message.state === 'failed') return 'failed'
+  if (message.state === 'failed' || message.state === 'accessor') return 'failed'
   if (message.state === 'value' && typeof message.value === 'string') return NET_CODE.exec(message.value)?.[1]
   return undefined
 }
@@ -149,7 +149,8 @@ function readToken(value: object): string | 'alien' | 'failed' | undefined {
 function nativeTimeout(value: object): boolean | 'failed' {
   try {
     if (typeof DOMException !== 'function' || !(value instanceof DOMException)) return false
-    return value.name === 'TimeoutError'
+    const getter = Object.getOwnPropertyDescriptor(DOMException.prototype, 'name')?.get
+    return getter?.call(value) === 'TimeoutError'
   } catch {
     return 'failed'
   }
@@ -157,15 +158,15 @@ function nativeTimeout(value: object): boolean | 'failed' {
 
 function childErrors(value: object): unknown[] | 'unsafe' | undefined {
   const nested = readData(value, 'errors')
-  if (nested.state === 'failed') return 'unsafe'
-  if (nested.state !== 'value' || !Array.isArray(nested.value)) return undefined
+  if (nested.state === 'absent') return undefined
+  if (nested.state !== 'value' || !Array.isArray(nested.value)) return 'unsafe'
   const length = readData(nested.value, 'length')
   if (length.state !== 'value' || typeof length.value !== 'number' || !Number.isInteger(length.value) || length.value < 0 || length.value > 4) return 'unsafe'
   const items: unknown[] = []
   for (let index = 0; index < length.value; index++) {
     const item = readData(nested.value, String(index))
-    if (item.state === 'failed' || item.state === 'accessor') return 'unsafe'
-    if (item.state === 'value' && item.value && typeof item.value === 'object') items.push(item.value)
+    if (item.state !== 'value' || !item.value || typeof item.value !== 'object') return 'unsafe'
+    items.push(item.value)
   }
   return items
 }
@@ -190,7 +191,8 @@ function classify(error: unknown): Classified {
       found.add(kind)
     } else {
       const name = readData(current, 'name')
-      if (name.state === 'failed') return 'unknown'
+      if (name.state === 'failed' || name.state === 'accessor') return 'unknown'
+      if (name.state === 'value' && name.value === 'AbortError') return 'unknown'
       if (name.state === 'value' && typeof name.value === 'string' && NAME.test(name.value)) {
         const kind = listed(byName, name.value)
         if (kind) found.add(kind)
@@ -201,7 +203,7 @@ function classify(error: unknown): Classified {
       }
     }
     const cause = readData(current, 'cause')
-    if (cause.state === 'failed') return 'unknown'
+    if (cause.state === 'failed' || cause.state === 'accessor') return 'unknown'
     if (cause.state === 'value' && cause.value && typeof cause.value === 'object') pending.push(cause.value)
     const nested = childErrors(current)
     if (nested === 'unsafe') return 'unknown'

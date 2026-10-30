@@ -79,6 +79,30 @@ test('hostile and oversized errors cannot choose a class or escape', () => {
   safe(conflict)
 })
 
+test('accessors, malformed aggregates and oversized tokens stay unknown without reading private fields', () => {
+  let getterCalls = 0
+  for (const field of ['code', 'message', 'name', 'cause', 'errors']) {
+    const input = field === 'cause' || field === 'errors' ? coded('ENOTFOUND') : { cause: coded('ENOTFOUND') }
+    Object.defineProperty(input, field, { get() { getterCalls++; return 'PRIVATE_SENTINEL' } })
+    const result = workspaceNetworkFailure(input, 'sign-in')
+    assert.equal(result.message, signInUnknown, field)
+    safe(result)
+  }
+  const timeout = new DOMException('PRIVATE_SENTINEL', 'TimeoutError')
+  Object.defineProperty(timeout, 'name', { get() { getterCalls++; return 'TimeoutError' } })
+  assert.equal(workspaceNetworkFailure(timeout, 'sign-in').message, signInUnknown)
+  assert.equal(getterCalls, 0)
+  for (const errors of [{}, 'PRIVATE_SENTINEL', [coded('ENOTFOUND'), null], new Array(2)]) {
+    assert.equal(workspaceNetworkFailure({ code: 'ENOTFOUND', errors }, 'sign-in').message, signInUnknown)
+  }
+  const trapped = new Proxy({}, { getOwnPropertyDescriptor() { throw new Error('PRIVATE_SENTINEL') } })
+  const result = workspaceNetworkFailure(trapped, 'identity')
+  assert.equal(result.message, identityUnknown)
+  safe(result)
+  assert.equal(workspaceNetworkFailure(new Error('net::ERR_' + 'A'.repeat(4096)), 'sign-in').message, signInUnknown)
+  assert.equal(workspaceNetworkFailure({ name: 'AbortError', cause: coded('ENOTFOUND') }, 'sign-in').message, signInUnknown)
+})
+
 test('password deliveries wait 60 seconds and other sign-in calls stay at 20', () => {
   assert.equal(workspaceSignInDeadline('login'), 60_000)
   assert.equal(workspaceSignInDeadline('invitations/accept'), 60_000)
