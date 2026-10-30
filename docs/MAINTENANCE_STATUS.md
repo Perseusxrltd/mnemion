@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T04:04:36+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T04:16:38+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.56](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.56). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,21 +21,26 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 40992380116](https://github.com/Perseusxrltd/mnemion/actions/runs/40992380116) |
-| public-updates\.yml | v4\.46\.56 | in\_progress | [Run 41000798048](https://github.com/Perseusxrltd/mnemion/actions/runs/41000798048) |
+| ci\.yml | main | in\_progress | [Run 41001954572](https://github.com/Perseusxrltd/mnemion/actions/runs/41001954572) |
+| public-updates\.yml | v4\.46\.56 | success | [Run 41000798048](https://github.com/Perseusxrltd/mnemion/actions/runs/41000798048) |
 | release\.yml | release/4\.46\.56 | success | [Run 40995339188](https://github.com/Perseusxrltd/mnemion/actions/runs/40995339188) |
 | verify-artifacts\.yml | main | success | [Run 41000306718](https://github.com/Perseusxrltd/mnemion/actions/runs/41000306718) |
-| website-release\.yml | main | success | [Run 40992380120](https://github.com/Perseusxrltd/mnemion/actions/runs/40992380120) |
+| website-release\.yml | main | success | [Run 41001954540](https://github.com/Perseusxrltd/mnemion/actions/runs/41001954540) |
 | website-release\.yml | v4\.46\.56 | success | [Run 41000796006](https://github.com/Perseusxrltd/mnemion/actions/runs/41000796006) |
 
 ## Active jobs
 
-[Run 41000798048](https://github.com/Perseusxrltd/mnemion/actions/runs/41000798048): 1/7 jobs completed; 1 succeeded.
+[Run 41001954572](https://github.com/Perseusxrltd/mnemion/actions/runs/41001954572): 1/12 jobs completed; 1 succeeded.
 
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- macos / x64 public upgrade: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- lint: in\_progress — Run python deploy/release\.py.
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- dependency-audit: in\_progress — Run uvx pip-audit --path \.venv/lib/python3\.12/site-packages.
+- service \(3\.13\): in\_progress — Initialize containers.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.12\): in\_progress — Initialize containers.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.14\): in\_progress — Initialize containers.
+- supervision \(macos-15-intel\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- supervision \(macos-26\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
 
