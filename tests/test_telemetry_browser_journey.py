@@ -1,15 +1,18 @@
 """Source checks for the hosted Firefox and WebKit journey. No browser is launched."""
 
 import asyncio
+import os
 from pathlib import Path
 import shutil
 import socket
 import subprocess
 import sys
+import time
 
 import pytest
 
 from deploy.probe_telemetry_browser import (
+    CLI_EXIT_SECONDS,
     ENGINES,
     JOURNEY_ATTEMPTS,
     fixture_marker,
@@ -315,6 +318,86 @@ def test_collector_cancellation_is_finite_and_unsuccessful():
         await asyncio.wait_for(task, 1)
 
     asyncio.run(exercise())
+
+
+def test_cli_exits_while_a_cancellation_resistant_collector_stays_pending(tmp_path):
+    """The process boundary, not a browser journey. The task is never released."""
+    script = tmp_path / "leave_pending.py"
+    script.write_text(
+        "\n".join(
+            [
+                "import asyncio",
+                "import json",
+                "import sys",
+                "from pathlib import Path",
+                "import deploy.probe_telemetry_browser as probe",
+                "evidence = Path(sys.argv[1])",
+                "source = evidence / 'source'",
+                "source.mkdir(parents=True)",
+                "module = evidence / 'playwright.mjs'",
+                "module.write_text('', encoding='utf-8')",
+                "async def resistant():",
+                "    task = asyncio.current_task()",
+                "    while True:",
+                "        try:",
+                "            await asyncio.sleep(3600)",
+                "        except asyncio.CancelledError:",
+                "            task.uncancel()",
+                "async def fake_run(source_path, output, playwright):",
+                "    output.mkdir(parents=True, exist_ok=True)",
+                "    (output / 'receipt.json').write_text(json.dumps({",
+                "        'original_failure': 'RuntimeError: owned collector remained pending',",
+                "        'journey_completed': False,",
+                "        'resource_acceptance': False,",
+                "        'production_collection_available': False,",
+                "        'native_safari_acceptance': False,",
+                "    }) + '\\n', encoding='utf-8')",
+                "    (output / 'cleanup.json').write_text(json.dumps({",
+                "        'collector_stopped': False,",
+                "        'collector_shutdown_errors': ['collector cancellation timed out'],",
+                "    }) + '\\n', encoding='utf-8')",
+                "    task = asyncio.create_task(resistant())",
+                "    await asyncio.sleep(0.05)",
+                "    task.cancel()",
+                "    await asyncio.wait({task}, timeout=0.2)",
+                "    if task.done():",
+                "        raise SystemExit('resistant task ended before the CLI boundary')",
+                "    raise SystemExit('collector cancellation timed out')",
+                "probe.run = fake_run",
+                "sys.argv = ['probe_telemetry_browser', '--source', str(source),",
+                "            '--output', str(evidence), '--playwright-module', str(module)]",
+                "probe.main()",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    evidence = tmp_path / "evidence"
+    started = time.monotonic()
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(ROOT)
+    completed = subprocess.run(
+        [sys.executable, str(script), str(evidence)],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=CLI_EXIT_SECONDS + 8,
+    )
+    elapsed = time.monotonic() - started
+    assert completed.returncode != 0, completed.stderr
+    assert CLI_EXIT_SECONDS * 0.7 <= elapsed < CLI_EXIT_SECONDS + 6, completed.stderr
+    assert (evidence / "receipt.json").is_file(), completed.stderr + completed.stdout
+    receipt = __import__("json").loads((evidence / "receipt.json").read_text(encoding="utf-8"))
+    cleanup = __import__("json").loads((evidence / "cleanup.json").read_text(encoding="utf-8"))
+    assert receipt["original_failure"] == "RuntimeError: owned collector remained pending"
+    assert receipt["journey_completed"] is False
+    assert receipt["resource_acceptance"] is False
+    assert receipt["production_collection_available"] is False
+    assert receipt["native_safari_acceptance"] is False
+    assert cleanup["collector_stopped"] is False
+    assert cleanup["collector_shutdown_errors"] == ["collector cancellation timed out"]
 
 
 def test_owned_process_cleanup_is_finite():

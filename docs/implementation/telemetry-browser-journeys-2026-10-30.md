@@ -56,7 +56,9 @@ reviewed body matched the received body, the original failure text, cleanup,
 and `resource_acceptance: false` / `production_collection_available: false`.
 The collector listener stays open until that server task has stopped. A
 shutdown error is stored beside the original failure, and either one leaves
-the journey unqualified. The private key and workspace key are not written
+the journey unqualified. If the collector task ignores cancellation, the
+process still exits after two seconds. That task is not recorded as stopped,
+and the saved receipts are left as written. The private key and workspace key are not written
 there. A local source check does not mean the journey passed. Only this
 hosted job can say that.
 

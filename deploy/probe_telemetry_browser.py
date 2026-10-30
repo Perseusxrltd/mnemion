@@ -27,6 +27,7 @@ ENGINES = ("firefox", "webkit")
 JOURNEY_ATTEMPTS = 1
 BUILD_TIMEOUT_SECONDS = 600
 JOURNEY_TIMEOUT_SECONDS = 300
+CLI_EXIT_SECONDS = 2
 SENSOR_STATES = ("unavailable", "present")
 BAKED_FILES = (
     "mnemion/product_telemetry/disclosure.json",
@@ -206,6 +207,52 @@ def _discard_late_result(task: asyncio.Task) -> None:
         task.result()
     except BaseException:
         return
+
+
+def _abandon_pending_tasks(loop: asyncio.AbstractEventLoop, exit_seconds: float) -> None:
+    """Cancel leftover tasks and stop waiting after one finite deadline.
+
+    asyncio.run() gathers every remaining task with no deadline. A collector
+    that ignores cancellation would hold the process open after the receipts
+    exist. A task still pending here is not stopped.
+    """
+    pending = {task for task in asyncio.all_tasks(loop) if not task.done()}
+    if not pending:
+        return
+    for task in pending:
+        task.cancel()
+    try:
+        loop.run_until_complete(asyncio.wait(pending, timeout=exit_seconds))
+    except Exception:
+        pass
+    for task in pending:
+        if task.done():
+            _discard_late_result(task)
+        else:
+            task.add_done_callback(_discard_late_result)
+
+
+def run_cli(coro, *, exit_seconds: float = CLI_EXIT_SECONDS):
+    """Run one diagnostic coroutine, then leave the loop within exit_seconds.
+
+    The coroutine writes its receipts before it returns or raises. This does
+    not use asyncio.run(), whose runner waits without a deadline.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            _abandon_pending_tasks(loop, exit_seconds)
+            try:
+                loop.run_until_complete(asyncio.wait_for(loop.shutdown_asyncgens(), exit_seconds))
+            except Exception:
+                pass
+        finally:
+            if not loop.is_closed():
+                loop.close()
+            asyncio.set_event_loop(None)
 
 
 def _header_names(scope: dict) -> set[str]:
@@ -767,7 +814,7 @@ def main() -> None:
     if not args.source or not args.output or not args.playwright_module:
         parser.error("--source, --output and --playwright-module are required")
     try:
-        asyncio.run(run(args.source, args.output, args.playwright_module))
+        run_cli(run(args.source, args.output, args.playwright_module))
     except SystemExit:
         raise
     except Exception as exc:
