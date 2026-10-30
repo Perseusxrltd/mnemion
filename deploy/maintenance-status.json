@@ -62,37 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "f7a80a0686774a52061db2692d62cc2b4c45e186",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T01:48:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40987958888",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 9,
-        "completed": 7,
-        "succeeded": 5,
-        "active": [
-          {
-            "id": 123843297150,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123843336306,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T01:50:26Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40987958888"
     },
     {
       "id": 40972439492,
@@ -150,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40972436052"
     }
   ],
-  "observed_at": "2026-10-30T01:49:05+00:00"
+  "observed_at": "2026-10-30T01:51:01+00:00"
 }
