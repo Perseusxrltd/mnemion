@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T13:16:50+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T13:20:55+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,10 +21,24 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 41056821835](https://github.com/Perseusxrltd/mnemion/actions/runs/41056821835) |
+| ci\.yml | main | in\_progress | [Run 41062385832](https://github.com/Perseusxrltd/mnemion/actions/runs/41062385832) |
 | database-cache\.yml | main | success | [Run 41043904215](https://github.com/Perseusxrltd/mnemion/actions/runs/41043904215) |
 | public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
-| release\.yml | release/4\.46\.57 | success | [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980) |
 | verify-artifacts\.yml | main | success | [Run 41009919761](https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761) |
-| website-release\.yml | main | success | [Run 41056821732](https://github.com/Perseusxrltd/mnemion/actions/runs/41056821732) |
+| website-release\.yml | main | success | [Run 41062385798](https://github.com/Perseusxrltd/mnemion/actions/runs/41062385798) |
 | website-release\.yml | v4\.46\.57 | success | [Run 41010367987](https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987) |
+
+## Active jobs
+
+[Run 41062385832](https://github.com/Perseusxrltd/mnemion/actions/runs/41062385832): 3/12 jobs completed; 3 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- supervision \(macos-15-intel\): in\_progress — Compile and exercise the native network admission probe in Python and Node.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.12\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+
