@@ -69,18 +69,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 9,
+        "succeeded": 9,
         "active": [
-          {
-            "id": 124343439264,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify wheel and source package include the matching web Studio"
-            ]
-          },
           {
             "id": 124343495326,
             "name": "service (3.12)",
@@ -91,48 +82,12 @@
             ]
           },
           {
-            "id": 124343495339,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
             "id": 124343495357,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124343495361,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 124343495370,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 124343495391,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           },
           {
@@ -160,16 +115,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41043904215"
     },
     {
-      "id": 41137496042,
+      "id": 41139411974,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "27e9fd003b8e270366923733e5d0f6618332f050",
+      "source_commit": "38ca743e38c0d880ba80e7a7f6e57327bd0e2dbb",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-30T22:21:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41137496042"
+      "updated_at": "2026-10-30T22:38:21Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41139411974"
     }
   ],
-  "observed_at": "2026-10-30T22:21:41+00:00"
+  "observed_at": "2026-10-30T22:38:59+00:00"
 }
