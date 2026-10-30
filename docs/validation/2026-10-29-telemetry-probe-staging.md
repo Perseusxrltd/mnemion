@@ -35,3 +35,31 @@ V08 remains Building. Production collection, destination, and route stay
 false/null/null. The 2 MiB and 0.5 percent gates stay unaccepted. All 66
 requirements remain. This does not qualify the diagnostic or an installed
 release.
+
+## Canonical helper correction — 30 October 2026
+
+Main Product checks run
+[41036810767](https://github.com/Perseusxrltd/mnemion/actions/runs/41036810767),
+source `46d4f730149ed639a975b7c0456e620837a32cd1`, failed the same existing
+staging regression in legacy job `123999607506`. The newly shared
+`canonical-memory-cycles.mjs` import used `../` after relocation and resolved
+outside the disposable application directory. The original completed-job log
+is retained; no workflow or application run was repeated to diagnose it.
+
+Grok correction `f547aae63ffdded4364fd0825cb7e54afc59d9f0` uses the controller's
+actual relocated layout: `./canonical-memory-cycles.mjs`, copied alongside
+`phase-memory.mjs` inside the owned application directory. The profile guard,
+test, workload and installed drivers remain unchanged. Astra reviewed the
+actual callers, imported the two-file change, and ran only the original
+Linux staging regression. It passed in 2.982 seconds of recorded wall time,
+reaching the disposable-profile refusal without loading Electron.
+
+Private evidence is under
+`telemetry-owned-resources/controller-staging-ci/verification/`; the original
+CI failure is under
+`telemetry-installed-delivery/combined-privacy-resources/ci-legacy-failure/`.
+The separately running Windows ARM64 installed diagnostic `41036977655`
+remains bound to its original source and was not restarted. This correction
+does not qualify installed resource overhead or fleet collection. The current
+[8 MiB/0.5% engineering budget](../implementation/telemetry-resource-budget-2026-10-30.md)
+is unchanged, and all older failures retain their original criteria.

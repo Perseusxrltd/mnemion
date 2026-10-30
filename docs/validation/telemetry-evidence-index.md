@@ -105,7 +105,9 @@ Resources and production collection remain unqualified.
 
 The [29 October probe staging fix](2026-10-29-telemetry-probe-staging.md)
 retains the failed first phase-memory run and the focused correction that loads
-the controller's helper. That failed run produced no resource measurement.
+the controller's helper. Its 30 October follow-up retains the separate
+canonical-helper import failure from main CI and the corrected single-test
+Linux result. Neither failed staging run produced a resource measurement.
 The corrected [phase-memory comparison](2026-10-29-telemetry-v3-resource.md),
 run 40967691671, completed six cases. Enabled main maxima are 5,271,552 and
 2,887,680 bytes. The 2 MiB and 0.5% gates stay unaccepted.
