@@ -588,7 +588,9 @@ def test_export_collection_metadata_follows_release_disclosure(tmp_path, monkeyp
     assert active["summary"]["collection_fields_describe_exporting_build_configuration"] is True
     assert active["summary"]["collection_fields_are_live_collector_or_network_observation"] is False
     assert active["reports"] == reports
-    assert policy.COLLECTION_AVAILABLE is True and policy.disclosure()["destination"].endswith("/v3/report")
+    assert policy.COLLECTION_AVAILABLE is True and policy.disclosure()["destination"].endswith(
+        "/v3/report"
+    )
 
 
 def test_closed_report_keeps_its_domain_when_the_allowlist_grows(tmp_path, monkeypatch, capsys):
