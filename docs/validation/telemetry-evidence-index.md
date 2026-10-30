@@ -50,6 +50,16 @@ The corrected [phase-memory comparison](2026-10-29-telemetry-v3-resource.md),
 run 40967691671, completed six cases. Enabled main maxima are 5,271,552 and
 2,887,680 bytes. The 2 MiB and 0.5% gates stay unaccepted.
 
+The later original attribution run
+[40976743563](https://github.com/Perseusxrltd/mnemion/actions/runs/40976743563)
+completed all six compiled Linux cases on `7ee617691ead16c17bbdb9eb797e03f20f186325`.
+Both enabled first-read guards were `allowed`, and each delivered one 25-byte
+v3 report; unavailable and opted-out controls sent none. All 2,309 source inputs
+matched each case and cleanup passed. These instrumented windows do not qualify
+resource budgets or installed delivery, and they do not establish the cause of
+the retained failed run 40971963055. See the same resource report for the
+originals and their limits.
+
 ## Controls, ownership and report review
 
 | Date | Original evidence | Scope and boundary |

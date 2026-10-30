@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
 Reviewed source distribution: **4.46.55**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-29**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-30**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -24,6 +24,20 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**30 October 2026, current telemetry controls and delivery evidence:**
+Public 4.46.55 passed all six native and public-update targets. Its
+[installed v3 controls](validation/2026-10-30-telemetry-v3-installed-controls.md)
+qualify the 25-byte synthetic preview, app/agent choices and opt-out/manual-mode
+persistence across restart on all six original installer artifacts. The later
+[compiled Linux diagnostic](https://github.com/Perseusxrltd/mnemion/actions/runs/40976743563)
+completed six cases: both enabled cases delivered one 25-byte report; four
+disabled controls sent none. The earlier failed run remains unexplained and
+retained. [Private reporting](implementation/anonymous-product-telemetry-v3.md)
+covers 19 metrics by release or coarse OS, with missing data and insufficient
+precision explicit. No production fleet data is collected. Installed actual
+delivery, resource budgets and production ingress/retention remain unqualified;
+V08 stays Building and all 66 requirement states remain unchanged.
 
 **29 October 2026, MemPalace product comparison:**
 The [current upstream review](research/2026-10-29-mempalace-product-review.md)
