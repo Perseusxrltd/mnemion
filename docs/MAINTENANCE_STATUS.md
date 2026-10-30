@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T05:24:06+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T05:24:38+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.56](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.56). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -33,7 +33,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 41008163470](https://github.com/Perseusxrltd/mnemion/actions/runs/41008163470): 7/8 jobs completed; 2 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
 
 [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980): 20/21 jobs completed; 19 succeeded.
 

@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Run npm --prefix studio/frontend run test:telemetry"
             ]
           }
         ]
@@ -170,5 +170,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41000796006"
     }
   ],
-  "observed_at": "2026-10-30T05:24:06+00:00"
+  "observed_at": "2026-10-30T05:24:38+00:00"
 }
