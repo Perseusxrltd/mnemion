@@ -14,9 +14,11 @@ The [local v3 systemd check](../validation/2026-10-30-telemetry-v3-systemd-local
 passed socket activation, TLS delivery, credential isolation and cleanup.
 The [first six installed delivery journeys](../validation/2026-10-30-telemetry-installed-driver.md#first-installed-run)
 stopped at a shared workspace-join selector in the diagnostic, before memory
-activity or delivery. [Firefox/WebKit journey source](../validation/2026-10-30-telemetry-browser-journeys.md)
-has focused qualification; actual browser execution remains pending. These
-results do not enable collection or qualify fleet statistics.
+activity or delivery; its corrected probe now compiles. The
+[first Firefox/WebKit run](../validation/2026-10-30-telemetry-browser-journeys.md#first-hosted-run)
+built the frontend but failed before producing browser or cleanup receipts.
+Both original failures remain recorded. These results do not enable collection
+or qualify fleet statistics.
 
 Release 4.46.55 includes the v3 clients, collector and private reporting tools.
 Its installed controls have the scoped qualification below; production

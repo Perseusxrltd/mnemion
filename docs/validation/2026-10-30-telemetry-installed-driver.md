@@ -42,3 +42,9 @@ selecting `Workspace key` before showing the credential form. The original
 logs, package hashes and six failure receipts are retained. A corrected probe
 must follow those ordinary controls; rerunning the unchanged source would not
 resolve the failure.
+
+Grok correction `54380631` matches the setup choice's title, selects the
+workspace-key method, scopes inputs to its form, and waits for the enabled
+open control. Astra imported it as `659bcb30`; the Electron build passed.
+The original failure remains retained and installed delivery still requires
+the corrected hosted run. No application controls or admission rules changed.

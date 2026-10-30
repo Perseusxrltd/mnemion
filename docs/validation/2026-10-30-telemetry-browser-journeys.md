@@ -21,3 +21,20 @@ uses the normal built frontend and a real private memory API. Each engine gets
 one fresh profile and one finite journey. Only a successful hosted receipt can
 qualify delivery. Playwright WebKit on Linux does not qualify native Safari;
 resource and production acceptance remain separate.
+
+## First hosted run
+
+[Run 41005867787](https://github.com/Perseusxrltd/mnemion/actions/runs/41005867787)
+used source `35eeebf48673e3a50502575a788bba5fb0553145`. The built frontend
+succeeded, but the job stopped with `ValueError: Invalid file descriptor: -1`.
+Its uploaded evidence contains the dispatch, source inventory and build log;
+no browser result, cleanup receipt or delivery receipt was produced. No browser
+delivery or cleanup pass is credited.
+
+Source review found that the static memory marker also appears in bundled
+documentation, making the compiled-content assertion unsuitable. The socket's
+context also unwinds before the outer Uvicorn cleanup; an exception there can
+mask the original failure and prevent receipts from being written. The exact
+original failure was not preserved. The correction must use a per-run marker,
+keep the listener alive until shutdown, and retain both original and cleanup
+errors. The unchanged failed run is not replayed.

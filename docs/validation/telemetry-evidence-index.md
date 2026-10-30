@@ -4,8 +4,10 @@ The [local v3 systemd check](2026-10-30-telemetry-v3-systemd-local.md) passed
 socket activation, TLS delivery, credential isolation and cleanup.
 The [installed diagnostic qualification](2026-10-30-telemetry-installed-driver.md)
 preserves the first six-target failure at workspace join, before any report was
-sent. The [Firefox/WebKit journey source checks](2026-10-30-telemetry-browser-journeys.md)
-passed with actual browser execution pending. Collection stays disabled.
+sent; its corrected probe compiles. The
+[Firefox/WebKit source checks and first hosted failure](2026-10-30-telemetry-browser-journeys.md)
+retain the incomplete browser journey and its missing cleanup receipt.
+Collection stays disabled.
 
 **Index checkpoint: 30 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)
