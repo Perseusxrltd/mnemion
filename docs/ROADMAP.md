@@ -44,6 +44,14 @@ adds an explicit v3 service option and matching setup/export instructions,
 preserving legacy operation and both report stores. Three focused contract and
 real TLS checks passed. The production collector remains inactive.
 
+The [compiled Linux app review](validation/2026-10-30-telemetry-v3-app-review.md)
+passed all ten disclosure, approval, opt-out and restart controls. Its single
+received report matched the user-inspected 25-byte body. A separate
+[SQLite lifecycle experiment](validation/2026-10-30-telemetry-sqlite-lifecycle.md)
+rejected retaining an idle connection: both retained modes blocked database
+replacement on Windows. No runtime optimization or resource acceptance follows
+from these observations; live fleet collection is still disabled.
+
 **29 October 2026, MemPalace product comparison:**
 The [current upstream review](research/2026-10-29-mempalace-product-review.md)
 compares published MemPalace 3.11 and its unreleased 3.12 branch with Mnemion
