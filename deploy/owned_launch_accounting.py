@@ -48,15 +48,19 @@ class OwnedLaunchUnsupported(OwnedLaunchError):
 
 
 def installed_journey_boundary() -> dict:
-    """Next call for the installed workload. Does not launch anything."""
+    """Where the installed workload is attached. Does not launch anything."""
     return {
-        "wired_into_smoke_installed_hosting": False,
+        "wired_into_smoke_installed_hosting": True,
+        "delivery_is_canonical_workload": False,
         "launcher": "studio/electron/scripts/smoke-installed-hosting.mjs",
-        "function": "launch",
+        "function": "runInstalledTelemetryResources",
+        "resource_entry": "deploy.owned_installed_launch",
+        "canonical_cycles": 128,
+        "canonical_checkpoints": 9,
+        "cases": 6,
         "next_call": (
-            "start_owned_launch before the installed child executes; "
-            "mark_phase only around the existing 128-cycle canonical workload "
-            "and one fixed counterbalance"
+            "start_owned_launch before the installed executable executes; "
+            "the two-launch delivery check is not this workload"
         ),
         "budget": {
             "additional_rss_bytes_per_process": ADDITIONAL_RSS_BUDGET_BYTES,
@@ -64,6 +68,12 @@ def installed_journey_boundary() -> dict:
             "status": BUDGET_STATUS,
             "compared": False,
         },
+        "limitations": [
+            "darwin_wait4_direct_child_only",
+            "group_sampling_is_not_complete_cpu",
+            "rss_high_water_is_sampled",
+            "resource_acceptance_unestablished",
+        ],
     }
 
 

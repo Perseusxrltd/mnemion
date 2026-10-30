@@ -569,6 +569,11 @@ async def run(
                                 finally:
                                     if owned is not None:
                                         try:
+                                            apply_owned_marker(
+                                                owned,
+                                                read_owned_marker(root),
+                                                owned_cursor,
+                                            )
                                             owned_report = await asyncio.to_thread(
                                                 owned.finish,
                                                 canonical_operations_completed=owned_cursor.completed,

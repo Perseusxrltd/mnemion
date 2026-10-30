@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import signal
 import socket
@@ -27,10 +28,19 @@ import tempfile
 import threading
 
 
+from deploy.report_telemetry_renderer import (
+    INSTALLED_DESKTOP_ENV,
+    PHASE_MEMORY_CHECKPOINTS,
+    owned_delegate_identity_ok,
+    owned_scope_command,
+    resource_counterbalance_cases,
+    retain_owned_launch,
+)
 from deploy.telemetry_installed_fixture import (
     LOOPBACK_PORT,
     UPDATE_FEEDS,
     loopback_destination,
+    record_inactive,
     validate_loopback_target,
     write_bake,
 )
@@ -174,16 +184,22 @@ _SCOPE = (
     "Installed fixture delivery only. Production ingress, provider privacy, "
     "resources and full V08 remain unqualified."
 )
+_RESOURCE_SCOPE = (
+    "Installed resource workload only. Production collection stays off. "
+    "The 8 MiB and 0.5 percent budgets remain unaccepted. Completion is not acceptance."
+)
 
 
-def _receipt(error: str | None = None) -> dict:
+def _receipt(error: str | None = None, *, resource: bool = False) -> dict:
     receipt = {
-        "qualification": "installed fixture delivery",
+        "qualification": "installed resource workload" if resource else "installed fixture delivery",
         "journey_completed": False,
         "production_collection_available": False,
         "resource_acceptance": False,
-        "scope": _SCOPE,
+        "scope": _RESOURCE_SCOPE if resource else _SCOPE,
     }
+    if resource:
+        receipt["delivery_compared"] = False
     if error:
         receipt["error"] = error
     return receipt
@@ -198,6 +214,10 @@ def _bounded_error(exc: BaseException) -> str:
         or "private key" in lowered
         or "api_key" in lowered
         or "PRIVATE_RENDERER_MEMORY_CANARY" in text
+        or "\\" in text
+        or "/users/" in lowered
+        or "/home/" in lowered
+        or "runner_temp" in lowered
     ):
         return type(exc).__name__
     return text
@@ -208,11 +228,11 @@ def _write_receipt(output: Path, receipt: dict) -> None:
     (output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
 
 
-def _preserve_build_notes(copy: Path, output: Path) -> None:
+def _preserve_build_notes(copy: Path, output: Path, folder: str = "build-notes") -> None:
     notes = copy / "build-tmp"
     if not notes.is_dir():
         return
-    destination = output / "build-notes"
+    destination = output / folder
     destination.mkdir(parents=True, exist_ok=True)
     for path in notes.iterdir():
         if not path.is_file() or path.suffix not in {".json", ".log", ".txt"}:
@@ -565,8 +585,8 @@ def _file_contains(path: Path, needles: tuple[bytes, ...]) -> bool:
         return False
 
 
-def _refuse(output: Path, message: str) -> None:
-    _write_receipt(output, _receipt(message))
+def _refuse(output: Path, message: str, *, resource: bool = False) -> None:
+    _write_receipt(output, _receipt(message, resource=resource))
     raise RuntimeError(message)
 
 
@@ -780,7 +800,502 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
             await task
 
 
-def run(source: Path, output: Path, material: Path) -> dict:
+def select_owned_observer(environ: object, *, platform_name: str) -> str:
+    """The native client interpreter. Windows ARM must not reuse the x64 engine."""
+    if type(environ) is not dict:
+        raise RuntimeError("Resource accounting requires MNEMION_OWNED_LAUNCH_PYTHON")
+    observer = environ.get("MNEMION_OWNED_LAUNCH_PYTHON")
+    if type(observer) is not str or not observer.strip():
+        raise RuntimeError("Resource accounting requires MNEMION_OWNED_LAUNCH_PYTHON")
+    arm = any(
+        str(environ.get(name, "")).upper() == "ARM64"
+        for name in ("PROCESSOR_ARCHITECTURE", "RUNNER_ARCH")
+    )
+    engine = environ.get("MNEMION_ENGINE_PYTHON")
+    engine_missing = type(engine) is not str or not engine.strip()
+    if platform_name == "win32" and arm and (
+        engine_missing or os.path.normcase(observer) == os.path.normcase(engine)
+    ):
+        raise RuntimeError("Windows ARM observer must be the native client Python")
+    return observer
+
+
+def linux_resource_launch_allowed(*, mode, probe_mode, returncode, stdout, euid) -> bool:
+    """A failed identity probe does not become an unmeasured launch."""
+    return (
+        mode == "systemd_service_delegate"
+        and probe_mode == "systemd_service_delegate"
+        and owned_delegate_identity_ok(returncode, stdout, euid)
+    )
+
+
+def installed_resource_case_completed(evidence, owned) -> bool:
+    """Matching verified counts are not resource acceptance."""
+    if type(evidence) is not dict or type(owned) is not dict:
+        return False
+    cycles = evidence.get("memory_cycles")
+    observed = owned.get("canonical_operations_completed")
+    if type(cycles) is not int or type(observed) is not int or cycles != observed:
+        return False
+    if evidence.get("memory_results_verified") is not True:
+        return False
+    if list(evidence.get("checkpoints") or []) != list(PHASE_MEMORY_CHECKPOINTS):
+        return False
+    if evidence.get("model_calls") != 0:
+        return False
+    if evidence.get("resource_acceptance") is not False or owned.get("resource_acceptance") is not False:
+        return False
+    return True
+
+
+def bind_resource_packages(*, source: str, active: Path, inactive: Path) -> dict:
+    """Hash both installers. The manifest has no credential and no private key."""
+    if type(source) is not str or not re.fullmatch(r"[0-9a-f]{40}", source):
+        raise ValueError("Resource packages require the declared source")
+    if active.resolve() == inactive.resolve():
+        raise ValueError("Inactive and active installers must be different files")
+
+    def record(path: Path, condition: str) -> dict:
+        if not path.is_file():
+            raise ValueError("Resource installer is missing")
+        return {"installer": str(path), "sha256": _sha256_file(path), "condition": condition}
+
+    manifest = {
+        "source": source,
+        "packages": {
+            "inactive": record(inactive, "inactive"),
+            "active": record(active, "active"),
+        },
+        "cases": resource_counterbalance_cases(),
+    }
+    if "credential" in manifest or "api_key" in manifest:
+        raise ValueError("Resource manifest must not carry a credential")
+    return manifest
+
+
+def resource_smoke_environment(base, *, observer, endpoint, space, fixture_key, manifest) -> dict:
+    """Pass the observer and fixture to smoke. Delivery mode stays off."""
+    if type(base) is not dict or type(observer) is not str or not observer:
+        raise RuntimeError("Resource smoke environment is missing")
+    env = {
+        name: value
+        for name, value in base.items()
+        if name != "MNEMION_TELEMETRY_INSTALLED_DELIVERY"
+    }
+    env["MNEMION_TELEMETRY_INSTALLED_RESOURCE"] = "1"
+    env["MNEMION_OWNED_LAUNCH_PYTHON"] = observer
+    env["MNEMION_TELEMETRY_FIXTURE_ENDPOINT"] = endpoint
+    env["MNEMION_TELEMETRY_FIXTURE_SPACE"] = space
+    env["MNEMION_TELEMETRY_FIXTURE_KEY"] = fixture_key
+    env["MNEMION_TELEMETRY_RESOURCE_MANIFEST"] = str(manifest)
+    if "MNEMION_TELEMETRY_INSTALLED_DELIVERY" in env:
+        raise RuntimeError("Resource launches cannot inherit installed delivery diagnostics")
+    return env
+
+
+def _engine_label(archives: str) -> str:
+    if not archives:
+        return "built-from-package-source"
+    directory = Path(archives)
+    if not directory.is_dir():
+        raise RuntimeError("Diagnostic engine archive directory is missing")
+    zips = sorted(
+        path for path in directory.iterdir() if path.is_file() and path.suffix == ".zip"
+    )
+    if len(zips) != 1:
+        raise RuntimeError("Diagnostic engine directory must contain exactly one archive")
+    return directory.name + ":" + _sha256_file(zips[0])
+
+
+def _absolute_tool(name: str) -> str:
+    found = shutil.which(name)
+    if type(found) is not str or not found.startswith("/") or "\x00" in found or not Path(found).is_file():
+        raise RuntimeError("Linux resource comparison requires absolute session tools")
+    return found
+
+
+async def _serve_resources(copy: Path, output: Path, source: Path, material: Path) -> dict:
+    """Build one inactive and one active package, then run the six owned cases."""
+    from mnemion.product_telemetry.collector_v3 import CollectorV3
+    from deploy.report_telemetry_renderer import absorb_reviewed_chunk, retain_reviewed_packet
+    from deploy.telemetry_memory_fixture import memory_workspace
+    import uvicorn
+
+    active_archives = os.environ.get("MNEMION_ENGINE_ARCHIVES", "").strip()
+    inactive_archives = os.environ.get("MNEMION_ENGINE_ARCHIVES_INACTIVE", "").strip()
+    runner_arch = os.environ.get("RUNNER_ARCH", "")
+    observer = select_owned_observer(os.environ, platform_name=sys.platform)
+    environment = _build_env(source)
+    environment.pop("MNEMION_TELEMETRY_INSTALLED_DELIVERY", None)
+    if sys.platform == "win32":
+        if not active_archives or not inactive_archives:
+            raise RuntimeError(
+                "Windows resource comparison requires separate active and inactive engine archives"
+            )
+        active_dir = str(Path(active_archives).resolve())
+        inactive_dir = str(Path(inactive_archives).resolve())
+        if active_dir == inactive_dir:
+            raise RuntimeError(
+                "Windows resource comparison requires separate active and inactive engine archives"
+            )
+        environment["MNEMION_ENGINE_ARCHIVES"] = active_dir
+        active_label = _engine_label(active_dir)
+        inactive_label = _engine_label(inactive_dir)
+    else:
+        environment.pop("MNEMION_ENGINE_ARCHIVES", None)
+        environment.pop("MNEMION_ENGINE_ARCHIVES_INACTIVE", None)
+        active_label = "built-from-package-source"
+        inactive_label = "built-from-package-source"
+        active_dir = ""
+        inactive_dir = ""
+    published = []
+    counts = {"reports": 0, "accepted": 0, "body_bytes": 0, "forbidden_metadata": 0}
+    reviewed = []
+
+    async def ingress(scope, receive, send):
+        captured = bytearray()
+        chunks = 0
+        report = scope.get("type") == "http" and scope.get("method") == "POST"
+        if report:
+            counts["reports"] += 1
+            counts["forbidden_metadata"] += bool(
+                {name for name, _ in scope.get("headers", [])}
+                & {b"cookie", b"authorization", b"referer", b"user-agent"}
+            )
+
+        async def received():
+            nonlocal captured, chunks
+            event = await receive()
+            if report and event["type"] == "http.request":
+                chunk = event.get("body", b"")
+                if type(chunk) is bytes:
+                    counts["body_bytes"] += len(chunk)
+                    captured, chunks = absorb_reviewed_chunk(captured, chunks, chunk)
+            return event
+
+        async def sending(event):
+            if event["type"] == "http.response.start" and event["status"] == 204:
+                counts["accepted"] += 1
+            await send(event)
+
+        await CollectorV3(published.append)(scope, received, sending)
+        if report and captured is not None and len(reviewed) < 8:
+            retained = retain_reviewed_packet([bytes(captured)], review=True)
+            if retained is not None:
+                reviewed.append(retained)
+        captured.clear()
+
+    certificate, key_path, public = _require_loopback_material(material)
+    inactive_copy = copy.parent / "inactive-source"
+    _key_stays_outside(key_path, output, copy, inactive_copy)
+    context = _tls_context(certificate, key_path)
+    destination = loopback_destination()
+    with socket.socket() as listener:
+        try:
+            listener.bind(("127.0.0.1", LOOPBACK_PORT))
+        except OSError as exc:
+            raise RuntimeError("The installed fixture loopback port did not bind") from exc
+        listener.listen(8)
+        config = uvicorn.Config(
+            ingress,
+            log_config=None,
+            access_log=False,
+            server_header=False,
+            date_header=False,
+            timeout_keep_alive=0,
+            ssl_certfile=str(certificate),
+            ssl_keyfile=str(key_path),
+        )
+        config.load()
+        config.ssl = context
+        server = uvicorn.Server(config)
+        task = asyncio.create_task(server.serve(sockets=[listener]))
+        try:
+            async with asyncio.timeout(20):
+                while not server.started:
+                    if task.done():
+                        await task
+                        raise RuntimeError("Owned TLS collector did not start")
+                    await asyncio.sleep(0.01)
+
+            async def package(target: Path, build_env: dict, prefix: str, bake: bool, label: str):
+                if not target.exists():
+                    target.mkdir()
+                copied = await asyncio.to_thread(copy_declared_source, source, target)
+                for npm_prefix, log_name in (
+                    ("packages/client", "npm-packages-client.log"),
+                    ("studio/frontend", "npm-studio-frontend.log"),
+                    ("studio/electron", "npm-studio-electron.log"),
+                ):
+                    installed = await _logged(
+                        _npm(npm_prefix), target, build_env, output / f"{prefix}-{log_name}", 20 * 60
+                    )
+                    if installed.returncode:
+                        raise RuntimeError("Diagnostic copy dependency install failed")
+                if bake:
+                    inventory = write_bake(target, destination, "127.0.0.1", public)
+                else:
+                    inventory = record_inactive(target)
+                inventory.update(
+                    {
+                        "source": copied["source"],
+                        "tracked_sha256": copied["tracked_sha256"],
+                        "package_output": "dist-electron",
+                        "production_engine_archive_used": False,
+                        "engine_label": label,
+                        "condition": "active" if bake else "inactive",
+                    }
+                )
+                (output / f"{prefix}-diagnostic-inventory.json").write_text(
+                    json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+                )
+                build = await _logged(
+                    [sys.executable, "-m", "deploy.build_desktop"],
+                    target,
+                    build_env,
+                    output / f"{prefix}-packaging.log",
+                    50 * 60,
+                )
+                if build.returncode:
+                    raise RuntimeError(
+                        "Diagnostic packaging failed; production disclosure was not published"
+                    )
+                removed = _exclude_update_feeds(target / "dist-electron")
+                inventory["update_feeds_removed"] = removed
+                installers = _expected_installers(target)
+                inventory["installer_sha256"] = {
+                    path.name: _sha256_file(path) for path in installers
+                }
+                (output / f"{prefix}-diagnostic-inventory.json").write_text(
+                    json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+                )
+                return inventory, installers[0], copied["source"]
+
+            inactive_env = dict(environment)
+            active_env = dict(environment)
+            inactive_env["MNEMION_TELEMETRY_RESOURCE_PROBE"] = "1"
+            active_env["MNEMION_TELEMETRY_RESOURCE_PROBE"] = "1"
+            environment.pop("MNEMION_ENGINE_ARCHIVES_INACTIVE", None)
+            inactive_env.pop("MNEMION_ENGINE_ARCHIVES_INACTIVE", None)
+            active_env.pop("MNEMION_ENGINE_ARCHIVES_INACTIVE", None)
+            if sys.platform == "win32":
+                inactive_env["MNEMION_ENGINE_ARCHIVES"] = inactive_dir
+            else:
+                inactive_env.pop("MNEMION_ENGINE_ARCHIVES", None)
+            inactive_inventory, inactive_installer, inactive_source = await package(
+                inactive_copy, inactive_env, "inactive", False, inactive_label
+            )
+            active_inventory, active_installer, active_source = await package(
+                copy, active_env, "active", True, active_label
+            )
+            if inactive_source != active_source:
+                raise RuntimeError("Resource packages diverged from the declared source")
+            manifest = bind_resource_packages(
+                source=active_source, active=active_installer, inactive=inactive_installer
+            )
+            manifest_path = copy.parent / "resource-manifest.json"
+            manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+            manifest_path.chmod(0o600)
+            from mnemion.local_state import temporary_directory
+
+            with temporary_directory(prefix="mnemion-owned-telemetry-") as owned:
+                async with memory_workspace(owned) as (memory, memory_counts):
+                    if not str(memory["base_url"]).startswith("http://127.0.0.1:"):
+                        raise ValueError("Telemetry fixture memory left loopback")
+                    secret = str(memory["api_key"])
+                    smoke_env = resource_smoke_environment(
+                        environment,
+                        observer=observer,
+                        endpoint=memory["base_url"],
+                        space=memory["space_id"],
+                        fixture_key=secret,
+                        manifest=manifest_path,
+                    )
+                    if sys.platform == "linux":
+                        plain = [
+                            _absolute_tool("dbus-run-session"),
+                            "--",
+                            _absolute_tool("xvfb-run"),
+                            "-a",
+                            _absolute_tool("bash"),
+                            "deploy/native-keyring-test.sh",
+                            "installed-hosting",
+                        ]
+                        common = dict(
+                            requested=True,
+                            systemd=_absolute_tool("systemd-run"),
+                            sudo=_absolute_tool("sudo"),
+                            euid=os.geteuid(),
+                            egid=os.getegid(),
+                            cwd=str(copy.resolve()),
+                            environ=smoke_env,
+                            probe_accepted=None,
+                            env_names=INSTALLED_DESKTOP_ENV,
+                        )
+                        command, mode = owned_scope_command(plain, **common)
+                        probe_command, probe_mode = owned_scope_command(
+                            [_absolute_tool("id"), "-u"], **common
+                        )
+                        completed = None
+                        if probe_mode == "systemd_service_delegate":
+                            completed = subprocess.run(
+                                probe_command, capture_output=True, text=True, timeout=60
+                            )
+                        allowed = linux_resource_launch_allowed(
+                            mode=mode,
+                            probe_mode=probe_mode,
+                            returncode=None if completed is None else completed.returncode,
+                            stdout="" if completed is None else completed.stdout,
+                            euid=common["euid"],
+                        )
+                        (output / "resource-launch-scope.json").write_text(
+                            json.dumps(
+                                {
+                                    "launch": mode,
+                                    "probe": probe_mode,
+                                    "requested": True,
+                                    "allowed": allowed,
+                                    "resource_acceptance": False,
+                                },
+                                indent=2,
+                            )
+                            + "\n",
+                            encoding="utf-8",
+                        )
+                        if not allowed:
+                            raise RuntimeError(
+                                "Linux resource comparison refused to launch without a delegated identity"
+                            )
+                        smoke = command
+                    else:
+                        smoke = ["node", "studio/electron/scripts/smoke-installed-hosting.mjs"]
+                    probe = await _inherited(smoke, copy, smoke_env, 90 * 60)
+                    evidence = _load_app_evidence(
+                        copy / "build-tmp/telemetry-installed-resources.json", secret
+                    )
+                    app_cases = {
+                        row.get("label"): row
+                        for row in evidence.get("cases") or []
+                        if isinstance(row, dict) and isinstance(row.get("label"), str)
+                    }
+                    cases = []
+                    diagnostics = False
+                    for row in resource_counterbalance_cases():
+                        owned_path = copy / "build-tmp" / f"{row['label']}-owned-launch.json"
+                        raw = {}
+                        if owned_path.is_file():
+                            text = owned_path.read_text(encoding="utf-8")
+                            if secret in text or "PRIVATE_RENDERER_MEMORY_CANARY" in text:
+                                raw = {
+                                    "private_content_withheld": True,
+                                    "resource_acceptance": False,
+                                }
+                            else:
+                                loaded = json.loads(text)
+                                raw = loaded if isinstance(loaded, dict) else {}
+                        if raw.get("delivery_diagnostics_enabled") is True:
+                            diagnostics = True
+                        app = app_cases.get(row["label"]) or {}
+                        completed = installed_resource_case_completed(
+                            {
+                                "memory_cycles": app.get("memory_cycles"),
+                                "memory_results_verified": app.get("memory_results_verified"),
+                                "checkpoints": app.get("checkpoints"),
+                                "model_calls": app.get("model_calls"),
+                                "resource_acceptance": app.get("resource_acceptance"),
+                            },
+                            {
+                                "canonical_operations_completed": raw.get(
+                                    "canonical_operations_completed"
+                                ),
+                                "resource_acceptance": raw.get("resource_acceptance"),
+                            },
+                        )
+                        observed = raw.get("canonical_operations_completed")
+                        cycles = app.get("memory_cycles")
+                        cases.append(
+                            {
+                                "label": row["label"],
+                                "condition": row["condition"],
+                                "package": row["package"],
+                                "workload_completed": completed,
+                                "memory_cycles": cycles if type(cycles) is int else None,
+                                "canonical_operations_completed": observed
+                                if type(observed) is int
+                                else None,
+                                "resource_acceptance": False,
+                                "owned": retain_owned_launch(raw),
+                            }
+                        )
+                    memory_api = {
+                        name: value
+                        for name, value in dict(memory_counts).items()
+                        if type(value) is int
+                    }
+                    return {
+                        "qualification": "installed resource workload",
+                        "journey_completed": bool(
+                            probe.returncode == 0
+                            and len(cases) == 6
+                            and all(item["workload_completed"] for item in cases)
+                            and not diagnostics
+                            and evidence.get("private_content_withheld") is not True
+                        ),
+                        "workload_completed": bool(
+                            len(cases) == 6 and all(item["workload_completed"] for item in cases)
+                        ),
+                        "resource_acceptance": False,
+                        "delivery_compared": False,
+                        "production_collection_available": False,
+                        "delivery_diagnostics_enabled": diagnostics,
+                        "collector": counts,
+                        "published_aggregate_count": len(published),
+                        "memory_api": memory_api,
+                        "smoke_exit": probe.returncode,
+                        "source": active_source,
+                        "observer_python": Path(observer).name,
+                        "runner_arch": runner_arch,
+                        "machine": platform.machine(),
+                        "packages": {
+                            "inactive": {
+                                "sha256": manifest["packages"]["inactive"]["sha256"],
+                                "condition": "inactive",
+                                "engine_label": inactive_label,
+                                "disclosure_sha256": inactive_inventory.get(
+                                    "diagnostic_disclosure_sha256"
+                                ),
+                            },
+                            "active": {
+                                "sha256": manifest["packages"]["active"]["sha256"],
+                                "condition": "active",
+                                "engine_label": active_label,
+                                "disclosure_sha256": active_inventory.get(
+                                    "diagnostic_disclosure_sha256"
+                                ),
+                            },
+                        },
+                        "cases": cases,
+                        "limitations": [
+                            "darwin_wait4_direct_child_only",
+                            "group_sampling_is_not_complete_cpu",
+                            "rss_high_water_is_sampled_and_can_truncate_at_120s",
+                            "additional_rss_budget_bytes_8388608_unaccepted",
+                            "cpu_budget_one_core_fraction_0.005_unaccepted",
+                            "completion_is_not_acceptance",
+                            "terminal_count_is_the_verified_count",
+                            "unknown_progress_is_explicit",
+                            "phase_cpu_is_sampled_descriptive",
+                            "lifetime_cpu_is_separate",
+                            "windows_nsis_second_product_registration_is_unverified",
+                        ],
+                        "scope": _RESOURCE_SCOPE,
+                    }
+        finally:
+            server.should_exit = True
+            await task
+
+
+def run(source: Path, output: Path, material: Path, *, resource_comparison: bool = False) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     if sys.platform == "win32" and (
         os.environ.get("CI") != "true" or os.environ.get("RUNNER_OS") != "Windows"
@@ -788,37 +1303,62 @@ def run(source: Path, output: Path, material: Path) -> dict:
         _refuse(
             output,
             "The installed telemetry package is installed only on a disposable Windows CI runner",
+            resource=resource_comparison,
         )
     if sys.platform == "win32" and os.environ.get("RUNNER_ARCH", "").upper() == "ARM64":
         if not os.environ.get("MNEMION_ENGINE_ARCHIVES", "").strip():
-            _refuse(output, "Windows ARM requires the same-source diagnostic x64 engine archive")
+            _refuse(
+                output,
+                "Windows ARM requires the same-source diagnostic x64 engine archive",
+                resource=resource_comparison,
+            )
+    if resource_comparison and sys.platform == "win32":
+        if not os.environ.get("MNEMION_ENGINE_ARCHIVES_INACTIVE", "").strip():
+            _refuse(
+                output,
+                "Windows resource comparison requires separate active and inactive engine archives",
+                resource=True,
+            )
     source = source.resolve()
     material = material.resolve()
     try:
         _require_loopback_material(material)
         _key_stays_outside(material / "key.pem", output)
     except Exception as exc:
-        _refuse(output, _bounded_error(exc))
+        _refuse(output, _bounded_error(exc), resource=resource_comparison)
     original = (source / "mnemion/product_telemetry/disclosure.json").read_bytes()
     route_bytes = (source / "mnemion/product_telemetry/transport-route.json").read_bytes()
-    receipt = _receipt("Installed fixture delivery did not start")
+    receipt = _receipt(
+        "Installed resource workload did not start"
+        if resource_comparison
+        else "Installed fixture delivery did not start",
+        resource=resource_comparison,
+    )
     try:
         with tempfile.TemporaryDirectory(prefix="mnemion-owned-telemetry-checkout-") as temporary:
             copy = Path(temporary) / "source"
             copy.mkdir()
             try:
-                receipt = asyncio.run(_serve(copy, output, source, material))
+                if resource_comparison:
+                    receipt = asyncio.run(_serve_resources(copy, output, source, material))
+                else:
+                    receipt = asyncio.run(_serve(copy, output, source, material))
             except Exception as exc:
-                receipt = _receipt(_bounded_error(exc))
+                receipt = _receipt(_bounded_error(exc), resource=resource_comparison)
                 raise
             finally:
                 _preserve_build_notes(copy, output)
+                if resource_comparison:
+                    _preserve_build_notes(
+                        Path(temporary) / "inactive-source", output, "inactive-build-notes"
+                    )
                 _drop_private_files(output)
                 disclosure_now = (source / "mnemion/product_telemetry/disclosure.json").read_bytes()
                 route_now = (source / "mnemion/product_telemetry/transport-route.json").read_bytes()
                 if disclosure_now != original or route_now != route_bytes:
                     receipt = _receipt(
-                        "Production disclosure or route changed during diagnostic staging"
+                        "Production disclosure or route changed during diagnostic staging",
+                        resource=resource_comparison,
                     )
                     _write_receipt(output, receipt)
                     raise RuntimeError(
@@ -837,6 +1377,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--loopback-material", type=Path)
     parser.add_argument("--read-store", type=Path)
+    parser.add_argument(
+        "--resource-comparison",
+        action="store_true",
+        help="Run the optional installed resource comparison. Omit it to keep all-six delivery.",
+    )
     args = parser.parse_args()
     if args.read_store:
         secret = sys.stdin.buffer.read()
@@ -845,8 +1390,17 @@ def main() -> None:
         return
     if not args.source or not args.output or not args.loopback_material:
         parser.error("--source, --output and --loopback-material are required")
-    receipt = run(args.source, args.output, args.loopback_material)
+    receipt = run(
+        args.source,
+        args.output,
+        args.loopback_material,
+        resource_comparison=args.resource_comparison,
+    )
     if not receipt.get("journey_completed"):
+        if args.resource_comparison:
+            raise SystemExit(
+                "Inspect retained observations; installed resource workload did not complete"
+            )
         raise SystemExit("Inspect retained observations; installed fixture delivery did not pass")
 
 

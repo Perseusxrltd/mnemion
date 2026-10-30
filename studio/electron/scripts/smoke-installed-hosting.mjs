@@ -35,7 +35,11 @@ const probeFile = join(temporary, 'hosting-probe.json')
 const smokeFile = join(temporary, 'smoke.json')
 const quitFile = join(temporary, 'quit-request')
 const telemetryDelivery = process.env.MNEMION_TELEMETRY_INSTALLED_DELIVERY === '1'
-const evidenceFile = join(root, telemetryDelivery ? 'build-tmp/telemetry-installed-delivery.json' : 'build-tmp/installed-hosting-evidence.json')
+const telemetryResource = process.env.MNEMION_TELEMETRY_INSTALLED_RESOURCE === '1'
+if (telemetryDelivery && telemetryResource) throw new Error('Installed delivery and the resource workload are separate runs')
+const evidenceFile = join(root, telemetryResource ? 'build-tmp/telemetry-installed-resources.json' : telemetryDelivery ? 'build-tmp/telemetry-installed-delivery.json' : 'build-tmp/installed-hosting-evidence.json')
+const uninstallDirs = []
+const resourceCases = []
 let executable
 let child
 let stdout = '', stderr = ''
@@ -65,36 +69,45 @@ function run(command, args, options = {}) {
   return result.stdout
 }
 
-async function install() {
+function refuseExistingWindowsProduct() {
+  if (process.platform !== 'win32') return
+  const env = { ...environment }
+  for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key]
+  run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    '$ErrorActionPreference="Stop"; $entries=Get-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*" -ErrorAction SilentlyContinue; '
+    + 'if ($entries | Where-Object { $_.DisplayName -like "Mnemion Studio*" }) { throw "Refusing to modify an existing Mnemion installation" }'], { env })
+}
+
+async function install(destination = installed, installer = artifacts.installers[0], refuseExisting = true) {
   if (process.platform === 'win32') {
-    const env = { ...environment, MNEMION_PROBE_INSTALLER: artifacts.installers[0], MNEMION_PROBE_INSTALL_DIRECTORY: installed }
+    if (refuseExisting) refuseExistingWindowsProduct()
+    const env = { ...environment, MNEMION_PROBE_INSTALLER: installer, MNEMION_PROBE_INSTALL_DIRECTORY: destination }
     for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key]
     run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      '$ErrorActionPreference="Stop"; $entries=Get-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*" -ErrorAction SilentlyContinue; '
-      + 'if ($entries | Where-Object { $_.DisplayName -like "Mnemion Studio*" }) { throw "Refusing to modify an existing Mnemion installation" }; '
-      + '$p=Start-Process -FilePath $env:MNEMION_PROBE_INSTALLER -ArgumentList @("/S","/currentuser",("/D="+$env:MNEMION_PROBE_INSTALL_DIRECTORY)) -PassThru -Wait; exit $p.ExitCode'], { env })
-    executable = join(installed, 'Mnemion Studio.exe')
+      '$ErrorActionPreference="Stop"; $p=Start-Process -FilePath $env:MNEMION_PROBE_INSTALLER -ArgumentList @("/S","/currentuser",("/D="+$env:MNEMION_PROBE_INSTALL_DIRECTORY)) -PassThru -Wait; exit $p.ExitCode'], { env })
+    executable = join(destination, 'Mnemion Studio.exe')
   } else if (process.platform === 'darwin') {
-    const volume = join(temporary, 'installer-volume')
-    run('hdiutil', ['attach', '-readonly', '-nobrowse', '-mountpoint', volume, artifacts.installers[0]])
+    const volume = join(temporary, 'installer-volume-' + createHash('sha256').update(destination).digest('hex').slice(0, 12))
+    run('hdiutil', ['attach', '-readonly', '-nobrowse', '-mountpoint', volume, installer])
     try {
-      mkdirSync(installed)
-      run('ditto', [join(volume, 'Mnemion Studio.app'), join(installed, 'Mnemion Studio.app')])
+      mkdirSync(destination)
+      run('ditto', [join(volume, 'Mnemion Studio.app'), join(destination, 'Mnemion Studio.app')])
     } finally { run('hdiutil', ['detach', volume]) }
-    executable = join(installed, 'Mnemion Studio.app/Contents/MacOS/Mnemion Studio')
+    executable = join(destination, 'Mnemion Studio.app/Contents/MacOS/Mnemion Studio')
   } else {
-    mkdirSync(installed)
-    const appImage = join(installed, 'Mnemion Studio.AppImage')
-    copyFileSync(artifacts.installers[0], appImage)
+    mkdirSync(destination)
+    const appImage = join(destination, 'Mnemion Studio.AppImage')
+    copyFileSync(installer, appImage)
     run('chmod', ['755', appImage])
-    run(appImage, ['--appimage-extract'], { cwd: installed })
+    run(appImage, ['--appimage-extract'], { cwd: destination })
     // AppImages support a user-owned portable installation without root/FUSE.
-    executable = join(installed, 'squashfs-root/AppRun')
+    executable = join(destination, 'squashfs-root/AppRun')
   }
   if (!existsSync(executable)) throw new Error('The native installer omitted the application executable')
   installationComplete = true
-  const resources = process.platform === 'darwin' ? join(installed, 'Mnemion Studio.app/Contents/Resources') :
-    join(installed, ...(process.platform === 'linux' ? ['squashfs-root', 'resources'] : ['resources']))
+  uninstallDirs.push(destination)
+  const resources = process.platform === 'darwin' ? join(destination, 'Mnemion Studio.app/Contents/Resources') :
+    join(destination, ...(process.platform === 'linux' ? ['squashfs-root', 'resources'] : ['resources']))
   return verifyNativeResources(resources)
 }
 
@@ -229,11 +242,237 @@ async function runInstalledTelemetryDelivery(nativeRuntime) {
   console.log(JSON.stringify({ qualification: evidence.qualification, app_checks_passed: true, packaged: true }))
 }
 
+const RESOURCE_CASES = [
+  { label: 'r1-unavailable', condition: 'unavailable', available: false, enabled: false, replicate: 1, package: 'inactive' },
+  { label: 'r1-opted_out', condition: 'opted_out', available: true, enabled: false, replicate: 1, package: 'active' },
+  { label: 'r1-enabled', condition: 'enabled', available: true, enabled: true, replicate: 1, package: 'active' },
+  { label: 'r2-enabled', condition: 'enabled', available: true, enabled: true, replicate: 2, package: 'active' },
+  { label: 'r2-opted_out', condition: 'opted_out', available: true, enabled: false, replicate: 2, package: 'active' },
+  { label: 'r2-unavailable', condition: 'unavailable', available: false, enabled: false, replicate: 2, package: 'inactive' },
+]
+const RESOURCE_CHECKPOINTS = ['before_workspace_connect', 'workspace_connected', 'first_memory_cycle_and_delivery', '8_memory_cycles', '16_memory_cycles', '32_memory_cycles', '64_memory_cycles', '96_memory_cycles', '128_memory_cycles']
+const installedExecutables = new Map()
+
+function sameResourceCase(row, expected) {
+  const keys = Object.keys(row || {}).sort().join()
+  return keys === 'available,condition,enabled,label,package,replicate'
+    && RESOURCE_CASES[0] && expected.label === row.label && expected.condition === row.condition
+    && expected.available === row.available && expected.enabled === row.enabled
+    && expected.replicate === row.replicate && expected.package === row.package
+}
+
+function loadResourceManifest() {
+  const manifestPath = process.env.MNEMION_TELEMETRY_RESOURCE_MANIFEST
+  const credential = process.env.MNEMION_TELEMETRY_FIXTURE_KEY
+  if (!manifestPath || !existsSync(manifestPath)) throw new Error('Resource package preparation is missing')
+  const text = readFileSync(manifestPath, 'utf8')
+  if (text.includes('PRIVATE_RENDERER_MEMORY_CANARY') || text.includes(credential || 'api_key') || text.includes('api_key')) {
+    throw new Error('Resource manifest contained private fixture material')
+  }
+  const manifest = JSON.parse(text)
+  if (!/^[0-9a-f]{40}$/.test(manifest.source || '') || !Array.isArray(manifest.cases) || manifest.cases.length !== RESOURCE_CASES.length) {
+    throw new Error('Resource package preparation is missing')
+  }
+  for (const condition of ['inactive', 'active']) {
+    const item = manifest.packages?.[condition]
+    if (!item || typeof item.installer !== 'string' || !/^[0-9a-f]{64}$/.test(item.sha256 || '') || !existsSync(item.installer)) {
+      throw new Error('Resource package preparation is missing')
+    }
+    const actual = createHash('sha256').update(readFileSync(item.installer)).digest('hex')
+    if (actual !== item.sha256 || item.condition !== condition) throw new Error('Resource package hash did not match the manifest')
+  }
+  if (manifest.packages.inactive.installer === manifest.packages.active.installer) throw new Error('Resource package preparation is missing')
+  manifest.cases.forEach((row, index) => {
+    if (!sameResourceCase(row, RESOURCE_CASES[index])) throw new Error('Resource package preparation is missing')
+  })
+  return manifest
+}
+
+function resourceWorkloadCompleted(app, owned) {
+  return Number.isInteger(app?.memory_cycles)
+    && app.memory_cycles === owned?.canonical_operations_completed
+    && app.memory_results_verified === true
+    && Array.isArray(app.checkpoints) && app.checkpoints.join() === RESOURCE_CHECKPOINTS.join()
+    && app.model_calls === 0
+    && app.resource_acceptance === false
+    && owned?.resource_acceptance === false
+    && owned?.delivery_diagnostics_enabled !== true
+}
+
+function publicOwnedReport(report) {
+  const executable = report?.observer?.executable
+  return {
+    qualification: 'unqualified',
+    resource_acceptance: false,
+    launched: report?.launched !== false,
+    canonical_operations_completed: Number.isInteger(report?.canonical_operations_completed) ? report.canonical_operations_completed : null,
+    hosting_ready: report?.hosting_ready === true,
+    root_exit_code: Number.isInteger(report?.root_exit_code) ? report.root_exit_code : null,
+    failure_stage: typeof report?.failure_stage === 'string' ? report.failure_stage : null,
+    delivery_diagnostics_enabled: report?.delivery_diagnostics_enabled === true,
+    lifetime_cpu_microseconds: Number.isInteger(report?.lifetime_cpu_microseconds) ? report.lifetime_cpu_microseconds : null,
+    active_cpu_microseconds: Number.isInteger(report?.active_cpu_microseconds) ? report.active_cpu_microseconds : null,
+    active_wall_microseconds: Number.isInteger(report?.active_wall_microseconds) ? report.active_wall_microseconds : null,
+    identities_missing: Number.isInteger(report?.identities_missing) ? report.identities_missing : null,
+    missing_recorded_as_zero: false,
+    observation_error: typeof report?.observation_error === 'string' ? report.observation_error : null,
+    cleanup: report?.cleanup && typeof report.cleanup === 'object'
+      ? { ok: report.cleanup.ok === true, failure: typeof report.cleanup.failure === 'string' ? report.cleanup.failure : null, retried: report.cleanup.retried === true }
+      : { ok: false, failure: null, retried: false },
+    phases: Array.isArray(report?.phases) ? report.phases.filter(phase => phase && typeof phase.name === 'string').map(phase => ({
+      name: phase.name, active: phase.active === true, cpu_microseconds: Number.isInteger(phase.cpu_microseconds) ? phase.cpu_microseconds : null,
+    })) : [],
+    observer: typeof executable === 'string' && !executable.includes('/') && !executable.includes('\\') ? { executable } : {},
+  }
+}
+
+function publicHosting(hosting) {
+  const runtime = hosting?.runtime && typeof hosting.runtime === 'object' ? {
+    electron: hosting.runtime.electron, node: hosting.runtime.node, platform: hosting.runtime.platform,
+    arch: hosting.runtime.arch, packaged: hosting.runtime.packaged === true,
+  } : undefined
+  return {
+    memory_cycles: hosting?.memory_cycles,
+    memory_results_verified: hosting?.memory_results_verified === true,
+    checkpoints: hosting?.checkpoints,
+    condition: hosting?.condition,
+    replicate: hosting?.replicate,
+    label: hosting?.label,
+    source: typeof hosting?.source === 'string' && /^[0-9a-f]{40}$/.test(hosting.source) ? hosting.source : null,
+    package_condition: hosting?.package_condition,
+    package_sha256: typeof hosting?.package_sha256 === 'string' && /^[0-9a-f]{64}$/.test(hosting.package_sha256) ? hosting.package_sha256 : null,
+    model_calls: hosting?.model_calls,
+    forced_gc: hosting?.forced_gc === true,
+    idle_padding: hosting?.idle_padding === true,
+    memory_api_operations: hosting?.memory_api_operations,
+    production_collection_available: false,
+    resource_acceptance: hosting?.resource_acceptance === false ? false : null,
+    qualification: 'installed resource workload',
+    packaged: hosting?.packaged === true,
+    runtime,
+  }
+}
+
+async function runInstalledTelemetryResources() {
+  const observer = process.env.MNEMION_OWNED_LAUNCH_PYTHON
+  if (!observer) throw new Error('Resource accounting requires MNEMION_OWNED_LAUNCH_PYTHON')
+  if (process.env.MNEMION_TELEMETRY_INSTALLED_DELIVERY === '1') throw new Error('Resource launches cannot inherit installed delivery diagnostics')
+  const endpoint = loopbackFixture(process.env.MNEMION_TELEMETRY_FIXTURE_ENDPOINT)
+  const spaceId = process.env.MNEMION_TELEMETRY_FIXTURE_SPACE
+  const credential = process.env.MNEMION_TELEMETRY_FIXTURE_KEY
+  if (!/^[a-f0-9-]{36}$/.test(spaceId || '') || typeof credential !== 'string' || credential.length < 16 ||
+      credential.length > 256 || /\s/.test(credential)) throw new Error('Resource package preparation is missing')
+  const manifest = loadResourceManifest()
+  if (process.platform === 'win32') refuseExistingWindowsProduct()
+  const destinations = {
+    inactive: join(temporary, 'inactive-package'),
+    active: join(temporary, 'active-package'),
+  }
+  for (const condition of ['inactive', 'active']) {
+    await install(destinations[condition], manifest.packages[condition].installer, false)
+    installedExecutables.set(destinations[condition], executable)
+  }
+  const buildTmp = join(root, 'build-tmp')
+  mkdirSync(buildTmp, { recursive: true })
+  for (const row of manifest.cases) {
+    const destination = destinations[row.package]
+    const exe = installedExecutables.get(destination)
+    if (!exe || !existsSync(exe)) throw new Error('Resource package preparation is missing')
+    const profile = join(temporary, row.label)
+    run(python, ['-c', 'from pathlib import Path; import sys; from mnemion.local_state import directory; directory(Path(sys.argv[1]), exist_ok=False)', profile], { cwd: root })
+    run(python, ['-m', 'deploy.telemetry_installed_fixture', '--prepare-profile', profile, '--available', row.available ? '1' : '0', '--enabled', row.enabled ? '1' : '0'], { cwd: root })
+    const probePath = join(temporary, `${row.label}-hosting-probe.json`)
+    const caseSmoke = join(temporary, `${row.label}-smoke.json`)
+    const caseQuit = join(temporary, 'quit-request')
+    rmSync(caseSmoke, { force: true })
+    rmSync(caseQuit, { force: true })
+    const probeConfig = {
+      condition: row.condition, credential, endpoint, label: row.label, package_condition: row.package,
+      package_sha256: manifest.packages[row.package].sha256, phase: 'telemetry-resource',
+      probe_entry: './assets/packaged-memory-probe.js', replicate: row.replicate, source: manifest.source, spaceId,
+    }
+    const probeText = JSON.stringify(probeConfig)
+    if (Buffer.byteLength(probeText) > 4096) throw new Error('Resource probe configuration is too large')
+    writeFileSync(probePath, probeText, { mode: 0o600 })
+    const childEnv = {
+      ...environment,
+      MNEMION_STUDIO_USER_DATA: profile,
+      MNEMION_STUDIO_SMOKE_FILE: caseSmoke,
+      MNEMION_STUDIO_HOSTING_PROBE: probePath,
+      MNEMION_AUTO_UPDATE: '0',
+      MNEMION_START_AT_LOGIN: '0',
+      ELECTRON_ENABLE_LOGGING: '1',
+    }
+    if (childEnv.MNEMION_TELEMETRY_INSTALLED_DELIVERY || childEnv.MNEMION_TELEMETRY_INSTALLED_RESOURCE || childEnv.MNEMION_TELEMETRY_FIXTURE_KEY) {
+      throw new Error('Resource launches cannot inherit installed delivery diagnostics')
+    }
+    const args = process.platform === 'linux' && process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1' ? ['--password-store=gnome-libsecret'] : []
+    const specPath = join(temporary, `${row.label}-owned-spec.json`)
+    const reportPath = join(temporary, `${row.label}-owned-launch.json`)
+    writeFileSync(specPath, JSON.stringify({
+      argv: [exe, ...args], cwd: destination, env: childEnv, profile, quit_file: caseQuit, smoke_file: caseSmoke, report: reportPath,
+    }), { mode: 0o600 })
+    const result = spawnSync(observer, ['-m', 'deploy.owned_installed_launch', '--spec', specPath], {
+      cwd: root, encoding: 'utf8', timeout: 16 * 60 * 1000, maxBuffer: 1024 * 1024,
+    })
+    let owned = {}
+    if (existsSync(reportPath)) {
+      const text = readFileSync(reportPath, 'utf8')
+      if (text.includes(credential) || text.includes('PRIVATE_RENDERER_MEMORY_CANARY')) throw new Error('Owned launch report contained private fixture material')
+      owned = publicOwnedReport(JSON.parse(text))
+      writeFileSync(join(buildTmp, `${row.label}-owned-launch.json`), JSON.stringify(owned, null, 2) + '\n')
+    }
+    let hosting = {}
+    if (existsSync(caseSmoke)) {
+      const smokeText = readFileSync(caseSmoke, 'utf8')
+      if (smokeText.includes(credential) || smokeText.includes('PRIVATE_RENDERER_MEMORY_CANARY')) throw new Error('Resource evidence contained private fixture material')
+      const smoke = JSON.parse(smokeText)
+      hosting = publicHosting(smoke.hosting)
+    }
+    const pidFile = join(profile, 'mnemion-local-workspace/database/postmaster.pid')
+    const postgresLeft = existsSync(pidFile)
+    const summary = {
+      label: row.label, condition: row.condition, replicate: row.replicate, package_condition: row.package,
+      package_sha256: manifest.packages[row.package].sha256, source: manifest.source,
+      memory_cycles: Number.isInteger(hosting.memory_cycles) ? hosting.memory_cycles : null,
+      memory_results_verified: hosting.memory_results_verified === true,
+      checkpoints: hosting.checkpoints, model_calls: hosting.model_calls,
+      canonical_operations_completed: owned.canonical_operations_completed ?? null,
+      resource_acceptance: hosting.resource_acceptance === false ? false : null, hosting_ready: owned.hosting_ready === true,
+      root_exit_code: owned.root_exit_code ?? null, failure_stage: owned.failure_stage ?? null,
+      delivery_diagnostics_enabled: owned.delivery_diagnostics_enabled === true,
+      workload_completed: resourceWorkloadCompleted(hosting, owned) && result.status === 0 && !postgresLeft,
+    }
+    resourceCases.push(summary)
+    if (postgresLeft) throw new Error('The installed app left its private PostgreSQL cluster running')
+    if (result.error || result.status !== 0 || summary.workload_completed !== true) {
+      throw new Error('Owned resource launch failed: ' + row.label)
+    }
+  }
+  const evidence = {
+    qualification: 'installed resource workload',
+    resource_acceptance: false,
+    production_collection_available: false,
+    delivery_compared: false,
+    workload_completed: resourceCases.length === RESOURCE_CASES.length && resourceCases.every(row => row.workload_completed === true),
+    platform: process.platform,
+    architecture: process.arch,
+    source: manifest.source,
+    cases: resourceCases,
+  }
+  writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
+  console.log(JSON.stringify({ qualification: evidence.qualification, workload_completed: evidence.workload_completed, resource_acceptance: false }))
+}
+
 function credentialsHash() {
   return createHash('sha256').update(readFileSync(join(userData, 'mnemion-local-workspace/credentials.json'))).digest('hex')
 }
 
 try {
+  if (telemetryResource) {
+    await runInstalledTelemetryResources()
+    succeeded = true
+  } else {
   const nativeRuntime = await install()
   if (telemetryDelivery) {
     await runInstalledTelemetryDelivery(nativeRuntime)
@@ -375,6 +614,7 @@ try {
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
   }
+  }
 } catch (error) {
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   // Keep private diagnostic details out of uploaded evidence; even future
@@ -397,7 +637,8 @@ try {
   let invalidBackupStateDiagnostic = false
   try { backupState = backupStateDiagnostic(state?.backupStateDiagnostic) } catch { invalidBackupStateDiagnostic = true }
   const observation = sanitizeObservation(state?.observation)
-  writeFileSync(evidenceFile, JSON.stringify({ passed: false, qualification: telemetryDelivery ? 'installed fixture delivery' : undefined, platform: process.platform, architecture: process.arch,
+  writeFileSync(evidenceFile, JSON.stringify({ passed: false, qualification: telemetryResource ? 'installed resource workload' : telemetryDelivery ? 'installed fixture delivery' : undefined, platform: process.platform, architecture: process.arch,
+    ...(telemetryResource ? { resource_acceptance: false, delivery_compared: false, production_collection_available: false, workload_completed: false, cases: resourceCases } : {}),
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
     ...(workspaceOpen ? { workspaceOpen } : {}),
@@ -409,15 +650,19 @@ try {
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error
 } finally {
-  if (child && child.exitCode === null) {
+  if (!telemetryResource && child && child.exitCode === null) {
     try { await stop() } catch {
       if (process.platform === 'win32') spawnSync('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
       else { try { process.kill(-child.pid, 'SIGKILL') } catch {} }
     }
   }
   if (process.platform === 'win32' && installationComplete) {
-    const uninstaller = readdirSync(installed).find(name => /^Uninstall .*\.exe$/.test(name))
-    if (uninstaller) run(join(installed, uninstaller), ['/S'])
+    for (const directory of uninstallDirs) {
+      let names = []
+      try { names = readdirSync(directory) } catch { continue }
+      const uninstaller = names.find(name => /^Uninstall .*\.exe$/.test(name))
+      if (uninstaller) run(join(directory, uninstaller), ['/S'])
+    }
   }
   // NSIS can return while its temporary self-deletion helper still holds the
   // installation directory. Retry transient Windows locks with a finite budget;

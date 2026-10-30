@@ -15,6 +15,15 @@ on:
         required: false
         default: ''
         type: string
+      resource_comparison:
+        description: >-
+          Attach the existing 128-cycle resource workload to installed packages.
+          Accepted values are the boolean true and false. Omitted or false keeps
+          the selected delivery. true prepares an inactive package and an
+          active package from the same source and runs the resource comparison.
+          This input does not select targets.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -76,7 +85,7 @@ jobs:
   diagnostic_engine:
     needs: loopback
     runs-on: windows-2022
-    timeout-minutes: 40
+    timeout-minutes: ${{ inputs.resource_comparison && 80 || 40 }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -116,13 +125,30 @@ jobs:
           path: ${{ runner.temp }}/engine-output/mnemion-engine-*-windows-x64.zip
           if-no-files-found: error
           retention-days: 1
+      - name: Stage a same-source unbaked engine copy
+        if: inputs.resource_comparison
+        run: |
+          & "${{ github.workspace }}\.venv\Scripts\python.exe" -c "from pathlib import Path; import os; from deploy.probe_telemetry_installed import copy_declared_source; copy = Path(os.environ['RUNNER_TEMP']) / 'engine-source-inactive'; copy.mkdir(); copy_declared_source(Path(os.environ['GITHUB_WORKSPACE']), copy)"
+      - name: Freeze the same-source inactive x64 engine
+        if: inputs.resource_comparison
+        working-directory: ${{ runner.temp }}/engine-source-inactive
+        run: |
+          & "${{ github.workspace }}\.venv\Scripts\python.exe" -m deploy.build_native_engine --work "${{ runner.temp }}/engine-work-inactive" --output "${{ runner.temp }}/engine-output-inactive"
+      - name: Upload the inactive diagnostic engine
+        if: inputs.resource_comparison
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: telemetry-diagnostic-engine-windows-x64-inactive
+          path: ${{ runner.temp }}/engine-output-inactive/mnemion-engine-*-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 1
 
   delivery:
     needs: [targets, native_database, loopback, diagnostic_engine]
     if: needs.targets.result == 'success' && needs.native_database.result == 'success' && needs.loopback.result == 'success' && needs.diagnostic_engine.result == 'success'
-    name: Installed fixture delivery / ${{ matrix.os }} / ${{ matrix.arch }}
+    name: ${{ inputs.resource_comparison && 'Installed resource workload' || 'Installed fixture delivery' }} / ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: ${{ inputs.resource_comparison && 180 || 90 }}
     strategy:
       fail-fast: false
       matrix:
@@ -195,13 +221,34 @@ jobs:
         with:
           name: telemetry-diagnostic-engine-windows-x64
           path: build-tmp/diagnostic-engine
+      - name: Download the same-source inactive Windows engine
+        if: inputs.resource_comparison && matrix.platform == 'windows'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: telemetry-diagnostic-engine-windows-x64-inactive
+          path: build-tmp/diagnostic-engine-inactive
       - name: Exercise one unpublished installed fixture delivery
+        if: ${{ !inputs.resource_comparison }}
         run: ${{ github.workspace }}/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }} -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-delivery" --loopback-material "${{ runner.temp }}/loopback"
+      - name: Exercise the optional installed resource comparison
+        if: ${{ inputs.resource_comparison }}
+        env:
+          MNEMION_OWNED_LAUNCH_PYTHON: ${{ steps.client_python.outputs.python-path }}
+          MNEMION_ENGINE_ARCHIVES_INACTIVE: ${{ matrix.platform == 'windows' && format('{0}/build-tmp/diagnostic-engine-inactive', github.workspace) || '' }}
+        run: ${{ github.workspace }}/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }} -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-resources" --loopback-material "${{ runner.temp }}/loopback" --resource-comparison
       - name: Keep the installed fixture delivery evidence
-        if: always()
+        if: always() && !inputs.resource_comparison
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: telemetry-installed-delivery-${{ matrix.platform }}-${{ matrix.arch }}
           path: output/telemetry-installed-delivery/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Keep the installed resource evidence
+        if: always() && inputs.resource_comparison
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: telemetry-installed-resources-${{ matrix.platform }}-${{ matrix.arch }}
+          path: output/telemetry-installed-resources/
           if-no-files-found: ignore
           retention-days: 7

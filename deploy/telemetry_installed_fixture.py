@@ -90,6 +90,75 @@ def baked_documents(
     return updated, baked_route
 
 
+def _package_entry(copy: Path) -> None:
+    package = json.loads((copy / "studio/electron/package.json").read_text(encoding="utf-8"))
+    if package.get("main") != "dist/main.js" or "--publish never" not in package["scripts"]["dist"]:
+        raise ValueError(
+            "Refusing a diagnostic package that changes the app entry or publish script"
+        )
+
+
+def record_inactive(copy: Path) -> dict:
+    """Leave collection off, including the disclosure the engine build will copy."""
+    disclosure = (copy / DISCLOSURE).read_bytes()
+    route = (copy / ROUTE).read_bytes()
+    assert_production_inactive(json.loads(disclosure), json.loads(route))
+    _package_entry(copy)
+    digest = _sha256(disclosure)
+    route_digest = _sha256(route)
+    return {
+        "condition": "inactive",
+        "baked_files": [],
+        "production_disclosure_sha256": digest,
+        "production_route_sha256": route_digest,
+        "diagnostic_disclosure_sha256": digest,
+        "diagnostic_route_sha256": route_digest,
+        "diagnostic_collection_available": False,
+        "production_collection_available": False,
+        "packaged_main": "dist/main.js",
+        "excluded_from_publication": True,
+        "update_feed_globs": list(UPDATE_FEEDS),
+    }
+
+
+def prepare_resource_profile(profile: Path, *, available: bool, enabled: bool) -> dict:
+    """Write the active package's choice before launch. Unavailable stays unconfigured."""
+    if type(available) is not bool or type(enabled) is not bool:
+        raise ValueError("Resource profile choice must be boolean")
+    if not available:
+        if enabled:
+            raise ValueError("An inactive package cannot be enabled")
+        return {"configured": False, "available": False, "enabled": False}
+    from mnemion.product_telemetry import policy
+
+    saved = (policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL)
+    try:
+        # The orchestrator imports production disclosure. This flag matches the
+        # active package that is about to launch. It is not an unavailable bypass.
+        policy.COLLECTION_AVAILABLE = True
+        policy.COLLECTOR_URL = loopback_destination()
+        configured = policy.configure(
+            profile / "mnemion-product-telemetry",
+            {
+                "enabled": enabled,
+                "expected_revision": 0,
+                "disclosure_version": policy.DISCLOSURE_VERSION,
+                "connection_mode": "unmetered",
+            },
+            policy_path=profile / "company-absent.json",
+        )
+    finally:
+        policy.COLLECTION_AVAILABLE, policy.COLLECTOR_URL = saved
+    if configured.get("effective_enabled") is not enabled:
+        raise RuntimeError("Resource profile did not keep the requested choice")
+    return {
+        "configured": True,
+        "available": True,
+        "enabled": enabled,
+        "effective_enabled": configured["effective_enabled"] is True,
+    }
+
+
 def write_bake(copy: Path, destination: str, address: str, certificate: str) -> dict:
     original_disclosure = (copy / DISCLOSURE).read_bytes()
     original_route = (copy / ROUTE).read_bytes()
@@ -104,11 +173,7 @@ def write_bake(copy: Path, destination: str, address: str, certificate: str) -> 
     route_bytes = (json.dumps(baked_route, indent=2) + "\n").encode()
     (copy / DISCLOSURE).write_bytes(disclosure_bytes)
     (copy / ROUTE).write_bytes(route_bytes)
-    package = json.loads((copy / "studio/electron/package.json").read_text(encoding="utf-8"))
-    if package.get("main") != "dist/main.js" or "--publish never" not in package["scripts"]["dist"]:
-        raise ValueError(
-            "Refusing a diagnostic package that changes the app entry or publish script"
-        )
+    _package_entry(copy)
     return {
         "baked_files": [path.as_posix() for path in BAKED],
         "production_disclosure_sha256": _sha256(original_disclosure),
@@ -118,6 +183,7 @@ def write_bake(copy: Path, destination: str, address: str, certificate: str) -> 
         "destination_host": "localhost",
         "destination_path": "/v3/report",
         "route_address": "127.0.0.1",
+        "condition": "active",
         "diagnostic_collection_available": True,
         "production_collection_available": False,
         "packaged_main": "dist/main.js",
@@ -165,7 +231,19 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--bake-checkout", type=Path)
     parser.add_argument("--certificate", type=Path)
+    parser.add_argument("--prepare-profile", type=Path)
+    parser.add_argument("--available", choices=("0", "1"))
+    parser.add_argument("--enabled", choices=("0", "1"))
     args = parser.parse_args()
+    if args.prepare_profile:
+        if args.available is None or args.enabled is None:
+            parser.error("--available and --enabled are required")
+        prepare_resource_profile(
+            args.prepare_profile,
+            available=args.available == "1",
+            enabled=args.enabled == "1",
+        )
+        return
     if args.issue_loopback:
         if not args.output:
             parser.error("--output is required")

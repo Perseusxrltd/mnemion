@@ -28,12 +28,30 @@ coverage, and cleanup. Cold start is the first observed absolute working set,
 not a subtracted delta. The report's qualification is `unqualified`.
 
 The installed launcher `studio/electron/scripts/smoke-installed-hosting.mjs`
-does not call this adapter. The compiled-source probe does, and only for the
-existing six-launch counterbalance (`--comparison` or `--attribution`). It
-calls `start_owned_launch` on `probe-telemetry-renderer.mjs` before that
-controller runs. The 128 cycles, the unavailable/opted-out/enabled order, and
-the one reversed repeat stay as they are. Review and the three-case journey
-are unchanged. This is a Linux source-app bridge, not installed acceptance.
+calls `deploy.owned_installed_launch` only when
+`MNEMION_TELEMETRY_INSTALLED_RESOURCE` is `1`. That branch runs the existing
+128-cycle counterbalance. The two-launch delivery check stays separate and is
+not this workload. Workflow input `resource_comparison` is a boolean and
+defaults to false. Omitted or false keeps all-six delivery. True prepares one
+inactive package and one active package from the same declared source.
+Windows x64 freezes both engines. Windows ARM reuses those x64 archives and
+does not freeze an engine. The observer stays outside each measured app
+group. `MNEMION_OWNED_LAUNCH_PYTHON` is the native client interpreter; on
+Windows ARM that is not `MNEMION_ENGINE_PYTHON`. Resource acceptance stays
+false and both budgets stay unaccepted. Terminal markers carry the verified
+cumulative count. Unknown crash progress sets `completed_known` false and
+does not invent a count. The next check is one manual dispatch with
+`resource_comparison` true. It must not repeat runs 41013901369 or
+41013868878.
+
+Windows reads the direct child with `GetExitCodeProcess` before finish closes
+the process handle. Microsoft documents `STILL_ACTIVE` as 259
+(`STATUS_PENDING`). A missing code or 259 is not success.
+
+The compiled-source probe still calls `start_owned_launch` on
+`probe-telemetry-renderer.mjs` for the existing six-launch counterbalance
+(`--comparison` or `--attribution`). Review and the three-case journey are
+unchanged. That remains a Linux source-app bridge.
 
 ## Platform accounting
 
@@ -182,6 +200,8 @@ pass.
 
 ## Sources
 
+- Microsoft, `GetExitCodeProcess`: `STILL_ACTIVE` is 259 (`STATUS_PENDING`).
+  A process that has not exited is not a successful exit code.
 - Microsoft, `JOBOBJECT_BASIC_ACCOUNTING_INFORMATION`: user and kernel totals
   include terminated processes.
 - Microsoft, nested jobs and `PROC_THREAD_ATTRIBUTE_JOB_LIST`: assignment at

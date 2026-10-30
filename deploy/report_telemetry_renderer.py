@@ -430,7 +430,9 @@ _OWNED_ACTIVE = {
     "workspace-connected",
     "first-memory-cycle-and-delivery",
 }
-_OWNED_INACTIVE = {"starting", "finished", "closed"}
+_OWNED_INACTIVE = {"starting", "finished", "closed", "failed"}
+# Terminal markers carry the verified cumulative count. Starting does not.
+_TERMINAL = {"finished", "closed", "failed"}
 # A transient service gets a clean environment. These are the runner
 # tool and home values the fixture needs. Tokens and the rest of the
 # job environment are not copied.
@@ -450,6 +452,31 @@ _SERVICE_ENV = (
     "XDG_DATA_HOME",
     "XDG_RUNTIME_DIR",
 )
+# Names the installed desktop session may keep. Tokens are not in this list.
+# A transient service starts from a clean environment, so an omitted name is absent.
+_DESKTOP_ENV = (
+    "CI",
+    "RUNNER_OS",
+    "RUNNER_ARCH",
+    "RUNNER_TEMP",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "DISPLAY",
+    "XAUTHORITY",
+    "GNOME_KEYRING_CONTROL",
+    "MNEMION_ENGINE_PYTHON",
+    "MNEMION_BUILD_PYTHON",
+    "MNEMION_POSTGRES_ARCHIVES",
+    "MNEMION_ENGINE_ARCHIVES",
+    "MNEMION_ENGINE_ARCHIVES_INACTIVE",
+    "MNEMION_OWNED_LAUNCH_PYTHON",
+    "MNEMION_TELEMETRY_INSTALLED_RESOURCE",
+    "MNEMION_TELEMETRY_FIXTURE_ENDPOINT",
+    "MNEMION_TELEMETRY_FIXTURE_SPACE",
+    "MNEMION_TELEMETRY_FIXTURE_KEY",
+    "MNEMION_TELEMETRY_RESOURCE_MANIFEST",
+    "MNEMION_TELEMETRY_RESOURCE_PROBE",
+)
+INSTALLED_DESKTOP_ENV = _SERVICE_ENV + _DESKTOP_ENV
 
 
 class OwnedPhaseCursor:
@@ -463,17 +490,60 @@ def owned_counterbalance(attribution: bool, comparison: bool) -> bool:
     return bool(attribution or comparison) and not (attribution and comparison)
 
 
+def renderer_launch_cases(
+    *, attribution: bool, comparison: bool, review_journey: bool
+) -> list[tuple]:
+    """The existing launch order. Comparison is one triplet and its reverse."""
+    triplet = [
+        ("unavailable", False, False),
+        ("opted_out", True, False),
+        ("enabled", True, True),
+    ]
+    if review_journey:
+        return [("review", "review", True, True, 1)]
+    if attribution or comparison:
+        return [
+            (f"r{replicate}-{label}", label, available, enabled, replicate)
+            for replicate, order in [(1, triplet), (2, list(reversed(triplet)))]
+            for label, available, enabled in order
+        ]
+    return [(label, label, available, enabled, 1) for label, available, enabled in triplet]
+
+
+def resource_counterbalance_cases() -> list[dict]:
+    """Installed packages for the same six launches. Unavailable is a separate build."""
+    cases = []
+    for label, condition, available, enabled, replicate in renderer_launch_cases(
+        attribution=False, comparison=True, review_journey=False
+    ):
+        cases.append(
+            {
+                "label": label,
+                "condition": condition,
+                "available": available,
+                "enabled": enabled,
+                "replicate": replicate,
+                "package": "inactive" if available is False else "active",
+            }
+        )
+    return cases
+
+
 def owned_controller_argv(application: Path) -> list[str]:
     """The compiled-source controller. Not a new benchmark and not the installed app."""
     return ["node", str(application / "probe-telemetry-renderer.mjs")]
 
 
-def owned_phase_from_marker(phase: object, completed: int) -> tuple[str, bool, int] | None:
+def owned_phase_from_marker(
+    phase: object, completed: int, reported: int | None = None
+) -> tuple[str, bool, int] | None:
     """One phase already written to monitor.json.
 
     Startup and close stay inactive. The measuring interval, including the
     existing connection work and the 128 memory cycles, stays active. An
     unknown label is ignored. A missing cycle count is not filled in.
+    A terminal marker may carry the verified cumulative total. That total
+    replaces the last checkpoint. Its absence leaves the last checkpoint.
     """
     if type(phase) is not str or type(completed) is not int or completed < 0:
         return None
@@ -483,6 +553,12 @@ def owned_phase_from_marker(phase: object, completed: int) -> tuple[str, bool, i
     count = completed
     if name in _OWNED_INACTIVE:
         active = False
+        if (
+            name in _TERMINAL
+            and type(reported) is int
+            and 0 <= reported <= 128
+        ):
+            count = reported
     elif name in _OWNED_ACTIVE:
         active = True
         if name == "first-memory-cycle-and-delivery":
@@ -503,7 +579,10 @@ def owned_phase_from_marker(phase: object, completed: int) -> tuple[str, bool, i
 def apply_owned_marker(launch, marker: object, cursor: OwnedPhaseCursor) -> None:
     if type(marker) is not dict:
         return
-    decided = owned_phase_from_marker(marker.get("phase"), cursor.completed)
+    reported = marker.get("completed")
+    if marker.get("completed_known") is False or type(reported) is not int or not 0 <= reported <= 128:
+        reported = None
+    decided = owned_phase_from_marker(marker.get("phase"), cursor.completed, reported)
     if decided is None or decided[0] == cursor.seen:
         return
     name, active, count = decided
@@ -572,6 +651,7 @@ def owned_scope_command(
     cwd: str,
     environ: dict,
     probe_accepted: bool | None,
+    env_names: tuple[str, ...] | None = None,
 ) -> tuple[list[str], str]:
     """Wrap a counterbalance in one transient service, or leave it unchanged.
 
@@ -591,8 +671,13 @@ def owned_scope_command(
         return list(command), "direct_identity_unavailable"
     if type(environ) is not dict:
         return list(command), "direct_identity_unavailable"
+    names = _SERVICE_ENV if env_names is None else env_names
+    if type(names) is not tuple or any(
+        type(name) is not str or not name.isidentifier() for name in names
+    ):
+        return list(command), "direct_identity_unavailable"
     selected = []
-    for name in _SERVICE_ENV:
+    for name in names:
         if name not in environ:
             continue
         value = environ[name]

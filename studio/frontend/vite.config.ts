@@ -13,6 +13,22 @@ for (const document of ['README.md', 'SECURITY.md', 'CONTRIBUTING.md', 'studio/R
   }
 }
 
+const resourceProbe = process.env.ELECTRON_BUILD === '1' && process.env.MNEMION_TELEMETRY_RESOURCE_PROBE === '1'
+const resourceInput = resourceProbe ? {
+  rollupOptions: {
+    input: {
+      app: fileURLToPath(new URL('index.html', import.meta.url)),
+      probe: fileURLToPath(new URL('src/packaged-memory-probe.ts', import.meta.url)),
+    },
+    preserveEntrySignatures: 'strict',
+    output: {
+      entryFileNames: chunk => chunk.name === 'probe'
+        ? 'assets/packaged-memory-probe.js'
+        : 'assets/[name]-[hash].js',
+    },
+  },
+} : {}
+
 export default defineConfig({
   root,
   plugins: [react(), tailwind()],
@@ -39,5 +55,6 @@ export default defineConfig({
   },
   build: {
     outDir: process.env.ELECTRON_BUILD ? 'dist-desktop' : 'dist',
+    ...resourceInput,
   },
 })

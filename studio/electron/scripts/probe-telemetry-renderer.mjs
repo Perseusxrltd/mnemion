@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { readBoundedLinuxStatus, selectHeap, unavailableLinux } from './phase-memory.mjs'
+import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker } from '../canonical-memory-cycles.mjs'
 
 const root = process.env.MNEMION_STUDIO_USER_DATA
 if (!root?.includes('mnemion-owned-renderer-')) throw new Error('Disposable renderer profile required')
@@ -217,6 +218,17 @@ async function controller() {
   const pid = electron.process().pid
   const samples = [], pageErrors = []
   let page
+  let verified
+  const rememberVerified = async () => {
+    if (!page) return
+    try {
+      const count = await page.evaluate(() => {
+        const probe = window.__mnemionMemoryProbe
+        return probe && Number.isInteger(probe.cycles) && probe.cycles >= 0 && probe.cycles <= 128 ? probe.cycles : null
+      })
+      if (Number.isInteger(count)) verified = count
+    } catch { /* The last verified total stays. */ }
+  }
   try {
     marker({ phase: 'starting', pid })
     // Select the app's owned origin. Each measurement independently verifies
@@ -268,39 +280,26 @@ async function controller() {
       return { native_handle_only: /^mnm_session_[A-Za-z0-9_-]{43}$/.test(session.sessionToken), remembered: session.remembered }
     }, input.probe_entry)
     if (!connection.native_handle_only) throw new Error('Renderer received a workspace key instead of a handle')
-    async function cycles(number) {
-      await page.evaluate(async ({ number, space }) => {
-        const probe = window.__mnemionMemoryProbe
-        for (let index = 0; index < number; index++) {
-          const start = performance.now(), query = 'rendererprobe' + probe.cycles
-          const content = (query + ' postgres backup billing procedure. ').repeat(20)
-          const saved = await probe.client.save(space, { content, subject: 'PRIVATE_RENDERER_MEMORY_CANARY', kind: 'procedure' })
-          if (!saved.lexical_ready || !saved.memory_id) throw new Error('Real save failed')
-          const fetched = await probe.client.fetch(saved.memory_id)
-          if (fetched.content !== content) throw new Error('Real fetch changed content')
-          const recalled = await probe.client.search({ query, space_ids: [space], mode: 'lexical', limit: 5 })
-          if (!recalled.hits.some(hit => hit.memory_id === saved.memory_id)) throw new Error('Real recall omitted the saved memory')
-          probe.cycles++
-          probe.latencies.push(performance.now() - start)
-        }
-      }, { number, space: input.memory.space_id })
-    }
+    const cycles = number => page.evaluate(canonicalMemoryCycles, { number, space: input.memory.space_id })
     await cycles(1)
     await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
     await sample('first_memory_cycle_and_delivery')
-    const remaining = input.attribution || input.comparison ? [[7, 8], [8, 16], [16, 32], [32, 64], [32, 96], [32, 128]] : [[31, 32], [96, 128]]
-    for (const [number, completed] of remaining) {
+    for (const [number, completed] of canonicalRemainingBatches(Boolean(input.attribution || input.comparison))) {
       await cycles(number)
       await electron.evaluate(async () => globalThis.__mnemionOwnedProbe.settle())
       await sample(`${completed}_memory_cycles`)
     }
-    marker({ phase: 'finished', pid })
+    await rememberVerified()
+    marker({ ...canonicalTerminalMarker('finished', verified), pid })
     const result = await page.evaluate(() => {
       const { latencies, cycles } = window.__mnemionMemoryProbe
       const sorted = [...latencies].sort((a, b) => a - b)
       return { memory_cycles: cycles, memory_results_verified: cycles === 128,
         latency_p50_ms: sorted[Math.floor(sorted.length / 2)], latency_p99_ms: sorted[Math.floor(sorted.length * .99)] }
     })
+    if (Number.isInteger(result?.memory_cycles) && result.memory_cycles >= 0 && result.memory_cycles <= 128) {
+      verified = result.memory_cycles
+    }
     const counts = await electron.evaluate(() => ({ ...globalThis.__mnemionOwnedProbe.counts }))
     const setupControls = await electron.evaluate(() => globalThis.__mnemionOwnedProbe.setupControls)
     const allocation = await electron.evaluate(() => globalThis.__mnemionOwnedProbe.allocation)
@@ -328,11 +327,13 @@ async function controller() {
     const failure = { url: page?.url(), page_errors: pageErrors, windows: electron.windows().map(value => value.url()), samples }
     try { failure.dom = await page?.locator('body').ariaSnapshot({ timeout: 3000 }) } catch { /* Retain the original failure. */ }
     writeFileSync(join(process.env.MNEMION_PROBE_ARTIFACTS, `${input.variant}-failure.json`), JSON.stringify(failure, null, 2) + '\n')
+    try { await rememberVerified() } catch { /* Keep the original failure. */ }
+    try { marker({ ...canonicalTerminalMarker('failed', verified), pid }) } catch { /* Keep the original failure. */ }
     throw error
   } finally {
     // close() awaits the actual app lifecycle rather than abandoning Chromium.
     await electron.close()
-    marker({ phase: 'closed', pid })
+    marker({ ...canonicalTerminalMarker('closed', verified), pid })
   }
 }
 

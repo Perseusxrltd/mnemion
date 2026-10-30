@@ -108,14 +108,18 @@ def test_missing_active_counter_is_not_zero():
     assert report["lifetime_cpu_microseconds"] == 5_000
 
 
-def test_installed_launcher_is_not_wired_and_budget_is_unchanged():
+def test_installed_launcher_wires_the_resource_workload_and_budget_is_unchanged():
     boundary = installed_journey_boundary()
-    assert boundary["wired_into_smoke_installed_hosting"] is False
+    assert boundary["wired_into_smoke_installed_hosting"] is True
+    assert boundary["delivery_is_canonical_workload"] is False
+    assert boundary["budget"]["additional_rss_bytes_per_process"] == 8_388_608
+    assert boundary["budget"]["cpu_one_core_fraction"] == 0.005
+    assert boundary["budget"]["compared"] is False
     launcher = Path("studio/electron/scripts/smoke-installed-hosting.mjs").read_text(
         encoding="utf-8"
     )
-    assert "owned_launch" not in launcher
-    assert "start_owned_launch" not in launcher
+    assert "deploy.owned_installed_launch" in launcher
+    assert "MNEMION_TELEMETRY_INSTALLED_RESOURCE" in launcher
     disclosure = json.loads(
         Path("mnemion/product_telemetry/disclosure.json").read_text(encoding="utf-8")
     )

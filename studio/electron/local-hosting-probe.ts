@@ -12,6 +12,7 @@ import { verifyNativeHeadlessCapture, verifyNativeHeadlessPreview } from './nati
 import { workspaceOpenError } from './local-hosting-diagnostics.js'
 import { verifyNativeTelemetry } from './native-telemetry-probe.js'
 import { verifyInstalledTelemetryDelivery } from './native-telemetry-delivery-probe.js'
+import { verifyInstalledTelemetryResource } from './native-telemetry-resource-probe.js'
 import { verifyNativeServiceRequests } from './native-service-request-probe.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
@@ -22,6 +23,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!profile || !smoke || dirname(resolve(path)) !== dirname(resolve(profile)) || dirname(resolve(smoke)) !== dirname(resolve(path)) ||
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
+  if (config?.phase === 'telemetry-resource') return verifyInstalledTelemetryResource(window, config)
   if (config?.phase === 'telemetry-delivery' || config?.phase === 'telemetry-restart') {
     return verifyInstalledTelemetryDelivery(window, config)
   }
