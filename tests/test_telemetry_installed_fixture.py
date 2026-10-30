@@ -8,6 +8,8 @@ import stat
 import subprocess
 import sys
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 import pytest
 
 from deploy.telemetry_installed_fixture import baked_documents, validate_loopback_target
@@ -20,6 +22,19 @@ DISCLOSURE = {
 }
 ROUTE = {"version": 2, "address": None, "certificate_authorities": []}
 CERTIFICATE = "-----BEGIN CERTIFICATE-----\nQUJD\n-----END CERTIFICATE-----\n"
+
+
+@pytest.fixture
+def private_key() -> str:
+    return (
+        ec.generate_private_key(ec.SECP256R1())
+        .private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        .decode("ascii")
+    )
 
 
 def test_loopback_bake_changes_only_availability_and_route():
@@ -63,14 +78,13 @@ def test_shared_loopback_destination_uses_the_fixed_port():
     validate_loopback_target(destination, "127.0.0.1", CERTIFICATE)
 
 
-def test_private_key_material_is_refused():
+def test_private_key_material_is_refused(private_key):
     from deploy.telemetry_installed_fixture import assert_public_certificate
 
-    private = "-----BEGIN PRIVATE KEY-----\nQUJD\n-----END PRIVATE KEY-----\n"
     with pytest.raises(ValueError):
-        assert_public_certificate(private)
+        assert_public_certificate(private_key)
     with pytest.raises(ValueError):
-        validate_loopback_target("https://localhost:48763/v3/report", "127.0.0.1", private)
+        validate_loopback_target("https://localhost:48763/v3/report", "127.0.0.1", private_key)
 
 
 def test_active_production_disclosure_is_refused(tmp_path: Path):
@@ -105,15 +119,14 @@ def test_cli_requires_the_shared_loopback_material(monkeypatch):
         main()
 
 
-def test_loopback_material_keeps_the_private_key_separate(tmp_path: Path):
+def test_loopback_material_keeps_the_private_key_separate(tmp_path: Path, private_key):
     from deploy.probe_telemetry_installed import _key_stays_outside, _require_loopback_material
 
     material = tmp_path / "loopback"
     material.mkdir()
     (material / "certificate.pem").write_text(CERTIFICATE, encoding="utf-8")
-    (material / "key.pem").write_text(
-        "-----BEGIN PRIVATE KEY-----\nQUJD\n-----END PRIVATE KEY-----\n", encoding="utf-8"
-    )
+    (material / "key.pem").write_text(private_key, encoding="utf-8")
+    (material / "key.pem").chmod(0o600)
     certificate, key, public = _require_loopback_material(material)
     assert certificate.name == "certificate.pem"
     assert "PRIVATE KEY" not in public
