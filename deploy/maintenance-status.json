@@ -69,34 +69,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
-          {
-            "id": 123911189024,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123911231534,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
           {
             "id": 123911231537,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -105,25 +87,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 123911231576,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 123911231585,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -176,39 +140,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.57",
       "source_commit": "11ffe6b07fc15a6aab245405e42649f9c93a0e96",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T05:42:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980"
+    },
+    {
+      "id": 41009919761,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "c570dd2c0e273b39cd2f580117915a1dd011ee50",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-30T04:49:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980",
+      "updated_at": "2026-10-30T05:42:34Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 21,
-        "completed": 20,
-        "succeeded": 19,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 123897865370,
-            "name": "native / windows-11-arm / arm64",
+            "id": 123913247522,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 41000306718,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "fdcdd2fd87658a76552629b45d8fefb05a593951",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-30T04:04:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41000306718"
     },
     {
       "id": 41009262788,
@@ -233,5 +197,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41000796006"
     }
   ],
-  "observed_at": "2026-10-30T05:36:13+00:00"
+  "observed_at": "2026-10-30T05:43:16+00:00"
 }
