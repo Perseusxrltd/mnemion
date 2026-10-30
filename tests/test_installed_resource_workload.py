@@ -315,12 +315,12 @@ def test_public_errors_drop_paths_and_fixture_material():
     assert _bounded_error(RuntimeError("loopback port did not bind")) == "RuntimeError: loopback port did not bind"
 
 
-def test_resource_workflow_is_optional_and_has_no_target_selector():
+def test_resource_workflow_is_optional_and_independent_of_target_selection():
     text = Path(".github/workflows/telemetry-installed-delivery.yml").read_text(encoding="utf-8")
     assert "resource_comparison:" in text
     assert "type: boolean" in text
     assert "default: false" in text
     assert "--resource-comparison" in text
     assert "MNEMION_OWNED_LAUNCH_PYTHON" in text
-    assert "--targets" not in text
+    assert "--targets" in text
     assert "telemetry-diagnostic-engine-windows-x64-inactive" in text

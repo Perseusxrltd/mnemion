@@ -32,8 +32,10 @@ calls `deploy.owned_installed_launch` only when
 `MNEMION_TELEMETRY_INSTALLED_RESOURCE` is `1`. That branch runs the existing
 128-cycle counterbalance. The two-launch delivery check stays separate and is
 not this workload. Workflow input `resource_comparison` is a boolean and
-defaults to false. Omitted or false keeps all-six delivery. True prepares one
-inactive package and one active package from the same declared source.
+defaults to false. It does not select or replace delivery targets. Omitted
+or false runs the selected delivery targets, all six when that selection is
+empty. True prepares one inactive package and one active package from the
+same declared source.
 Windows x64 freezes both engines. Windows ARM reuses those x64 archives and
 does not freeze an engine. The observer stays outside each measured app
 group. `MNEMION_OWNED_LAUNCH_PYTHON` is the native client interpreter; on
