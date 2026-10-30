@@ -9,8 +9,8 @@ review on source `e36b51a72ca16ec0692d427bbeee912e098d21ef`.
 GitHub Actions run
 [40981256191](https://github.com/Perseusxrltd/mnemion/actions/runs/40981256191)
 succeeded on that source. The existing review flow used the real compiled Linux
-source app: Electron 44.9.3, Node 24.22.0, x64, packaged false. The compiled
-frontend and the shared app policy and client modules were in that process.
+source app: Electron 44.9.3, Node 24.22.0, x64, packaged false. The journey used
+the compiled frontend and the shared app policy and client modules.
 Bridge IPC was available with Node integration off. The app run was not repeated
 for the reader correction below.
 
@@ -33,7 +33,7 @@ calls were zero.
 
 One user-inspected 25-byte v3 packet was received on the fixture TLS path
 `/v3/report`. The collector accepted that one body and recorded no forbidden
-metadata. The stored body matched the inspection. Wire version was 3.
+metadata. The received body matched the inspected bytes. Wire version was 3.
 
 One 65,536-byte attempt was spent. The lease was cleared. Queue cells were 0.
 The database was 28,672 bytes. The maximum producer count was 0. After restart

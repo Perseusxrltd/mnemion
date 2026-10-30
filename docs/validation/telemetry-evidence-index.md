@@ -67,7 +67,8 @@ checks passed. The operator guide includes mode changes and private exports;
 no deployed systemd, provider, resource or fleet-collection acceptance follows.
 
 The [30 October compiled Linux app review](2026-10-30-telemetry-v3-app-review.md)
-records original run 40981256191 on this source. Ten review controls passed in
+records original run 40981256191 on `e36b51a72ca16ec0692d427bbeee912e098d21ef`.
+Ten review controls passed in
 the unpackaged Electron 44.9.3 / Node 24.22.0 x64 app, including one inspected
 25-byte v3 fixture delivery. A private reader that required `comparison: false`
 in `source.json` was corrected to the three-field review schema; the same
@@ -78,8 +79,8 @@ The [30 October SQLite lifecycle probes](2026-10-30-telemetry-sqlite-lifecycle.m
 reject an idle retained connection for this release. Both retained Windows
 handles blocked atomic replacement with `EPERM`. Linux held connections kept
 the old generation until reopen. These are standalone Node probes, not Electron
-builds or resource measurements. No new resource run is justified. The 2 MiB
-and 0.5% gates stay unaccepted.
+builds or resource measurements. These observations do not justify repeating
+the unchanged resource workload. The 2 MiB and 0.5% gates stay unaccepted.
 
 ## Controls, ownership and report review
 

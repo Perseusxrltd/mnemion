@@ -5,9 +5,10 @@ note had proposed one idle connection. These probes do not implement that
 proposal, do not adopt it on Linux only, and do not move the 2 MiB or 0.5%
 ceilings.
 
-No eligible existing owner was identified. The backend is unavailable for
-remote-only, onboarding-only, and tray-only lifecycles. No new resource run is
-justified.
+Electron main remains the desktop telemetry owner. Offloading this work cannot
+assume a local backend is running for remote workspaces, before setup, or while
+the tray remains open after the local engine stops. These observations do not
+justify repeating the unchanged resource workload.
 
 ## What ran
 
@@ -29,8 +30,9 @@ production changed. Cleanup was true on both hosts.
 
 Every mode on both hosts saw the other process's commit.
 
-Baseline, both hosts: replacement completed, path identity changed, and both
-the held read and a later reopen saw the replacement generation.
+Baseline, both hosts: the connection closed before replacement. Replacement
+completed, path identity changed, and subsequent reads saw the replacement
+generation.
 
 Windows, both retained handles: replacement failed with `EPERM`. Path identity
 did not change. The held read and a reopen both still saw the original

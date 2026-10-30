@@ -6,7 +6,8 @@ privacy-settings page shows local controls; it does not show fleet data.
 No fleet statistics can be pulled while collection stays off.
 
 The [30 October compiled-app review](../validation/2026-10-30-telemetry-v3-app-review.md)
-qualifies run 40981256191 on this source. Ten controls passed in the unpackaged
+qualifies run 40981256191 on `e36b51a72ca16ec0692d427bbeee912e098d21ef`.
+Ten controls passed in the unpackaged
 compiled Linux app (Electron 44.9.3, Node 24.22.0, x64), and one inspected
 25-byte v3 packet matched fixture delivery. The first private reader wrongly
 required `comparison: false` in `source.json`; the corrected three-field reader
@@ -20,9 +21,11 @@ Linux Node 22.22.0 and Windows Node 25.2.1. Both retained Windows handles
 blocked atomic replacement with `EPERM` and kept the old generation. The
 [30 October lifecycle note](../validation/2026-10-30-telemetry-sqlite-lifecycle.md)
 records those standalone probes. They are not Electron builds or resource
-measurements. No eligible existing owner was identified. The backend is
-unavailable for remote-only, onboarding-only, and tray-only lifecycles. The
-2 MiB and 0.5% ceilings stay unchanged. No new resource run is justified.
+measurements. Electron main remains the desktop telemetry owner. Offloading
+this work cannot assume a local backend is running for remote workspaces,
+before setup, or while the tray remains open after the local engine stops.
+The 2 MiB and 0.5% ceilings stay unchanged. These observations do not justify
+repeating the unchanged resource workload.
 
 Attribution run 40971963055 made no enabled reservations and remains
 unexplained. Run 40976743563, on source `7ee617691ead16c17bbdb9eb797e03f20f186325`,
