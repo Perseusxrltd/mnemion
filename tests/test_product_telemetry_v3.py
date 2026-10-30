@@ -1003,3 +1003,188 @@ def test_publication_failures_stay_inside_eight_closed_windows(tmp_path):
     raw = (tmp_path / "reports-v3.sqlite3").read_bytes()
     assert b"4.46.53" not in raw
     assert b"packet" not in raw
+
+
+def _release_count(window, cohort_id: str) -> int:
+    index = next(
+        position
+        for position, row in enumerate(window.cohorts)
+        if row["axis"] == "release" and row["id"] == cohort_id
+    )
+    return window._counts[index * window._stride]
+
+
+def test_weekly_adoption_keeps_the_sealed_domain_and_maps_the_new_release(tmp_path):
+    """An on-disk catalog change waits for the seal. The closed domain stays put."""
+    from mnemion.product_telemetry import aggregate_v3, wire_v3
+    from mnemion.product_telemetry.release_catalog import SOURCE, install_catalog
+
+    allowlist = wire_v3.ALLOWLIST
+    aggregate_allowlist = aggregate_v3.ALLOWLIST
+    listed = {"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"}
+    hotfix = {"slot": 1, "major": 4, "minor": 46, "patch": 58, "id": "4.46.58"}
+    moment = stamp(2900)
+    install_catalog(tmp_path, (listed,), generated_at=moment)
+    clock = {"now": moment}
+    published = []
+    app = CollectorV3(
+        published.append,
+        clock=lambda: clock["now"],
+        random_below=stop,
+        catalog_path=tmp_path / "release-catalog.json",
+    )
+    assert app.catalog_adoption == {
+        "state": "local",
+        "reason": None,
+        "source": SOURCE,
+        "generated_at": moment,
+        "release_ids": ["4.46.53"],
+    }
+    known = encode("release", [2] * len(METRICS), release=(4, 46, 53))
+    unknown = encode("release", [2] * len(METRICS), release=(4, 46, 58))
+    operating_system = encode("os", [2] * len(METRICS), operating_system="linux")
+    assert app._window.contribute(known)
+    assert app._window.contribute(unknown)
+    assert app._window.contribute(operating_system)
+    assert _release_count(app._window, "4.46.53") == 1
+    assert _release_count(app._window, "unlisted") == 1
+    install_catalog(tmp_path, (listed, hotfix), generated_at=moment + 10)
+    assert app._window.contribute(unknown)
+    assert app._window.week == 2900
+    assert app._window._total == 4
+    assert _release_count(app._window, "unlisted") == 2
+    assert app.catalog_adoption["release_ids"] == ["4.46.53"]
+    assert wire_v3.ALLOWLIST is allowlist
+    assert aggregate_v3.ALLOWLIST is aggregate_allowlist
+
+    clock["now"] = stamp(2901)
+    assert app._advance()
+    sealed = published[0]
+    assert sealed["window_week"] == 2900
+    assert sealed["domain"]["releases"] == [listed]
+    assert sealed["domain"]["unlisted_release"] == {"slot": 1, "id": "unlisted"}
+    assert validate(sealed)["domain"]["unlisted_release"]["slot"] == 1
+    assert "packet" not in json.dumps(sealed)
+    assert app._window.week == 2901
+    assert app._window._total == 0
+    assert app.catalog_adoption["state"] == "local"
+    assert app.catalog_adoption["release_ids"] == ["4.46.53", "4.46.58"]
+    assert next(row["slot"] for row in app._window.cohorts if row["id"] == "unlisted") == 2
+    assert app._window.contribute(unknown)
+    assert _release_count(app._window, "4.46.58") == 1
+    assert _release_count(app._window, "unlisted") == 0
+    assert validate(sealed)["domain"]["releases"] == [listed]
+    assert wire_v3.ALLOWLIST is allowlist
+
+
+def test_invalid_catalogs_keep_the_week_and_accept_unknown_versions(tmp_path):
+    """Missing, malformed, stale, and peer files fall back without erasing counters."""
+    from mnemion.product_telemetry.release_catalog import (
+        BUNDLED_SOURCE,
+        FRESHNESS_SECONDS,
+        SCHEMA_NAME,
+        SCHEMA_VERSION,
+        install_catalog,
+    )
+    from mnemion.product_telemetry.wire_v3 import WIRE
+
+    unknown = encode("release", [2] * len(METRICS), release=(9, 9, 9))
+    bundled_ids = [item["id"] for item in WIRE["release_allowlist"]]
+    moment = stamp(2900)
+
+    missing = CollectorV3(
+        lambda _result: None,
+        clock=lambda: moment,
+        catalog_path=tmp_path / "absent" / "release-catalog.json",
+    )
+    assert missing.catalog_adoption["state"] == "bundled"
+    assert missing.catalog_adoption["reason"] == "missing"
+    assert missing.catalog_adoption["source"] == BUNDLED_SOURCE
+    assert missing.catalog_adoption["release_ids"] == bundled_ids
+    assert missing._window.contribute(unknown)
+    assert _release_count(missing._window, "unlisted") == 1
+
+    peer_dir = tmp_path / "peer"
+    peer_dir.mkdir()
+    peer = peer_dir / "release-catalog.json"
+    peer.write_text(
+        json.dumps(
+            {
+                "schema_name": SCHEMA_NAME,
+                "schema_version": SCHEMA_VERSION,
+                "source": "https://example.invalid/catalog.json",
+                "generated_at": moment,
+                "release_allowlist": [
+                    {"slot": 0, "major": 9, "minor": 9, "patch": 9, "id": "9.9.9"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rejected = CollectorV3(lambda _result: None, clock=lambda: moment, catalog_path=peer)
+    assert rejected.catalog_adoption["state"] == "bundled"
+    assert rejected.catalog_adoption["reason"] == "malformed"
+    assert rejected._window.contribute(unknown)
+    assert _release_count(rejected._window, "unlisted") == 1
+    assert "9.9.9" not in rejected.catalog_adoption["release_ids"]
+
+    stale_dir = tmp_path / "stale"
+    stale_dir.mkdir()
+    install_catalog(
+        stale_dir,
+        ({"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"},),
+        generated_at=moment - FRESHNESS_SECONDS - 1,
+    )
+    aged = CollectorV3(
+        lambda _result: None,
+        clock=lambda: moment,
+        catalog_path=stale_dir / "release-catalog.json",
+    )
+    assert aged.catalog_adoption["state"] == "bundled"
+    assert aged.catalog_adoption["reason"] == "stale"
+    assert aged._window.contribute(unknown)
+
+    live_dir = tmp_path / "live"
+    live_dir.mkdir()
+    catalog = install_catalog(
+        live_dir,
+        ({"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"},),
+        generated_at=moment,
+    )
+    clock = {"now": moment}
+    published = []
+    app = CollectorV3(
+        published.append,
+        clock=lambda: clock["now"],
+        random_below=stop,
+        catalog_path=catalog,
+    )
+    assert app._window.contribute(unknown)
+    assert app._window.week == 2900
+    assert _release_count(app._window, "unlisted") == 1
+    catalog.write_text("{", encoding="utf-8")
+    assert app._advance()
+    assert app._window.week == 2900
+    assert app._window._total == 1
+    assert app.catalog_adoption["state"] == "local"
+    assert app._window.contribute(unknown)
+    assert _release_count(app._window, "unlisted") == 2
+    clock["now"] = stamp(2901)
+    assert app._advance()
+    assert app._window.week == 2901
+    assert app._window._total == 0
+    assert app.catalog_adoption["state"] == "retained"
+    assert app.catalog_adoption["reason"] == "malformed"
+    assert app.catalog_adoption["release_ids"] == ["4.46.53"]
+    assert published[0]["window_week"] == 2900
+    assert published[0]["domain"]["unlisted_release"] == {"slot": 1, "id": "unlisted"}
+    assert validate(published[0])["domain"]["releases"][0]["id"] == "4.46.53"
+    assert app._window.contribute(unknown)
+    assert _release_count(app._window, "unlisted") == 1
+
+    too_many = [
+        {"slot": index, "major": 1, "minor": 0, "patch": index, "id": f"1.0.{index}"}
+        for index in range(WIRE["allowlist_maximum_slots"] + 1)
+    ]
+    with pytest.raises(WireV3Error):
+        install_catalog(tmp_path, too_many, generated_at=moment)

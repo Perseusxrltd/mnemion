@@ -5,6 +5,11 @@ The default serve mode does not. The process sees a bounded summary long
 enough to add it to fixed counters, then drops the bytes. It does not read
 headers, keep a peer row, or accept a randomness mode from the request.
 ``random_below`` is an in-process test hook.
+
+A local release catalog is read at startup and again when a new week opens,
+after the previous week has been sealed. This process does not fetch it.
+Missing, malformed, and stale files keep the counters and the last good
+snapshot, or the allowlist bundled with this build.
 """
 
 from __future__ import annotations
@@ -14,12 +19,20 @@ from contextlib import suppress
 import time
 
 from .aggregate_v3 import AggregateWindow
+from .release_catalog import adopt_catalog, catalog_path_for
 from .reporting import reporting_week
 from .wire_v3 import PACKET_BYTES, WIRE, WireV3Error
 
 
 class CollectorV3:
-    def __init__(self, publish_closed_window, *, clock=time.time, random_below=None):
+    def __init__(
+        self,
+        publish_closed_window,
+        *,
+        clock=time.time,
+        random_below=None,
+        catalog_path=None,
+    ):
         if not callable(publish_closed_window) or (
             random_below is not None and not callable(random_below)
         ):
@@ -28,7 +41,19 @@ class CollectorV3:
         self._clock = clock
         self._random_below = random_below
         self._publication_failures: list[dict] = []
-        self._window = AggregateWindow(reporting_week(clock()))
+        if catalog_path is None:
+            self._catalog_path = catalog_path_for(publish_closed_window)
+        else:
+            self._catalog_path = catalog_path
+        self._adoption = adopt_catalog(self._catalog_path, now=clock(), previous=None)
+        self._window = AggregateWindow(
+            reporting_week(clock()), release_catalog=self._adoption.snapshot
+        )
+
+    @property
+    def catalog_adoption(self) -> dict:
+        """In-memory description of the snapshot. It is not stored with reports."""
+        return self._adoption.describe()
 
     @property
     def publication_failures(self) -> list[dict]:
@@ -60,7 +85,11 @@ class CollectorV3:
                 if self._random_below is not None
                 else self._window.seal()
             )
-            self._window = AggregateWindow(week)
+            # Seal finished first. A bad catalog cannot throw those counters away.
+            self._adoption = adopt_catalog(
+                self._catalog_path, now=self._clock(), previous=self._adoption
+            )
+            self._window = AggregateWindow(week, release_catalog=self._adoption.snapshot)
             prune = getattr(self._publish, "prune", None)
             if callable(prune):
                 with suppress(Exception):

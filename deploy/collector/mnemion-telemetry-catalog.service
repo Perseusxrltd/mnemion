@@ -1,0 +1,40 @@
+[Unit]
+Description=Perseus XR Mnemion public release catalog sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=mnemion-telemetry
+Group=mnemion-telemetry
+StateDirectory=mnemion-telemetry
+StateDirectoryMode=0700
+WorkingDirectory=/opt/mnemion-telemetry/source
+Environment=PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
+UnsetEnvironment=SSLKEYLOGFILE PYTHONPATH PYTHONHOME PYTHONSTARTUP PYTHONINSPECT
+# Public release coordinates only. No certificate, no client binary, no collector restart.
+ExecStart=/opt/mnemion-telemetry/venv/bin/python -m mnemion.product_telemetry.release_catalog sync --state /var/lib/mnemion-telemetry
+UMask=0077
+TimeoutStartSec=40
+MemoryMax=64M
+MemorySwapMax=0
+CPUQuota=10%
+TasksMax=8
+LimitCORE=0
+CapabilityBoundingSet=
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# May open an outbound HTTPS connection. It must not listen. The collector unit still denies connect.
+SystemCallFilter=~bind
+SystemCallErrorNumber=EPERM
+StandardOutput=null
+StandardError=null

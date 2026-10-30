@@ -429,7 +429,7 @@ def encode(
     return bytes(packet)
 
 
-def decode(packet: bytes) -> Summary:
+def decode(packet: bytes, *, release_catalog=None) -> Summary:
     if (
         type(packet) is not bytes
         or len(packet) != PACKET_BYTES
@@ -443,10 +443,21 @@ def decode(packet: bytes) -> Summary:
         if value >= wire_bins(metric):
             raise WireV3Error
     if packet[1] == AXIS["release"]:
-        item = RELEASE_BY_COORDINATE.get((packet[2], packet[3], packet[4]))
-        if item is None:
-            return Summary("release", UNLISTED, len(ALLOWLIST), buckets)
-        return Summary("release", item["id"], item["slot"], buckets)
+        # A week passes its frozen snapshot. The import-time maps stay put.
+        if release_catalog is None:
+            found = RELEASE_BY_COORDINATE.get((packet[2], packet[3], packet[4]))
+            unlisted_index = len(ALLOWLIST)
+        else:
+            try:
+                found = release_catalog.by_coordinate.get((packet[2], packet[3], packet[4]))
+                unlisted_index = release_catalog.unlisted_index
+            except AttributeError:
+                raise WireV3Error from None
+            if type(unlisted_index) is not int:
+                raise WireV3Error
+        if found is None:
+            return Summary("release", UNLISTED, unlisted_index, buckets)
+        return Summary("release", found["id"], found["slot"], buckets)
     if packet[1] == AXIS["os"]:
         if packet[3] != 0 or packet[4] != 0 or packet[2] >= len(OPERATING_SYSTEMS):
             raise WireV3Error

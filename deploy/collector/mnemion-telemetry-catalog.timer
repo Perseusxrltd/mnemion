@@ -1,0 +1,9 @@
+[Unit]
+Description=Perseus XR Mnemion public release catalog refresh
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+AccuracySec=15min
+Unit=mnemion-telemetry-catalog.service

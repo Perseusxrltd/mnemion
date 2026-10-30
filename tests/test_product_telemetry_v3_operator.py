@@ -857,3 +857,110 @@ def test_remainder_trend_uses_the_same_member_set_and_week_positions(tmp_path):
     assert found["selectedAfterWeekChange"] == "unlisted"
     assert found["afterIdentity"] == "unlisted noisy denominator 22. Not unique people."
     assert "4.46.54" not in found["afterIdentity"]
+
+
+class _Body:
+    def __init__(self, payload: bytes, url: str, status: int = 200):
+        self._payload = payload
+        self.status = status
+        self._url = url
+
+    def read(self, amount: int) -> bytes:
+        block = self._payload[:amount]
+        self._payload = self._payload[amount:]
+        return block
+
+    def geturl(self) -> str:
+        return self._url
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+
+def test_v3_catalog_sync_is_scheduled_outside_the_collector(tmp_path, capsys, monkeypatch):
+    """The timer is wired for v3. The collector does not fetch, and a bad body is not installed."""
+    import urllib.request
+
+    from mnemion.product_telemetry.release_catalog import (
+        FILENAME,
+        LOCAL_KEYS,
+        SOURCE,
+        CatalogError,
+        main as catalog_main,
+        sync_catalog,
+    )
+
+    drop_in = (ROOT / "deploy/collector/mnemion-telemetry.service.d/v3.conf").read_text()
+    base = (ROOT / "deploy/collector/mnemion-telemetry.service").read_text()
+    service = (ROOT / "deploy/collector/mnemion-telemetry-catalog.service").read_text()
+    timer = (ROOT / "deploy/collector/mnemion-telemetry-catalog.timer").read_text()
+    guide = (ROOT / "docs/implementation/anonymous-product-telemetry-collector.md").read_text()
+    assert "Wants=mnemion-telemetry-catalog.timer" in drop_in
+    assert "Environment=MNEMION_TELEMETRY_MODE=v3" in drop_in
+    assert "ExecStart" not in drop_in
+    assert "LoadCredential" not in drop_in
+    assert "Environment=MNEMION_TELEMETRY_MODE=legacy" in base
+    assert "SystemCallFilter=~connect bind" in base
+    assert "LoadCredential=tls.pem:/etc/mnemion-telemetry/tls.pem" in base
+    assert "mnemion-telemetry-catalog" not in base
+    assert "LoadCredential" not in service
+    assert "tls.pem" not in service
+    assert "SystemCallFilter=~connect" not in service
+    assert "--mode" not in service
+    assert "release_catalog sync --state /var/lib/mnemion-telemetry" in service
+    assert "User=mnemion-telemetry" in service
+    assert "OnCalendar=daily" in timer
+    assert "Persistent=true" in timer
+    assert "RandomizedDelaySec=1h" in timer
+    assert "Unit=mnemion-telemetry-catalog.service" in timer
+    assert "mnemion-telemetry-catalog.timer" in guide
+    assert "does not turn client collection on" in guide
+
+    def refused(*_args, **_kwargs):
+        raise AssertionError("collector must not fetch a catalog")
+
+    monkeypatch.setattr(urllib.request, "urlopen", refused)
+    selected = _selected_application("v3", tmp_path / "collector")
+    assert selected.app._catalog_path == tmp_path / "collector" / FILENAME
+    assert selected.app.catalog_adoption["state"] == "bundled"
+    assert selected.app.catalog_adoption["reason"] == "missing"
+    assert selected.app._window.contribute(packet())
+
+    wire = json.loads((ROOT / "mnemion/product_telemetry/wire-v3.json").read_text())
+    body = json.dumps(wire).encode()
+
+    def opener(request, timeout):
+        assert request.full_url == SOURCE
+        assert request.get_header("Authorization") is None
+        assert timeout == 15
+        return _Body(body, SOURCE)
+
+    destination = tmp_path / "state"
+    destination.mkdir()
+    written = sync_catalog(destination, now=1_700_000_000, opener=opener)
+    saved = json.loads(written.read_text(encoding="utf-8"))
+    assert set(saved) == LOCAL_KEYS
+    assert saved["source"] == SOURCE
+    assert saved["generated_at"] == 1_700_000_000
+    assert saved["release_allowlist"] == wire["release_allowlist"]
+    assert "metrics" not in saved
+    assert b"packet" not in written.read_bytes()
+
+    def bad_opener(request, timeout):
+        assert request.full_url == SOURCE
+        assert timeout == 15
+        return _Body(json.dumps({**wire, "packet_bytes": 26}).encode(), SOURCE)
+
+    with pytest.raises(CatalogError):
+        sync_catalog(destination, now=1_700_000_100, opener=bad_opener)
+    assert json.loads(written.read_text(encoding="utf-8"))["generated_at"] == 1_700_000_000
+    secret = str(tmp_path / "credential-looking-directory")
+    assert catalog_main(["sync", "--state", secret]) == 1
+    leaked = capsys.readouterr()
+    assert leaked.out == ""
+    assert leaked.err == '{"error":"telemetry_release_catalog_sync_failed"}\n'
+    assert secret not in leaked.err
+    assert not Path(secret).exists()

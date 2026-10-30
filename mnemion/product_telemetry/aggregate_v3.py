@@ -15,6 +15,7 @@ from fractions import Fraction
 from math import exp, log
 import secrets
 
+from .release_catalog import ReleaseCatalog, validate_releases
 from .wire_v3 import (
     ALLOWLIST,
     METRICS,
@@ -165,8 +166,8 @@ def envelope_radius(parts: int, bins: int) -> int:
     return radius
 
 
-def _domain_cohorts() -> tuple[dict, ...]:
-    listed = tuple(sorted(ALLOWLIST, key=lambda item: item["slot"]))
+def _domain_cohorts(releases: tuple[dict, ...]) -> tuple[dict, ...]:
+    listed = tuple(sorted(releases, key=lambda item: item["slot"]))
     cohorts = [
         {
             "axis": "release",
@@ -309,11 +310,17 @@ def _sum_metrics(parts: list[list[list[int]]]) -> list[list[int]]:
 class AggregateWindow:
     """Fixed counters for one week. Sealing erases them; nothing else is retained."""
 
-    def __init__(self, week: int):
+    def __init__(self, week: int, *, release_catalog=None):
         if type(week) is not int or not 0 <= week <= 1000000:
             raise WireV3Error
+        # Frozen for this week. Rebinding ALLOWLIST later must not move these slots.
+        if release_catalog is None:
+            release_catalog = validate_releases(ALLOWLIST)
+        elif type(release_catalog) is not ReleaseCatalog:
+            raise WireV3Error
         self.week = week
-        self.cohorts = _domain_cohorts()
+        self.release_catalog = release_catalog
+        self.cohorts = _domain_cohorts(release_catalog.releases)
         self._widths = tuple(wire_bins(metric) for metric in METRICS)
         self._stride = 1 + sum(self._widths)
         self._counts = [0] * (len(self.cohorts) * self._stride)
@@ -324,7 +331,7 @@ class AggregateWindow:
         if self._closed or type(packet) is not bytes:
             return False
         try:
-            summary = decode(packet)
+            summary = decode(packet, release_catalog=self.release_catalog)
         except WireV3Error:
             return False
         release_count = sum(row["axis"] == "release" for row in self.cohorts)

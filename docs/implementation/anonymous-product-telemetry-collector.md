@@ -252,23 +252,40 @@ sudo install -m 0644 deploy/collector/mnemion-telemetry.service \
 The service explicitly defaults `MNEMION_TELEMETRY_MODE` to `legacy`. It passes
 `${MNEMION_TELEMETRY_MODE}` as one `--mode` argument; an unsupported or empty
 value is refused by the server. To serve the current v3 clients, install the
-optional [mode-only drop-in](../../deploy/collector/mnemion-telemetry.service.d/v3.conf)
-before starting or restarting the service:
+optional [v3 drop-in](../../deploy/collector/mnemion-telemetry.service.d/v3.conf)
+and the separate catalog units before starting or restarting the service:
 
 ```sh
+sudo install -m 0644 deploy/collector/mnemion-telemetry-catalog.service \
+  deploy/collector/mnemion-telemetry-catalog.timer /etc/systemd/system/
 sudo install -d -m 0755 /etc/systemd/system/mnemion-telemetry.service.d
 sudo install -m 0644 deploy/collector/mnemion-telemetry.service.d/v3.conf \
   /etc/systemd/system/mnemion-telemetry.service.d/v3.conf
 sudo systemctl daemon-reload
 sudo systemctl cat mnemion-telemetry.service
-sudo systemctl show mnemion-telemetry.service --property=Environment,ExecStart
+sudo systemctl show mnemion-telemetry.service --property=Environment,ExecStart,Wants
 ```
 
-This drop-in changes only the mode variable. The shared start command, account,
-socket, credentials and sandbox remain in the base unit. Other local drop-ins
-can override it, so inspect the merged configuration and selected environment.
-For a legacy deployment, omit this drop-in and run the same reload/inspection
-commands. Once the configuration is correct, a first installation starts with:
+The drop-in sets `MNEMION_TELEMETRY_MODE=v3` and adds a `Wants=` dependency on
+`mnemion-telemetry-catalog.timer`. The shared start command, account, socket,
+credentials and sandbox remain in the base unit. Other local drop-ins can
+override the mode variable, so inspect the merged configuration. The timer is
+not part of the legacy unit. It runs
+[mnemion-telemetry-catalog.service](../../deploy/collector/mnemion-telemetry-catalog.service)
+daily (`OnCalendar=daily`, `Persistent=true`, `RandomizedDelaySec=1h`). That
+oneshot downloads only `mnemion/product_telemetry/wire-v3.json` from
+`https://raw.githubusercontent.com/Perseusxrltd/mnemion/main/` and, after the
+allowlist checks, atomically replaces `release-catalog.json` in the state
+directory. It does not load `tls.pem`, restart the collector, or install a
+client. The collector reads that file at process start and again when a new
+reporting week opens, after sealing the week it already counted. A missing,
+malformed, or stale file keeps those counters. The new week uses the last valid
+snapshot, or the allowlist bundled with the running build when no valid file
+has been adopted. Unknown release coordinates stay `unlisted`. Installing these
+units does not turn client collection on and does not make fleet reports live.
+For a legacy deployment, skip this drop-in and both catalog units, then run the
+same reload and inspection commands. Once the configuration is correct, a first
+installation starts with:
 
 ```sh
 sudo systemctl enable --now mnemion-telemetry.service
@@ -283,11 +300,15 @@ sudo systemctl restart mnemion-telemetry.service
 sudo systemctl show mnemion-telemetry.service --property=ActiveState,SubState,Result
 ```
 
-To return to the base legacy default, remove only the v3 drop-in installed
-above, then reload, inspect and restart:
+To return to the base legacy default, stop the catalog timer and remove only
+the v3 drop-in and catalog units installed above, then reload, inspect and
+restart:
 
 ```sh
-sudo rm /etc/systemd/system/mnemion-telemetry.service.d/v3.conf
+sudo systemctl disable --now mnemion-telemetry-catalog.timer
+sudo rm /etc/systemd/system/mnemion-telemetry.service.d/v3.conf \
+  /etc/systemd/system/mnemion-telemetry-catalog.service \
+  /etc/systemd/system/mnemion-telemetry-catalog.timer
 sudo systemctl daemon-reload
 sudo systemctl show mnemion-telemetry.service --property=Environment,ExecStart
 sudo systemctl restart mnemion-telemetry.service
@@ -309,7 +330,8 @@ matching the configured numeric address/port and family. Numeric-only OS address
 conversion preserves the IPv6 socket-address shape and scope; it does not resolve
 DNS or service names. The descriptor is made noninheritable. The process itself
 cannot `connect` or `bind`: both system calls return `EPERM`, with no port-binding
-allowlist needed.
+allowlist needed. The catalog oneshot is a different unit and is the one that
+may connect; do not remove `connect` from this collector filter to fetch a catalog.
 The standalone command below continues to create its own loopback listener.
 
 The [IPv6 source follow-up](../validation/2026-10-27-telemetry-ipv6-collector.md)
