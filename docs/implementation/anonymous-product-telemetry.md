@@ -13,8 +13,12 @@ senders and collector components exist.
 The [local v3 systemd check](../validation/2026-10-30-telemetry-v3-systemd-local.md)
 passed socket activation, TLS delivery, credential isolation and cleanup.
 The [installed delivery journeys](../validation/2026-10-30-telemetry-installed-driver.md)
-preserve the first workspace-join failure; the corrected run reached the memory
-API but still stopped before report delivery. The
+preserve the first two failures. Third run 41013868878 on `c8f75870` passed
+scoped delivery on Linux x64 and both Macs: each completed 21 memory API calls,
+one inspected 25-byte report and opt-out/manual-review persistence across two
+launches. Both Windows targets still lacked observations; Linux ARM stopped at
+connection readiness. Full installed, production and resource acceptance remain
+open; bounded diagnostics are pending. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
 retain their original failures. The fourth run passed real memory actions,
 matching inspected-report delivery, opt-out/reload persistence and cleanup in

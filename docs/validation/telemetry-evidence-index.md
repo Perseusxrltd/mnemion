@@ -3,8 +3,14 @@
 The [local v3 systemd check](2026-10-30-telemetry-v3-systemd-local.md) passed
 socket activation, TLS delivery, credential isolation and cleanup.
 The [installed diagnostic qualification](2026-10-30-telemetry-installed-driver.md)
-preserves the first six-target failure at workspace join. Its corrected run
-reached the memory API but still stopped before report delivery. The
+preserves the first two failures. Third run 41013868878 (`c8f75870`) passed
+scoped delivery on Linux x64 and both Macs: 21 memory API calls, one inspected
+25-byte report and opt-out/manual-review persistence across two launches each.
+Windows x64/ARM64 retained `no_observations` failures (8/9 successful calls);
+Linux ARM64 retained `connection_pending` (3 calls), all with zero reports. The
+source-grounded UI race, unproven Windows drop cause, pending bounded diagnostics
+and package/collector evidence limits are recorded in that report. Full installed,
+production and resource acceptance remain open. The
 [Firefox/WebKit journey evidence](2026-10-30-telemetry-browser-journeys.md)
 retains the original failures and the successful fourth run: real memory
 actions, two matching 25-byte reports, opt-out/reload persistence and cleanup.
