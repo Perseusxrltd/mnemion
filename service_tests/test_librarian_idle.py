@@ -64,6 +64,7 @@ class ScriptedEvent(threading.Event):
 
     def until_waiting(self, after=None):
         with self._gate:
+
             def parked():
                 return self._waiting and (after is None or self._generation != after)
 
