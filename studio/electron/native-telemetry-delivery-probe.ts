@@ -274,9 +274,18 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       'The packaged app did not open the fixture workspace');
     await privacy();
     await ready('manual_review', snapshot => snapshot.review.mode === 'automatic' || snapshot.review.mode === 'review' ? true : 'review_unavailable');
+    await click('Refresh privacy status');
     const reviewBox = () => checkbox('Pause reports for manual review');
-    const manual = reviewBox();
-    if (!manual || manual.disabled) throw new Error(readinessError('manual_review', 'review_unavailable'));
+    let manual;
+    try {
+      manual = await until(() => {
+        const box = reviewBox();
+        return box && !box.disabled && box.getClientRects().length ? box : null;
+      }, 'manual_review_control');
+    } catch (error) {
+      if (String((error && error.message) || error) !== 'manual_review_control') throw error;
+      throw new Error(readinessError('manual_review', 'review_unavailable'));
+    }
     if (manual.checked) throw new Error('Manual review was already selected');
     manual.click();
     await ready('manual_review', snapshot => snapshot.review.mode === 'review' ? true : 'review_not_paused');
