@@ -55,17 +55,23 @@ def write_json(path, value):
 
 
 def stage_renderer_controller(source: Path, application: Path) -> None:
-    """Place the controller beside ./dist and its phase helper beside the controller.
+    """Place the controller beside ./dist and its helpers beside the controller.
 
-    The controller's static ./phase-memory.mjs import is loaded for every mode.
-    Node resolves that import from the relocated file, not from scripts/.
+    Static ./phase-memory.mjs and ./canonical-memory-cycles.mjs imports load
+    for every mode. Node resolves them from the relocated file, inside this
+    application directory, not from scripts/ or its parent.
     """
     scripts = source / "studio/electron/scripts"
+    electron = source / "studio/electron"
     shutil.copyfile(
         scripts / "probe-telemetry-renderer.mjs",
         application / "probe-telemetry-renderer.mjs",
     )
     shutil.copyfile(scripts / "phase-memory.mjs", application / "phase-memory.mjs")
+    shutil.copyfile(
+        electron / "canonical-memory-cycles.mjs",
+        application / "canonical-memory-cycles.mjs",
+    )
 
 
 def copy_source(source, destination):

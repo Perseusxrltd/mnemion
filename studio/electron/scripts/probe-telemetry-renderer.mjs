@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { readBoundedLinuxStatus, selectHeap, unavailableLinux } from './phase-memory.mjs'
-import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker } from '../canonical-memory-cycles.mjs'
+import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker } from './canonical-memory-cycles.mjs'
 
 const root = process.env.MNEMION_STUDIO_USER_DATA
 if (!root?.includes('mnemion-owned-renderer-')) throw new Error('Disposable renderer profile required')
