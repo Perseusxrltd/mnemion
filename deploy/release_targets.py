@@ -72,7 +72,9 @@ def reviewed_targets(selection: str) -> list[dict]:
         return list(MATRIX)
     parts = [part.strip() for part in selection.split(",")]
     if not parts or any(part == "" for part in parts) or len(parts) != len(set(parts)):
-        raise ValueError("Telemetry delivery targets must be unique comma-separated matrix OS names")
+        raise ValueError(
+            "Telemetry delivery targets must be unique comma-separated matrix OS names"
+        )
     known = {item["os"] for item in MATRIX}
     if any(part not in known for part in parts):
         raise ValueError("Telemetry delivery targets include a name outside the release matrix")
@@ -86,9 +88,13 @@ def main() -> None:
     parser.add_argument("--macos-only", action="store_true")
     parser.add_argument("--windows-only", action="store_true")
     parser.add_argument("--architecture", choices=["all", "x64", "arm64"], default="all")
-    parser.add_argument("--targets", default="", help="Comma-separated matrix OS names. Empty selects all six.")
+    parser.add_argument(
+        "--targets", default="", help="Comma-separated matrix OS names. Empty selects all six."
+    )
     args = parser.parse_args()
-    if args.targets and (args.release or args.macos_only or args.windows_only or args.architecture != "all"):
+    if args.targets and (
+        args.release or args.macos_only or args.windows_only or args.architecture != "all"
+    ):
         raise SystemExit("Reviewed delivery targets cannot be combined with another selector")
     if args.targets:
         try:

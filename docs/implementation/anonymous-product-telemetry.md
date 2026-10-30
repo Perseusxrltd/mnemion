@@ -18,7 +18,13 @@ scoped delivery on Linux x64 and both Macs: each completed 21 memory API calls,
 one inspected 25-byte report and opt-out/manual-review persistence across two
 launches. Both Windows targets still lacked observations; Linux ARM stopped at
 connection readiness. Full installed, production and resource acceptance remain
-open; bounded diagnostics are pending. The
+open. Reviewed source now waits for the visible, enabled, settled connection
+control and retains delivery-only bounded observation diagnostics on failure.
+The planned allowlisted subset is `windows-2022,windows-11-arm,ubuntu-22.04-arm`;
+blank selection still runs all six. This prepares a diagnostic run, with no new
+delivery pass, speedup or permission/deadline change. Snapshot-null counts may
+include upstream-caught rejections. Public collection remains off and production
+hosting unresolved. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
 retain their original failures. The fourth run passed real memory actions,
 matching inspected-report delivery, opt-out/reload persistence and cleanup in

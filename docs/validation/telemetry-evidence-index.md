@@ -8,9 +8,15 @@ scoped delivery on Linux x64 and both Macs: 21 memory API calls, one inspected
 25-byte report and opt-out/manual-review persistence across two launches each.
 Windows x64/ARM64 retained `no_observations` failures (8/9 successful calls);
 Linux ARM64 retained `connection_pending` (3 calls), all with zero reports. The
-source-grounded UI race, unproven Windows drop cause, pending bounded diagnostics
-and package/collector evidence limits are recorded in that report. Full installed,
-production and resource acceptance remain open. The
+source-grounded UI race, unproven Windows drop cause and package/collector evidence
+limits are recorded in that report. Reviewed diagnostic source (`cf295463`, from
+Grok `b65d0df6`) now waits for the visible/enabled settled connection control and
+retains delivery-only bounded counters on failure. The next planned allowlisted
+subset is `windows-2022,windows-11-arm,ubuntu-22.04-arm`; blank remains all six.
+Snapshot-null counts include upstream-caught rejections. This preparation changes
+no permission cache or admission deadline and establishes no new delivery pass
+or speedup. Full installed, production and resource acceptance remain open;
+public collection is disabled and production hosting unresolved. The
 [Firefox/WebKit journey evidence](2026-10-30-telemetry-browser-journeys.md)
 retains the original failures and the successful fourth run: real memory
 actions, two matching 25-byte reports, opt-out/reload persistence and cleanup.

@@ -21,8 +21,9 @@ The original logs are retained under
 `telemetry-installed-delivery/astra-source-checks/` in the private automation
 evidence directory.
 
-The manual `Installed telemetry delivery` workflow runs the journey on all six
-native targets. It retains diagnostic evidence and does not publish installers.
+The manual `Installed telemetry delivery` workflow defaults to all six native
+targets and accepts an allowlisted subset. It retains diagnostic evidence and
+does not publish installers.
 Source checks alone do not establish installed delivery, resource acceptance
 or production ingress; actual target results are recorded below. Production
 collection, its destination and its route remain disabled/unconfigured, and
@@ -109,7 +110,7 @@ snapshot deadline, while a Windows store open performs a fresh native ACL
 check. Late snapshots, storage contention, negative hints or stale stamps can
 drop optional observations without failing memory actions. The original failure
 artifacts lack producer timings/refusal categories and cycle ordinals. Bounded
-diagnostics are pending; a longer readiness wait cannot recreate dropped
+diagnostics are prepared below; a longer readiness wait cannot recreate dropped
 observations, and no consent, ACL or resource gate is bypassed.
 
 Astra matched all six original artifact digests to retained metadata. For the
@@ -120,3 +121,38 @@ rehashing. Collector equality was checked live by the source-bound driver; no
 separate raw collector packet is retained for replay comparison. These limits
 remain explicit. No full installed, production-ingress, resource-budget or full
 V08 acceptance follows from the three scoped passes.
+
+## Preparation for a targeted diagnostic run
+
+Grok candidate `b65d0df6`, imported for review as `cf295463`, waits for the
+connection select to be visible and enabled and the manual-review checkbox to
+be checked, visible and enabled before changing the connection once. The
+subsequent stored connection-mode check remains required.
+
+Bounded observation counters arm only for the installed delivery probe. Generic
+hosting and resource probes do not expose the diagnostic bridge or allocate
+these counters. Readiness failures retain allowlisted phase/gate codes, cycle
+ordinals and snapshot, ACL and store counters in smoke evidence and the fixture
+receipt; private fields are omitted. Asynchronous admission latency is recorded
+even when admission fails. Normal snapshot rejections are caught as null
+upstream, so `snapshot_null` can include them; `snapshot_rejected` alone cannot
+identify all snapshot failures. The 25 ms admission deadline, fresh permission
+and ACL checks remain unchanged, with no permission cache or retained SQLite
+handle.
+
+The optional `targets` input accepts unique release-matrix OS names; blank
+retains all six and unknown or duplicate names fail. The next planned subset is
+`windows-2022,windows-11-arm,ubuntu-22.04-arm`. Both Windows targets share the
+required x64 database build; Windows ARM keeps its native desktop architecture.
+
+The Electron build, frontend type check and four selected client-refusal checks
+passed. The wall-time assertion first failed while both compilers were running;
+it passed when run alone, and the original failure is retained. The other three
+passing cases were not repeated. A separate sanitizer correction rejects
+non-string readiness/pending values without losing the original failure.
+
+This is source preparation, not another installed delivery pass or a speedup
+claim. The targeted run has not qualified these targets. The third run's three
+passes and three failures remain the evidence above. Full installed, resource
+and production acceptance remain open; public collection stays disabled and
+production hosting unresolved.
