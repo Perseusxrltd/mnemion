@@ -167,6 +167,31 @@ export function resourceInstallSteps(cases) {
   return steps
 }
 
+export async function performOwnedInstall(installations, record, actions) {
+  if (!record || !Number.isInteger(record.id) || typeof record.directory !== 'string' || record.directory.length === 0 ||
+      typeof record.package !== 'string' || !actions) {
+    throw new Error('resource_install_invalid')
+  }
+  await actions.refusePreexisting()
+  const owned = { id: record.id, directory: record.directory, package: record.package, state: 'allocated' }
+  installations.push(owned)
+  try {
+    await actions.installProduct(owned)
+  } catch (error) {
+    owned.state = 'installer_failed'
+    throw error
+  }
+  owned.state = 'installed'
+  try {
+    const result = await actions.verify(owned)
+    owned.state = 'verified'
+    return result
+  } catch (error) {
+    owned.state = 'verification_failed'
+    throw error
+  }
+}
+
 export function finishResourceCleanup(pending, removedIds, retire) {
   const failures = []
   for (const item of pending) {

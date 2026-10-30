@@ -303,10 +303,18 @@ def _stop_process(process: subprocess.Popen) -> None:
         process.wait(timeout=10)
 
 
-def _popen(command: list[str], cwd: Path, env: dict[str, str], stdout) -> subprocess.Popen:
+def _popen(
+    command: list[str], cwd: Path, env: dict[str, str], stdout, stdin=None
+) -> subprocess.Popen:
     kwargs = {"start_new_session": True} if os.name != "nt" else {}
     return subprocess.Popen(
-        command, cwd=cwd, env=env, stdout=stdout, stderr=subprocess.STDOUT, **kwargs
+        command,
+        cwd=cwd,
+        env=env,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        **kwargs,
     )
 
 
@@ -359,45 +367,132 @@ def _run_inherited(
     return subprocess.CompletedProcess(command, code)
 
 
-def _run_resource_smoke(command, cwd, env, timeout, on_line) -> subprocess.CompletedProcess:
-    """Read case lines as they finish. Stdout is not stored in the uploaded evidence."""
-    process = _popen(command, cwd, env, subprocess.PIPE)
-    assert process.stdout is not None
+_CASE_LABEL = re.compile(r"[a-z0-9_-]{1,64}\Z")
+
+
+def parse_resource_case_boundary(
+    text: str, expected: str, seen: set[str], allowed: set[str]
+) -> dict:
+    """One framed case line. Unknown, duplicate and out-of-order labels fail closed."""
+    if (
+        type(text) is not str
+        or len(text) > 2048
+        or not text.startswith("RESOURCE_CASE ")
+        or "PRIVATE_RENDERER_MEMORY_CANARY" in text
+        or "mnm_" in text
+    ):
+        raise RuntimeError("resource_case_malformed")
+    try:
+        payload = json.loads(text[len("RESOURCE_CASE ") :])
+    except json.JSONDecodeError:
+        raise RuntimeError("resource_case_malformed") from None
+    if type(payload) is not dict:
+        raise RuntimeError("resource_case_malformed")
+    label = payload.get("label")
+    if type(label) is not str or not _CASE_LABEL.fullmatch(label):
+        raise RuntimeError("resource_case_malformed")
+    if label in seen:
+        raise RuntimeError("resource_case_duplicate")
+    if label not in allowed:
+        raise RuntimeError("resource_case_unknown")
+    if label != expected:
+        raise RuntimeError("resource_case_out_of_order")
+    return payload
+
+
+def resource_case_ack(label: str) -> bytes:
+    if type(label) is not str or not _CASE_LABEL.fullmatch(label):
+        raise RuntimeError("resource_case_malformed")
+    return f"RESOURCE_CASE_ACK {label}\n".encode("ascii")
+
+
+def _run_resource_smoke(
+    command, cwd, env, timeout, on_case, expected_labels: list[str]
+) -> subprocess.CompletedProcess:
+    """Snapshot one case and acknowledge it before the controller may continue.
+
+    Lines are read as soon as they end. A short run must not sit until EOF,
+    and the next case must not start before on_case returns.
+    """
+    process = _popen(command, cwd, env, subprocess.PIPE, stdin=subprocess.PIPE)
+    assert process.stdout is not None and process.stdin is not None
+    failure: list[str] = []
+    seen: set[str] = set()
+    allowed = set(expected_labels)
+    pending_index = {"value": 0}
+
+    def fail(code: str) -> None:
+        if not failure:
+            failure.append(code)
+        _stop_process(process)
 
     def pump() -> None:
-        pending = b""
         try:
-            while True:
-                chunk = process.stdout.read(4096)
-                if not chunk:
-                    break
-                pending += chunk
-                while b"\n" in pending:
-                    raw, pending = pending.split(b"\n", 1)
-                    if b"PRIVATE_RENDERER_MEMORY_CANARY" in raw or b"mnm_" in raw:
-                        continue
-                    if len(raw) <= 2048:
-                        sys.stdout.buffer.write(raw + b"\n")
-                        sys.stdout.buffer.flush()
-                    text = raw.decode("utf-8", "replace").strip()
-                    if text.startswith("RESOURCE_CASE "):
-                        on_line(text)
+            while pending_index["value"] <= len(expected_labels):
+                raw = process.stdout.readline(2049)
+                if not raw:
+                    return
+                if (
+                    len(raw) > 2048
+                    or not raw.endswith(b"\n")
+                    or b"\x00" in raw
+                ):
+                    fail("resource_case_malformed")
+                    return
+                if b"PRIVATE_RENDERER_MEMORY_CANARY" in raw or b"mnm_" in raw:
+                    continue
+                sys.stdout.buffer.write(raw)
+                sys.stdout.buffer.flush()
+                text = raw.decode("utf-8").strip()
+                if not text.startswith("RESOURCE_CASE "):
+                    continue
+                expected = (
+                    expected_labels[pending_index["value"]]
+                    if pending_index["value"] < len(expected_labels)
+                    else ""
+                )
+                try:
+                    payload = parse_resource_case_boundary(text, expected, seen, allowed)
+                except RuntimeError as error:
+                    fail(str(error))
+                    return
+                try:
+                    on_case(payload)
+                except Exception:
+                    fail("resource_case_failed")
+                    return
+                try:
+                    process.stdin.write(resource_case_ack(payload["label"]))
+                    process.stdin.flush()
+                except Exception:
+                    fail("resource_case_ack_failed")
+                    return
+                seen.add(payload["label"])
+                pending_index["value"] += 1
         except Exception:
-            return
+            fail("resource_case_failed")
 
     reader = threading.Thread(target=pump, daemon=True)
     reader.start()
     try:
-        code = process.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        _stop_process(process)
-        reader.join(timeout=5)
-        raise TimeoutError("Installed application journey exceeded its finite timeout")
-    reader.join(timeout=30)
-    if process.poll() is None:
-        _stop_process(process)
-        raise TimeoutError("Installed application journey did not exit")
-    return subprocess.CompletedProcess(command, code)
+        try:
+            code = process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            _stop_process(process)
+            reader.join(timeout=5)
+            raise TimeoutError("Installed application journey exceeded its finite timeout")
+        reader.join(timeout=30)
+        if process.poll() is None:
+            _stop_process(process)
+            raise TimeoutError("Installed application journey did not exit")
+        if failure:
+            raise RuntimeError(failure[0])
+        return subprocess.CompletedProcess(command, code)
+    finally:
+        try:
+            process.stdin.close()
+        except Exception:
+            pass
 
 
 def _desktop_arch() -> str:
@@ -910,9 +1005,12 @@ CANONICAL_MEMORY_RESULTS = 384
 _REPORT_HEX = re.compile(r"[0-9a-f]{50}\Z")
 
 
-def note_resource_ingress(captured, reviewed, counts) -> dict:
-    """Keep one exact body. A null capture is a rejected body and is not cleared."""
+def note_resource_ingress(
+    captured, reviewed, counts, *, status=None, forbidden_metadata=False
+) -> dict:
+    """Keep one exact body. Length, v3 validity and the collector status stay together."""
     from deploy.report_telemetry_renderer import retain_reviewed_packet
+    from mnemion.product_telemetry.wire_v3 import WireV3Error, decode
 
     malformed = captured is None
     retained = None
@@ -922,10 +1020,25 @@ def note_resource_ingress(captured, reviewed, counts) -> dict:
             reviewed.append(retained)
     if captured is not None:
         captured.clear()
-    rejected = malformed or retained is None
-    if rejected:
+    valid = False
+    if type(retained) is str:
+        try:
+            decode(bytes.fromhex(retained))
+            valid = True
+        except WireV3Error:
+            valid = False
+    code = status if type(status) is int and 100 <= status <= 599 else None
+    accepted = code == 204 and valid and forbidden_metadata is not True
+    if malformed or retained is None:
         counts["malformed_body"] = counts.get("malformed_body", 0) + 1
-    return {"malformed": rejected, "body_hex": retained}
+    return {
+        "malformed": malformed or retained is None,
+        "body_hex": retained,
+        "valid": valid,
+        "accepted": accepted,
+        "status": code,
+        "forbidden_metadata": forbidden_metadata is True,
+    }
 
 
 def resource_observation_complete(
@@ -955,14 +1068,56 @@ def resource_observation_complete(
     if attempts != 1 or reserved_bytes != 65536 or len(events) != 1:
         return False
     event = events[0]
-    if type(event) is not dict or event.get("malformed") is True:
+    if (
+        type(event) is not dict
+        or event.get("malformed") is True
+        or event.get("valid") is not True
+        or event.get("accepted") is not True
+        or event.get("status") != 204
+        or event.get("forbidden_metadata") is True
+    ):
         return False
     body = event.get("body_hex")
     if type(body) is not str or not _REPORT_HEX.fullmatch(body):
         return False
+    from mnemion.product_telemetry.wire_v3 import WireV3Error, decode
+
+    try:
+        decode(bytes.fromhex(body))
+    except WireV3Error:
+        return False
     if inspected_body_hex is not None and inspected_body_hex != body:
         return False
     return True
+
+
+def resource_journey_completed(
+    *, returncode, cases, diagnostics, private_withheld, counts
+) -> bool:
+    """The journey needs one accepted valid report from each enabled case."""
+    if (
+        returncode != 0
+        or diagnostics
+        or private_withheld is True
+        or type(cases) is not list
+        or len(cases) != 6
+        or type(counts) is not dict
+        or counts.get("forbidden_metadata") != 0
+        or any(item.get("workload_completed") is not True for item in cases)
+    ):
+        return False
+    enabled = sum(1 for row in resource_counterbalance_cases() if row["condition"] == "enabled")
+    accepted = 0
+    for item in cases:
+        telemetry = item.get("telemetry")
+        if type(telemetry) is not dict or type(telemetry.get("accepted")) is not int:
+            return False
+        accepted += telemetry["accepted"]
+    return (
+        sum(1 for item in cases if item.get("condition") == "enabled") == enabled
+        and accepted == enabled
+        and counts.get("accepted") == accepted
+    )
 
 
 def installed_resource_case_completed(evidence, owned) -> bool:
@@ -1108,13 +1263,16 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
         captured = bytearray()
         chunks = 0
         report = scope.get("type") == "http" and scope.get("method") == "POST"
+        forbidden = False
+        response_status = None
         if report:
+            forbidden = bool(
+                {name for name, _ in scope.get("headers", [])}
+                & {b"cookie", b"authorization", b"referer", b"user-agent"}
+            )
             with observation_lock:
                 counts["reports"] += 1
-                counts["forbidden_metadata"] += bool(
-                    {name for name, _ in scope.get("headers", [])}
-                    & {b"cookie", b"authorization", b"referer", b"user-agent"}
-                )
+                counts["forbidden_metadata"] += forbidden
 
         async def received():
             nonlocal captured, chunks
@@ -1128,15 +1286,26 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
             return event
 
         async def sending(event):
-            if event["type"] == "http.response.start" and event["status"] == 204:
-                with observation_lock:
-                    counts["accepted"] += 1
+            nonlocal response_status
+            if event["type"] == "http.response.start":
+                response_status = event.get("status")
+                if response_status == 204:
+                    with observation_lock:
+                        counts["accepted"] += 1
             await send(event)
 
         await CollectorV3(published.append)(scope, received, sending)
         if report:
             with observation_lock:
-                events.append(note_resource_ingress(captured, reviewed, counts))
+                events.append(
+                    note_resource_ingress(
+                        captured,
+                        reviewed,
+                        counts,
+                        status=response_status,
+                        forbidden_metadata=forbidden,
+                    )
+                )
 
     certificate, key_path, public = _require_loopback_material(material)
     inactive_copy = copy.parent / "inactive-source"
@@ -1325,15 +1494,7 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                     case_snapshots = []
                     event_cursor = {"index": 0, "memory": 0}
 
-                    def on_case_line(text: str) -> None:
-                        if len(text) > 2200 or "PRIVATE_RENDERER_MEMORY_CANARY" in text:
-                            return
-                        try:
-                            payload = json.loads(text[len("RESOURCE_CASE ") :])
-                        except json.JSONDecodeError:
-                            return
-                        if type(payload) is not dict or type(payload.get("label")) is not str:
-                            return
+                    def on_case(payload: dict) -> None:
                         with observation_lock:
                             fresh = list(events[event_cursor["index"] :])
                             event_cursor["index"] = len(events)
@@ -1351,7 +1512,13 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                         )
 
                     probe = await asyncio.to_thread(
-                        _run_resource_smoke, smoke, copy, smoke_env, 90 * 60, on_case_line
+                        _run_resource_smoke,
+                        smoke,
+                        copy,
+                        smoke_env,
+                        90 * 60,
+                        on_case,
+                        [row["label"] for row in resource_counterbalance_cases()],
                     )
                     evidence = _load_app_evidence(
                         copy / "build-tmp/telemetry-installed-resources.json", secret
@@ -1460,6 +1627,13 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                                     "memory_successful": snap.get("memory_successful")
                                     if type(snap.get("memory_successful")) is int
                                     else None,
+                                    "accepted": sum(
+                                        1
+                                        for event in case_events
+                                        if type(event) is dict
+                                        and event.get("accepted") is True
+                                        and event.get("valid") is True
+                                    ),
                                 },
                                 "owned": retain_owned_launch(raw),
                             }
@@ -1471,12 +1645,12 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                     }
                     return {
                         "qualification": "installed resource workload",
-                        "journey_completed": bool(
-                            probe.returncode == 0
-                            and len(cases) == 6
-                            and all(item["workload_completed"] for item in cases)
-                            and not diagnostics
-                            and evidence.get("private_content_withheld") is not True
+                        "journey_completed": resource_journey_completed(
+                            returncode=probe.returncode,
+                            cases=cases,
+                            diagnostics=diagnostics,
+                            private_withheld=evidence.get("private_content_withheld"),
+                            counts=counts,
                         ),
                         "workload_completed": bool(
                             len(cases) == 6 and all(item["workload_completed"] for item in cases)

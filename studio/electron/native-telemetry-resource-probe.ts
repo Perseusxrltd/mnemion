@@ -20,16 +20,21 @@ const CHECKPOINTS = [
 
 const PROBE_ENTRY = './assets/packaged-memory-probe.js'
 
+let persistedPhase: string | null = null
+
 function marker(phase: string, completed?: number, known = true): void {
   const root = process.env.MNEMION_STUDIO_USER_DATA
   if (!root) throw new Error('Disposable profile required')
   const terminal = phase === 'finished' || phase === 'closed' || phase === 'failed'
   const body = terminal
     ? { at_ms: Date.now(), ...canonicalTerminalMarker(phase, completed, known) }
-    : { at_ms: Date.now(), phase }
+    : known === false
+      ? { at_ms: Date.now(), phase, completed, completed_known: false }
+      : { at_ms: Date.now(), phase }
   const file = join(root, 'monitor.json')
   writeFileSync(`${file}.tmp`, JSON.stringify(body))
   renameSync(`${file}.tmp`, file)
+  if (!terminal) persistedPhase = phase
 }
 
 function loopbackOrigin(value: unknown): string {
@@ -143,6 +148,12 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
   const settleCount = (count: unknown) => {
     progress = resourceProgress(progress, { settled: typeof count === 'number' ? count : undefined })
   }
+  const markInflight = () => {
+    progress = resourceProgress(progress, 'inflight')
+    if (persistedPhase && Number.isInteger(progress.verified)) {
+      marker(persistedPhase, progress.verified, false)
+    }
+  }
   try {
     marker('starting')
     marker('measuring')
@@ -152,12 +163,12 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
     marker('workspace_connected')
     const ready = await window.webContents.executeJavaScript(clientScript())
     if (ready?.ready !== true) throw new Error('The packaged memory client did not start')
-    progress = resourceProgress(progress, 'inflight')
+    markInflight()
     settleCount(await window.webContents.executeJavaScript(cyclesScript(1, fixture.spaceId)))
     await settleInstalledTelemetryDelivery()
     marker('first_memory_cycle_and_delivery')
     for (const [number, completed] of canonicalRemainingBatches(true)) {
-      progress = resourceProgress(progress, 'inflight')
+      markInflight()
       settleCount(await window.webContents.executeJavaScript(cyclesScript(number, fixture.spaceId)))
       await settleInstalledTelemetryDelivery()
       marker(`${completed}_memory_cycles`)

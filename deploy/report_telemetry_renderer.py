@@ -491,6 +491,7 @@ class OwnedPhaseCursor:
         self.rejected = None
         self.marker_failed = False
         self.observation_failure = None
+        self.terminal_seen = False
 
 
 def owned_counterbalance(attribution: bool, comparison: bool) -> bool:
@@ -623,6 +624,9 @@ def apply_owned_marker(launch, marker: object, cursor: OwnedPhaseCursor) -> None
     if name == cursor.seen:
         if name in _TERMINAL and known_flag is not True:
             cursor.completed_known = False
+            cursor.terminal_seen = True
+        elif known_flag is False and cursor.have_lower_bound:
+            cursor.completed_known = False
         return
     try:
         launch.mark_phase(name, canonical_operations_completed=count, active=active)
@@ -638,14 +642,22 @@ def apply_owned_marker(launch, marker: object, cursor: OwnedPhaseCursor) -> None
     if name in _TERMINAL and known_flag is True and usable:
         cursor.completed_known = True
         cursor.have_lower_bound = True
+        cursor.terminal_seen = True
     elif name in _TERMINAL:
         cursor.completed_known = False
+        cursor.terminal_seen = True
         if usable or cursor.have_lower_bound:
             cursor.have_lower_bound = True
     elif name.endswith("-memory-cycles") or name == "first-memory-cycle-and-delivery":
-        cursor.completed_known = True
+        cursor.completed_known = known_flag is not False
         cursor.have_lower_bound = True
     else:
+        cursor.completed_known = False
+
+
+def close_owned_progress(cursor) -> None:
+    """A checkpoint is a lower bound until a terminal marker establishes the total."""
+    if getattr(cursor, "terminal_seen", False) is not True:
         cursor.completed_known = False
 
 

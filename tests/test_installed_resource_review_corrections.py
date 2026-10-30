@@ -21,7 +21,7 @@ from deploy.report_telemetry_renderer import (
     retain_owned_launch,
 )
 from deploy.report_telemetry_renderer import absorb_reviewed_chunk
-from mnemion.product_telemetry.wire_v3 import PACKET_BYTES
+from mnemion.product_telemetry.wire_v3 import METRICS, PACKET_BYTES, encode
 
 
 CHECKPOINTS = [
@@ -64,6 +64,10 @@ class _Finish:
         }
 
 
+def _valid_report_hex():
+    return encode("os", [1] * len(METRICS), operating_system="linux").hex()
+
+
 def _memory_case(**overrides):
     evidence = {
         "memory_cycles": 128,
@@ -75,7 +79,14 @@ def _memory_case(**overrides):
         "memory_api_operations": 384,
         "telemetry_attempts": 1,
         "telemetry_reserved_bytes": 65536,
-        "telemetry_events": [{"malformed": False, "body_hex": bytes(PACKET_BYTES).hex()}],
+        "telemetry_events": [{
+            "malformed": False,
+            "body_hex": _valid_report_hex(),
+            "valid": True,
+            "accepted": True,
+            "status": 204,
+            "forbidden_metadata": False,
+        }],
         "memory_successful": 384,
         "inspected_body_hex": None,
     }
@@ -201,7 +212,7 @@ def test_each_enabled_case_needs_one_report_and_quiet_cases_need_none():
         telemetry_events=[{"malformed": False, "body_hex": bytes(PACKET_BYTES).hex()}],
     )
     assert installed_resource_case_completed(noisy, owned) is False
-    inspected = bytes(PACKET_BYTES).hex()
+    inspected = _valid_report_hex()
     assert installed_resource_case_completed(
         _memory_case(inspected_body_hex=inspected), owned
     ) is True

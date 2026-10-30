@@ -27,6 +27,7 @@ from deploy.owned_launch_accounting import (
 from deploy.report_telemetry_renderer import (
     OwnedPhaseCursor,
     apply_owned_marker,
+    close_owned_progress,
     observation_failure_code,
     owned_unsupported_report,
     read_owned_marker,
@@ -234,6 +235,7 @@ def finalize_owned_launch(launch, cursor, observe) -> dict:
         report = _unfinished_report("finish_failed")
     if type(exit_code) is not int or exit_code == _STILL_ACTIVE:
         exit_code = None
+    close_owned_progress(cursor)
     if isinstance(observation_error, BaseException):
         report["observation_error"] = observation_failure_code(observation_error)
     report["root_exit_code"] = exit_code

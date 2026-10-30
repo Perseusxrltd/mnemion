@@ -13,7 +13,7 @@ import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
-import { finishResourceCleanup, inspectedBodyHex, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps } from './installed-resource-report.mjs'
+import { finishResourceCleanup, inspectedBodyHex, performOwnedInstall, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps } from './installed-resource-report.mjs'
 
 const artifacts = platformArtifacts()
 // Production NSIS owns registry entries. Run only on a fresh hosted CI machine,
@@ -82,7 +82,7 @@ function refuseExistingWindowsProduct() {
     + 'if ($entries | Where-Object { $_.DisplayName -like "Mnemion Studio*" }) { throw "Refusing to modify an existing Mnemion installation" }'], { env })
 }
 
-async function install(destination = installed, installer = artifacts.installers[0], refuseExisting = true) {
+async function installPrepared(destination, installer, refuseExisting) {
   if (process.platform === 'win32') {
     if (refuseExisting) refuseExistingWindowsProduct()
     const env = { ...environment, MNEMION_PROBE_INSTALLER: installer, MNEMION_PROBE_INSTALL_DIRECTORY: destination }
@@ -108,11 +108,67 @@ async function install(destination = installed, installer = artifacts.installers
     executable = join(destination, 'squashfs-root/AppRun')
   }
   if (!existsSync(executable)) throw new Error('The native installer omitted the application executable')
+}
+
+function verifyInstalled(destination) {
   installationComplete = true
   uninstallDirs.push(destination)
   const resources = process.platform === 'darwin' ? join(destination, 'Mnemion Studio.app/Contents/Resources') :
     join(destination, ...(process.platform === 'linux' ? ['squashfs-root', 'resources'] : ['resources']))
   return verifyNativeResources(resources)
+}
+
+async function install(destination = installed, installer = artifacts.installers[0], refuseExisting = true) {
+  await installPrepared(destination, installer, refuseExisting)
+  return verifyInstalled(destination)
+}
+
+function waitForCaseAck(label) {
+  return new Promise((resolve, reject) => {
+    let pending = ''
+    const timer = setTimeout(() => {
+      process.stdin.off('data', onData)
+      reject(new Error('resource_case_ack_timeout'))
+    }, 60000)
+    const onData = (chunk) => {
+      pending += chunk.toString('utf8')
+      if (pending.length > 256) {
+        clearTimeout(timer)
+        process.stdin.off('data', onData)
+        reject(new Error('resource_case_ack_malformed'))
+        return
+      }
+      const end = pending.indexOf('\n')
+      if (end < 0) return
+      const line = pending.slice(0, end).trim()
+      pending = pending.slice(end + 1)
+      clearTimeout(timer)
+      process.stdin.off('data', onData)
+      if (line !== `RESOURCE_CASE_ACK ${label}`) reject(new Error('resource_case_ack_mismatch'))
+      else resolve()
+    }
+    process.stdin.resume()
+    process.stdin.on('data', onData)
+  })
+}
+
+async function publishResourceCase(summary) {
+  const line = 'RESOURCE_CASE ' + JSON.stringify({
+    label: summary.label,
+    condition: summary.condition,
+    attempts: summary.telemetry_attempts,
+    reserved_bytes: summary.telemetry_reserved_bytes,
+    present: summary.telemetry_present,
+    memory_cycles: summary.memory_cycles,
+    memory_results_verified: summary.memory_results_verified,
+    memory_api_operations: summary.memory_api_operations,
+    inspected_body_hex: summary.inspected_body_hex,
+  })
+  if (Buffer.byteLength(line) > 2048) throw new Error('resource_case_malformed')
+  await new Promise((resolve, reject) => {
+    process.stdout.write(line + '\n', error => error ? reject(error) : resolve())
+  })
+  await waitForCaseAck(summary.label)
 }
 
 async function freePort() {
@@ -394,8 +450,14 @@ async function runInstalledTelemetryResources() {
     }
     if (step.action === 'install') {
       const destination = destinations[step.package]
-      await install(destination, manifest.packages[step.package].installer, true)
-      resourceInstallations.push({ id: step.id, directory: destination, package: step.package })
+      const installer = manifest.packages[step.package].installer
+      await performOwnedInstall(resourceInstallations, { id: step.id, directory: destination, package: step.package }, {
+        refusePreexisting: async () => {
+          if (process.platform === 'win32') refuseExistingWindowsProduct()
+        },
+        installProduct: async () => installPrepared(destination, installer, true),
+        verify: async () => verifyInstalled(destination),
+      })
       installedExecutables.set(destination, executable)
       continue
     }
@@ -488,17 +550,7 @@ async function runInstalledTelemetryResources() {
       workload_completed: resourceWorkloadCompleted(hosting, owned) && telemetryReady && result.status === 0 && !postgresLeft,
     }
     resourceCases.push(summary)
-    console.log('RESOURCE_CASE ' + JSON.stringify({
-      label: summary.label,
-      condition: summary.condition,
-      attempts: summary.telemetry_attempts,
-      reserved_bytes: summary.telemetry_reserved_bytes,
-      present: summary.telemetry_present,
-      memory_cycles: summary.memory_cycles,
-      memory_results_verified: summary.memory_results_verified,
-      memory_api_operations: summary.memory_api_operations,
-      inspected_body_hex: summary.inspected_body_hex,
-    }))
+    await publishResourceCase(summary)
     if (postgresLeft) throw new Error('The installed app left its private PostgreSQL cluster running')
     if (result.error || result.status !== 0 || summary.workload_completed !== true) {
       throw new Error('Owned resource launch failed: ' + row.label)
