@@ -1247,7 +1247,7 @@ def _absolute_tool(name: str) -> str:
 async def _serve_resources(copy: Path, output: Path, source: Path, material: Path) -> dict:
     """Build one inactive and one active package, then run the six owned cases."""
     from mnemion.product_telemetry.collector_v3 import CollectorV3
-    from deploy.report_telemetry_renderer import absorb_reviewed_chunk, retain_reviewed_packet
+    from deploy.report_telemetry_renderer import absorb_reviewed_chunk
     from deploy.telemetry_memory_fixture import memory_workspace
     import uvicorn
 

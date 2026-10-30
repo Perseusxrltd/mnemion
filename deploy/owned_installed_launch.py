@@ -12,7 +12,6 @@ import argparse
 import ctypes
 from ctypes import wintypes
 import json
-import os
 from pathlib import Path
 import platform
 import re
