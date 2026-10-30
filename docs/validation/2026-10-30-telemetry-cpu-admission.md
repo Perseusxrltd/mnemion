@@ -23,8 +23,8 @@ Electron runtime qualification.
 
 In the [original R3 run](2026-10-30-telemetry-resource-r3.md), macOS ARM's enabled
 case completed 128 cycles with hosting ready, root exit zero and zero telemetry
-attempts or reports. Its admission reason was not retained; that failure
-remains unresolved.
+attempts or reports. Its admission reason was not retained, so its original
+cause remains unproven. The corrected build's targeted result is recorded below.
 
 The correction takes one fresh CPU sample after the existing prepare wait.
 Ordinary reads remain cached. Counter validity, CPU/memory/network/thermal
@@ -70,7 +70,31 @@ For a targeted Mac diagnostic, select `targets=macos-26`,
 `resource_comparison=true` and `admission_diagnostic=true`. Its retained outcome
 is diagnostic evidence only; it cannot qualify the overhead comparison.
 
-No installed matrix was replayed. Native coverage and the unchanged
+## Targeted Mac ARM result
+
+[Run 41137714023](https://github.com/Perseusxrltd/mnemion/actions/runs/41137714023)
+used source `27e9fd003b8e270366923733e5d0f6618332f050`, selected only `macos-26`
+and explicitly enabled the admission diagnostic. Both enabled cases recorded
+`reserved` with an `allowed`, unconstrained, unmetered guard and each delivered
+one accepted 25-byte fixture report. Unavailable and opted-out cases made no
+attempts. All six cases completed 128 memory cycles, with 2,310 successful API
+requests overall, hosting ready, root exit zero and clean process shutdown.
+The collector recorded no malformed reports or forbidden metadata.
+
+The retained artifact's SHA-256 is
+`8a8f600b1a3bc21f8536ce0d28f762cbe0401c840e5986122b918e328d3a6bc7`.
+Its 18 extracted files were checked against the original archive and GitHub
+artifact digest. The local observer initially rejected the new input; fixing
+that observer resumed observation of this same run without redispatching it.
+
+This confirms delivery in the corrected, instrumented Mac fixture. It does
+not retroactively prove the cause of R3's zero-attempt case. The workflow's
+resource gate remains failed: instrumentation excludes this run from overhead
+qualification, and every case still reports partial process coverage, including
+unreaped descendant CPU and unsampled/high-water resident memory. Missing
+counters were not replaced by zero or treated as a pass.
+
+No full installed matrix was replayed. Native coverage and the unchanged
 [8 MiB/0.5% allowances](../implementation/telemetry-resource-budget-2026-10-30.md)
 remain open. The existing [whole-product F06/R04 contract](../implementation/runtime-efficiency.md)
 continues without a new milestone or performance qualification. Public hosting,
