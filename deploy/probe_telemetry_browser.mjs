@@ -127,9 +127,11 @@ async function journey() {
     phase('save')
     await page.getByRole('link', { name: 'Save memory', exact: true }).click()
     await page.getByLabel('Subject', { exact: true }).fill(input.canary)
-    await page.getByLabel('Memory type', { exact: true }).selectOption('procedure')
+    // Field wraps the control. Exact label text includes a select's options;
+    // the rendered accessible name is the field name.
+    await page.getByRole('combobox', { name: 'Memory type', exact: true }).selectOption('procedure')
     const content = (`${input.query} postgres backup billing procedure. `).repeat(20) + input.canary
-    await page.getByLabel('Memory content', { exact: true }).fill(content)
+    await page.getByRole('textbox', { name: 'Memory content', exact: true }).fill(content)
     await page.getByRole('button', { name: 'Save memory', exact: true }).click()
     await page.waitForURL(/\/workspace\/memory\//)
     const savedMemory = page.url().match(/\/workspace\/memory\/([a-f0-9-]{36})(?:[/?#]|$)/)?.[1]
@@ -141,7 +143,8 @@ async function journey() {
     checks.memory_fetched = true
     phase('recall')
     await page.getByRole('link', { name: 'Search & context', exact: true }).click()
-    await page.getByLabel('Search method', { exact: true }).selectOption('lexical')
+    // Same wrapped select as Memory type. The option value remains lexical.
+    await page.getByRole('combobox', { name: 'Search method', exact: true }).selectOption('lexical')
     await page.getByLabel('Search shared memory', { exact: true }).fill(input.query)
     await page.getByRole('button', { name: 'Search', exact: true }).click()
     const recalledMemory = page.locator('article').filter({

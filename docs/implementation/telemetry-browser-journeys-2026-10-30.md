@@ -37,6 +37,13 @@ route. Each engine gets a new empty profile and one pass, not a retry:
 6. Turn product telemetry off, reload the same profile, and check that the
    opt-out, manual review, and the spent attempt are still there.
 
+Memory type and search method are selects inside their labels. An exact label
+match includes the option names, so those controls are located by accessible
+name (`combobox`, exact). Memory content is the textbox of that name. Subject
+stays an exact label, because its value is not label text. Search shared
+memory stays an exact label, because that input's `aria-label` is the string.
+The reviewed body stays the element whose `aria-label` is "Exact report bytes".
+
 Missing `PressureObserver`, heap memory, and network information are recorded
 as `unavailable`. A missing sensor is never stored as zero, and the journey
 does not invent a nominal pressure or a network tariff. WebKit's version is
