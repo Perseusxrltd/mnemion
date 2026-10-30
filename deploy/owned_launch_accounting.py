@@ -321,6 +321,7 @@ class OwnedLaunch:
         terminated = False
         timed_out = False
         snapshot = {"cpu_microseconds": None}
+        linux_group = isinstance(self.backend, LinuxCgroupBackend)
         try:
             self._stop.set()
             self._thread.join(2)
@@ -335,12 +336,27 @@ class OwnedLaunch:
                 terminated = True
                 if not ok and cleanup_failure is None:
                     cleanup_failure = failure or "terminate_failed"
-                self.backend.wait_root(5)
-            snapshot = self.backend.snapshot()
+                # Linux close owns the one five-second cleanup deadline.
+                # Waiting here as well would add a second budget, and the
+                # lifetime counter would be read before descendants drained.
+                if not linux_group:
+                    self.backend.wait_root(5)
+            if not linux_group:
+                snapshot = self.backend.snapshot()
         except Exception:
             if cleanup_failure is None:
                 cleanup_failure = "finish_failed"
         ok, failure = self.backend.close()
+        if linux_group:
+            final = getattr(self.backend, "_final_snapshot", None)
+            if type(final) is dict:
+                snapshot = final
+            else:
+                snapshot = {
+                    "cpu_microseconds": None,
+                    "cpu_complete": False,
+                    "unavailable": ["lifetime_cpu_microseconds"],
+                }
         if not ok and cleanup_failure is None:
             cleanup_failure = failure or "close_failed"
         retried = getattr(self.backend, "_cleanup_retried", False) is True
@@ -1235,9 +1251,11 @@ class LinuxCgroupBackend:
 
     def coverage(self, snapshot: dict, ledger: list[dict]) -> dict:
         complete = snapshot.get("cpu_complete") is True
+        cpu = snapshot.get("cpu_microseconds")
+        has_counter = type(cpu) is int and cpu >= 0
         return {
             "platform": "linux",
-            "status": "partial" if complete else "unsupported",
+            "status": "partial" if complete or has_counter else "unsupported",
             "cpu_lifetime_complete": complete,
             "cpu_includes_exited_descendants": complete,
             "sampled_pid_cpu_is_complete": False,
@@ -1250,30 +1268,40 @@ class LinuxCgroupBackend:
         }
 
     def close(self, drain_seconds: float = 5.0) -> tuple[bool, str | None]:
-        """Remove this leaf only after its members are gone.
+        """Drain this owned group, read its counter, then remove the leaf.
 
-        wait_root can return as soon as the root exits. Descendants keep the
-        cgroup populated, and rmdir then fails with the directory still there.
-        The leaf handle stays until removal succeeds. The drain budget is the
-        same five seconds finish already allows for the root.
+        Root exit and descendant drain share one deadline of at most five
+        seconds. The lifetime counter is read only after the group is empty
+        and before removal. A failed removal keeps the leaf and the stored
+        failure. A later close does not turn that failure into success.
         """
         if self._closed:
             return getattr(self, "_close_result", (False, "cgroup_rmdir_failed"))
         self._closed = True
         self._cleanup_retried = False
+        self._final_snapshot = None
         if type(drain_seconds) not in (int, float) or not 0 < float(drain_seconds) <= 5:
             drain_seconds = 5.0
-        drain_seconds = float(drain_seconds)
+        deadline = time.monotonic() + float(drain_seconds)
         if self.process is not None and self.process.poll() is None:
             _signal_cgroup(self.leaf)
-            self.wait_root(min(2.0, drain_seconds))
+            remaining = deadline - time.monotonic()
+            if remaining > 0:
+                self.wait_root(remaining)
         if self.leaf is None:
+            self._final_snapshot = {
+                "method": "linux_cgroup_v2_cpu_stat",
+                "cpu_microseconds": None,
+                "cpu_complete": False,
+                "unavailable": ["lifetime_cpu_microseconds"],
+            }
             self._close_result = (False, "cgroup_missing")
             return self._close_result
-        deadline = time.monotonic() + drain_seconds
         removal_attempts = 0
         while True:
             if self._member_state() == "empty":
+                if self._final_snapshot is None:
+                    self._final_snapshot = self.snapshot()
                 removal_attempts += 1
                 if removal_attempts > 1:
                     self._cleanup_retried = True
@@ -1284,6 +1312,10 @@ class LinuxCgroupBackend:
             if time.monotonic() >= deadline:
                 break
             time.sleep(0.05)
+        if self._final_snapshot is None:
+            partial = self.snapshot()
+            partial["cpu_complete"] = False
+            self._final_snapshot = partial
         self._close_result = (False, "cgroup_rmdir_failed")
         return self._close_result
 

@@ -595,6 +595,7 @@ def test_linux_cleanup_drains_owned_members_before_removal(tmp_path, monkeypatch
     backend.leaf = leaf
     backend.process = _RootProcess(50)
     backend._closed = False
+    backend._sampled_sum_peak = None
     signaled = []
     killed = []
     monkeypatch.setattr(accounting, "_signal_cgroup", lambda _leaf: signaled.append(_leaf) or (True, None))
@@ -636,6 +637,7 @@ def test_linux_cleanup_keeps_a_group_that_remains(tmp_path, monkeypatch):
     backend.leaf = leaf
     backend.process = _RootProcess(50)
     backend._closed = False
+    backend._sampled_sum_peak = None
     monkeypatch.setattr(
         accounting.os, "kill", lambda *_args: (_ for _ in ()).throw(AssertionError("killed"))
     )
@@ -693,3 +695,60 @@ def test_startup_category_does_not_complete_or_keep_a_message(tmp_path):
         encoding="utf-8",
     )
     assert _smoke_observation(smoke) == ("hosting-ready", None)
+
+
+def test_linux_finish_reads_the_counter_after_child_drain(tmp_path, monkeypatch):
+    """The reported lifetime is the post-drain cpu.stat value, then the leaf goes."""
+    import threading
+    import time
+
+    import deploy.owned_launch_accounting as accounting
+
+    leaf = tmp_path / "owned-leaf"
+    leaf.mkdir()
+    (leaf / "cgroup.procs").write_text("4242\n", encoding="ascii")
+    (leaf / "cgroup.events").write_text("populated 1\n", encoding="ascii")
+    (leaf / "cpu.stat").write_text("usage_usec 1000\n", encoding="ascii")
+    (leaf / "memory.peak").write_text("100\n", encoding="ascii")
+    backend = accounting.LinuxCgroupBackend.__new__(accounting.LinuxCgroupBackend)
+    backend.leaf = leaf
+    backend.process = _RootProcess(50)
+    backend._closed = False
+    backend._cleanup_retried = False
+    backend._sampled_sum_peak = None
+    backend.ledger = accounting._Ledger()
+    order = []
+    monkeypatch.setattr(accounting, "_signal_cgroup", lambda _leaf: (True, None))
+
+    def snapshot():
+        order.append("snapshot")
+        return accounting.LinuxCgroupBackend.snapshot(backend)
+
+    def remove():
+        order.append("remove")
+        for child in list(leaf.iterdir()):
+            if child.is_file():
+                child.unlink()
+        return accounting.LinuxCgroupBackend._rmdir_leaf(backend)
+
+    backend.snapshot = snapshot
+    backend._rmdir_leaf = remove
+
+    def clear():
+        time.sleep(0.12)
+        (leaf / "cpu.stat").write_text("usage_usec 3000\n", encoding="ascii")
+        (leaf / "cgroup.procs").write_text("", encoding="ascii")
+        (leaf / "cgroup.events").write_text("populated 0\n", encoding="ascii")
+
+    threading.Thread(target=clear, daemon=True).start()
+    launch = accounting.OwnedLaunch(backend, bound_seconds=30, sample_seconds=0.05)
+    report = launch.finish()
+    assert order == ["snapshot", "remove"]
+    assert report["lifetime_cpu_microseconds"] == 3000
+    assert report["kernel"]["cpu_usage_usec"] == 3000
+    assert report["coverage"]["cpu_lifetime_complete"] is True
+    assert report["coverage"]["cpu_includes_exited_descendants"] is True
+    assert report["resource_acceptance"] is False
+    assert report["cleanup"]["ok"] is True
+    assert backend.leaf is None
+    assert not leaf.exists()
