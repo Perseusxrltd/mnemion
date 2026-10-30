@@ -37,8 +37,8 @@ journey stopped at `The packaged app did not offer workspace join`. No fixture
 memory API request or telemetry report was recorded. None qualifies delivery.
 
 The diagnostic looked for an exact whole-button text of `Join a workspace`,
-while the real button includes explanatory text. The current UI also requires
-selecting `Workspace key` before showing the credential form. The original
+while the real button includes explanatory text. The correction also selects
+`Workspace key` explicitly before waiting for its credential form. The original
 logs, package hashes and six failure receipts are retained. A corrected probe
 must follow those ordinary controls; rerunning the unchanged source would not
 resolve the failure.

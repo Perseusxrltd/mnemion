@@ -54,3 +54,20 @@ now has an outer 25-minute timeout with a further 10-second kill grace period,
 inside its 45-minute job limit. This lets the artifact step run after a hung
 command fails. That external bound permits the corrected functional journey;
 it does not claim successful standalone CLI shutdown or collector cleanup.
+
+## Second hosted run
+
+[Run 41008210939](https://github.com/Perseusxrltd/mnemion/actions/runs/41008210939)
+used source `e0cacd82edd629841d85df57a57a513bfeda7c25`. Firefox 156.0 and
+Playwright WebKit 26.6 both launched. Their unavailable pressure, heap and
+network sensors were recorded as unavailable. The collector, memory service,
+profiles and private input cleaned up successfully, with no cleanup errors.
+Production files remained unchanged.
+
+Neither engine delivered a report. Firefox passed disclosure and manual-review
+setup but the probe waited for a setup-choice button after the web app had
+already opened its join form. WebKit's immediate `check()` postcondition failed
+before the asynchronously persisted checkbox updated; the saved DOM shows it
+checked with the expected paused status. Both original errors and zero report
+counts remain retained. The probe now accepts the already-open join form and
+uses one checkbox click followed by the existing saved-state status check.

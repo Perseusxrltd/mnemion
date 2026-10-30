@@ -107,13 +107,17 @@ async function journey() {
     await page.getByText('Anonymous product telemetry is on.', { exact: true }).waitFor()
     checks.disclosure_acknowledged = true
     phase('manual_review')
-    await page.getByRole('checkbox', { name: 'Pause reports for manual review' }).check()
+    // This controlled checkbox is persisted asynchronously. One user click,
+    // followed by the saved-state status below, works across browser engines.
+    await page.getByRole('checkbox', { name: 'Pause reports for manual review' }).click()
     await page.getByText('Sending is paused. Inspect a report when local observations are available.', { exact: true }).waitFor()
     checks.manual_review_configured = true
     phase('join')
     await page.getByRole('link', { name: 'Back to workspaces', exact: true }).click()
     await page.getByRole('heading', { name: 'Welcome to Mnemion' }).waitFor()
-    await page.getByRole('button', { name: /Join a workspace/ }).click()
+    const joinChoice = page.getByRole('button', { name: /Join a workspace/ })
+    if (await joinChoice.isVisible()) await joinChoice.click()
+    await page.getByRole('group', { name: 'Choose how to join', exact: true }).waitFor()
     await page.getByRole('button', { name: 'Workspace key', exact: true }).click()
     const form = page.getByRole('form', { name: 'Connect a workspace' })
     await form.getByLabel('Workspace address', { exact: true }).fill(input.memory.base_url)
