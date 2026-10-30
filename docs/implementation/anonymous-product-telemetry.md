@@ -2,7 +2,7 @@
 
 **Building/source implementation; current checkpoint 30 October 2026.** V08
 retains the full scope in the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md);
-all requirement texts and the other 65 states are unchanged. The
+all 66 requirement texts and states are unchanged. The
 [shared disclosure](../../mnemion/product_telemetry/disclosure.json) remains
 `collection_available: false` with `destination: null`, and the
 [release route](../../mnemion/product_telemetry/transport-route.json) has a null
@@ -16,15 +16,21 @@ The [installed delivery journeys](../validation/2026-10-30-telemetry-installed-d
 preserve the first two failures. Third run 41013868878 on `c8f75870` passed
 scoped delivery on Linux x64 and both Macs: each completed 21 memory API calls,
 one inspected 25-byte report and opt-out/manual-review persistence across two
-launches. Both Windows targets still lacked observations; Linux ARM stopped at
-connection readiness. Full installed, production and resource acceptance remain
-open. Reviewed source now waits for the visible, enabled, settled connection
-control and retains delivery-only bounded observation diagnostics on failure.
-The planned allowlisted subset is `windows-2022,windows-11-arm,ubuntu-22.04-arm`;
-blank selection still runs all six. This prepares a diagnostic run, with no new
-delivery pass, speedup or permission/deadline change. Snapshot-null counts may
-include upstream-caught rejections. Public collection remains off and production
-hosting unresolved. The
+launches. Fourth run 41022011070 on `497af0ab` selected only the two Windows
+targets and Linux ARM64. Linux ARM64 passed the same scoped journey: 21 successful
+API calls, one matching 25-byte report, all 11 review controls and persistence
+across two launches. Four targets have scoped passing evidence across these two
+sources; this is not a complete passing matrix on one source.
+
+Both Windows targets completed 9 successful API calls but sent no reports. Each
+lost both snapshot admissions to the 25 ms deadline and attempted no observation
+writes. Both native ACL checks succeeded in the below-50-ms bucket. The deadline
+loss is established; those coarse timings cannot isolate ACL/process startup,
+IPC, scheduling or store-open latency. A Windows source correction preserving
+fresh native checks and a separate installed resource correction are in progress;
+neither has a new acceptance result. Full installed, production and resource
+acceptance remain open. Public collection remains off and production hosting
+unresolved. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
 retain their original failures. The fourth run passed real memory actions,
 matching inspected-report delivery, opt-out/reload persistence and cleanup in
@@ -70,8 +76,9 @@ The [4.46.55 installed-control qualification](../validation/2026-10-30-telemetry
 now binds the same eight control fields to current v3 source and all six
 original attempt-1 installer artifacts. It includes the exact 25-byte synthetic
 preview and opt-out/manual-mode persistence across a clean restart, with no new
-build or app run. Staging, approval and delivery of an actual report remain
-unqualified on installed targets; resource and production ingress gates remain.
+build or app run. These control-only checks do not qualify staging, approval or
+delivery of an actual report; the later installed journeys above own that scoped
+evidence. Resource and production ingress gates remain.
 
 Use the [app/native control guide](../guides/product-telemetry-controls.md),
 [catalog and ownership map](anonymous-product-telemetry-catalog.md),

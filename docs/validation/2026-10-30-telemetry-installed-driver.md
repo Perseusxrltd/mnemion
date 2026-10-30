@@ -1,8 +1,9 @@
 # Installed telemetry diagnostic source qualification
 
 30 October 2026. Grok's installed delivery driver was reviewed and integrated
-with the browser admission correction. The third installed run below
-qualifies scoped delivery on three targets; the full matrix remains unqualified.
+with the browser admission correction. The third and fourth installed runs below
+qualify scoped delivery on four targets across two sources; no complete matrix
+has passed on one source.
 
 The driver builds an unpublished copy with one disposable localhost TLS
 certificate. The normal app entry, bridge and delivery owner stay in use.
@@ -105,8 +106,8 @@ be enabled. React can still be busy completing the preceding control request;
 before the single change preserves the subsequent stored-state check. This is
 a source-grounded race, not proof that every connection failure has that cause.
 
-The Windows drop cause remains unproven. Real producer admission has a 25 ms
-snapshot deadline, while a Windows store open performs a fresh native ACL
+The third run did not establish the Windows drop cause. Real producer admission
+has a 25 ms snapshot deadline, while a Windows store open performs a fresh native ACL
 check. Late snapshots, storage contention, negative hints or stale stamps can
 drop optional observations without failing memory actions. The original failure
 artifacts lack producer timings/refusal categories and cycle ordinals. Bounded
@@ -122,7 +123,7 @@ separate raw collector packet is retained for replay comparison. These limits
 remain explicit. No full installed, production-ingress, resource-budget or full
 V08 acceptance follows from the three scoped passes.
 
-## Preparation for a targeted diagnostic run
+## Preparation used by the fourth installed run
 
 Grok candidate `b65d0df6`, imported for review as `cf295463`, waits for the
 connection select to be visible and enabled and the manual-review checkbox to
@@ -141,7 +142,7 @@ and ACL checks remain unchanged, with no permission cache or retained SQLite
 handle.
 
 The optional `targets` input accepts unique release-matrix OS names; blank
-retains all six and unknown or duplicate names fail. The next planned subset is
+retains all six and unknown or duplicate names fail. The selected subset was
 `windows-2022,windows-11-arm,ubuntu-22.04-arm`. Both Windows targets share the
 required x64 database build; Windows ARM keeps its native desktop architecture.
 
@@ -151,8 +152,61 @@ it passed when run alone, and the original failure is retained. The other three
 passing cases were not repeated. A separate sanitizer correction rejects
 non-string readiness/pending values without losing the original failure.
 
-This is source preparation, not another installed delivery pass or a speedup
-claim. The targeted run has not qualified these targets. The third run's three
-passes and three failures remain the evidence above. Full installed, resource
-and production acceptance remain open; public collection stays disabled and
-production hosting unresolved.
+These source checks alone established no installed delivery pass or speedup.
+The third run's three passes and three failures remain the evidence above.
+
+## Fourth installed run: Linux ARM64 pass and Windows deadline evidence
+
+[Run 41022011070](https://github.com/Perseusxrltd/mnemion/actions/runs/41022011070)
+used source `497af0ab556b97b65e3b47dd8476087256ed0111`, original attempt 1,
+and selected Windows x64, Windows ARM64 and Linux ARM64. All required native
+prerequisites passed. Linux ARM64 passed scoped installed fixture delivery;
+both Windows delivery jobs failed, so the workflow conclusion remains failure.
+
+Linux ARM64 completed three real UI save/fetch/lexical-search cycles and all
+21 fixture API requests. Six observations were admitted and committed. The
+collector accepted one 25-byte report matching the inspected body, with no
+forbidden request metadata. All 11 review controls passed across two app
+launches. Final opt-out and manual-review mode persisted, the queue was empty,
+and one spent reservation `[1, 65536]` remained with its lease cleared. The store
+scan found neither the fixture content canary nor its credential. No aggregate
+was published.
+
+Both Windows targets completed 9 successful API requests and no report delivery.
+Each retained `snapshot_deadline: 2`, `snapshot_elapsed_ge_25: 2`,
+`acl_accepted: 2`, `acl_duration_lt_50: 2`, and zero admitted snapshots,
+ACL refusals/timeouts or observation-write attempts. Both stopped at
+`memory_observations/no_observations` in the first cycle. The source confirms
+that losing the 25 ms snapshot admission race lets the memory action continue
+without a measurement; no observation write follows. The generic `startup-error`
+envelope does not indicate a failure to create the app window: both logs record
+the window and tray as created.
+
+The admission deadline loss is proven. Its underlying latency cause is not:
+the below-50-ms ACL bucket cannot establish whether ACL work alone exceeded
+25 ms, nor separate native process startup, IPC, scheduling and store-open costs.
+These results do not show ACL refusal, storage-write failure, memory API failure
+or collector rejection. A Windows source correction preserving fresh native
+checks is in progress; no corrected installed result is qualified yet.
+
+Astra independently matched the three retained artifact ZIP digests and the
+extracted receipt, app evidence and diagnostic inventory to their original
+run/source metadata. The 2,355-file source digest was reproduced for Linux and,
+using the repository's line-ending attributes, for Windows. Linux reports
+packaged Electron 44.9.3 / Node 24.22.0 and ARM64 desktop, engine and database
+without database emulation. Same-run database metadata and the packaging log
+bind the runtime provenance. The journey uses the extracted AppImage; the
+separately built `.deb` was inventoried but not exercised. Installer/runtime
+archive bytes are not retained for independent local rehashing. Exact collector
+equality and durable store state were checked by the source-bound live driver;
+the raw packet and private database are not separately retained.
+
+The private review is retained at
+`telemetry-installed-delivery/observation-targeted-native-run/matrix-review.json`,
+with original artifacts and failure logs in its `original-evidence/` directory.
+The three r3 passing targets retain their `c8f75870` source attribution and were
+not rerun. Four targets now have scoped passing evidence across two sources;
+this is not one complete passing matrix. A separate installed resource correction
+is active, with resource budgets still unaccepted. All 66 requirement states
+remain unchanged, V08 remains Building, public collection stays off, and full
+installed, production and resource acceptance remain open.

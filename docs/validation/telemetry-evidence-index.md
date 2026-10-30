@@ -6,17 +6,24 @@ The [installed diagnostic qualification](2026-10-30-telemetry-installed-driver.m
 preserves the first two failures. Third run 41013868878 (`c8f75870`) passed
 scoped delivery on Linux x64 and both Macs: 21 memory API calls, one inspected
 25-byte report and opt-out/manual-review persistence across two launches each.
-Windows x64/ARM64 retained `no_observations` failures (8/9 successful calls);
-Linux ARM64 retained `connection_pending` (3 calls), all with zero reports. The
-source-grounded UI race, unproven Windows drop cause and package/collector evidence
-limits are recorded in that report. Reviewed diagnostic source (`cf295463`, from
-Grok `b65d0df6`) now waits for the visible/enabled settled connection control and
-retains delivery-only bounded counters on failure. The next planned allowlisted
-subset is `windows-2022,windows-11-arm,ubuntu-22.04-arm`; blank remains all six.
-Snapshot-null counts include upstream-caught rejections. This preparation changes
-no permission cache or admission deadline and establishes no new delivery pass
-or speedup. Full installed, production and resource acceptance remain open;
-public collection is disabled and production hosting unresolved. The
+The r3 Windows `no_observations` and Linux ARM64 `connection_pending` failures
+remain retained. Fourth run 41022011070 (`497af0ab`) selected those three targets.
+Linux ARM64 completed 21 successful API calls, delivered one matching inspected
+25-byte report, and passed all 11 review controls with persistence across two
+launches. This yields four
+scoped passing targets across two sources, not a complete passing matrix on one
+source; the r3 passes were not repeated.
+
+Both Windows targets completed 9 successful API calls and sent no reports. Each
+recorded two snapshot admission deadlines, two successful ACL checks below 50 ms
+and zero observation-write attempts. This proves loss at the 25 ms admission
+deadline. The timing buckets cannot determine whether ACL work alone exceeded
+25 ms or separate process startup, IPC, scheduling and store-open costs. Original
+artifact/source bindings and package/collector evidence limits are recorded in
+the report. A source correction preserving fresh Windows native checks and a
+separate installed resource correction are in progress, without new acceptance.
+Full installed, production and resource acceptance remain open; public collection
+is disabled and production hosting unresolved. The
 [Firefox/WebKit journey evidence](2026-10-30-telemetry-browser-journeys.md)
 retains the original failures and the successful fourth run: real memory
 actions, two matching 25-byte reports, opt-out/reload persistence and cleanup.
@@ -79,8 +86,9 @@ entry, with original failures and corrected local build results.
 The [4.46.55 installed controls](2026-10-30-telemetry-v3-installed-controls.md)
 qualify the v3 synthetic preview, app/agent choice, review controls and clean
 restart persistence on all six targets from their original attempt-1 artifacts.
-No build or app run was repeated. Installed report delivery, resources and
-production collection remain unqualified.
+No build or app run was repeated. These control-only checks do not qualify
+installed report delivery; the later journeys above own that scoped evidence.
+Resources and production collection remain unqualified.
 
 The [29 October probe staging fix](2026-10-29-telemetry-probe-staging.md)
 retains the failed first phase-memory run and the focused correction that loads
