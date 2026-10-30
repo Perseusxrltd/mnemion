@@ -57,55 +57,28 @@
   ],
   "runs": [
     {
-      "id": 41009262656,
+      "id": 41011337874,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "23835d6f1a0f085f82ef9bf68ebfab263eee6f33",
+      "source_commit": "1ab761ee7826d96d89701376e2a248634b832451",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-30T05:35:36Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41009262656",
+      "updated_at": "2026-10-30T05:58:24Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41011337874",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
         "active": [
           {
-            "id": 123911231537,
-            "name": "supervision (macos-15-intel)",
+            "id": 123917755950,
+            "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 123911231573,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123911231594,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123911231611,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run python deploy/bundle_studio.py"
             ]
           }
         ]
@@ -125,61 +98,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 7,
-        "completed": 1,
-        "succeeded": 1,
+        "completed": 6,
+        "succeeded": 6,
         "active": [
-          {
-            "id": 123914711751,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123914711768,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123914711824,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install psutil==7.2.2"
-            ]
-          },
-          {
-            "id": 123914711834,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 123914711840,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
           {
             "id": 123914711869,
             "name": "linux / arm64 public upgrade",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           }
         ]
@@ -209,15 +137,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761"
     },
     {
-      "id": 41001954540,
+      "id": 41011337815,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "11ffe6b07fc15a6aab245405e42649f9c93a0e96",
+      "source_commit": "1ab761ee7826d96d89701376e2a248634b832451",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-30T04:16:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41001954540"
+      "updated_at": "2026-10-30T05:58:18Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41011337815"
     },
     {
       "id": 41010367987,
@@ -231,5 +159,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T05:48:05+00:00"
+  "observed_at": "2026-10-30T05:58:54+00:00"
 }
