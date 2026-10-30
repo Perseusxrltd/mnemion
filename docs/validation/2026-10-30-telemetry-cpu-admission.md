@@ -56,6 +56,20 @@ source inputs remained unchanged during the checks.
   the shared test configuration; the pure helper checks used `--noconftest`.
   A repeated passing invocation is retained and is not counted again.
 
+Follow-up source `4cfbf7d5` adds the `admission_diagnostic` boolean input to
+the manual Installed telemetry delivery workflow. It defaults to false and
+applies only to its resource-comparison step. Linux's delegated desktop
+launcher now forwards the explicit `1`; absent, empty or other values stay
+off without rejecting the normal launch. The generic service allowlist and
+target selection are unchanged.
+
+Three focused launch/workflow checks passed in 1.56 seconds. Parsing the actual
+workflow confirmed the default and step boundary. All 226 desktop/shared/client
+source files still matched the real build's inputs, so that build was reused.
+For a targeted Mac diagnostic, select `targets=macos-26`,
+`resource_comparison=true` and `admission_diagnostic=true`. Its retained outcome
+is diagnostic evidence only; it cannot qualify the overhead comparison.
+
 No installed matrix was replayed. Native coverage and the unchanged
 [8 MiB/0.5% allowances](../implementation/telemetry-resource-budget-2026-10-30.md)
 remain open. The existing [whole-product F06/R04 contract](../implementation/runtime-efficiency.md)
