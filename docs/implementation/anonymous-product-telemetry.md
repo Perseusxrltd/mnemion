@@ -53,8 +53,10 @@ incorrectly claim `owned.present` and `owned.launched`; those claims are rejecte
 Receipt serialization is corrected: absent and withheld records stay absent,
 metadata alone leaves launch unknown, and conversion from JavaScript to Python
 preserves that state. The correction passed 19 focused Python checks and five
-Node checks. Package-to-source binding remains in progress; its correction is
-not yet accepted. The fixed 128-cycle workload, accounting and budgets
+Node checks. The package-to-source correction is also reviewed: each installer
+is verified against its own prepared source, with ordinary verification and
+all integrity checks preserved. It passed 33 focused Python and six Node checks.
+A corrected native comparison is still required. The fixed 128-cycle workload, accounting and budgets
 remain unqualified; the earlier delivery passes retain their scope.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and

@@ -1,10 +1,11 @@
 # Installed telemetry diagnostic source qualification
 
-30 October 2026. Grok's installed delivery driver was reviewed and integrated
-with the browser admission correction. The third, fourth and fifth installed
-runs below qualify scoped delivery on five targets across three original
-sources; no complete matrix has passed on one source. Windows ARM64 remains
-unqualified after the fifth run's Privacy-page failure before observations.
+30 October 2026. The third through sixth installed journeys qualify scoped
+delivery on all six targets across four original sources. No complete matrix
+has passed on one source. The earlier failures remain below. The first resource
+comparison failed preparation on all six targets; its package-to-source
+correction is reviewed, while installed overhead and production collection
+remain unqualified.
 
 The driver builds an unpublished copy with one disposable localhost TLS
 certificate. The normal app entry, bridge and delivery owner stay in use.
@@ -428,10 +429,10 @@ change or qualify these original failed observations.
 Source review traced the refusal to `verifyInstalled`: every package is
 verified from the active baked source root, including the inactive package
 installed first. The native source digest correctly includes the telemetry
-JSON files that differ between these two builds. The correction in progress
-must bind each installer to its own exact staged source while retaining
-source, inventory, version and architecture verification. No source-binding
-candidate is accepted. Original failed logs, their hashes and both the partial
+JSON files that differ between these two builds. The reviewed correction below
+binds each installer to its exact prepared source while retaining source,
+inventory, version and architecture verification. Original failed logs, their
+hashes and both the partial
 and terminal reviews are retained. The scoped delivery qualifications above
 span four original sources and remain separate from this failed comparison
 setup; they do not establish a complete passing matrix on one source.
@@ -457,5 +458,29 @@ The original failed-run receipts remain unchanged and their false launch claims
 remain rejected. Old files already carrying an explicit true launch flag cannot
 be retroactively distinguished from valid historical records by this correction.
 
-The separate package-to-source correction, a new installed resource comparison
-and production collector deployment remain open. Public collection stays off.
+The separate package-to-source correction is reviewed below. A new installed
+resource comparison and production collector deployment remain open. Public
+collection stays off.
+
+## Binding each installed package to its prepared source
+
+Reviewed source [c6b1cf64](https://github.com/Perseusxrltd/mnemion/commit/c6b1cf64b59b118ee1fde43672c451c0a2323fa9)
+passes each package's driver-prepared source directory through the installed
+controller to the native verifier. The verifier independently hashes those
+files, including both telemetry JSON files. The declared source commit,
+installer SHA-256, inventory, dependency lock, version and architecture checks
+remain in force. Ordinary packaging continues to verify its own source tree.
+A package-claimed digest cannot replace source verification.
+
+The original Windows checks passed: 33 Python cases and six Node cases. They
+cover the first inactive install, both prepared sources, swapped/tampered/missing
+source refusal and ordinary verification. The portable Node regression respects
+`MNEMION_ENGINE_PYTHON`, otherwise selecting `python` on Windows or `python3`
+elsewhere. Earlier command-classification refusals are retained as unexecuted
+commands. Formatting preserved the Python AST; lint passed.
+
+The missing-report correction above is preserved. No installed workload or
+resource-budget pass is claimed by these source tests. The original six-job
+failure and its 36 rejected placeholder case claims remain intact. A corrected
+installed comparison is required before evaluating the unchanged 8 MiB RAM and
+0.5% CPU budgets. Production collection remains disabled.

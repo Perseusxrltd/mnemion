@@ -47,7 +47,11 @@ zero workload cases completed. All 36 placeholder receipt cases incorrectly clai
 `owned.present` and `owned.launched`; those claims are rejected. The receipt
 serialization correction passed 19 focused Python checks and five Node checks.
 It preserves absent reports through both readers and leaves metadata-only launch
-status unknown. Package-to-source binding remains in progress and unaccepted. Execution, accounting and budgets remain unqualified. The installed
+status unknown. The [package-to-source correction](2026-10-30-telemetry-installed-driver.md#binding-each-installed-package-to-its-prepared-source)
+is reviewed, with 33 focused Python and six Node checks passing. Each package
+keeps independent source and inventory verification. A corrected native
+comparison is still required; execution, accounting and budgets remain
+unqualified. The installed
 report retains the earlier five-failures/one-running observation as chronology.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
