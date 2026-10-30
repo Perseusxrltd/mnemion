@@ -12,6 +12,7 @@ import { WorkspacePasswordAuth, type SignInRequest } from './workspace-auth.js'
 import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
 import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
 import { workspaceFetch } from './workspace-fetch.js'
+import { workspaceBoundaryFetch, workspaceSignInDeadline } from './workspace-network.js'
 import { ServiceRequests } from './service-requests.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import { localDiagnostic } from './local-diagnostics.js'
@@ -381,13 +382,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   }
   function workspaceConnections(): WorkspaceConnections {
     const signInRequest: SignInRequest = async (endpoint, operation, input) => {
-      let response: Response
-      try {
-        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/sign-in/' + operation, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(input), signal: AbortSignal.timeout(20_000),
-        })
-      } catch { throw new Error('The workspace could not confirm this sign-in request. Check the connection and sign in again.') }
+      const response = await workspaceBoundaryFetch(net.fetch.bind(net), endpoint + '/v1/sign-in/' + operation, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(input), signal: AbortSignal.timeout(workspaceSignInDeadline(operation)),
+      }, 'sign-in')
       if (!response.ok) {
         await response.body?.cancel()
         if (response.status === 404) throw new Error('Update this workspace server to use individual sign-in. Existing workspace keys still work.')
@@ -401,13 +399,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       catch { throw new Error('The workspace returned an invalid sign-in response.') }
     }
     connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
-      let response: Response
-      try {
-        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/me', {
-          headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
-          redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
-        })
-      } catch { throw new Error('The workspace could not be reached. Check its address and your network or VPN. If an agent hosts it, use the host’s operator controls to check that its computer and network connection are running.') }
+      const response = await workspaceBoundaryFetch(net.fetch.bind(net), endpoint + '/v1/me', {
+        headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
+        redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
+      }, 'identity')
       if (response.headers.get('ngrok-error-code') === 'ERR_NGROK_3200') {
         await response.body?.cancel()
         throw new Error('The workspace tunnel is offline. Restart its connection through the host’s operator controls; changing the workspace key will not reconnect the host.')
