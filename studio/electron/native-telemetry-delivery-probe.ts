@@ -1,7 +1,7 @@
 /** Installed review delivery. The packaged bridge, UI and delivery owner stay in place. */
 import type { BrowserWindow } from 'electron'
 import { app } from 'electron'
-import { telemetryReadinessError, telemetrySnapshotDecision } from './telemetry-readiness.mjs'
+import { telemetryPrivacyGate, telemetryReadinessError, telemetrySnapshotDecision, telemetryWorkspaceSettled } from './telemetry-readiness.mjs'
 import { publicObservation } from './telemetry-observation-diagnostic.mjs'
 
 /** The page script cannot import modules. These functions carry their own allowlists. */
@@ -164,13 +164,30 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       field.dispatchEvent(new Event('input', { bubbles: true }));
       field.dispatchEvent(new Event('change', { bubbles: true }));
     }
+    const workspaceSettled = ${telemetryWorkspaceSettled.toString()};
+    const privacyGate = ${telemetryPrivacyGate.toString()};
+    function privacyView() {
+      const heading = document.querySelector('#privacy-heading');
+      const disable = [...document.querySelectorAll('button')].find(node => controlLabel(node) === 'Disable product telemetry');
+      const control = !disable ? 'absent' : disable.disabled ? 'disabled' : disable.getClientRects().length ? 'ready' : 'hidden';
+      return {
+        hash: location.hash,
+        heading: !!(heading && heading.textContent && heading.textContent.includes('Privacy & product telemetry')),
+        control,
+      };
+    }
     async function privacy() {
       location.hash = '/privacy';
-      await until(() => document.querySelector('#privacy-heading')?.textContent.includes('Privacy & product telemetry') &&
-        button('Disable product telemetry'), 'The installed privacy page did not open');
+      try {
+        await until(() => privacyGate(privacyView()) === 'none', 'The installed privacy page did not open');
+      } catch (error) {
+        if (String((error && error.message) || error) !== 'The installed privacy page did not open') throw error;
+        noteProbe('privacy_open', privacyGate(privacyView()));
+        throw error;
+      }
     }
-    const probePhases = ['none', 'manual_review', 'before_permission', 'collection_enabled', 'memory_observations', 'report_inspect', 'report_bytes', 'report_held', 'invalidated_report', 'collection_reenabled', 'report_discard', 'report_discarded', 'report_approve', 'report_consumed', 'final_opt_out', 'restart_review', 'review_request', 'unknown_phase'];
-    const probeGates = ['none', 'unavailable', 'not_initialized', 'upgrade_required', 'stored_snapshot', 'inactive', 'paused', 'held', 'discarded', 'approved', 'consumed', 'expired', 'invalidated', 'no_report', 'no_observations', 'collection_not_permitted', 'transport_unavailable', 'delivery_not_ready', 'control_unavailable', 'review_unavailable', 'review_not_paused', 'connection_pending', 'collection_pending', 'observations_pending', 'report_not_held', 'report_not_discarded', 'report_not_consumed'];
+    const probePhases = ['none', 'manual_review', 'before_permission', 'collection_enabled', 'memory_observations', 'report_inspect', 'report_bytes', 'report_held', 'invalidated_report', 'collection_reenabled', 'report_discard', 'report_discarded', 'report_approve', 'report_consumed', 'final_opt_out', 'restart_review', 'review_request', 'privacy_open', 'unknown_phase'];
+    const probeGates = ['none', 'unavailable', 'not_initialized', 'upgrade_required', 'stored_snapshot', 'inactive', 'paused', 'held', 'discarded', 'approved', 'consumed', 'expired', 'invalidated', 'no_report', 'no_observations', 'collection_not_permitted', 'transport_unavailable', 'delivery_not_ready', 'control_unavailable', 'review_unavailable', 'review_not_paused', 'connection_pending', 'collection_pending', 'observations_pending', 'report_not_held', 'report_not_discarded', 'report_not_consumed', 'privacy_navigation', 'privacy_page', 'privacy_state', 'privacy_control'];
     const probeDiagnostic = { cycle: 0, readiness: 'none', pending: 'none' };
     function noteProbe(phase, pending) {
       probeDiagnostic.readiness = probePhases.includes(phase) ? phase : 'unknown_phase';
@@ -308,8 +325,11 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       controlLabel(node) === 'Open workspace' && !node.disabled && node.getClientRects().length),
       'The workspace key form did not enable Open workspace');
     open.click();
-    await until(() => !document.body.innerText.includes('Welcome to Mnemion') || document.querySelector('.ws-shell, .ws-workspace-name'),
-      'The packaged app did not open the fixture workspace');
+    await until(() => workspaceSettled({
+      shell: !!document.querySelector('.ws-shell')?.getClientRects().length,
+      name: !!document.querySelector('.ws-workspace-name')?.getClientRects().length,
+      hash: location.hash,
+    }), 'The packaged app did not open the fixture workspace');
     await privacy();
     await ready('manual_review', snapshot => snapshot.review.mode === 'automatic' || snapshot.review.mode === 'review' ? true : 'review_unavailable');
     await click('Refresh privacy status');

@@ -23,6 +23,29 @@ export function telemetrySnapshotDecision(snapshot, accept) {
   return { ready: false, gate: typeof decision === 'string' && allowed.includes(decision) ? decision : 'review_unavailable' }
 }
 
+/** True only after the workspace shell is visible and the index redirect has committed.
+ * Welcome-text absence is not ownership: Shell renders "Loading workspace…" with neither
+ * .ws-shell nor its post-paint <Navigate to="memories">. */
+export function telemetryWorkspaceSettled(view) {
+  if (!view || typeof view !== 'object' || Array.isArray(view)) return false
+  if (view.shell !== true || view.name !== true) return false
+  const hash = typeof view.hash === 'string' ? view.hash : ''
+  const route = hash.split('?')[0].replace(/\/+$/, '')
+  return route === '#/workspace/memories'
+}
+
+/** Fixed privacy readiness. The return is an allowlisted gate, never page text. */
+export function telemetryPrivacyGate(view) {
+  if (!view || typeof view !== 'object' || Array.isArray(view)) return 'privacy_page'
+  const hash = typeof view.hash === 'string' ? view.hash : ''
+  const route = hash.split('?')[0].replace(/\/+$/, '')
+  if (route !== '#/privacy') return 'privacy_navigation'
+  if (view.heading !== true) return 'privacy_page'
+  if (view.control === 'disabled' || view.control === 'hidden') return 'privacy_control'
+  if (view.control !== 'ready') return 'privacy_state'
+  return 'none'
+}
+
 export function telemetryReadinessError(phase, gate) {
   const allowed = [
     'unavailable', 'not_initialized', 'upgrade_required', 'stored_snapshot', 'inactive', 'paused',

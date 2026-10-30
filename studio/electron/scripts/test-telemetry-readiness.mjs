@@ -4,7 +4,8 @@ import vm from 'node:vm'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { telemetryReadinessError, telemetrySnapshotDecision } from '../telemetry-readiness.mjs'
+import { telemetryPrivacyGate, telemetryReadinessError, telemetrySnapshotDecision, telemetryWorkspaceSettled } from '../telemetry-readiness.mjs'
+import { emptyObservation, mergeObservationSample, sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const probe = readFileSync(resolve(root, 'native-telemetry-delivery-probe.ts'), 'utf8')
@@ -94,4 +95,71 @@ test('the installed journey inspects only after pending observations', () => {
   assert.equal(probe.includes('.review.mode'), true)
   assert.match(probe, /reviewStatus = \(\) =>/)
   assert.match(build, /telemetry-readiness\.mjs/)
+})
+
+test('workspace ownership waits for the shell and the memories redirect', () => {
+  const loading = { shell: false, name: false, hash: '#/workspace', text: leaked }
+  const shellBeforeRedirect = { shell: true, name: true, hash: '#/workspace', text: leaked }
+  const shellWithSlash = { shell: true, name: true, hash: '#/workspace/', tenant: leaked }
+  const memoriesWithoutShell = { shell: false, name: true, hash: '#/workspace/memories' }
+  const settled = { shell: true, name: true, hash: '#/workspace/memories', tenant: leaked }
+  assert.equal(telemetryWorkspaceSettled(loading), false)
+  assert.equal(telemetryWorkspaceSettled(shellBeforeRedirect), false)
+  assert.equal(telemetryWorkspaceSettled(shellWithSlash), false)
+  assert.equal(telemetryWorkspaceSettled(memoriesWithoutShell), false)
+  assert.equal(telemetryWorkspaceSettled({ shell: true, name: false, hash: '#/workspace/memories' }), false)
+  assert.equal(telemetryWorkspaceSettled(null), false)
+  assert.equal(telemetryWorkspaceSettled(settled), true)
+  assert.equal(telemetryWorkspaceSettled({ ...settled, hash: '#/workspace/memories/' }), true)
+  assert.equal(telemetryWorkspaceSettled({ ...settled, hash: '#/workspace/memories?x=' + leaked }), true)
+  assert.equal(telemetryWorkspaceSettled({ ...settled, hash: '#/workspace/memories/' + leaked }), false)
+  for (const value of [telemetryWorkspaceSettled(loading), telemetryWorkspaceSettled(settled)]) {
+    assert.equal(JSON.stringify(value).includes('secret'), false)
+    assert.equal(JSON.stringify(value).includes('Welcome'), false)
+  }
+  const join = probe.indexOf('workspaceSettled({')
+  const opened = probe.indexOf('await privacy();', join)
+  assert.ok(join > 0 && opened > join)
+  assert.equal(probe.includes('Welcome to Mnemion'), false)
+  assert.equal(probe.includes("!document.body.innerText.includes"), false)
+})
+
+test('a privacy timeout records navigation, page, state, or control without page text', () => {
+  const gates = ['privacy_navigation', 'privacy_page', 'privacy_state', 'privacy_control', 'none']
+  const samples = [
+    [{ hash: '#/workspace/memories', heading: true, control: 'ready', label: leaked }, 'privacy_navigation'],
+    [{ hash: '#/privacy', heading: false, control: 'absent', text: leaked }, 'privacy_page'],
+    [{ hash: '#/privacy/', heading: false, control: 'absent' }, 'privacy_page'],
+    [{ hash: '#/privacy', heading: true, control: 'absent' }, 'privacy_state'],
+    [{ hash: '#/privacy', heading: true, control: 'Retry privacy status ' + leaked }, 'privacy_state'],
+    [{ hash: '#/privacy', heading: true, control: 'disabled' }, 'privacy_control'],
+    [{ hash: '#/privacy', heading: true, control: 'hidden' }, 'privacy_control'],
+    [{ hash: '#/privacy', heading: true, control: 'ready' }, 'none'],
+    [null, 'privacy_page'],
+  ]
+  for (const [view, gate] of samples) {
+    const result = telemetryPrivacyGate(view)
+    assert.equal(result, gate)
+    assert.ok(gates.includes(result))
+    assert.equal(result.includes('secret'), false)
+    assert.equal(result.includes('Retry'), false)
+  }
+  assert.equal(probe.includes("privacyGate(privacyView()) === 'none'"), true)
+  assert.equal(probe.includes("noteProbe('privacy_open', privacyGate(privacyView()))"), true)
+  const state = emptyObservation()
+  const merged = mergeObservationSample(state, { cycle: 0, readiness: 'privacy_open', pending: 'privacy_state', path: leaked, error: leaked })
+  assert.equal(merged.readiness, 'privacy_open')
+  assert.equal(merged.pending, 'privacy_state')
+  assert.equal(JSON.stringify(merged).includes('secret'), false)
+  assert.equal(sanitizeObservation({ ...merged, readiness: 'privacy_open', pending: 'privacy_navigation' }).pending, 'privacy_navigation')
+  assert.equal(mergeObservationSample(emptyObservation(), { cycle: 0, readiness: 'privacy_open', pending: leaked }).pending, 'review_unavailable')
+  const driver = readFileSync(resolve(root, '../../deploy/probe_telemetry_installed.py'), 'utf8')
+  const diagnostic = readFileSync(resolve(root, 'telemetry-observation-diagnostic.mjs'), 'utf8')
+  for (const token of ['privacy_open', 'privacy_navigation', 'privacy_page', 'privacy_state', 'privacy_control']) {
+    assert.equal(probe.includes(token), true)
+    assert.equal(driver.includes('"' + token + '"'), true)
+    assert.equal(diagnostic.includes("'" + token + "'"), true)
+  }
+  const embedded = `(${telemetryWorkspaceSettled.toString()})({ shell: true, name: true, hash: '#/workspace/memories' })`
+  assert.equal(vm.runInNewContext(embedded, Object.create(null)), true)
 })

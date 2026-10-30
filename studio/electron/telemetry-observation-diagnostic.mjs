@@ -54,6 +54,7 @@ const READINESS = new Set([
   'final_opt_out',
   'restart_review',
   'review_request',
+  'privacy_open',
   'unknown_phase',
 ])
 
@@ -85,6 +86,10 @@ const PENDING = new Set([
   'report_not_held',
   'report_not_discarded',
   'report_not_consumed',
+  'privacy_navigation',
+  'privacy_page',
+  'privacy_state',
+  'privacy_control',
 ])
 
 export function emptyObservation() {

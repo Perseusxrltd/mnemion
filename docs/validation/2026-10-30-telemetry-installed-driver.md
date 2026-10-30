@@ -305,3 +305,26 @@ pass on `d8dc845e`; no six-target result on one source is implied. All original
 failures remain intact. All 66 requirement texts and states remain unchanged,
 V08 stays Building, collection stays off, and resource, production-ingress and
 fleet-statistics qualification remain open.
+
+## Installed privacy readiness after run 41028940251
+
+Run 41028940251 on `d8dc845efbf92d7af1aa081943d1d0aa381c3b20` passed the Windows
+x64 installed journey. Windows ARM64 stopped before any memory observation with
+`The installed privacy page did not open`. The receipt stayed at
+`telemetry-delivery` / `startup-error`, cycle 0, and observation readiness
+`none`. That run does not reproduce or clear the earlier 25 ms admission miss.
+
+The delivery probe treated the workspace as open when `Welcome to Mnemion` left
+the document. `Workspace` renders `Loading workspace…` in that interval, before
+`.ws-shell`. Once a space is available, the shell's index route renders
+`<Navigate to="memories" replace />`. React Router 7.18.4 runs that redirect in
+`useEffect`, after paint. Assigning `#/privacy` during the loading interval can
+therefore lose to the redirect. The log does not say whether ARM lost the hash,
+failed to mount the page, or never enabled `Disable product telemetry`.
+
+The probe now continues only when `.ws-shell` and `.ws-workspace-name` are
+visible and the hash is `#/workspace/memories`. Privacy still requires the real
+heading and an enabled, visible Disable control within the existing 30 seconds.
+A timeout records `privacy_open` and one of `privacy_navigation`,
+`privacy_page`, `privacy_state`, or `privacy_control`. Those enums are the
+whole diagnostic. The 25 ms deadline is unchanged.
