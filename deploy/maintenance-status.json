@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Run uv sync --locked --extra supervision"
             ]
           }
         ]
@@ -91,28 +91,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.57",
       "source_commit": "11ffe6b07fc15a6aab245405e42649f9c93a0e96",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T05:47:46Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 6,
-        "succeeded": 6,
-        "active": [
-          {
-            "id": 123914711869,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T05:59:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711"
     },
     {
       "id": 41004315980,
@@ -159,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T05:58:54+00:00"
+  "observed_at": "2026-10-30T05:59:26+00:00"
 }
