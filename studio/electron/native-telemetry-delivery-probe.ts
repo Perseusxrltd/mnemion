@@ -49,7 +49,20 @@ export async function verifyInstalledTelemetryDelivery(window: BrowserWindow, co
   if (!script) throw new Error('Invalid telemetry restart configuration')
   const result = await window.webContents.executeJavaScript(script)
   if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('Installed telemetry delivery returned no evidence')
-  const evidence = result as Record<string, unknown>
+  let evidence = result as Record<string, unknown>
+  if (!restart && evidence.delivery_pending === true) {
+    const { settleInstalledTelemetryDelivery } = await import('./service-bridge.js')
+    await settleInstalledTelemetryDelivery()
+    const finished = await window.webContents.executeJavaScript(finalOptOut())
+    if (!finished || typeof finished !== 'object' || finished.checks?.final_opt_out !== true) {
+      throw new Error('Final opt-out did not save after delivery')
+    }
+    evidence = {
+      ...evidence,
+      checks: { ...(evidence.checks as Record<string, unknown>), ...finished.checks },
+      delivery_pending: undefined,
+    }
+  }
   const serialized = JSON.stringify(evidence)
   if (!restart && serialized.includes(String(config.credential))) throw new Error('Telemetry delivery evidence exposed the fixture credential')
   if (serialized.includes('PRIVATE_RENDERER_MEMORY_CANARY')) throw new Error('Telemetry delivery evidence contained sentinel content')
@@ -98,27 +111,38 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
         button('Disable product telemetry'), 'The installed privacy page did not open');
     }
     async function memoryCycle() {
+      const token = crypto.randomUUID().replaceAll('-', '');
+      const canary = 'PRIVATE_RENDERER_MEMORY_CANARY';
       location.hash = '/workspace/new';
       const draft = await until(() => document.querySelector('.ws-page textarea[placeholder="What should this workspace remember?"]'),
         'The installed memory editor did not open');
-      const token = crypto.randomUUID().replaceAll('-', '');
-      setValue(draft, ('installed delivery observation ' + token + ' ').repeat(8));
+      setValue(draft, (canary + ' installed delivery observation ' + token + ' ').repeat(4));
       const subject = document.querySelector('.ws-page input[placeholder="e.g. Billing project"]');
       if (!subject) throw new Error('The installed memory editor has no subject field');
-      setValue(subject, 'Delivery ' + token.slice(0, 8));
-      const kind = document.querySelector('.ws-page select');
-      if (kind) { setValue(kind, 'procedure'); }
+      setValue(subject, canary + ' ' + token.slice(0, 8));
+      const kind = [...document.querySelectorAll('.ws-page select')].find(node =>
+        [...node.options].some(option => option.value === 'procedure' || option.textContent.trim() === 'procedure'));
+      if (!kind) throw new Error('The installed memory editor has no memory type');
+      setValue(kind, 'procedure');
       await click('Save memory');
-      await until(() => location.hash.startsWith('#/workspace/memory/'), 'The real save did not open the saved memory');
+      await until(() => location.hash.startsWith('#/workspace/memory/') &&
+        [...document.querySelectorAll('.ws-prose')].some(node => node.textContent.includes(canary) && node.textContent.includes(token)),
+        'The real fetch did not show the saved memory');
       location.hash = '/workspace/search';
       const query = await until(() => document.querySelector('input[aria-label="Search shared memory"]'), 'The installed search did not open');
       const method = [...document.querySelectorAll('label')].find(node => node.textContent.includes('Search method'))?.querySelector('select');
-      const lexical = method && [...method.options].find(option => option.value === 'lexical' || option.textContent.trim().toLowerCase() === 'lexical');
-      if (lexical) { setValue(method, lexical.value); }
+      const lexical = method && [...method.options].find(option => option.value === 'lexical');
+      if (!method || !lexical) throw new Error('The installed search has no exact-text method');
+      setValue(method, lexical.value);
       setValue(query, token);
-      await click('Search');
-      await until(() => document.querySelector('.ws-search-result h2')?.textContent.includes(token.slice(0, 8)),
-        'The real search did not show the saved memory');
+      const search = await until(() => [...document.querySelectorAll('.ws-search-form button')].find(node =>
+        node.textContent.trim() === 'Search' && !node.disabled), 'The installed search control is not ready');
+      search.click();
+      await until(() => [...document.querySelectorAll('.ws-search-result')].some(node => {
+        const prose = node.querySelector('.ws-prose')?.textContent || '';
+        return prose.includes(canary) && prose.includes(token);
+      }), 'The real lexical recall did not show the saved memory');
+      await privacy();
       await until(async () => {
         const status = await review();
         return status.review?.report_available ? status : null;
@@ -263,10 +287,28 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
     }, 'The packaged delivery owner did not record one attempt', 60000);
     if (consumed.status.delivery_budget.attempts_in_rolling_week !== 1) throw new Error('Approval did not spend exactly one attempt');
     checks.approved_attempt_uses_inspected_body = true;
-    await click('Disable product telemetry');
-    await until(async () => (await control('status')).user_enabled === false, 'Final opt-out did not save');
     const approved_body_hex = [...approvedBytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
-    return { checks, approved_body_hex, app_launches: 1 };
+    return { checks, approved_body_hex, app_launches: 1, delivery_pending: true };
+  })()`
+}
+
+function finalOptOut(): string {
+  return `(async () => {
+    const bridge = window.mnemion;
+    const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    async function until(check, message, timeout = 30000) {
+      const deadline = Date.now() + timeout;
+      do { const value = await check(); if (value) return value; await pause(100); } while (Date.now() < deadline);
+      throw new Error(message);
+    }
+    const button = text => [...document.querySelectorAll('button')].find(node =>
+      node.textContent.trim() === text && !node.disabled && node.getClientRects().length);
+    location.hash = '/privacy';
+    await until(() => document.querySelector('#privacy-heading')?.textContent.includes('Privacy & product telemetry') &&
+      button('Disable product telemetry'), 'The installed privacy page did not open');
+    button('Disable product telemetry').click();
+    await until(async () => (await bridge.productTelemetry('telemetry.status')).user_enabled === false, 'Final opt-out did not save');
+    return { checks: { final_opt_out: true } };
   })()`
 }
 

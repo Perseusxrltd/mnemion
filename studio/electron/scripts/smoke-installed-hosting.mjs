@@ -210,7 +210,12 @@ async function runInstalledTelemetryDelivery(nativeRuntime) {
     approved_body_hex: first.approved_body_hex,
     review_checks: { ...first.checks, optout_and_review_survive_restart: true },
     app_launches: 2,
-    durable: { attempts: store.attempts, lease_cleared: true, queue_cells: 0, fixture_content_absent: true },
+    durable: {
+      attempts: store.attempts,
+      lease_cleared: store.lease_cleared === true,
+      queue_cells: store.queue_cells,
+      fixture_content_absent: store.fixture_content_absent === true,
+    },
     nativeRuntime,
     scope: 'Diagnostic packaged app, loopback fixture disclosure baked before packaging, one inspected report and one restart. Production ingress, provider privacy, resources and full V08 remain unqualified.',
   }
@@ -228,8 +233,7 @@ try {
   if (telemetryDelivery) {
     await runInstalledTelemetryDelivery(nativeRuntime)
     succeeded = true
-    return
-  }
+  } else {
   const port = await freePort()
   const preview = await launch({ phase: 'capture-preview', port })
   if (!preview.nativeEmptyCapturePreview) throw new Error('The installed empty capture preview did not complete')
@@ -365,6 +369,7 @@ try {
   for (const phase of ['create', 'resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-policy', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'capture-headless', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
+  }
 } catch (error) {
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   // Keep private diagnostic details out of uploaded evidence; even future

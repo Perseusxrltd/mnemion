@@ -1,9 +1,10 @@
 name: Installed telemetry delivery
 
 # Manual diagnostic only. This does not publish, sign a release, or accept the
-# installed journey. Windows ARM stays in the six-target matrix and fails closed
-# until a same-disclosure diagnostic engine exists. Do not download the
-# production Windows service archive: its disclosure is collection false.
+# installed journey. One disposable localhost certificate is shared by a Windows
+# x64 engine freeze and all six packaging jobs. The private key is a one-day
+# diagnostic artifact, never a release asset or a packaged file. Windows ARM
+# imports that engine. build-resources.mjs still refuses to freeze an engine there.
 
 on:
   workflow_dispatch:
@@ -34,9 +35,82 @@ jobs:
     with:
       matrix: ${{ needs.targets.outputs.database_matrix }}
 
+  loopback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install uv==0.12.24
+      - run: uv sync --locked --no-default-groups --group native-build --no-managed-python
+      - name: Issue disposable localhost TLS material outside the source tree
+        run: .venv/bin/python -m deploy.telemetry_installed_fixture --issue-loopback --output "${{ runner.temp }}/loopback"
+      - name: Upload the public test certificate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: telemetry-diagnostic-loopback-certificate
+          path: ${{ runner.temp }}/loopback/certificate.pem
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload the disposable test key outside every package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: telemetry-diagnostic-loopback-key
+          path: ${{ runner.temp }}/loopback/key.pem
+          if-no-files-found: error
+          retention-days: 1
+
+  diagnostic_engine:
+    needs: loopback
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        id: engine_python
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          architecture: x64
+          cache: npm
+          cache-dependency-path: |
+            packages/client/package-lock.json
+            studio/frontend/package-lock.json
+            studio/electron/package-lock.json
+      - run: python -m pip install uv==0.12.24
+      - name: Locked native service build dependencies
+        run: uv sync --locked --no-default-groups --group native-build --python "${{ steps.engine_python.outputs.python-path }}" --no-managed-python
+      - name: Download the disposable loopback certificate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: telemetry-diagnostic-loopback-certificate
+          path: ${{ runner.temp }}/loopback
+      - name: Stage a disposable baked engine source
+        run: |
+          & "${{ github.workspace }}\.venv\Scripts\python.exe" -c "from pathlib import Path; import os; from deploy.probe_telemetry_installed import copy_declared_source; from deploy.telemetry_installed_fixture import bake_checkout; copy = Path(os.environ['RUNNER_TEMP']) / 'engine-source'; copy.mkdir(); copy_declared_source(Path(os.environ['GITHUB_WORKSPACE']), copy); bake_checkout(copy, Path(os.environ['RUNNER_TEMP']) / 'loopback' / 'certificate.pem')"
+      - name: Freeze the diagnostic x64 engine from that baked copy
+        working-directory: ${{ runner.temp }}/engine-source
+        run: |
+          & "${{ github.workspace }}\.venv\Scripts\python.exe" -m deploy.build_native_engine --work "${{ runner.temp }}/engine-work" --output "${{ runner.temp }}/engine-output"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: telemetry-diagnostic-engine-windows-x64
+          path: ${{ runner.temp }}/engine-output/mnemion-engine-*-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 1
+
   delivery:
-    needs: [targets, native_database]
-    if: needs.targets.result == 'success' && needs.native_database.result == 'success'
+    needs: [targets, native_database, loopback, diagnostic_engine]
+    if: needs.targets.result == 'success' && needs.native_database.result == 'success' && needs.loopback.result == 'success' && needs.diagnostic_engine.result == 'success'
     name: Installed fixture delivery / ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
@@ -50,20 +124,17 @@ jobs:
       MNEMION_ENGINE_PYTHON: ${{ github.workspace }}/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
       MNEMION_BUILD_PYTHON: ${{ github.workspace }}/studio/client/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
       MNEMION_POSTGRES_ARCHIVES: ${{ github.workspace }}/build-tmp/native-postgres
+      MNEMION_ENGINE_ARCHIVES: ${{ matrix.platform == 'windows' && format('{0}/build-tmp/diagnostic-engine', github.workspace) || '' }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        id: python
+        id: client_python
         with:
           python-version: '3.13'
           architecture: ${{ matrix.arch }}
-      - name: Record the Windows ARM engine gap
-        if: success() && matrix.os == 'windows-11-arm'
-        run: python -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-delivery"
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        if: success() && matrix.os != 'windows-11-arm'
         with:
           node-version: '22'
           architecture: ${{ matrix.arch }}
@@ -73,31 +144,50 @@ jobs:
             studio/frontend/package-lock.json
             studio/electron/package-lock.json
       - name: Linux desktop libraries
-        if: success() && runner.os == 'Linux'
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2 libsecret-1-0 gnome-keyring dbus-x11
-      - name: Locked desktop interpreters
-        if: success() && matrix.os != 'windows-11-arm'
-        run: |
-          python -m pip install uv==0.12.24
-          uv sync --project studio/client --locked --python "${{ steps.python.outputs.python-path }}" --no-managed-python
-          uv sync --locked --no-default-groups --group native-build --python "${{ steps.python.outputs.python-path }}" --no-managed-python
+      - run: python -m pip install uv==0.12.24
+      - run: uv sync --project studio/client --locked --python "${{ steps.client_python.outputs.python-path }}" --no-managed-python
+      - name: Select the service interpreter independently of the desktop client
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        id: engine_python
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
+      - name: Locked native service build dependencies
+        run: uv sync --locked --no-default-groups --group native-build --python "${{ steps.engine_python.outputs.python-path }}" --no-managed-python
       - name: Download this commit's verified database archive
-        if: success() && matrix.os != 'windows-11-arm'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: native-postgres-${{ matrix.platform }}-${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
           path: build-tmp/native-postgres
-      - name: Install locked desktop packages
-        if: success() && matrix.os != 'windows-11-arm'
+      - name: Download the shared public test certificate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: telemetry-diagnostic-loopback-certificate
+          path: ${{ runner.temp }}/loopback-certificate
+      - name: Download the disposable test key
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: telemetry-diagnostic-loopback-key
+          path: ${{ runner.temp }}/loopback-key
+      - name: Assemble loopback material outside the evidence directory
+        shell: bash
         run: |
-          npm --prefix packages/client ci
-          npm --prefix studio/frontend ci
-          npm --prefix studio/electron ci
+          mkdir -p "$RUNNER_TEMP/loopback"
+          cp "$RUNNER_TEMP/loopback-certificate/certificate.pem" "$RUNNER_TEMP/loopback/certificate.pem"
+          cp "$RUNNER_TEMP/loopback-key/key.pem" "$RUNNER_TEMP/loopback/key.pem"
+          chmod 600 "$RUNNER_TEMP/loopback/key.pem"
+      - name: Download the same-source diagnostic Windows engine
+        if: matrix.platform == 'windows'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: telemetry-diagnostic-engine-windows-x64
+          path: build-tmp/diagnostic-engine
       - name: Exercise one unpublished installed fixture delivery
-        if: success() && matrix.os != 'windows-11-arm'
-        run: python -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-delivery"
+        run: ${{ github.workspace }}/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }} -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-delivery" --loopback-material "${{ runner.temp }}/loopback"
       - name: Keep the installed fixture delivery evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

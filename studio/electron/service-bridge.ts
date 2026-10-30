@@ -38,6 +38,16 @@ import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-ag
 import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
+let settlePackagedProbeDelivery: (() => Promise<void>) | undefined
+
+/** Packaged hosting probe only. This is not an IPC channel. */
+export function settleInstalledTelemetryDelivery(): Promise<void> {
+  if (!app.isPackaged || !process.env.MNEMION_STUDIO_HOSTING_PROBE || !settlePackagedProbeDelivery) {
+    throw new Error('Installed delivery settlement is only available to the packaged hosting probe')
+  }
+  return settlePackagedProbeDelivery()
+}
+
 const MAX_BYTES = 120 * 1024 * 1024
 const selections = new Map<string, string>()
 const children = new Set<ChildProcess>()
@@ -349,6 +359,16 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       for (const reason of telemetryPauses) measurements.pauseDelivery(reason)
     }
     return measurements
+  }
+  settlePackagedProbeDelivery = async () => {
+    const owner = telemetryStore()
+    if (!(owner instanceof DesktopTelemetryActivity)) throw new Error('Installed delivery has no packaged owner')
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Installed delivery did not finish')), 60_000)
+    })
+    try { await Promise.race([owner.deliverySettled(), timeout]) }
+    finally { if (timer) clearTimeout(timer) }
   }
   function measureAction<T>(action: string, input: Record<string, unknown>, surface: 'desktop' | 'native_agent', run: () => T | Promise<T>): T | Promise<T> {
     let store: NativeTelemetryStore
