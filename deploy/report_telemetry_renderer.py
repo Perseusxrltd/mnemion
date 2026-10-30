@@ -562,11 +562,7 @@ def owned_phase_from_marker(
     count = completed
     if name in _OWNED_INACTIVE:
         active = False
-        if (
-            name in _TERMINAL
-            and type(reported) is int
-            and 0 <= reported <= 128
-        ):
+        if name in _TERMINAL and type(reported) is int and 0 <= reported <= 128:
             count = reported
     elif name in _OWNED_ACTIVE:
         active = True
@@ -935,7 +931,9 @@ def retain_owned_launch(report: object) -> dict:
         "lifetime_cpu_microseconds": _optional_count(report.get("lifetime_cpu_microseconds")),
         "active_cpu_microseconds": _optional_count(report.get("active_cpu_microseconds")),
         "active_wall_microseconds": _optional_count(report.get("active_wall_microseconds")),
-        "active_core_fraction": fraction if type(fraction) is str and _FRACTION.fullmatch(fraction) else None,
+        "active_core_fraction": fraction
+        if type(fraction) is str and _FRACTION.fullmatch(fraction)
+        else None,
         "identities_missing": _optional_count(report.get("identities_missing")),
         "unavailable_counters": unavailable,
         "observer_in_measured_group": _flag(report.get("observer_in_measured_group")),

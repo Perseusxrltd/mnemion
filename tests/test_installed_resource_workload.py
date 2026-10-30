@@ -298,21 +298,35 @@ def test_matching_counts_do_not_grant_resource_acceptance():
         "model_calls": 0,
         "resource_acceptance": False,
     }
-    assert installed_resource_case_completed(
-        evidence, {"canonical_operations_completed": 96, "resource_acceptance": False}
-    ) is False
-    assert installed_resource_case_completed(
-        {**evidence, "resource_acceptance": True},
-        {"canonical_operations_completed": 128, "resource_acceptance": False},
-    ) is False
-    assert installed_resource_case_completed(
-        evidence, {"canonical_operations_completed": 128, "resource_acceptance": False}
-    ) is False
+    assert (
+        installed_resource_case_completed(
+            evidence, {"canonical_operations_completed": 96, "resource_acceptance": False}
+        )
+        is False
+    )
+    assert (
+        installed_resource_case_completed(
+            {**evidence, "resource_acceptance": True},
+            {"canonical_operations_completed": 128, "resource_acceptance": False},
+        )
+        is False
+    )
+    assert (
+        installed_resource_case_completed(
+            evidence, {"canonical_operations_completed": 128, "resource_acceptance": False}
+        )
+        is False
+    )
 
 
 def test_public_errors_drop_paths_and_fixture_material():
-    assert _bounded_error(RuntimeError(r"C:\runner\source\deploy\probe.py failed")) == "RuntimeError"
-    assert _bounded_error(RuntimeError("loopback port did not bind")) == "RuntimeError: loopback port did not bind"
+    assert (
+        _bounded_error(RuntimeError(r"C:\runner\source\deploy\probe.py failed")) == "RuntimeError"
+    )
+    assert (
+        _bounded_error(RuntimeError("loopback port did not bind"))
+        == "RuntimeError: loopback port did not bind"
+    )
 
 
 def test_resource_workflow_is_optional_and_independent_of_target_selection():

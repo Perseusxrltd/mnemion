@@ -177,9 +177,15 @@ def _check_spec(spec: object) -> dict:
         or type(spec.get("cwd")) is not str
         or "\x00" in spec["cwd"]
         or type(env) is not dict
-        or any(type(key) is not str or type(value) is not str or "\x00" in key or "\x00" in value for key, value in env.items())
+        or any(
+            type(key) is not str or type(value) is not str or "\x00" in key or "\x00" in value
+            for key, value in env.items()
+        )
         or any(key in _DENIED_ENV for key in env)
-        or any(type(spec.get(name)) is not str or not spec[name] for name in ("profile", "quit_file", "smoke_file", "report"))
+        or any(
+            type(spec.get(name)) is not str or not spec[name]
+            for name in ("profile", "quit_file", "smoke_file", "report")
+        )
     ):
         raise OwnedLaunchError("invalid_spec")
     return spec
@@ -187,12 +193,7 @@ def _check_spec(spec: object) -> dict:
 
 def owned_launch_succeeded(hosting_ready, exit_code, cleanup_ok, failure_stage) -> bool:
     """Missing and still-active exit codes are not a clean owned launch."""
-    return (
-        hosting_ready is True
-        and exit_code == 0
-        and cleanup_ok is True
-        and failure_stage is None
-    )
+    return hosting_ready is True and exit_code == 0 and cleanup_ok is True and failure_stage is None
 
 
 def _unfinished_report(code: str) -> dict:

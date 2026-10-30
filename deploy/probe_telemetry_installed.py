@@ -227,7 +227,9 @@ _RESOURCE_SCOPE = (
 
 def _receipt(error: str | None = None, *, resource: bool = False) -> dict:
     receipt = {
-        "qualification": "installed resource workload" if resource else "installed fixture delivery",
+        "qualification": "installed resource workload"
+        if resource
+        else "installed fixture delivery",
         "journey_completed": False,
         "production_collection_available": False,
         "resource_acceptance": False,
@@ -432,11 +434,7 @@ def _run_resource_smoke(
                 raw = process.stdout.readline(2049)
                 if not raw:
                     return
-                if (
-                    len(raw) > 2048
-                    or not raw.endswith(b"\n")
-                    or b"\x00" in raw
-                ):
+                if len(raw) > 2048 or not raw.endswith(b"\n") or b"\x00" in raw:
                     fail("resource_case_malformed")
                     return
                 if b"PRIVATE_RENDERER_MEMORY_CANARY" in raw or b"mnm_" in raw:
@@ -984,8 +982,10 @@ def select_owned_observer(environ: object, *, platform_name: str) -> str:
     )
     engine = environ.get("MNEMION_ENGINE_PYTHON")
     engine_missing = type(engine) is not str or not engine.strip()
-    if platform_name == "win32" and arm and (
-        engine_missing or os.path.normcase(observer) == os.path.normcase(engine)
+    if (
+        platform_name == "win32"
+        and arm
+        and (engine_missing or os.path.normcase(observer) == os.path.normcase(engine))
     ):
         raise RuntimeError("Windows ARM observer must be the native client Python")
     return observer
@@ -1091,9 +1091,7 @@ def resource_observation_complete(
     return True
 
 
-def resource_journey_completed(
-    *, returncode, cases, diagnostics, private_withheld, counts
-) -> bool:
+def resource_journey_completed(*, returncode, cases, diagnostics, private_withheld, counts) -> bool:
     """Exactly two accepted reports, reconciled with every global report total."""
     if (
         returncode != 0
@@ -1161,7 +1159,10 @@ def installed_resource_case_completed(evidence, owned) -> bool:
         return False
     if evidence.get("model_calls") != 0:
         return False
-    if evidence.get("resource_acceptance") is not False or owned.get("resource_acceptance") is not False:
+    if (
+        evidence.get("resource_acceptance") is not False
+        or owned.get("resource_acceptance") is not False
+    ):
         return False
     return resource_observation_complete(
         evidence.get("condition"),
@@ -1225,9 +1226,7 @@ def _engine_label(archives: str) -> str:
     directory = Path(archives)
     if not directory.is_dir():
         raise RuntimeError("Diagnostic engine archive directory is missing")
-    zips = sorted(
-        path for path in directory.iterdir() if path.is_file() and path.suffix == ".zip"
-    )
+    zips = sorted(path for path in directory.iterdir() if path.is_file() and path.suffix == ".zip")
     if len(zips) != 1:
         raise RuntimeError("Diagnostic engine directory must contain exactly one archive")
     return directory.name + ":" + _sha256_file(zips[0])
@@ -1235,7 +1234,12 @@ def _engine_label(archives: str) -> str:
 
 def _absolute_tool(name: str) -> str:
     found = shutil.which(name)
-    if type(found) is not str or not found.startswith("/") or "\x00" in found or not Path(found).is_file():
+    if (
+        type(found) is not str
+        or not found.startswith("/")
+        or "\x00" in found
+        or not Path(found).is_file()
+    ):
         raise RuntimeError("Linux resource comparison requires absolute session tools")
     return found
 
@@ -1377,7 +1381,11 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                     ("studio/electron", "npm-studio-electron.log"),
                 ):
                     installed = await _logged(
-                        _npm(npm_prefix), target, build_env, output / f"{prefix}-{log_name}", 20 * 60
+                        _npm(npm_prefix),
+                        target,
+                        build_env,
+                        output / f"{prefix}-{log_name}",
+                        20 * 60,
                     )
                     if installed.returncode:
                         raise RuntimeError("Diagnostic copy dependency install failed")
@@ -1641,7 +1649,8 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                                     "reports": sum(
                                         1
                                         for event in case_events
-                                        if type(event) is dict and event.get("malformed") is not True
+                                        if type(event) is dict
+                                        and event.get("malformed") is not True
                                     ),
                                     "malformed": sum(
                                         1

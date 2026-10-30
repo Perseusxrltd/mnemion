@@ -79,14 +79,16 @@ def _memory_case(**overrides):
         "memory_api_operations": 384,
         "telemetry_attempts": 1,
         "telemetry_reserved_bytes": 65536,
-        "telemetry_events": [{
-            "malformed": False,
-            "body_hex": _valid_report_hex(),
-            "valid": True,
-            "accepted": True,
-            "status": 204,
-            "forbidden_metadata": False,
-        }],
+        "telemetry_events": [
+            {
+                "malformed": False,
+                "body_hex": _valid_report_hex(),
+                "valid": True,
+                "accepted": True,
+                "status": 204,
+                "forbidden_metadata": False,
+            }
+        ],
         "memory_successful": 384,
         "inspected_body_hex": None,
     }
@@ -213,12 +215,13 @@ def test_each_enabled_case_needs_one_report_and_quiet_cases_need_none():
     )
     assert installed_resource_case_completed(noisy, owned) is False
     inspected = _valid_report_hex()
-    assert installed_resource_case_completed(
-        _memory_case(inspected_body_hex=inspected), owned
-    ) is True
-    assert installed_resource_case_completed(
-        _memory_case(inspected_body_hex="ab" * 25), owned
-    ) is False
+    assert (
+        installed_resource_case_completed(_memory_case(inspected_body_hex=inspected), owned) is True
+    )
+    assert (
+        installed_resource_case_completed(_memory_case(inspected_body_hex="ab" * 25), owned)
+        is False
+    )
 
 
 def test_missing_profile_store_is_zero_attempts(tmp_path: Path):

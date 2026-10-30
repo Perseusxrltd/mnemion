@@ -103,7 +103,9 @@ class _Launch:
         }
 
 
-def _spawn(tmp_path: Path, labels: list[str], on_case, expected: list[str], timeout: int, memory: bool):
+def _spawn(
+    tmp_path: Path, labels: list[str], on_case, expected: list[str], timeout: int, memory: bool
+):
     script = tmp_path / "child.py"
     script.write_text(_CHILD, encoding="utf-8")
     advance = tmp_path / "advanced"
@@ -132,7 +134,13 @@ def test_case_cannot_advance_before_its_counters_are_frozen(tmp_path: Path):
     counter = tmp_path / "memory"
 
     def on_case(payload):
-        frozen.append((payload["label"], int(counter.read_text(encoding="ascii")), (tmp_path / "advanced").exists()))
+        frozen.append(
+            (
+                payload["label"],
+                int(counter.read_text(encoding="ascii")),
+                (tmp_path / "advanced").exists(),
+            )
+        )
 
     completed, advance, _counter = _spawn(
         tmp_path,
@@ -244,58 +252,62 @@ def test_invalid_and_rejected_reports_do_not_complete_a_case():
     assert rejected_body["accepted"] is False
     assert rejected_body["body_hex"] == invalid.hex()
     assert counts["reports"] == 6
-    assert installed_resource_case_completed(
-        _case(telemetry_events=[rejected_body]), _owned()
-    ) is False
+    assert (
+        installed_resource_case_completed(_case(telemetry_events=[rejected_body]), _owned())
+        is False
+    )
     laundered = note_resource_ingress(bytearray(invalid), [], counts, status=204)
     assert laundered["accepted"] is False
-    assert installed_resource_case_completed(
-        _case(telemetry_events=[laundered]), _owned()
-    ) is False
+    assert installed_resource_case_completed(_case(telemetry_events=[laundered]), _owned()) is False
 
     valid = _valid_packet()
     non_204 = note_resource_ingress(bytearray(valid), [], counts, status=400)
     assert non_204["valid"] is True
     assert non_204["accepted"] is False
     assert non_204["status"] == 400
-    assert installed_resource_case_completed(
-        _case(telemetry_events=[non_204]), _owned()
-    ) is False
+    assert installed_resource_case_completed(_case(telemetry_events=[non_204]), _owned()) is False
 
     forbidden = note_resource_ingress(
         bytearray(valid), [], counts, status=204, forbidden_metadata=True
     )
     assert forbidden["forbidden_metadata"] is True
     assert forbidden["valid"] is True
-    assert installed_resource_case_completed(
-        _case(telemetry_events=[forbidden]), _owned()
-    ) is False
+    assert installed_resource_case_completed(_case(telemetry_events=[forbidden]), _owned()) is False
 
     accepted = note_resource_ingress(bytearray(valid), [], counts, status=204)
     assert accepted["accepted"] is True
     assert accepted["status"] == 204
-    assert installed_resource_case_completed(
-        _case(telemetry_events=[accepted], inspected_body_hex=valid.hex()),
-        _owned(),
-    ) is True
-    assert installed_resource_case_completed(
-        _case(
-            condition="unavailable",
-            telemetry_attempts=0,
-            telemetry_reserved_bytes=0,
-            telemetry_events=[],
-        ),
-        _owned(),
-    ) is True
-    assert installed_resource_case_completed(
-        _case(
-            condition="opted_out",
-            telemetry_attempts=0,
-            telemetry_reserved_bytes=0,
-            telemetry_events=[],
-        ),
-        _owned(),
-    ) is True
+    assert (
+        installed_resource_case_completed(
+            _case(telemetry_events=[accepted], inspected_body_hex=valid.hex()),
+            _owned(),
+        )
+        is True
+    )
+    assert (
+        installed_resource_case_completed(
+            _case(
+                condition="unavailable",
+                telemetry_attempts=0,
+                telemetry_reserved_bytes=0,
+                telemetry_events=[],
+            ),
+            _owned(),
+        )
+        is True
+    )
+    assert (
+        installed_resource_case_completed(
+            _case(
+                condition="opted_out",
+                telemetry_attempts=0,
+                telemetry_reserved_bytes=0,
+                telemetry_events=[],
+            ),
+            _owned(),
+        )
+        is True
+    )
 
 
 def test_journey_requires_one_accepted_report_for_each_enabled_case():
@@ -316,69 +328,93 @@ def test_journey_requires_one_accepted_report_for_each_enabled_case():
         for row in resource_counterbalance_cases()
     ]
     counts = {"forbidden_metadata": 0, "reports": 2, "malformed_body": 0, "accepted": 2}
-    assert resource_journey_completed(
-        returncode=0,
-        cases=cases,
-        diagnostics=False,
-        private_withheld=False,
-        counts=counts,
-    ) is True
-    denied = [dict(item) for item in cases]
-    denied[2] = {**denied[2], "telemetry": {"reports": 0, "malformed": 0, "accepted": 0}}
-    assert resource_journey_completed(
-        returncode=0,
-        cases=denied,
-        diagnostics=False,
-        private_withheld=False,
-        counts={"forbidden_metadata": 0, "reports": 1, "malformed_body": 0, "accepted": 1},
-    ) is False
-    assert resource_journey_completed(
-        returncode=0,
-        cases=cases,
-        diagnostics=False,
-        private_withheld=False,
-        counts={**counts, "forbidden_metadata": 1},
-    ) is False
-    assert resource_journey_completed(
-        returncode=0,
-        cases=cases,
-        diagnostics=False,
-        private_withheld=False,
-        counts={**counts, "reports": 3},
-    ) is False
-    assert resource_journey_completed(
-        returncode=0,
-        cases=cases,
-        diagnostics=False,
-        private_withheld=False,
-        counts={**counts, "reports": 3, "malformed_body": 1},
-    ) is False
-    for key in ("reports", "malformed_body"):
-        incomplete = dict(counts)
-        del incomplete[key]
-        assert resource_journey_completed(
+    assert (
+        resource_journey_completed(
             returncode=0,
             cases=cases,
             diagnostics=False,
             private_withheld=False,
-            counts=incomplete,
-        ) is False
+            counts=counts,
+        )
+        is True
+    )
+    denied = [dict(item) for item in cases]
+    denied[2] = {**denied[2], "telemetry": {"reports": 0, "malformed": 0, "accepted": 0}}
+    assert (
+        resource_journey_completed(
+            returncode=0,
+            cases=denied,
+            diagnostics=False,
+            private_withheld=False,
+            counts={"forbidden_metadata": 0, "reports": 1, "malformed_body": 0, "accepted": 1},
+        )
+        is False
+    )
+    assert (
+        resource_journey_completed(
+            returncode=0,
+            cases=cases,
+            diagnostics=False,
+            private_withheld=False,
+            counts={**counts, "forbidden_metadata": 1},
+        )
+        is False
+    )
+    assert (
+        resource_journey_completed(
+            returncode=0,
+            cases=cases,
+            diagnostics=False,
+            private_withheld=False,
+            counts={**counts, "reports": 3},
+        )
+        is False
+    )
+    assert (
+        resource_journey_completed(
+            returncode=0,
+            cases=cases,
+            diagnostics=False,
+            private_withheld=False,
+            counts={**counts, "reports": 3, "malformed_body": 1},
+        )
+        is False
+    )
+    for key in ("reports", "malformed_body"):
+        incomplete = dict(counts)
+        del incomplete[key]
+        assert (
+            resource_journey_completed(
+                returncode=0,
+                cases=cases,
+                diagnostics=False,
+                private_withheld=False,
+                counts=incomplete,
+            )
+            is False
+        )
     omitted = [dict(item) for item in cases]
     omitted[0] = {**omitted[0], "telemetry": {"malformed": 0, "accepted": 0}}
-    assert resource_journey_completed(
-        returncode=0,
-        cases=omitted,
-        diagnostics=False,
-        private_withheld=False,
-        counts=counts,
-    ) is False
-    assert resource_journey_completed(
-        returncode=0,
-        cases=cases,
-        diagnostics=False,
-        private_withheld=False,
-        counts={**counts, "reports": 2.0},
-    ) is False
+    assert (
+        resource_journey_completed(
+            returncode=0,
+            cases=omitted,
+            diagnostics=False,
+            private_withheld=False,
+            counts=counts,
+        )
+        is False
+    )
+    assert (
+        resource_journey_completed(
+            returncode=0,
+            cases=cases,
+            diagnostics=False,
+            private_withheld=False,
+            counts={**counts, "reports": 2.0},
+        )
+        is False
+    )
 
 
 def test_hard_exit_without_a_terminal_marker_is_an_unknown_total():
