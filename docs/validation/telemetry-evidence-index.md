@@ -8,6 +8,11 @@ corrections, cleanup and qualification limits. A pass qualifies only its recorde
 source and fixture; a dated “pending” statement remains historical. No failed
 evidence is deleted or reclassified by this reorganization.
 
+The [30 October resource-budget revision](../implementation/telemetry-resource-budget-2026-10-30.md)
+sets the current RAM allowance to 8 MiB for new installed acceptance work,
+with CPU still 0.5%. All older 2 MiB results retain their original criteria
+and outcomes. No result is converted into a resource pass.
+
 Current category and action totals are in the generated
 [Git coverage inventory](../../mnemion/product_telemetry/workflow-coverage.json),
 under `summary` and `action_coverage.summary`. Inventory numbers in the dated

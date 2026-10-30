@@ -25,6 +25,22 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+**30 October 2026, browser telemetry admission:**
+The [approved compatibility correction](implementation/telemetry-browser-admission-2026-10-30.md)
+separates unavailable browser sensors from observed restrictions and permits
+bounded automatic attempts when network cost is unknown. Implementation and
+real-browser qualification are underway. Disclosure version 3 requires fresh
+acknowledgement; opt-out, company restrictions and traffic limits remain.
+Production collection is still disabled.
+
+**30 October 2026, telemetry resource decision:**
+The [documented budget revision](implementation/telemetry-resource-budget-2026-10-30.md)
+sets an 8 MiB added-RSS allowance per participating process for new installed
+acceptance work, retaining 0.5% CPU and all privacy/delivery limits. It budgets
+for observed native initialization without weakening storage or consent checks.
+Historical failures remain; fresh installed measurements are still required.
+Live fleet collection and full V08 acceptance remain unfinished.
+
 **30 October 2026, workspace sign-in hotfix:**
 The [reviewed transport correction](validation/2026-10-30-workspace-network-diagnostics.md)
 extends password login and invitation acceptance to 60 seconds after an

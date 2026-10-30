@@ -5,6 +5,11 @@ includes the v3 clients, collector and private maintainer reports. The ordinary
 privacy-settings page shows local controls; it does not show fleet data.
 No fleet statistics can be pulled while collection stays off.
 
+The [30 October resource decision](telemetry-resource-budget-2026-10-30.md)
+sets an 8 MiB added-RSS allowance per participating process for new installed
+acceptance, retaining the 0.5% CPU ceiling. Historical 2 MiB failures below
+remain failures; no old run is rescored and resources are not accepted.
+
 The [30 October validation allocation follow-up](../validation/2026-10-30-telemetry-validation-allocation.md)
 removes encoded objects and cell lists that desktop/browser prevalidation
 immediately discarded. Invalid data is still rejected before IPC, browser
@@ -30,8 +35,9 @@ records those standalone probes. They are not Electron builds or resource
 measurements. Electron main remains the desktop telemetry owner. Offloading
 this work cannot assume a local backend is running for remote workspaces,
 before setup, or while the tray remains open after the local engine stops.
-The 2 MiB and 0.5% ceilings stay unchanged. These observations do not justify
-repeating the unchanged resource workload.
+These observations did not qualify the original 2 MiB and 0.5% ceilings and
+do not justify repeating the unchanged resource workload. The later budget
+revision above requires new installed evidence.
 
 Attribution run 40971963055 made no enabled reservations and remains
 unexplained. Run 40976743563, on source `7ee617691ead16c17bbdb9eb797e03f20f186325`,
@@ -42,7 +48,8 @@ behavior. No small redundant cut was found inside the fresh per-transaction
 store, activity, delivery or transport paths. The first `sqlite.open` rose
 1,179,648 RSS bytes in both enabled repeats; the transport windows rose
 1,908,736 and 1,826,816 bytes while `heapUsed` fell. Those windows are not gate acceptance.
-The 2 MiB and 0.5% gates stay unaccepted, and `resource_acceptance` stays false.
+The original 2 MiB and 0.5% gates were not accepted; the revised RAM allowance
+is also unqualified, and `resource_acceptance` stays false.
 The measurement limits are in the
 [29 October resource note](../validation/2026-10-29-telemetry-v3-resource.md).
 
@@ -317,7 +324,8 @@ The dedicated server defaults to legacy `/v1/report`; `--mode v3` mounts
   collector sees bounded summaries and noise protects the published week. It
   does not claim that provider retention has been inspected.
   `collection_available`, destination and route stay false/null/null.
-- The installed 2 MiB / 0.5% resource gates. This packet is 25 bytes in source.
+- The installed 8 MiB / 0.5% resource gates under the documented revision above.
+  This packet is 25 bytes in source.
   That is not an installed measurement. Run 40976743563 is an unpacked Linux
   attribution journey, not those gates. The failed full-app trials were not
   rerun, and run 40971963055 is still unexplained.

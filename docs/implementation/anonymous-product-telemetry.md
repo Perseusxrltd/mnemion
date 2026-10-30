@@ -18,7 +18,11 @@ the [v3 reference](anonymous-product-telemetry-v3.md). Current publication and
 public update results are maintained in [release status](../RELEASE_STATUS.md).
 The latest qualified compiled-app
 comparison, [run 40967691671](../validation/2026-10-29-telemetry-v3-resource.md),
-still leaves the 2 MiB and 0.5% gates unaccepted. All 66 requirements stay.
+failed the initial 2 MiB and 0.5% gates. The
+[30 October budget revision](telemetry-resource-budget-2026-10-30.md)
+sets an 8 MiB RAM allowance for new installed acceptance work, retaining the
+0.5% CPU ceiling. No prior failure is rescored and no resource pass is claimed.
+All 66 requirements stay.
 
 The [4.46.13 installed privacy-control evidence](../validation/2026-10-26-44613-native-acceptance.md)
 and public auto-update gates qualify their recorded release. The later
@@ -693,8 +697,9 @@ plus jitter, 64 KiB reserved per attempt, and a 256 KiB rolling-day guard.
 stay false/null. Synthetic format examples are labelled examples, not sent
 reports. Private maintainer HTML, CSV and JSON exist on the accepted combined
 source. Ordinary Privacy settings do not show fleet data. This source does not
-turn collection on. Installed v3 delivery is not qualified. The 2 MiB and 0.5%
-gates stay unaccepted. V08 is not complete. All 66 requirements stay.
+turn collection on. Installed v3 delivery is not qualified. The current
+8 MiB and 0.5% acceptance gates remain open. V08 is not complete.
+All 66 requirements stay.
 
 ## Remaining acceptance gates
 
@@ -710,10 +715,12 @@ required below. It preserves all requirements and failed results.
   production trust and remaining owner, cancellation, storage-loss, sensor/resource
   and privacy qualification remain open. The 4.46.22 mode/opt-out restart evidence
   does not qualify later source changes or the full restart/update lifecycle.
-- **Resources and architecture:** the fixed compiled-app comparisons still exceed
-  the unchanged **2 MiB / 0.5%** acceptance gates. The current result is run
+- **Resources and architecture:** the fixed compiled-app comparisons failed
+  the initial **2 MiB / 0.5%** acceptance gates. Run
   40967691671: enabled main maxima **5,271,552 / 2,887,680** bytes, with no
-  evidence-supported patch. Ending RSS, matched maxima, other process roles and
+  evidence-supported patch at that checkpoint. The
+  [8 MiB RAM revision](telemetry-resource-budget-2026-10-30.md) requires new
+  installed evidence and retains the 0.5% CPU ceiling. Ending RSS, matched maxima, other process roles and
   profiled CPU are retained in the evidence index; no causal improvement or
   favorable-run selection is accepted. The subsequent
   [pinned private SQLite experiment](../validation/2026-10-26-telemetry-private-sqlite.md)
@@ -944,17 +951,18 @@ stable pseudonyms or identifying logs, it does not satisfy V08. Use existing
 free infrastructure and tooling; no paid analytics, subscriptions, model calls
 or new spending is authorized by this scope.
 
-## Initial resource and reliability ceilings
+## Resource and reliability ceilings
 
-These are acceptance ceilings for the future implementation, to be measured
-with memory work active. A proposed increase requires a documented design
-revision and new measurements; saturation must drop telemetry rather than
-delay canonical memory work.
+These are engineering acceptance ceilings, measured with memory work active.
+The [30 October revision](telemetry-resource-budget-2026-10-30.md) changes the
+initial 2 MiB RAM allowance to 8 MiB, with no accepted measurement yet.
+Any further increase requires a documented design revision and new measurements;
+saturation must drop telemetry rather than delay canonical memory work.
 
-| Resource | Initial ceiling and behavior |
+| Resource | Current ceiling and behavior |
 | --- | --- |
 | Local pending queue | At most 256 KiB or 512 aggregate records, whichever is reached first; maximum age 48 hours; bounded eviction and full opt-out clearing |
-| Added resident working memory | At most 2 MiB per participating process; no model loading or new persistent service solely for telemetry |
+| Added resident working memory | At most 8 MiB per participating process in declared installed workloads, including cold activation, delivery and helpers; no model loading or new persistent service solely for telemetry |
 | CPU | At most 0.5% of one core averaged over the representative workload; bounded producer work and no synchronous telemetry network calls in memory operations |
 | Batch | At most 16 KiB encoded and 64 KiB decoded; one in flight, at most hourly, with randomized timing and sampling of frequent events |
 | Network | At most 256 KiB outbound wire bytes per installation per rolling day, including retries/transport overhead; reserve a safe upper bound before connecting and pause when exhausted |
