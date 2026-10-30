@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T15:11:05+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T15:12:03+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,16 +21,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41078168913](https://github.com/Perseusxrltd/mnemion/actions/runs/41078168913) |
+| ci\.yml | main | success | [Run 41078168913](https://github.com/Perseusxrltd/mnemion/actions/runs/41078168913) |
 | database-cache\.yml | main | success | [Run 41043904215](https://github.com/Perseusxrltd/mnemion/actions/runs/41043904215) |
 | public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
 | verify-artifacts\.yml | main | success | [Run 41009919761](https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761) |
 | website-release\.yml | main | success | [Run 41078168808](https://github.com/Perseusxrltd/mnemion/actions/runs/41078168808) |
 | website-release\.yml | v4\.46\.57 | success | [Run 41010367987](https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987) |
-
-## Active jobs
-
-[Run 41078168913](https://github.com/Perseusxrltd/mnemion/actions/runs/41078168913): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Run npm --prefix studio/electron test.
-
