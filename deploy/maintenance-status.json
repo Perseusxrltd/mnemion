@@ -62,28 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "3f105a35a6a6736a59b1fd4c25fd288cc3595c8a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T08:12:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41024856310",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 123960532527,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T08:14:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41024856310"
     },
     {
       "id": 41016108360,
@@ -152,5 +134,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T08:13:35+00:00"
+  "observed_at": "2026-10-30T08:14:33+00:00"
 }
