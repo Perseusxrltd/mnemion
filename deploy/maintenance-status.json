@@ -69,18 +69,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 6,
+        "succeeded": 6,
         "active": [
-          {
-            "id": 123925336018,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv sync --locked --extra supervision"
-            ]
-          },
           {
             "id": 123925389426,
             "name": "legacy",
@@ -96,16 +87,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 123925389514,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
@@ -182,15 +164,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761"
     },
     {
-      "id": 41013778430,
+      "id": 41013911089,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "c8f75870ca0c3df1e8bd4af5e4456a403f80bbba",
+      "source_commit": "04d7ccd166eaa877549dec852526a12560a8f482",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-30T06:23:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41013778430"
+      "updated_at": "2026-10-30T06:24:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41013911089"
     },
     {
       "id": 41010367987,
@@ -204,5 +186,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T06:24:07+00:00"
+  "observed_at": "2026-10-30T06:25:30+00:00"
 }
