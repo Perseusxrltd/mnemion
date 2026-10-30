@@ -52,18 +52,20 @@ function ledgerRow(row) {
     first_working_set_bytes: row.first_working_set_bytes == null ? null : memory(row.first_working_set_bytes),
     last_working_set_bytes: row.last_working_set_bytes == null ? null : memory(row.last_working_set_bytes),
     kernel_high_water_while_observed: row.kernel_high_water_while_observed === true,
+    peak_working_set_final: flag(row.peak_working_set_final),
   }
 }
 
 function coverage(value) {
   const source = value && typeof value === 'object' ? value : {}
   const text = {}
-  for (const key of ['platform', 'status', 'rss_high_water', 'process_lifetime_count']) {
+  for (const key of ['platform', 'status', 'rss_high_water', 'process_lifetime_count', 'working_set_accounting']) {
     text[key] = token(source[key])
   }
   for (const key of [
     'cpu_lifetime_complete', 'cpu_includes_exited_descendants', 'sampled_pid_cpu_is_complete',
     'rss_high_water_covers_unseen_exited_processes', 'cgroup_memory_peak_is_per_process_rss',
+    'retained_handles_cover_unseen_processes',
   ]) text[key] = flag(source[key])
   return text
 }

@@ -977,6 +977,7 @@ def _ledger_row(row: object) -> dict | None:
         "first_working_set_bytes": _optional_count(row.get("first_working_set_bytes")),
         "last_working_set_bytes": _optional_count(row.get("last_working_set_bytes")),
         "kernel_high_water_while_observed": row.get("kernel_high_water_while_observed") is True,
+        "peak_working_set_final": _flag(row.get("peak_working_set_final")),
     }
 
 
@@ -984,7 +985,13 @@ def _coverage(value: object) -> dict:
     source = value if type(value) is dict else {}
     copied = {
         key: _token(source.get(key))
-        for key in ("platform", "status", "rss_high_water", "process_lifetime_count")
+        for key in (
+            "platform",
+            "status",
+            "rss_high_water",
+            "process_lifetime_count",
+            "working_set_accounting",
+        )
     }
     for key in (
         "cpu_lifetime_complete",
@@ -992,6 +999,7 @@ def _coverage(value: object) -> dict:
         "sampled_pid_cpu_is_complete",
         "rss_high_water_covers_unseen_exited_processes",
         "cgroup_memory_peak_is_per_process_rss",
+        "retained_handles_cover_unseen_processes",
     ):
         copied[key] = _flag(source.get(key))
     return copied

@@ -3,7 +3,9 @@
 The measured child is placed in a disposable OS group before it executes.
 Lifetime CPU comes from that group, not from a later poll of surviving PIDs.
 Working-set figures stay per process. Cgroup memory and Windows job commit
-are never reported as RSS. Missing counters stay null.
+are never reported as RSS. On Windows, PeakWorkingSetSize is read again
+through retained query handles only after the job has no active process.
+Missing counters stay null.
 
 This module does not start product telemetry, change disclosure, or compare
 a run with the unaccepted 8 MiB / 0.5% budget.
@@ -30,6 +32,11 @@ BUDGET_STATUS = "UNACCEPTED"
 MAX_BOUND_SECONDS = 120.0
 MAX_SAMPLES = 3_000
 MAX_LEDGER = 512
+# PROCESS_QUERY_LIMITED_INFORMATION. IsProcessInJob, GetProcessTimes,
+# GetExitCodeProcess, and GetProcessMemoryInfo accept this right.
+# https://learn.microsoft.com/en-us/windows/win32/api/jobapi/nf-jobapi-isprocessinjob
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+_STILL_ACTIVE = 259
 _NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
 _INACTIVE = {"before-first-mark", "idle", "settlement", "send-settlement", "wait"}
 _CODE = re.compile(r"[a-z0-9_]{1,80}\Z")
@@ -223,6 +230,9 @@ class _Ledger:
             "first_working_set_bytes": None,
             "last_working_set_bytes": None,
             "kernel_high_water_while_observed": False,
+            # Distinct from the live flag above. True only after a successful
+            # post-drain query. A later failed query clears it and keeps the bytes.
+            "peak_working_set_final": False,
         }
         self.rows[identity] = row
         return row
@@ -243,6 +253,23 @@ class _Ledger:
                 high_water if previous is None else max(previous, high_water)
             )
             row["kernel_high_water_while_observed"] = True
+
+    def note_final_peak(self, pid: int, creation: int, high_water: int) -> bool:
+        """Record a post-drain peak. Does not change the live-sample flag."""
+        identity = f"{pid}:{creation}"
+        row = self.rows.get(identity)
+        if row is None:
+            row = self.add_identity(pid, creation)
+        if row is None or type(high_water) is not int or high_water < 0:
+            if row is not None:
+                row["peak_working_set_final"] = False
+            return False
+        previous = row["peak_working_set_bytes"]
+        row["peak_working_set_bytes"] = (
+            high_water if previous is None else max(previous, high_water)
+        )
+        row["peak_working_set_final"] = True
+        return True
 
     def public(self) -> list[dict]:
         return [dict(self.rows[key]) for key in sorted(self.rows)]
@@ -337,9 +364,12 @@ class OwnedLaunch:
                 if not ok and cleanup_failure is None:
                     cleanup_failure = failure or "terminate_failed"
                 # Linux close owns the one five-second cleanup deadline.
-                # Waiting here as well would add a second budget, and the
-                # lifetime counter would be read before descendants drained.
-                if not linux_group:
+                # Windows spends that same single allowance on the job, not
+                # on another wait after the root handle is already signaled.
+                # Darwin still waits for the root handle only.
+                if isinstance(self.backend, WindowsJobBackend):
+                    self.backend.wait_until_drained(5)
+                elif not linux_group:
                     self.backend.wait_root(5)
             if not linux_group:
                 snapshot = self.backend.snapshot()
@@ -476,6 +506,7 @@ class OwnedLaunch:
             "ledger": ledger,
             "ledger_truncated": self.backend.ledger.truncated,
             "identities_missing": snapshot.get("identities_missing"),
+            "observation_gaps": snapshot.get("observation_gaps"),
             "sampled_peaks": snapshot.get("sampled_peaks"),
             "kernel": snapshot.get("kernel"),
             "observer_in_measured_group": snapshot.get("observer_in_measured_group"),
@@ -521,11 +552,26 @@ def start_owned_launch(
     return OwnedLaunch(backend, bound_seconds=bound, sample_seconds=sample)
 
 
+class _RetainedQuery:
+    __slots__ = ("pid", "creation", "handle")
+
+    def __init__(self, pid: int, creation: int, handle):
+        self.pid = pid
+        self.creation = creation
+        self.handle = handle
+
+
 class WindowsJobBackend:
     """A job created and assigned before the child thread runs.
 
     TotalUserTime and TotalKernelTime keep terminated processes.
     PeakJobMemoryUsed is commit charge, not working set.
+    Query handles use PROCESS_QUERY_LIMITED_INFORMATION only. A process is
+    admitted when IsProcessInJob on that handle says it is running in this
+    job. The same live process is not opened again. Final PeakWorkingSetSize
+    is read on the retained handles after ActiveProcesses is zero.
+    kernel_high_water_while_observed means a live query succeeded. It does
+    not mean the stored peak is that live sample, and it is not the final flag.
     """
 
     def __init__(self, argv: list[str], *, cwd: str | None, env: dict[str, str] | None):
@@ -547,6 +593,17 @@ class WindowsJobBackend:
         self._api = _WinApi()
         self._sampled_sum_peak = None
         self._closed = False
+        self._close_result = (True, None)
+        self._lock = threading.Lock()
+        self._retained: dict[str, _RetainedQuery] = {}
+        self._live_pid: dict[int, str] = {}
+        self._gaps = {
+            "exited_before_query_handle": 0,
+            "membership_rejected": 0,
+            "identity_or_membership_unproven": 0,
+            "final_query_failed": 0,
+            "pid_list_unreadable": False,
+        }
 
     def spawn(self) -> None:
         api = self._api
@@ -558,16 +615,49 @@ class WindowsJobBackend:
         self.thread = thread
         self.root_pid = pid
         creation = api.creation_ticks(process)
-        members = api.job_pids(job)
-        if creation is None or members is None or pid not in members:
+        in_job = api.is_in_job(process, job)
+        if creation is None or in_job is not True:
             api.terminate_process(process)
             raise OwnedLaunchError("not_in_job_before_resume")
         self.root_creation = creation
-        self.ledger.add_identity(pid, creation)
+        if not self._retain_root(process, pid, creation):
+            api.terminate_process(process)
+            raise OwnedLaunchError("root_query_handle_unavailable")
         if api.resume(thread) == 0xFFFFFFFF:
             api.terminate_job(job)
             raise OwnedLaunchError("resume_failed")
         self.sample(self.ledger)
+
+    def _retain_root(self, process, pid: int, creation: int) -> bool:
+        """Hold a limited-query handle before the root is allowed to run."""
+        api = self._api
+        handle = api.duplicate_query(process)
+        if not handle:
+            handle = api.open_query(pid)
+            opened_creation = None if not handle else api.creation_ticks(handle)
+            if handle and opened_creation != creation:
+                api.close(handle)
+                self._gaps["membership_rejected"] += 1
+                self.ledger.add_identity(pid, creation)
+                return False
+        if not handle:
+            self.ledger.add_identity(pid, creation)
+            self._gaps["identity_or_membership_unproven"] += 1
+            return False
+        member = api.is_in_job(handle, self.job)
+        copied = api.creation_ticks(handle)
+        if member is not True or copied != creation:
+            api.close(handle)
+            if member is False or (copied is not None and copied != creation):
+                self._gaps["membership_rejected"] += 1
+            else:
+                self._gaps["identity_or_membership_unproven"] += 1
+            self.ledger.add_identity(pid, creation)
+            return False
+        if not self._keep_handle(pid, creation, handle, self.ledger):
+            return False
+        self._read_live(self._retained[f"{pid}:{creation}"], self.ledger)
+        return True
 
     def cpu_microseconds(self) -> int | None:
         info = self._api.accounting(self.job) if self.job else None
@@ -582,38 +672,49 @@ class WindowsJobBackend:
         return info["active_processes"] > 0
 
     def wait_root(self, timeout_seconds: float) -> bool:
+        """Return when the root handle is signaled. Descendants may still be alive."""
         if not self.process:
             return False
         return self._api.wait(self.process, timeout_seconds)
 
+    def wait_until_drained(self, timeout_seconds: float) -> bool:
+        """One bounded poll for ActiveProcesses == 0. Not a second cleanup budget."""
+        if type(timeout_seconds) not in (int, float) or float(timeout_seconds) <= 0:
+            return False
+        deadline = time.monotonic() + float(timeout_seconds)
+        while True:
+            info = self._api.accounting(self.job) if self.job else None
+            if info is not None and info["active_processes"] == 0:
+                return True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            time.sleep(min(0.05, remaining))
+
     def sample(self, ledger: _Ledger) -> None:
-        if not self.job:
+        with self._lock:
+            self._sample_locked(ledger)
+
+    def _sample_locked(self, ledger: _Ledger) -> None:
+        if self._closed or not self.job:
             return
-        current_sum = 0
-        saw = 0
         members = self._api.job_pids(self.job)
         if members is None:
+            self._gaps["pid_list_unreadable"] = True
             return
+        if getattr(self._api, "pid_list_truncated", False):
+            ledger.truncated = True
+        current_sum = 0
+        saw = 0
+        seen: set[int] = set()
         for pid in members:
-            if pid == os.getpid():
+            if pid == os.getpid() or pid in seen:
                 continue
-            opened = self._api.open_query(pid)
-            if opened is None:
-                continue
-            try:
-                creation = self._api.creation_ticks(opened)
-                memory = self._api.working_set(opened)
-            finally:
-                self._api.close(opened)
-            if creation is None or memory is None:
-                if creation is not None:
-                    ledger.add_identity(pid, creation)
-                continue
-            ledger.observe(
-                pid, creation, current=memory["working_set"], high_water=memory["peak_working_set"]
-            )
-            current_sum += memory["working_set"]
-            saw += 1
+            seen.add(pid)
+            current = self._sample_pid(pid, ledger)
+            if current is not None:
+                current_sum += current
+                saw += 1
         if saw:
             self._sampled_sum_peak = (
                 current_sum
@@ -621,14 +722,117 @@ class WindowsJobBackend:
                 else max(self._sampled_sum_peak, current_sum)
             )
 
+    def _sample_pid(self, pid: int, ledger: _Ledger) -> int | None:
+        identity = self._live_pid.get(pid)
+        held = None if identity is None else self._retained.get(identity)
+        if held is not None and held.handle and self._same_live_member(held):
+            return self._read_live(held, ledger)
+        if identity is not None:
+            self._live_pid.pop(pid, None)
+        return self._open_member(pid, ledger)
+
+    def _same_live_member(self, held: _RetainedQuery) -> bool:
+        # Both calls use the retained handle. A still-active process cannot
+        # have its PID reused. IsProcessInJob is "running in this job".
+        if self._api.process_is_live(held.handle) is not True:
+            return False
+        if self._api.is_in_job(held.handle, self.job) is not True:
+            return False
+        return self._api.creation_ticks(held.handle) == held.creation
+
+    def _open_member(self, pid: int, ledger: _Ledger) -> int | None:
+        if len(self._retained) >= MAX_LEDGER:
+            ledger.truncated = True
+            return None
+        handle = self._api.open_query(pid)
+        if not handle:
+            if not any(item.pid == pid for item in self._retained.values()):
+                self._gaps["exited_before_query_handle"] += 1
+            return None
+        try:
+            member = self._api.is_in_job(handle, self.job)
+            creation = self._api.creation_ticks(handle)
+            if member is not True or creation is None:
+                if member is False:
+                    self._gaps["membership_rejected"] += 1
+                else:
+                    self._gaps["identity_or_membership_unproven"] += 1
+                return None
+            if not self._keep_handle(pid, creation, handle, ledger):
+                handle = None
+                return None
+            handle = None
+            held = self._retained[f"{pid}:{creation}"]
+            return self._read_live(held, ledger)
+        finally:
+            if handle:
+                self._api.close(handle)
+
+    def _keep_handle(self, pid: int, creation: int, handle, ledger: _Ledger) -> bool:
+        identity = f"{pid}:{creation}"
+        existing = self._retained.get(identity)
+        if existing is not None:
+            self._api.close(handle)
+            if existing.handle:
+                self._live_pid[pid] = identity
+            return True
+        if len(self._retained) >= MAX_LEDGER or (
+            len(ledger.rows) >= MAX_LEDGER and identity not in ledger.rows
+        ):
+            ledger.truncated = True
+            self._api.close(handle)
+            return False
+        if ledger.add_identity(pid, creation) is None:
+            ledger.truncated = True
+            self._api.close(handle)
+            return False
+        self._retained[identity] = _RetainedQuery(pid, creation, handle)
+        self._live_pid[pid] = identity
+        return True
+
+    def _read_live(self, held: _RetainedQuery, ledger: _Ledger) -> int | None:
+        memory = self._api.working_set(held.handle)
+        if type(memory) is not dict:
+            return None
+        current = memory.get("working_set")
+        peak = memory.get("peak_working_set")
+        if type(current) is not int or type(peak) is not int:
+            return None
+        ledger.observe(held.pid, held.creation, current=current, high_water=peak)
+        return current
+
+    def _read_final_peaks_locked(self) -> None:
+        failed = 0
+        for identity, held in list(self._retained.items()):
+            memory = None
+            if held.handle:
+                creation = self._api.creation_ticks(held.handle)
+                if creation == held.creation:
+                    memory = self._api.working_set(held.handle)
+            peak = None if type(memory) is not dict else memory.get("peak_working_set")
+            if type(peak) is int and self.ledger.note_final_peak(held.pid, held.creation, peak):
+                continue
+            failed += 1
+            row = self.ledger.rows.get(identity)
+            if row is not None:
+                row["peak_working_set_final"] = False
+        self._gaps["final_query_failed"] = failed
+
     def terminate(self) -> tuple[bool, str | None]:
         if not self.job:
             return False, "job_missing"
         return self._api.terminate_job(self.job)
 
     def snapshot(self) -> dict:
+        with self._lock:
+            return self._snapshot_locked()
+
+    def _snapshot_locked(self) -> dict:
         info = self._api.accounting(self.job) if self.job else None
         extended = self._api.extended(self.job) if self.job else None
+        drained = info is not None and info["active_processes"] == 0
+        if drained:
+            self._read_final_peaks_locked()
         cpu = None if info is None else (info["user_100ns"] + info["kernel_100ns"]) // 10
         missing = None
         if info is not None:
@@ -636,11 +840,26 @@ class WindowsJobBackend:
             if missing < 0:
                 missing = None
         pids = self._api.job_pids(self.job) if self.job else None
+        if getattr(self._api, "pid_list_truncated", False):
+            self.ledger.truncated = True
+        state = self._working_set_state(drained)
+        unavailable = [] if extended is not None else ["job_commit_peak"]
+        self._gap_tokens(unavailable)
         return {
             "method": "windows_job_before_resume",
             "cpu_microseconds": cpu,
             "identities_missing": missing,
             "observer_in_measured_group": None if pids is None else os.getpid() in pids,
+            "working_set_accounting": state,
+            "observation_gaps": {
+                "exited_before_query_handle": self._gaps["exited_before_query_handle"],
+                "membership_rejected": self._gaps["membership_rejected"],
+                "identity_or_membership_unproven": self._gaps["identity_or_membership_unproven"],
+                "final_query_failed": self._gaps["final_query_failed"],
+                "pid_list_unreadable": self._gaps["pid_list_unreadable"] is True,
+                "ledger_truncated": self.ledger.truncated is True,
+                "active_processes": None if info is None else info["active_processes"],
+            },
             "sampled_peaks": {
                 "sum_working_set_bytes": self._sampled_sum_peak,
                 "sum_double_counts_shared": True,
@@ -660,20 +879,43 @@ class WindowsJobBackend:
                 "peak_job_commit_bytes": None if extended is None else extended["peak_job"],
                 "commit_counters_are_working_set": False,
             },
-            "cpu_complete": info is not None,
-            "unavailable": [] if extended is not None else ["job_commit_peak"],
+            "cpu_complete": drained and cpu is not None,
+            "unavailable": unavailable,
         }
 
+    def _working_set_state(self, drained: bool) -> str:
+        rows = list(self.ledger.rows.values())
+        if drained and rows and all(row.get("peak_working_set_final") is True for row in rows):
+            return "final_on_observed_handles"
+        if any(row.get("peak_working_set_bytes") is not None for row in rows):
+            return "latest_observation"
+        return "unavailable"
+
+    def _gap_tokens(self, unavailable: list[str]) -> None:
+        if self._gaps["exited_before_query_handle"]:
+            unavailable.append("process_exited_before_query_handle")
+        if self._gaps["membership_rejected"] or self._gaps["identity_or_membership_unproven"]:
+            unavailable.append("process_identity_or_membership_unproven")
+        if self._gaps["pid_list_unreadable"]:
+            unavailable.append("job_process_list_unreadable")
+        if any(row.get("peak_working_set_final") is not True for row in self.ledger.rows.values()):
+            unavailable.append("final_working_set_peak")
+
     def coverage(self, snapshot: dict, ledger: list[dict]) -> dict:
-        complete = (
-            snapshot.get("cpu_complete") is True and snapshot.get("cpu_microseconds") is not None
-        )
-        # PeakWorkingSetSize is the kernel peak as of the last successful query.
-        # A process can still grow, or exit, before the next query. CPU from the
-        # job is complete; working-set coverage therefore stays partial.
+        cpu = snapshot.get("cpu_microseconds")
+        complete = snapshot.get("cpu_complete") is True and type(cpu) is int and cpu >= 0
+        has_counter = type(cpu) is int and cpu >= 0
+        state = snapshot.get("working_set_accounting")
+        if state not in ("final_on_observed_handles", "latest_observation", "unavailable"):
+            state = "unavailable"
+        # A counter can exist before the job is empty. That reading is partial,
+        # not a finished lifetime. Final peaks on handles we already hold do
+        # not cover helpers that exited before a handle existed, or processes
+        # past the ledger cap. Status stays partial even when every observed
+        # row is final.
         return {
             "platform": "windows",
-            "status": "partial" if complete else "unsupported",
+            "status": "partial" if complete or has_counter else "unsupported",
             "cpu_lifetime_complete": complete,
             "cpu_includes_exited_descendants": complete,
             "sampled_pid_cpu_is_complete": False,
@@ -682,25 +924,42 @@ class WindowsJobBackend:
             else "unavailable",
             "rss_high_water_covers_unseen_exited_processes": False,
             "cgroup_memory_peak_is_per_process_rss": False,
+            "working_set_accounting": state,
+            "retained_handles_cover_unseen_processes": False,
         }
 
     def close(self) -> tuple[bool, str | None]:
-        if self._closed:
-            return True, None
-        self._closed = True
-        failure = None
-        for handle in (self.thread, self.process, self.job):
-            if handle:
+        with self._lock:
+            if self._closed:
+                return self._close_result
+            self._closed = True
+            failure = None
+            ordered = []
+            seen = set()
+            for held in self._retained.values():
+                if held.handle and held.handle not in seen:
+                    seen.add(held.handle)
+                    ordered.append(held.handle)
+                held.handle = None
+            self._retained.clear()
+            self._live_pid.clear()
+            for handle in (self.thread, self.process, self.job):
+                if handle and handle not in seen:
+                    seen.add(handle)
+                    ordered.append(handle)
+            self.thread = self.process = self.job = None
+            for handle in ordered:
                 ok, code = self._api.close(handle)
                 if not ok and failure is None:
                     failure = code
-        self.thread = self.process = self.job = None
-        return failure is None, failure
+            self._close_result = (failure is None, failure)
+            return self._close_result
 
 
 class _WinApi:
     def __init__(self):
         self.kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.pid_list_truncated = False
         k = self.kernel
         k.CreateJobObjectW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p]
         k.CreateJobObjectW.restype = ctypes.c_void_p
@@ -773,6 +1032,22 @@ class _WinApi:
         k.GetProcessTimes.restype = wintypes.BOOL
         k.K32GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD]
         k.K32GetProcessMemoryInfo.restype = wintypes.BOOL
+        k.IsProcessInJob.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(wintypes.BOOL)]
+        k.IsProcessInJob.restype = wintypes.BOOL
+        k.GetExitCodeProcess.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.DWORD)]
+        k.GetExitCodeProcess.restype = wintypes.BOOL
+        k.GetCurrentProcess.argtypes = []
+        k.GetCurrentProcess.restype = ctypes.c_void_p
+        k.DuplicateHandle.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_void_p),
+            wintypes.DWORD,
+            wintypes.BOOL,
+            wintypes.DWORD,
+        ]
+        k.DuplicateHandle.restype = wintypes.BOOL
 
     def create_job(self):
         handle = self.kernel.CreateJobObjectW(None, None)
@@ -884,6 +1159,8 @@ class _WinApi:
         if not ok:
             return None
         count = min(int(info.count), len(info.pids))
+        if int(info.assigned) > count:
+            self.pid_list_truncated = True
         return [int(info.pids[index]) for index in range(count)]
 
     def accounting(self, job) -> dict | None:
@@ -925,8 +1202,45 @@ class _WinApi:
         }
 
     def open_query(self, pid: int):
-        handle = self.kernel.OpenProcess(0x1000, False, pid)
+        handle = self.kernel.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
         return handle or None
+
+    def duplicate_query(self, process):
+        """Narrow an existing process handle. Do not duplicate its full access."""
+        if not process:
+            return None
+        current = self.kernel.GetCurrentProcess()
+        target = ctypes.c_void_p()
+        ok = self.kernel.DuplicateHandle(
+            current,
+            process,
+            current,
+            ctypes.byref(target),
+            _PROCESS_QUERY_LIMITED_INFORMATION,
+            False,
+            0,
+        )
+        if not ok or not target.value:
+            return None
+        return target.value
+
+    def is_in_job(self, process, job) -> bool | None:
+        if not process or not job:
+            return None
+        result = wintypes.BOOL()
+        ok = self.kernel.IsProcessInJob(process, job, ctypes.byref(result))
+        if not ok:
+            return None
+        return bool(result.value)
+
+    def process_is_live(self, process) -> bool | None:
+        if not process:
+            return None
+        code = wintypes.DWORD()
+        ok = self.kernel.GetExitCodeProcess(process, ctypes.byref(code))
+        if not ok:
+            return None
+        return int(code.value) == _STILL_ACTIVE
 
     def resume(self, thread) -> int:
         return int(self.kernel.ResumeThread(thread))
