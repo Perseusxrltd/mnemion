@@ -19,6 +19,9 @@ concurrency:
 # One self-check per native target. No installer, model download, or benchmark.
 # A hosted Linux job may use one disposable systemd scope with Delegate=yes.
 # Do not write the host cgroup.subtree_control.
+# A held receipt qualifies only when that launch's cleanup succeeded.
+# The invalid-handle exercise is not that cleanup. Honest unsupported is recorded
+# and does not qualify.
 jobs:
   owned-launch:
     name: ${{ matrix.target }} / ${{ matrix.arch }}
@@ -126,16 +129,20 @@ jobs:
                   handle.write("owned-launch " + mode + ": " + str(line) + "\n")
           if data is None:
               raise SystemExit(completed.returncode or 1)
-          if data.get("resource_acceptance") is not False:
-              raise SystemExit(1)
-          if data.get("platform") == "darwin":
-              waited = data.get("lifetime_cpu_microseconds")
-              if data.get("coverage_status") != "partial" or data.get("cpu_lifetime_complete") is not False:
+          sys.path.insert(0, os.getcwd())
+          from deploy.owned_launch_self_check import lifecycle_receipt_qualifies
+          if data.get("honest_unsupported"):
+              if (
+                  data.get("held") is not True
+                  or data.get("resource_acceptance") is not False
+                  or data.get("cleanup_ok") is True
+                  or lifecycle_receipt_qualifies(data)
+              ):
                   raise SystemExit(1)
-              if type(waited) is not int or waited <= 0:
-                  raise SystemExit(1)
-          if completed.returncode != 0 or data.get("held") is not True:
+          elif not lifecycle_receipt_qualifies(data):
               raise SystemExit(completed.returncode or 1)
+          elif completed.returncode != 0:
+              raise SystemExit(completed.returncode)
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

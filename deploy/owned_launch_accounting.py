@@ -1309,9 +1309,12 @@ class DarwinBackend:
             usage = _darwin_rusage(self._library(), pid)
             if usage is None:
                 continue
-            seen.add(pid)
             if pid == root:
-                self.root_creation = usage["start"]
+                if self.root_creation is None:
+                    self.root_creation = usage["start"]
+                elif usage["start"] != self.root_creation:
+                    continue
+            seen.add(pid)
             ledger.observe(pid, usage["start"], current=usage["resident"], high_water=None)
             if type(usage["resident"]) is int:
                 current_sum += usage["resident"]
@@ -1528,31 +1531,39 @@ def _rusage_microseconds(usage) -> int | None:
 def _darwin_group_pids(library, pgid: int) -> list[int] | None:
     """PIDs in one process group. PROC_PGRP_ONLY is 2 in Apple proc_info.h.
 
-    A group larger than the cap is unverified. A short list would hide a
-    descendant and look like a finished cleanup.
+    A null buffer asks the kernel for `(nprocs + 20) * sizeof(int)`, which is
+    every process plus margin, not this group (xnu proc_info.c). libproc turns
+    a failed call into 0 and sets errno, while a real empty group is also 0
+    with errno clear (libproc.c). This query uses a bounded buffer. A full
+    buffer can hide another member, so that result stays unverified.
     """
-    if library is None or pgid <= 1:
+    if library is None or type(pgid) is not int or pgid <= 1:
         return None
+    cap = 64 * ctypes.sizeof(ctypes.c_int)
+    buf = ctypes.create_string_buffer(cap)
+    ctypes.set_errno(0)
     try:
-        needed = library.proc_listpids(2, pgid, None, 0)
+        written = library.proc_listpids(2, pgid, buf, cap)
     except (AttributeError, OSError):
         return None
-    if type(needed) is not int or needed < 0:
+    errno = ctypes.get_errno()
+    if type(written) is not int or written < 0 or written > cap:
         return None
-    if needed == 0:
+    if written == cap or errno != 0:
+        return None
+    if written == 0:
         return []
-    if needed > 256 * 4:
-        return None
-    buf = ctypes.create_string_buffer(needed)
-    try:
-        written = library.proc_listpids(2, pgid, buf, needed)
-    except (AttributeError, OSError):
-        return None
-    if type(written) is not int or written <= 0 or written > needed:
+    if written % ctypes.sizeof(ctypes.c_int) != 0:
         return None
     count = written // ctypes.sizeof(ctypes.c_int)
     values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
-    return [int(values[index]) for index in range(count) if int(values[index]) > 0]
+    pids = []
+    for index in range(count):
+        pid = int(values[index])
+        if pid <= 0:
+            return None
+        pids.append(pid)
+    return pids
 
 
 def _darwin_rusage(library, pid: int) -> dict | None:

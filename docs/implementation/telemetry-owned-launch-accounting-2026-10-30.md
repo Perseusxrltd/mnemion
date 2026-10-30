@@ -69,14 +69,32 @@ reported as zero.
 
 `setpgrp` puts the child in its own process group. The group remains while
 any member is alive, including after the root exits. Activity and cleanup
-follow that group through `proc_listpids` with `PROC_PGRP_ONLY` (Apple
-`proc_info.h` value 2). They do not scan every pid. Before
-`kill(-pgid, SIGKILL)`, a live process whose pid equals the group id must
-still have the root's recorded `proc_pid_rusage` start. A different start is
-pid reuse: nothing is signaled, and the failure is `pid_reused`. One signal
-is sent. If members are still present after it, the failure is
-`descendants_survived` and the signal is not repeated. If the group cannot
-be listed, the failure is `group_unverified`.
+follow that group through one bounded `proc_listpids` call with
+`PROC_PGRP_ONLY` (Apple `proc_info.h` value 2). They do not scan every pid.
+A null buffer is not a size probe: xnu `proc_info.c` answers it with
+`(nprocs + 20) * sizeof(int)`, which is every process plus a margin, and
+libproc turns a failed `__proc_info` (`-1`) into `0` while setting errno. A
+real empty group is also `0` bytes, with errno clear. The adapter clears
+errno, reads at most 64 pids, and treats a zero-byte result with errno clear
+as empty. Errno, a short count that is not a whole pid list, a non-positive
+pid in that list, or a buffer that comes back full stays unverified. The
+kernel stops at the buffer, so a full buffer can omit a later member. A
+group of 64 or more is unverified. Missing data is not an empty group and
+it is not zero processes.
+
+The root identity is the `proc_pid_rusage` start from the first sample that
+reads the launched root. `spawn` takes that sample immediately. If that read
+fails, the next successful read of the same pid freezes the identity. A
+later sample whose start differs is dropped. It is not stored, and it does
+not replace the identity used for cleanup. Before `kill(-pgid, SIGKILL)`, a
+live process whose pid equals the group id must still have that frozen
+start. A different start is pid reuse: nothing is signaled, and the failure
+is `pid_reused`. One signal is sent. If members are still present after it,
+the failure is `descendants_survived` and the signal is not repeated. If the
+group cannot be listed, the failure is `group_unverified`.
+
+Child listing still uses `proc_listchildpids` with a null size probe and a
+256-pid cap. That call was not part of this correction.
 
 Resident size is current RSS. Physical footprint is not read. `wait4`
 includes only descendants the direct child itself reaped. Reparented
@@ -104,11 +122,16 @@ Run that one command on each hosted native target the release already builds
 (Windows, macOS, and Linux, x64 and arm64). It launches a short CPU worker
 and a descendant, checks that exited CPU is still in the OS counter after
 the processes are gone, records identities and null counters, then terminates
-a sleeper through the owned group. On Windows it also records one failed
-terminate of an invalid handle and does not retry it. A host that cannot
-create a disposable cgroup returns honest unsupported and does not launch an
-unmeasured process. The command does not install the app or run the 128-cycle
-workload.
+a sleeper through the owned group. The work launch's own cleanup is checked
+before the sleeper starts, so a failed work cleanup is not hidden by a later
+successful sleeper termination. The failure string is the cleanup code
+(`descendants_survived`, `pid_reused`, `group_unverified`, or another real
+code). On Windows the command also records one failed terminate of an invalid
+handle and does not retry it. That exercise is `invalid_handle_exercise`
+(`terminate_job_6` on Windows). It is not `cleanup_failure`. A host that
+cannot create a disposable cgroup returns honest unsupported and does not
+launch an unmeasured process. That receipt does not claim cleanup succeeded.
+The command does not install the app or run the 128-cycle workload.
 
 `.github/workflows/telemetry-owned-launch.yml` is manual
 (`workflow_dispatch` only). It runs that command once on the six runners
@@ -122,9 +145,13 @@ unit with `Delegate=yes`, so the process can create a child of its own
 cgroup. The workflow does not write the host `cgroup.subtree_control` and
 does not change a developer machine's group permissions. If the scope cannot
 be created, the same command runs once in the job and the receipt stays the
-adapter's honest unsupported result. A macOS receipt with partial coverage
-and a positive `wait4` total is the expected limit. A missing or zero CPU
-total is not a pass.
+adapter's honest unsupported result. A held receipt qualifies only when
+`cleanup_ok` is true and `cleanup_failure` is null, including a receipt
+whose process exited zero. Missing or failed cleanup does not qualify.
+Honest unsupported is recorded and does not qualify. A macOS receipt with
+partial coverage, `cpu_lifetime_complete` false, a positive `wait4` total,
+and cleanup ok is the expected limit. A missing or zero CPU total is not a
+pass.
 
 ## Sources
 
@@ -137,6 +164,13 @@ total is not a pass.
 - Apple `proc_info.h`: `pti_resident_size` is resident memory. The adapter
   uses `proc_pid_rusage` `ri_resident_size` and does not use footprint.
   `PROC_PGRP_ONLY` is 2 and lists one process group.
+- Apple xnu `bsd/kern/proc_info.c`: a null `proc_listpids` buffer returns
+  `(nprocs + 20) * sizeof(int)` and does not filter by process group. With a
+  buffer, `PROC_PGRP_ONLY` keeps processes whose `p_pgrpid` matches, and an
+  empty match returns 0 bytes. The walk stops when the buffer is full.
+- Apple libproc `libproc.c`: if `__proc_info` returns `-1`, `proc_listpids`
+  returns `0` and errno is set. A successful call returns the byte count,
+  including `0`.
 - Python `os.wait4` returns `(pid, status, rusage)`. `resource.getrusage`
   documents `ru_utime` and `ru_stime` as float seconds.
 - POSIX `kill`: a pid less than -1 signals the process group whose id is

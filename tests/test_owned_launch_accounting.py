@@ -20,7 +20,11 @@ from deploy.owned_launch_accounting import (
     combine_active_cpu,
     installed_journey_boundary,
 )
-from deploy.owned_launch_self_check import run_self_check
+from deploy.owned_launch_self_check import (
+    _require_owned_cleanup,
+    lifecycle_receipt_qualifies,
+    run_self_check,
+)
 
 
 def test_active_cpu_keeps_missing_counters_null_and_keeps_a_measured_zero():
@@ -282,37 +286,198 @@ def test_darwin_reused_leader_is_not_signaled(monkeypatch):
 def test_darwin_group_list_reads_only_that_process_group():
     import deploy.owned_launch_accounting as accounting
 
+    ctypes.set_errno(0)
     calls = []
+    width = ctypes.sizeof(ctypes.c_int)
+    cap = 64 * width
 
     class Library:
         def proc_listpids(self, kind, pgid, buf, size):
-            calls.append((kind, pgid, size))
-            if size == 0:
-                return ctypes.sizeof(ctypes.c_int) * 3
+            calls.append((kind, pgid, buf is None, size))
+            if buf is None or size == 0:
+                return (400 + 20) * width
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 4242
+            values[1] = 5555
+            return width * 2
+
+    assert accounting._darwin_group_pids(Library(), 4242) == [4242, 5555]
+    assert calls == [(2, 4242, False, cap)]
+
+    class BusyHost:
+        def proc_listpids(self, kind, pgid, buf, size):
+            calls.append(("busy", buf is None, size))
+            if buf is None or size == 0:
+                return (400 + 20) * width
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 4242
+            return width
+
+    assert accounting._darwin_group_pids(BusyHost(), 4242) == [4242]
+    assert ("busy", True, 0) not in calls
+    assert calls[-1] == ("busy", False, cap)
+
+    class Empty:
+        def proc_listpids(self, kind, pgid, buf, size):
+            ctypes.set_errno(0)
+            return 0
+
+    assert accounting._darwin_group_pids(Empty(), 4242) == []
+
+    class ErrorZero:
+        def proc_listpids(self, kind, pgid, buf, size):
+            ctypes.set_errno(22)
+            return 0
+
+    assert accounting._darwin_group_pids(ErrorZero(), 4242) is None
+
+    class ErrnoWithPids:
+        def proc_listpids(self, kind, pgid, buf, size):
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 4242
+            ctypes.set_errno(22)
+            return width
+
+    assert accounting._darwin_group_pids(ErrnoWithPids(), 4242) is None
+
+    class Full:
+        def proc_listpids(self, kind, pgid, buf, size):
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 4242
+            return size
+
+    assert accounting._darwin_group_pids(Full(), 4242) is None
+
+    class Over:
+        def proc_listpids(self, kind, pgid, buf, size):
+            calls.append(("over", buf is None, size))
+            return size + width
+
+    assert accounting._darwin_group_pids(Over(), 4242) is None
+    assert calls[-1] == ("over", False, cap)
+
+    class Hole:
+        def proc_listpids(self, kind, pgid, buf, size):
             values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
             values[0] = 4242
             values[1] = 0
             values[2] = 5555
-            return ctypes.sizeof(ctypes.c_int) * 3
+            return width * 3
 
-    assert accounting._darwin_group_pids(Library(), 4242) == [4242, 5555]
-    assert calls == [(2, 4242, 0), (2, 4242, ctypes.sizeof(ctypes.c_int) * 3)]
+    assert accounting._darwin_group_pids(Hole(), 4242) is None
 
-    class Huge:
+    class Short:
         def proc_listpids(self, kind, pgid, buf, size):
-            calls.append(("huge", size))
-            return 256 * 4 + 4
+            return 2
 
-    assert accounting._darwin_group_pids(Huge(), 4242) is None
-    assert ("huge", 0) in calls
-    assert ("huge", 256 * 4) not in calls
-
-    class Empty:
-        def proc_listpids(self, kind, pgid, buf, size):
-            return 0
-
-    assert accounting._darwin_group_pids(Empty(), 4242) == []
+    assert accounting._darwin_group_pids(Short(), 4242) is None
     assert accounting._darwin_group_pids(Empty(), 1) is None
+    assert accounting._darwin_group_pids(Empty(), True) is None
+    assert accounting._darwin_group_pids(None, 4242) is None
+    ctypes.set_errno(0)
+
+
+def test_darwin_reused_pid_does_not_replace_the_root_identity(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    kills = []
+    monkeypatch.setattr(accounting.os, "kill", lambda pid, sig: kills.append((pid, sig)))
+    monkeypatch.setattr(accounting, "_darwin_children", lambda _library, _pid: [])
+    starts = {4242: 111}
+
+    def rusage(_library, pid):
+        if pid == 4242:
+            return {
+                "user": 1,
+                "system": 1,
+                "child_user": 0,
+                "child_system": 0,
+                "resident": 4,
+                "start": starts[4242],
+            }
+        return None
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", rusage)
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend._libproc = object()
+    backend.sample(backend.ledger)
+    starts[4242] = 999
+    backend.sample(backend.ledger)
+    assert backend.root_creation == 111
+    assert [row["identity"] for row in backend.ledger.public()] == ["4242:111"]
+    starts[4242] = 111
+    backend.sample(backend.ledger)
+    assert backend.root_creation == 111
+    assert [row["identity"] for row in backend.ledger.public()] == ["4242:111"]
+    starts[4242] = 999
+    ok, failure = backend.terminate()
+    assert ok is False
+    assert failure == "pid_reused"
+    assert kills == []
+
+
+def test_failed_owned_cleanup_does_not_qualify():
+    with pytest.raises(AssertionError, match="^descendants_survived$"):
+        _require_owned_cleanup({
+            "cleanup": {"ok": False, "failure": "descendants_survived", "retried": False},
+        })
+    with pytest.raises(AssertionError, match="^cleanup_missing$"):
+        _require_owned_cleanup({})
+
+    darwin = {
+        "held": True,
+        "platform": "darwin",
+        "resource_acceptance": False,
+        "coverage_status": "partial",
+        "cpu_lifetime_complete": False,
+        "lifetime_cpu_microseconds": 750_000,
+        "cleanup_ok": False,
+        "cleanup_failure": "descendants_survived",
+    }
+    assert lifecycle_receipt_qualifies(darwin) is False
+    missing = dict(darwin)
+    del missing["cleanup_ok"]
+    del missing["cleanup_failure"]
+    assert lifecycle_receipt_qualifies(missing) is False
+    assert lifecycle_receipt_qualifies({"held": False, "failure": "descendants_survived"}) is False
+    good = dict(darwin)
+    good["cleanup_ok"] = True
+    good["cleanup_failure"] = None
+    assert lifecycle_receipt_qualifies(good) is True
+    exercised = dict(good)
+    exercised["invalid_handle_exercise"] = {
+        "exercised": True,
+        "failure": "terminate_job_6",
+        "retried": False,
+    }
+    assert lifecycle_receipt_qualifies(exercised) is True
+    mixed = dict(exercised)
+    mixed["cleanup_ok"] = False
+    mixed["cleanup_failure"] = "terminate_job_6"
+    assert lifecycle_receipt_qualifies(mixed) is False
+    unsupported = dict(good)
+    unsupported["honest_unsupported"] = "cgroup_unavailable"
+    assert lifecycle_receipt_qualifies(unsupported) is False
+    complete = dict(good)
+    complete["cpu_lifetime_complete"] = True
+    assert lifecycle_receipt_qualifies(complete) is False
+    windows = {
+        "held": True,
+        "platform": "win32",
+        "resource_acceptance": False,
+        "cleanup_ok": True,
+        "cleanup_failure": None,
+        "invalid_handle_exercise": {
+            "exercised": True,
+            "failure": "terminate_job_6",
+            "retried": False,
+        },
+    }
+    assert lifecycle_receipt_qualifies(windows) is True
+    windows_mixed = dict(windows)
+    windows_mixed["cleanup_failure"] = "terminate_job_6"
+    assert lifecycle_receipt_qualifies(windows_mixed) is False
 
 
 def test_owned_launch_lifecycle_self_check():

@@ -109,6 +109,35 @@ def _assert_common(report: dict, private: str) -> None:
         raise AssertionError("footprint was labeled rss")
 
 
+def _require_owned_cleanup(report: dict) -> None:
+    """The launch's own cleanup. Not the invalid-handle exercise."""
+    cleanup = report.get("cleanup") if type(report) is dict else None
+    if type(cleanup) is not dict or cleanup.get("ok") is not True:
+        failure = None if type(cleanup) is not dict else cleanup.get("failure")
+        raise AssertionError(failure or "cleanup_missing")
+
+
+def lifecycle_receipt_qualifies(data: object) -> bool:
+    """True only for a held run whose owned cleanup succeeded.
+
+    An honest unsupported receipt is not qualification. The Windows
+    invalid-handle exercise is not the cleanup result.
+    """
+    if type(data) is not dict or data.get("honest_unsupported"):
+        return False
+    if data.get("held") is not True or data.get("resource_acceptance") is not False:
+        return False
+    if data.get("cleanup_ok") is not True or data.get("cleanup_failure") is not None:
+        return False
+    if data.get("platform") == "darwin":
+        waited = data.get("lifetime_cpu_microseconds")
+        if data.get("coverage_status") != "partial" or data.get("cpu_lifetime_complete") is not False:
+            return False
+        if type(waited) is not int or waited <= 0:
+            return False
+    return True
+
+
 def _assert_retained_cpu(report: dict) -> None:
     coverage = report["coverage"]
     if coverage["cpu_lifetime_complete"] is not True or coverage["cpu_includes_exited_descendants"] is not True:
@@ -180,7 +209,7 @@ def run_self_check() -> dict:
                 "platform": sys.platform,
                 "machine": platform.machine(),
                 "resource_acceptance": False,
-                "cleanup_failure_recorded": cleanup["failure"] if sys.platform == "win32" else signal_failure,
+                "invalid_handle_exercise": _invalid_handle_exercise(cleanup),
             }
         if sys.platform == "darwin":
             coverage = work["coverage"]
@@ -193,6 +222,7 @@ def run_self_check() -> dict:
                 raise AssertionError("darwin wait4 resource result was missing")
             if work["lifetime_cpu_microseconds"] != waited:
                 raise AssertionError("darwin lifetime cpu did not use the waited resource result")
+            _require_owned_cleanup(work)
         else:
             _assert_retained_cpu(work)
             if sys.platform == "win32":
@@ -206,6 +236,8 @@ def run_self_check() -> dict:
         stopped = _terminate(script, marker)
         if sys.platform == "win32" and stopped["kernel"]["active_processes"] != 0:
             raise AssertionError("terminated job still had active processes")
+        _require_owned_cleanup(work)
+        _require_owned_cleanup(stopped)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     return {
@@ -223,10 +255,20 @@ def run_self_check() -> dict:
         "ledger_count": len(work["ledger"]),
         "total_processes": None if not work.get("kernel") else work["kernel"].get("total_processes"),
         "active_processes_after_exit": None if not work.get("kernel") else work["kernel"].get("active_processes"),
-        "cleanup_ok": work["cleanup"]["ok"] and stopped["cleanup"]["ok"],
+        "cleanup_ok": True,
+        "cleanup_failure": None,
         "termination_exercised": stopped["cleanup"]["terminated_owned_group"],
-        "cleanup_failure_recorded": cleanup["failure"] if sys.platform == "win32" else signal_failure,
+        "invalid_handle_exercise": _invalid_handle_exercise(cleanup),
         "unavailable_counters": work["unavailable_counters"],
+    }
+
+
+def _invalid_handle_exercise(cleanup: dict) -> dict:
+    exercised = cleanup.get("exercised") is True
+    return {
+        "exercised": exercised,
+        "failure": cleanup.get("failure") if exercised else None,
+        "retried": False,
     }
 
 
