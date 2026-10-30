@@ -43,9 +43,12 @@ admission deadline. The reviewed resource
 controller now acknowledges each case before the next begins, reconciles all
 collector packets and releases its input handle on completion. The combined
 Electron and diagnostic frontend builds passed. Original installed resource
-comparison 41039553671 on `15715800` is running across all six targets; it
-compares unavailable, opted-out and enabled conditions using the fixed
-128-cycle workload. Its execution, accounting and budgets are not yet qualified.
+comparison 41039553671 on `15715800` encountered a preparation failure:
+the controller checks the inactive installer against the active baked source
+tree. Five original target logs confirm the source-fingerprint refusal; Mac
+Intel was still running at the 10:43 UTC observation. The package-to-source
+binding correction is in progress. The fixed 128-cycle workload, accounting
+and budgets remain unqualified; the earlier delivery passes retain their scope.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and
 production hosting unresolved. The

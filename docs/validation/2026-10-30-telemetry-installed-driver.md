@@ -391,7 +391,7 @@ Six targets now have scoped delivery passes across four original sources.
 The earlier failures remain intact, and this passing correction does not
 establish the exact cause of the earlier ARM64 Privacy-page failure.
 
-## Installed resource comparison started
+## Installed resource comparison preparation failure
 
 Original run [41039553671](https://github.com/Perseusxrltd/mnemion/actions/runs/41039553671)
 uses source `15715800c58c9aa0958e29ea0173d0c65291ba4f` and the optional
@@ -399,11 +399,29 @@ uses source `15715800c58c9aa0958e29ea0173d0c65291ba4f` and the optional
 change fixed only the separate compiled-controller staging path; the installed
 driver and product runtime were unchanged from the sixth delivery run.
 
-The run prepares inactive and active diagnostic packages from the same source
-and uses the fixed counterbalanced 128-cycle cases. Its original observer
+The run prepares inactive and active diagnostic packages from the same commit,
+with deliberately different build-time telemetry settings, and uses the fixed
+counterbalanced 128-cycle cases. Its original observer
 retains outcomes and missing accounting rather than retrying failures or
 accepting budgets automatically. Private evidence is under
 `telemetry-owned-resources/installed-native-run/`.
+At 10:43 UTC on 30 October, original logs from Linux x64/ARM64, Windows
+x64/ARM64 and Mac ARM64 all recorded `Native engine was frozen from different
+source files` before the workload could run. Mac Intel remained in progress.
+The failing jobs are 124012045010, 124012044770, 124012044892, 124012044864
+and 124012044920, respectively. These are preparation failures, with no
+qualified CPU or RAM comparison.
+
+Source review traced the refusal to `verifyInstalled`: every package is
+verified from the active baked source root, including the inactive package
+installed first. The native source digest correctly includes the telemetry
+JSON files that differ between these two builds. The correction in progress
+must bind each installer to its own exact staged source while retaining
+source, inventory, version and architecture verification. Original failed
+logs and their hashes are retained under `early-failures/`, with the review
+in `preparation-failure-review.json`. The scoped delivery qualifications above
+are separate from this failed comparison setup.
+
 Execution, resource accounting, the 8 MiB/0.5% budgets and production collection
-remain unqualified while that original run is in progress. All 66 requirements
+remain unqualified. All 66 requirements
 retain their text and state; V08 remains Building with collection off.

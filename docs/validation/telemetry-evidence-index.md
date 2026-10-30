@@ -37,9 +37,12 @@ Electron build; the frontend build also compiled the optional resource client
 entry. Resource controller corrections are reviewed, including acknowledged
 case boundaries, normal input-handle release and exact global packet totals.
 The corrected ARM64 journey passed, with no snapshot admission deadline loss.
-Original installed resource comparison 41039553671 on `15715800` is running
-across all six desktop targets. Its execution, accounting and budgets remain
-unqualified; partial counters cannot become a resource pass.
+Original installed resource comparison 41039553671 on `15715800` failed
+preparation on five targets by the 10:43 UTC observation; Mac Intel was still
+running. The controller checks the inactive installer against the active
+baked source tree. A correction must bind each package to its exact staged
+source while retaining native verification. Execution, accounting and budgets
+remain unqualified; partial counters cannot become a resource pass.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
 production hosting unresolved. The
