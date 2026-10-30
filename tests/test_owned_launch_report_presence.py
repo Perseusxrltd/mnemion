@@ -58,7 +58,18 @@ def _verdict(report) -> dict:
 
 
 def test_absent_empty_and_nonobjects_are_not_a_launched_workload():
-    for report in (None, [], {}, "report", 0, 1.5, True, {"hello": 1}, {"launched": "yes"}, {"launched": 1}):
+    for report in (
+        None,
+        [],
+        {},
+        "report",
+        0,
+        1.5,
+        True,
+        {"hello": 1},
+        {"launched": "yes"},
+        {"launched": 1},
+    ):
         verdict = _verdict(report)
         assert verdict["python"]["present"] is False
         assert verdict["python"]["launched"] is None

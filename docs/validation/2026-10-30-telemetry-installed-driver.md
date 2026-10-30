@@ -403,25 +403,59 @@ The run prepares inactive and active diagnostic packages from the same commit,
 with deliberately different build-time telemetry settings, and uses the fixed
 counterbalanced 128-cycle cases. Its original observer
 retains outcomes and missing accounting rather than retrying failures or
-accepting budgets automatically. Private evidence is under
-`telemetry-owned-resources/installed-native-run/`.
+accepting budgets automatically.
 At 10:43 UTC on 30 October, original logs from Linux x64/ARM64, Windows
 x64/ARM64 and Mac ARM64 all recorded `Native engine was frozen from different
 source files` before the workload could run. Mac Intel remained in progress.
 The failing jobs are 124012045010, 124012044770, 124012044892, 124012044864
-and 124012044920, respectively. These are preparation failures, with no
-qualified CPU or RAM comparison.
+and 124012044920, respectively. This remains the original partial observation.
+
+The run finished with failure at 10:48 UTC. The terminal review confirms all six
+targets failed before any workload with `ValueError: Native engine was frozen
+from different source files`; Mac Intel job 124012045061 has the same refusal.
+All six artifact ZIP digests and 74 extracted files were verified. Source bytes
+were not independently reconstructed. There were zero completed workload cases,
+process-ledger entries, successful memory API calls or accepted packets. These
+are preparation failures, with no qualified CPU or RAM comparison.
+
+All 36 placeholder receipt cases incorrectly claim `owned.present` and
+`owned.launched`. Missing owned reports defaulted to an empty object that the
+serializer labeled present and launched, despite no workload report or process
+ledger. These claims are rejected; missing evidence must remain absent or
+unknown. The receipt serialization correction below is reviewed; it does not
+change or qualify these original failed observations.
 
 Source review traced the refusal to `verifyInstalled`: every package is
 verified from the active baked source root, including the inactive package
 installed first. The native source digest correctly includes the telemetry
 JSON files that differ between these two builds. The correction in progress
 must bind each installer to its own exact staged source while retaining
-source, inventory, version and architecture verification. Original failed
-logs and their hashes are retained under `early-failures/`, with the review
-in `preparation-failure-review.json`. The scoped delivery qualifications above
-are separate from this failed comparison setup.
+source, inventory, version and architecture verification. No source-binding
+candidate is accepted. Original failed logs, their hashes and both the partial
+and terminal reviews are retained. The scoped delivery qualifications above
+span four original sources and remain separate from this failed comparison
+setup; they do not establish a complete passing matrix on one source.
 
 Execution, resource accounting, the 8 MiB/0.5% budgets and production collection
 remain unqualified. All 66 requirements
 retain their text and state; V08 remains Building with collection off.
+
+## Missing owned-report correction
+
+Reviewed source [60c718cc](https://github.com/Perseusxrltd/mnemion/commit/60c718cc07ec1edf63b3352d830beb941534e332)
+corrects the Python and JavaScript report readers. Missing, empty, malformed
+and withheld reports no longer imply a launched workload. Metadata remains
+available while launch status stays unknown; validated process observations,
+measured zeros and explicit launch flags retain their supported meaning.
+Absent state survives the JavaScript output being read again by Python.
+
+Eight new corpus checks, eleven existing Python helper regressions and five
+existing Node checks passed on Windows. These exercise pure report handling;
+they do not launch the installed app or qualify resource overhead. Python
+formatting and lint also passed; formatting preserved the parsed Python code.
+The original failed-run receipts remain unchanged and their false launch claims
+remain rejected. Old files already carrying an explicit true launch flag cannot
+be retroactively distinguished from valid historical records by this correction.
+
+The separate package-to-source correction, a new installed resource comparison
+and production collector deployment remain open. Public collection stays off.

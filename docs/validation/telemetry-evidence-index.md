@@ -37,12 +37,18 @@ Electron build; the frontend build also compiled the optional resource client
 entry. Resource controller corrections are reviewed, including acknowledged
 case boundaries, normal input-handle release and exact global packet totals.
 The corrected ARM64 journey passed, with no snapshot admission deadline loss.
-Original installed resource comparison 41039553671 on `15715800` failed
-preparation on five targets by the 10:43 UTC observation; Mac Intel was still
-running. The controller checks the inactive installer against the active
-baked source tree. A correction must bind each package to its exact staged
-source while retaining native verification. Execution, accounting and budgets
-remain unqualified; partial counters cannot become a resource pass.
+Original installed resource comparison
+[41039553671](https://github.com/Perseusxrltd/mnemion/actions/runs/41039553671)
+on `15715800` ended in preparation failure on all six targets before any
+workload. The controller checks the inactive installer against the active
+baked source tree, producing `ValueError: Native engine was frozen from different
+source files`. Six artifact ZIP digests and 74 extracted files were verified;
+zero workload cases completed. All 36 placeholder receipt cases incorrectly claim
+`owned.present` and `owned.launched`; those claims are rejected. The receipt
+serialization correction passed 19 focused Python checks and five Node checks.
+It preserves absent reports through both readers and leaves metadata-only launch
+status unknown. Package-to-source binding remains in progress and unaccepted. Execution, accounting and budgets remain unqualified. The installed
+report retains the earlier five-failures/one-running observation as chronology.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
 production hosting unresolved. The
