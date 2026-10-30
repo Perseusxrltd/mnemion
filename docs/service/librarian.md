@@ -86,6 +86,21 @@ Python's `client.librarian_coverage(space_id)` or TypeScript's
 retrieval accuracy, grounding, calibration and quality evaluations remain
 separate measurements.
 
+## Background operation
+
+An idle librarian gradually increases the pause between queue checks from two
+seconds to a maximum of 30 seconds. Submitting a queued run through the app or
+API wakes the receiving service process after the run is committed. Repeated
+notifications coalesce. Scheduled work and submissions from another process
+remain discoverable through the bounded fallback check; current resource
+pressure or an active job can still defer their execution.
+
+Active steps retain their two-second pacing. Waking the runner does not bypass
+its resource check, permissions, daily budget or review requirements. Shutdown
+interrupts an idle wait. A service without a configured provider does not start
+the librarian worker. The [runtime efficiency contract](../implementation/runtime-efficiency.md)
+tracks the broader work to keep background operation light.
+
 ## Configure a local model
 
 Install and run a suitable model server separately. Mnemion never starts a model

@@ -32,6 +32,13 @@ fairness](../service/memory-resources.md) provide part of this behavior. Their
 documented measurements retain their original scope. They do not prove that
 every background process is already light on every supported machine.
 
+The shared [librarian](../service/librarian.md#background-operation) now backs
+off empty queue checks to a 30-second sleep cap, with a coalescing local wake
+after a queued API run commits. Active steps retain their two-second pacing and
+resource checks. This reduces the frequency of idle queue claims; it is not a
+measurement of CPU or RAM savings across the application. Scheduled and
+cross-process submissions retain the bounded fallback.
+
 ## Acceptance work
 
 Measure the complete owned process set, including the app, local engine,
