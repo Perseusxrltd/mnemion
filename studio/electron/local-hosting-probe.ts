@@ -11,6 +11,7 @@ import { verifyNativeCapturePolicy } from './native-capture-policy-probe.js'
 import { verifyNativeHeadlessCapture, verifyNativeHeadlessPreview } from './native-headless-capture-probe.js'
 import { workspaceOpenError } from './local-hosting-diagnostics.js'
 import { verifyNativeTelemetry } from './native-telemetry-probe.js'
+import { verifyInstalledTelemetryDelivery } from './native-telemetry-delivery-probe.js'
 import { verifyNativeServiceRequests } from './native-service-request-probe.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
@@ -21,6 +22,9 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!profile || !smoke || dirname(resolve(path)) !== dirname(resolve(profile)) || dirname(resolve(smoke)) !== dirname(resolve(path)) ||
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
+  if (config?.phase === 'telemetry-delivery' || config?.phase === 'telemetry-restart') {
+    return verifyInstalledTelemetryDelivery(window, config)
+  }
   if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-policy', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'capture-headless', 'capture-preview'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
       (!['create', 'capture-preview'].includes(config.phase) && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')

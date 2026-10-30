@@ -33,7 +33,8 @@ const userData = join(temporary, 'Private profile')
 const probeFile = join(temporary, 'hosting-probe.json')
 const smokeFile = join(temporary, 'smoke.json')
 const quitFile = join(temporary, 'quit-request')
-const evidenceFile = join(root, 'build-tmp/installed-hosting-evidence.json')
+const telemetryDelivery = process.env.MNEMION_TELEMETRY_INSTALLED_DELIVERY === '1'
+const evidenceFile = join(root, telemetryDelivery ? 'build-tmp/telemetry-installed-delivery.json' : 'build-tmp/installed-hosting-evidence.json')
 let executable
 let child
 let stdout = '', stderr = ''
@@ -151,12 +152,84 @@ async function stop() {
   }
 }
 
+function loopbackFixture(value) {
+  let url
+  try { url = new URL(value) } catch { throw new Error('Telemetry delivery fixture refused a non-loopback destination') }
+  const port = Number(url.port)
+  if (url.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(url.hostname) || url.username || url.password ||
+      url.search || url.hash || (url.pathname !== '/' && url.pathname !== '') || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('Telemetry delivery fixture refused a non-loopback destination')
+  }
+  return url.origin
+}
+
+function readDeliveryStore(credential) {
+  const result = spawnSync(python, ['-m', 'deploy.probe_telemetry_installed', '--read-store', userData], {
+    cwd: root, encoding: 'utf8', input: credential, timeout: 30000, maxBuffer: 1024 * 1024,
+  })
+  if (result.status !== 0) throw new Error('Installed telemetry store could not be read')
+  return JSON.parse(result.stdout)
+}
+
+async function runInstalledTelemetryDelivery(nativeRuntime) {
+  const endpoint = loopbackFixture(process.env.MNEMION_TELEMETRY_FIXTURE_ENDPOINT)
+  const spaceId = process.env.MNEMION_TELEMETRY_FIXTURE_SPACE
+  const credential = process.env.MNEMION_TELEMETRY_FIXTURE_KEY
+  if (!/^[a-f0-9-]{36}$/.test(spaceId || '') || typeof credential !== 'string' || credential.length < 16 ||
+      credential.length > 256 || /\s/.test(credential)) throw new Error('Telemetry delivery fixture is incomplete')
+  const deliveryChecks = ['disclosure_required', 'setup_disclosure_deferred_without_permission', 'manual_choice_before_permission',
+    'app_disclosure_acknowledged', 'exact_review_preserved', 'native_optout_invalidates_review', 'reenable_starts_empty',
+    'discard_does_not_spend', 'approved_attempt_uses_inspected_body']
+  const first = await launch({ phase: 'telemetry-delivery', endpoint, spaceId, credential })
+  if (first.packaged !== true || first.runtime?.packaged !== true) throw new Error('The telemetry delivery probe did not run inside a packaged app')
+  if (deliveryChecks.some(name => first.checks?.[name] !== true)) throw new Error('Installed telemetry delivery checks did not complete')
+  if (!/^[0-9a-f]{50}$/.test(first.approved_body_hex || '')) throw new Error('Installed telemetry delivery did not return the inspected 25-byte body')
+  await stop()
+  const restarted = await launch({ phase: 'telemetry-restart' })
+  if (restarted.packaged !== true || restarted.checks?.optout_and_review_survive_restart !== true) {
+    throw new Error('Installed telemetry opt-out did not survive one clean restart')
+  }
+  await stop()
+  const store = readDeliveryStore(credential)
+  if (store.attempts?.[0] !== 1 || store.attempts?.[1] !== 65536 || store.lease_cleared !== true || store.queue_cells !== 0) {
+    throw new Error('Installed telemetry delivery did not keep one cleared 65536-byte reservation')
+  }
+  if (store.fixture_content_absent !== true) throw new Error('Installed telemetry store retained fixture content')
+  const installer = artifacts.installers[0]
+  const evidence = {
+    qualification: 'installed fixture delivery',
+    app_checks_passed: true,
+    collector_compared: false,
+    production_collection_available: false,
+    resource_acceptance: false,
+    platform: process.platform,
+    architecture: process.arch,
+    packaged: true,
+    runtime: first.runtime,
+    installer_sha256: createHash('sha256').update(readFileSync(installer)).digest('hex'),
+    approved_body_hex: first.approved_body_hex,
+    review_checks: { ...first.checks, optout_and_review_survive_restart: true },
+    app_launches: 2,
+    durable: { attempts: store.attempts, lease_cleared: true, queue_cells: 0, fixture_content_absent: true },
+    nativeRuntime,
+    scope: 'Diagnostic packaged app, loopback fixture disclosure baked before packaging, one inspected report and one restart. Production ingress, provider privacy, resources and full V08 remain unqualified.',
+  }
+  mkdirSync(join(root, 'build-tmp'), { recursive: true })
+  writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
+  console.log(JSON.stringify({ qualification: evidence.qualification, app_checks_passed: true, packaged: true }))
+}
+
 function credentialsHash() {
   return createHash('sha256').update(readFileSync(join(userData, 'mnemion-local-workspace/credentials.json'))).digest('hex')
 }
 
 try {
   const nativeRuntime = await install()
+  if (telemetryDelivery) {
+    await runInstalledTelemetryDelivery(nativeRuntime)
+    succeeded = true
+    return
+  }
   const port = await freePort()
   const preview = await launch({ phase: 'capture-preview', port })
   if (!preview.nativeEmptyCapturePreview) throw new Error('The installed empty capture preview did not complete')
@@ -313,7 +386,7 @@ try {
   let backupState
   let invalidBackupStateDiagnostic = false
   try { backupState = backupStateDiagnostic(state?.backupStateDiagnostic) } catch { invalidBackupStateDiagnostic = true }
-  writeFileSync(evidenceFile, JSON.stringify({ passed: false, platform: process.platform, architecture: process.arch,
+  writeFileSync(evidenceFile, JSON.stringify({ passed: false, qualification: telemetryDelivery ? 'installed fixture delivery' : undefined, platform: process.platform, architecture: process.arch,
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
     ...(workspaceOpen ? { workspaceOpen } : {}),

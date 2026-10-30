@@ -1,0 +1,108 @@
+name: Installed telemetry delivery
+
+# Manual diagnostic only. This does not publish, sign a release, or accept the
+# installed journey. Windows ARM stays in the six-target matrix and fails closed
+# until a same-disclosure diagnostic engine exists. Do not download the
+# production Windows service archive: its disclosure is collection false.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telemetry-installed-delivery-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  targets:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      database_matrix: ${{ steps.select.outputs.database_matrix }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - id: select
+        run: python -m deploy.release_targets >> "$GITHUB_OUTPUT"
+
+  native_database:
+    needs: targets
+    uses: ./.github/workflows/native-runtime.yml
+    with:
+      matrix: ${{ needs.targets.outputs.database_matrix }}
+
+  delivery:
+    needs: [targets, native_database]
+    if: needs.targets.result == 'success' && needs.native_database.result == 'success'
+    name: Installed fixture delivery / ${{ matrix.os }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      MNEMION_REQUIRE_CODE_SIGNATURE: '0'
+      MNEMION_ENGINE_PYTHON: ${{ github.workspace }}/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
+      MNEMION_BUILD_PYTHON: ${{ github.workspace }}/studio/client/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
+      MNEMION_POSTGRES_ARCHIVES: ${{ github.workspace }}/build-tmp/native-postgres
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        id: python
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.arch }}
+      - name: Record the Windows ARM engine gap
+        if: success() && matrix.os == 'windows-11-arm'
+        run: python -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-delivery"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: success() && matrix.os != 'windows-11-arm'
+        with:
+          node-version: '22'
+          architecture: ${{ matrix.arch }}
+          cache: npm
+          cache-dependency-path: |
+            packages/client/package-lock.json
+            studio/frontend/package-lock.json
+            studio/electron/package-lock.json
+      - name: Linux desktop libraries
+        if: success() && runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2 libsecret-1-0 gnome-keyring dbus-x11
+      - name: Locked desktop interpreters
+        if: success() && matrix.os != 'windows-11-arm'
+        run: |
+          python -m pip install uv==0.12.24
+          uv sync --project studio/client --locked --python "${{ steps.python.outputs.python-path }}" --no-managed-python
+          uv sync --locked --no-default-groups --group native-build --python "${{ steps.python.outputs.python-path }}" --no-managed-python
+      - name: Download this commit's verified database archive
+        if: success() && matrix.os != 'windows-11-arm'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: native-postgres-${{ matrix.platform }}-${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
+          path: build-tmp/native-postgres
+      - name: Install locked desktop packages
+        if: success() && matrix.os != 'windows-11-arm'
+        run: |
+          npm --prefix packages/client ci
+          npm --prefix studio/frontend ci
+          npm --prefix studio/electron ci
+      - name: Exercise one unpublished installed fixture delivery
+        if: success() && matrix.os != 'windows-11-arm'
+        run: python -m deploy.probe_telemetry_installed --source "${{ github.workspace }}" --output "${{ github.workspace }}/output/telemetry-installed-delivery"
+      - name: Keep the installed fixture delivery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: telemetry-installed-delivery-${{ matrix.platform }}-${{ matrix.arch }}
+          path: output/telemetry-installed-delivery/
+          if-no-files-found: ignore
+          retention-days: 7
