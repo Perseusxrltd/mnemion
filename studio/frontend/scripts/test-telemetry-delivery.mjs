@@ -18,6 +18,7 @@ function load(url) {
   return exported
 }
 const { BrowserTelemetry, choiceKey, queueKey } = load(entry)
+const { connectionEditDisclosureVersion } = load(new URL('../src/workspace/telemetry-setup.ts', import.meta.url))
 const { budgetKey, budgetState, DAY, WEEK, COST } = load(new URL('../src/workspace/telemetry-budget.ts', import.meta.url))
 const { pendingState } = load(new URL('../src/workspace/telemetry-aggregate.ts', import.meta.url))
 const { sendBrowserTelemetry } = load(new URL('../src/workspace/telemetry-transport.ts', import.meta.url))
@@ -89,12 +90,13 @@ async function available(run) {
   try { await run() } finally { Object.assign(contract, saved) }
 }
 
-function fixture(asyncLocks = false, releaseLater = false) {
+function fixture(asyncLocks = false, releaseLater = false, withConditions = false) {
   const values = new Map(), events = new EventTarget(), listeners = new Map()
   const add = events.addEventListener.bind(events), remove = events.removeEventListener.bind(events)
   events.addEventListener = (name, callback, ...rest) => { listeners.set(callback, name); add(name, callback, ...rest) }
   events.removeEventListener = (name, callback, ...rest) => { listeners.delete(callback); remove(name, callback, ...rest) }
   let now = Date.now(), monotonic = performance.now(), busy = false, restricted = false, privacy = false, fault = () => false
+  let readConditions = () => ({ network: 'unknown', constrained: false })
   const storage = { getItem: key => values.get(key) ?? null,
     setItem: (key, value) => { if (fault(key, value)) throw new Error('PRIVATE_SENTINEL'); values.set(key, value) },
     removeItem: key => { values.delete(key) } }
@@ -114,7 +116,8 @@ function fixture(asyncLocks = false, releaseLater = false) {
   } }
   const client = () => new BrowserTelemetry(() => storage,
     () => ({ state: restricted ? 'restricted' : 'unmanaged', enabled: !restricted, metric_groups: restricted ? [] : ['usage'] }),
-    () => privacy, () => true, { locks: () => locks, now: () => now, monotonic: () => monotonic, events: () => events })
+    () => privacy, () => true, { locks: () => locks, now: () => now, monotonic: () => monotonic, events: () => events,
+      ...(withConditions ? { conditions: () => readConditions() } : {}) })
   const first = client(), choice = (target, enabled) => {
     const status = target.status()
     return target.configure({ enabled, expected_revision: status.revision, expected_generation: status.store_generation,
@@ -130,7 +133,8 @@ function fixture(asyncLocks = false, releaseLater = false) {
     advance: milliseconds => { now += milliseconds; monotonic += milliseconds },
     rollback: () => { now-- }, stallClock: () => { monotonic += 5000 },
     busy: value => { busy = value }, restrict: value => { restricted = value }, privacy: value => { privacy = value },
-    fault: value => { fault = value } }
+    fault: value => { fault = value },
+    observe: value => { readConditions = typeof value === 'function' ? value : () => value } }
 }
 
 test('the shipped disclosure cannot reserve or initialize a browser delivery', async () => {
@@ -597,4 +601,147 @@ test('the one policy handoff shares current choices and cannot be replayed or us
     await client.delivery.cancel(report)
     assert.equal(instance.budget().attempts.length, 1)
   }
+}))
+
+const admitted = { network: 'unknown', constrained: false }
+
+test('automatic mode admits one unknown observation and later restrictions do not refund it', async () => available(async () => {
+  const instance = fixture(false, false, true), client = instance.first
+  assert.equal(await client.delivery.reserve({ revision: 0, store_generation: 'a'.repeat(32) }, admitted), null)
+  assert.equal(instance.values.size, 0)
+  instance.choice(client, true)
+  const opened = instance.enqueue()
+  for (const refused of [
+    { network: 'metered', constrained: false },
+    { network: 'unknown', constrained: true },
+    { network: 'wifi', constrained: false },
+    { network: 'unknown' },
+    null,
+  ]) {
+    instance.observe(refused)
+    assert.equal(await client.delivery.reserve(opened, admitted), null, JSON.stringify(refused))
+  }
+  instance.observe(admitted)
+  assert.equal(await client.delivery.reserve(opened, { network: 'metered', constrained: true }), null)
+  assert.equal(instance.budget().attempts.length, 0)
+  const report = await client.delivery.reserve(opened, admitted)
+  assert.ok(report)
+  assert.equal(Buffer.from(report.body()).includes(Buffer.from('should-not-be-copied')), false)
+  assert.equal(instance.budget().attempts.length, 1)
+  instance.advance(DAY + 3600001)
+  instance.observe({ network: 'unmetered', constrained: false, name: 'should-not-be-copied' })
+  const second = await client.delivery.reserve(instance.enqueue(), { network: 'unmetered', constrained: false })
+  assert.ok(second)
+  assert.equal(Buffer.from(second.body()).includes(Buffer.from('should-not-be-copied')), false)
+  assert.equal(instance.budget().attempts.length, 2)
+  for (const block of [
+    () => instance.observe({ network: 'metered', constrained: false }),
+    () => instance.observe({ network: 'unknown', constrained: true }),
+    () => instance.choice(client, false),
+    () => { instance.choice(client, true); instance.restrict(true) },
+    () => { instance.restrict(false); instance.privacy(true) },
+  ]) {
+    instance.advance(DAY + 3600001)
+    instance.observe(admitted)
+    instance.restrict(false)
+    instance.privacy(false)
+    if (!client.status().effective_enabled) instance.choice(client, true)
+    const held = await client.delivery.reserve(instance.enqueue(), admitted)
+    assert.ok(held)
+    const spent = instance.budget().attempts.length
+    let writes = 0
+    block()
+    assert.equal(await client.delivery.guardedWrite(held, () => { writes++; return true }), false)
+    assert.equal(writes, 0)
+    assert.equal(instance.budget().attempts.length, spent)
+    assert.equal(instance.budget().lease, null)
+  }
+  instance.restrict(false)
+  instance.privacy(false)
+  if (!client.status().effective_enabled) instance.choice(client, true)
+  const current = client.status()
+  const metered = client.configure({ enabled: true, expected_revision: current.revision, expected_generation: current.store_generation,
+    disclosure_version: contract.version, connection_mode: 'metered' })
+  instance.observe({ network: 'unmetered', constrained: false })
+  instance.advance(DAY + 3600001)
+  assert.equal(await client.delivery.reserve(instance.enqueue(), { network: 'unmetered', constrained: false }), null)
+  assert.equal(metered.connection_mode, 'metered')
+}))
+
+test('a stored version-two acknowledgement needs a fresh version-three choice and keeps spending', async () => available(async () => {
+  const instance = fixture(), client = instance.first
+  const acknowledged = instance.choice(client, true)
+  instance.enqueue()
+  const queued = instance.storage.getItem(queueKey)
+  const spentAt = Date.now()
+  const budget = instance.budget()
+  budget.clock_ms = spentAt
+  budget.next_ms = spentAt + DAY
+  budget.attempts = [{ at_ms: spentAt, reserved_bytes: COST }]
+  budget.lease = null
+  budget.clear = 'none'
+  budget.review = { version: 1, mode: 'review', token: 'ab'.repeat(16), outcome: 'paused', report: null }
+  instance.storage.setItem(budgetKey, JSON.stringify(budget))
+  const choice = JSON.parse(instance.storage.getItem(choiceKey))
+  choice.disclosure_version = 2
+  instance.storage.setItem(choiceKey, JSON.stringify(choice))
+  const status = client.status()
+  assert.equal(status.reason, 'disclosure_required')
+  assert.equal(status.effective_enabled, false)
+  assert.equal(status.user_enabled, true)
+  assert.equal(status.connection_mode, 'auto')
+  assert.equal(instance.budget().attempts.length, 1)
+  assert.equal(instance.storage.getItem(queueKey), queued)
+  client.status()
+  assert.equal(JSON.parse(instance.storage.getItem(choiceKey)).disclosure_version, 2)
+  assert.equal(connectionEditDisclosureVersion(status), 0)
+  assert.throws(() => client.configure({ enabled: true, expected_revision: status.revision,
+    expected_generation: status.store_generation, disclosure_version: 2, connection_mode: 'metered' }),
+    /share anonymous product statistics/)
+  assert.equal(JSON.parse(instance.storage.getItem(choiceKey)).disclosure_version, 2)
+  const edited = client.configure({ enabled: true, expected_revision: status.revision,
+    expected_generation: status.store_generation, disclosure_version: connectionEditDisclosureVersion(status),
+    connection_mode: 'metered' })
+  assert.equal(edited.disclosure_version, 0)
+  assert.equal(edited.connection_mode, 'metered')
+  assert.equal(edited.reason, 'disclosure_required')
+  assert.equal(instance.budget().attempts.length, 1)
+  const fresh = client.configure({ enabled: true, expected_revision: edited.revision,
+    expected_generation: edited.store_generation, disclosure_version: contract.version })
+  assert.equal(fresh.reason, 'enabled')
+  assert.equal(fresh.effective_enabled, true)
+  assert.equal(fresh.pending_records, 0)
+  assert.equal(fresh.disclosure_version, contract.version)
+  assert.equal(instance.budget().attempts.length, 1)
+  const review = client.reviewStatus()
+  assert.equal(review.review.mode, 'review')
+  assert.equal(review.review.report_available, false)
+  assert.equal(acknowledged.disclosure_version, contract.version)
+}))
+
+test('opt-out wins over a stale disclosure and a future disclosure stays unreadable', async () => available(async () => {
+  const disabled = fixture(), client = disabled.first
+  disabled.choice(client, true)
+  const opted = JSON.parse(disabled.storage.getItem(choiceKey))
+  opted.enabled = false
+  opted.disclosure_version = 2
+  opted.connection_mode = 'metered'
+  disabled.storage.setItem(choiceKey, JSON.stringify(opted))
+  const status = client.status()
+  assert.equal(status.reason, 'user_disabled')
+  assert.equal(status.disclosure_version, 2)
+  assert.equal(status.connection_mode, 'metered')
+  client.status()
+  assert.equal(JSON.parse(disabled.storage.getItem(choiceKey)).disclosure_version, 2)
+  const future = fixture().first
+  const instance = fixture()
+  instance.choice(instance.first, true)
+  const choice = JSON.parse(instance.storage.getItem(choiceKey))
+  choice.disclosure_version = contract.version + 1
+  instance.storage.setItem(choiceKey, JSON.stringify(choice))
+  assert.equal(instance.first.status().reason, 'storage_unavailable')
+  assert.throws(() => instance.first.configure({ enabled: true, expected_revision: choice.revision,
+    expected_generation: choice.store_generation, disclosure_version: contract.version }), /storage is unavailable/i)
+  assert.equal(JSON.parse(instance.storage.getItem(choiceKey)).disclosure_version, contract.version + 1)
+  assert.equal(future.status().reason, 'collection_unavailable')
 }))

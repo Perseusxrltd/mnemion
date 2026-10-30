@@ -147,7 +147,7 @@ root=Path(request['root'])
 policy.COLLECTION_AVAILABLE=True
 policy.COLLECTOR_URL=request['destination']
 policy.company_policy_file=lambda:Path(request['company'])
-if request['action']=='init':result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':2})
+if request['action']=='init':result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':policy.DISCLOSURE_VERSION})
 elif request['action']=='off':result=policy.configure(root,{'enabled':False,'expected_revision':0})
 else:
  with closing(sqlite3.connect(root/policy.DATABASE_NAME)) as db:

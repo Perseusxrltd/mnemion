@@ -15,7 +15,7 @@ export const desktopActions = {
   'telemetry.discard_report': { workspace: false, mutation: true, fields: ['expected_revision', 'expected_generation', 'expected_review_token'],
     description: 'Erase the matching staged report, cancel its outstanding attempt and keep manual review enabled. Cannot recall bytes already handed to transport.' },
   'telemetry.configure': { workspace: false, mutation: true, fields: ['enabled', 'expected_revision', 'expected_generation', 'disclosure_version', 'connection_mode'],
-    description: 'Save the local privacy choice shared by desktop and headless agents. Opt-out wins over a stale revision; enabling requires the current revision and a supported disclosure. connection_mode accepts auto, unmetered or metered; an unmetered declaration only resolves unknown metering and cannot override detected limits. This never changes workspace permissions.' },
+    description: 'Save the local privacy choice shared by desktop and headless agents. Opt-out wins over a stale revision; enabling requires the current revision and a supported disclosure. connection_mode accepts auto, unmetered or metered. Automatic mode may send when the data cost cannot be detected. Detected metering always pauses sending. An unmetered declaration cannot override detected limits or resource pressure. This never changes workspace permissions.' },
   'host.profiles': { workspace: false, mutation: false, fields: [] },
   'host.schema': { workspace: false, mutation: false, fields: [] },
   'host.inspect': { workspace: false, mutation: false, fields: ['id'] },

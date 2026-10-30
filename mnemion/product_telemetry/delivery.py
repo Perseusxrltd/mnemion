@@ -238,9 +238,11 @@ class PreparedReport:
 class DeliveryBudget:
     """One existing private policy store, with no new persistent worker.
 
-    The future transport must supply fresh network/pressure observations; an
-    metered connection never receives a reservation. An explicit local unmetered
-    choice can resolve unknown metering, without overriding pressure. ``guarded_write``
+    The future transport must supply fresh network/pressure observations. Observed
+    metering always refuses, and a saved metered mode always refuses. Automatic
+    mode and an explicit unmetered choice may both admit an observed unknown or
+    unmetered network when nothing else is constrained. Unknown stays unknown.
+    ``guarded_write``
     is only for a reviewed synchronous, nonblocking socket handoff, never DNS,
     TLS negotiation, HTTP response waiting, user callbacks or an async function.
     """
@@ -263,8 +265,7 @@ class DeliveryBudget:
             isinstance(observed, dict)
             and observed.get("constrained") is False
             and observed.get("network") in ("unknown", "unmetered")
-            and preference["connection_mode"] != "metered"
-            and (observed["network"] == "unmetered" or preference["connection_mode"] == "unmetered")
+            and preference["connection_mode"] in ("auto", "unmetered")
         )
 
     def _open(self, *, readonly=False):
@@ -291,7 +292,7 @@ class DeliveryBudget:
                 connection.execute("BEGIN")
                 preference = policy._preferences(connection)
                 company = policy.company_policy(self.policy_path)
-                if preference["connection_mode"] == "metered" or not aggregate._permitted(
+                if preference["connection_mode"] not in ("auto", "unmetered") or not aggregate._permitted(
                     preference, company, expected_revision, expected_generation
                 ):
                     return False
@@ -460,7 +461,7 @@ class DeliveryBudget:
             and state[3] == report.deadline_ms
             and state[2] == report._token
             and groups_remain_permitted(report._groups, company["metric_groups"])
-            and preference["connection_mode"] != "metered"
+            and preference["connection_mode"] in ("auto", "unmetered")
             and (self.environment is None or self._admitted(preference, self._observed()))
             and aggregate._permitted(preference, company, report.revision, report.generation)
         )

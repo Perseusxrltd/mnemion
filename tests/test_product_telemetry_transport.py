@@ -420,7 +420,7 @@ root=Path(sys.argv[1])/'private'
 policy.COLLECTION_AVAILABLE=True
 policy.COLLECTOR_URL='https://telemetry-fixture.invalid/v3/report'
 policy.company_policy_file=lambda:root.parent/'company.json'
-policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':2})
+policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':policy.DISCLOSURE_VERSION})
 before='mnemion.product_telemetry.activity' in sys.modules
 active=workflow.begin('memory.recall','headless',root=root)
 assert active is not None

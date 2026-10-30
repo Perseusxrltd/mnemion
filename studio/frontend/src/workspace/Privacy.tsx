@@ -5,6 +5,7 @@ import BrandMark from '../components/BrandMark'
 import TelemetryCoverage from './TelemetryCoverage'
 import type { TelemetryConnectionMode, TelemetryPreview, TelemetryReview, TelemetryReviewAction, TelemetryStatus } from '../../../shared/product-telemetry'
 import { choiceKey, telemetryConfigure, telemetryPreview, telemetryReviewAction, telemetryReviewStatus, telemetryStatus } from './telemetry-policy'
+import { connectionEditDisclosureVersion } from './telemetry-setup'
 import { budgetKey } from './telemetry-budget'
 import './workspace.css'
 
@@ -63,7 +64,7 @@ export default function Privacy() {
         // Editing a connection setting never acknowledges an unseen disclosure.
         disclosure_version: connectionMode === undefined
           ? enabled && status.collection_available ? status.required_disclosure_version : 0
-          : status.disclosure_version,
+          : connectionEditDisclosureVersion(status),
         ...(connectionMode === undefined ? {} : { connection_mode: connectionMode }) })
       const report = await telemetryReviewStatus()
       if (request === previewRequest.current) { setStatus(saved); setReview(report) }
@@ -128,7 +129,7 @@ export default function Privacy() {
             <option value="unmetered">This connection is unmetered</option>
             <option value="metered">Metered connection — pause sending</option>
           </select></label>
-          <p><small>Automatic detection pauses sending when metering is unknown. Choose unmetered only if your connection has no data limit. Detected data limits, resource pressure and your privacy choice always take priority. No network name or address is saved.</small></p>
+          <p><small>Automatic sending may use a connection whose data cost cannot be detected. Sending pauses when available signals report metering, data saving or resource pressure. Some browsers cannot report these signals. Existing traffic limits still apply; unknown cost is not a guarantee of free network use. No network name or address is saved.</small></p>
         </details>
       </section>
       <section className="ws-panel" aria-labelledby="telemetry-measurements-heading">

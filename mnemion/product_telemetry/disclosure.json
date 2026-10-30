@@ -1,7 +1,7 @@
 {
-  "version": 2,
+  "version": 3,
   "default_enabled": true,
-  "purpose": "Help Perseus XR improve Mnemion with anonymous bounded summaries of permitted product metrics. The collector can read one summary. Publication noise is added later to the closed week, not on this installation. A count is not a unique person. This build does not collect or send.",
+  "purpose": "Help Perseus XR improve Mnemion with anonymous bounded summaries of permitted product metrics. The collector can read one summary. Publication noise is added later to the closed week, not on this installation. A count is not a unique person. This build does not collect or send. Automatic sending may use a connection whose data cost cannot be detected. Sending pauses when available signals report metering, data saving or resource pressure. Some browsers cannot report these signals. Existing traffic limits still apply; unknown cost is not a guarantee of free network use.",
   "destination": null,
   "collection_available": false,
   "metric_groups": ["usage", "reliability", "performance", "resources"],

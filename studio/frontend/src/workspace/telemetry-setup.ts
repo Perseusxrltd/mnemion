@@ -8,6 +8,11 @@ export function needsTelemetrySetup(status: TelemetryStatus): boolean {
     status.required_disclosure_version > 0 && status.required_disclosure_version === status.disclosure.version
 }
 
+/** A connection edit may repeat the stored acknowledgement. It never supplies a newer one. */
+export function connectionEditDisclosureVersion(status: Pick<TelemetryStatus, 'disclosure_version' | 'required_disclosure_version'>): number {
+  return status.disclosure_version === status.required_disclosure_version ? status.disclosure_version : 0
+}
+
 export function telemetrySetupChoice(status: TelemetryStatus, enabled: boolean): TelemetryChoice | null {
   if (typeof enabled !== 'boolean' || !needsTelemetrySetup(status)) return null
   return { enabled, expected_revision: status.revision, expected_generation: status.store_generation,

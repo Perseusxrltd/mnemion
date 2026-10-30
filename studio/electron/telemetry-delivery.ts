@@ -24,6 +24,10 @@ const invalid = () => new Error('telemetry_delivery_unavailable')
 type State = { clock_ms: number; next_ms: number; lease_token: string | null; lease_deadline_ms: number }
 type Spent = { slot: number; at_ms: number; reserved_bytes: number }
 type Network = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
+const observedNetwork = (value: { network?: unknown; constrained?: unknown } | null | undefined): boolean =>
+  !!value && value.constrained === false && (value.network === 'unknown' || value.network === 'unmetered')
+const networkAdmitted = (mode: unknown, value: { network?: unknown; constrained?: unknown } | null | undefined): boolean =>
+  (mode === 'auto' || mode === 'unmetered') && observedNetwork(value)
 
 function state(database: DatabaseSync, version = database.prepare('PRAGMA user_version').get()?.user_version): { current: State; spent: Spent[] } {
   if (version !== 6) throw invalid()
@@ -136,7 +140,8 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       const preference = this.preferences(database), company = this.company(), now = this.now()
       const { current, spent } = state(database, preference.schema_version)
       const permitted = integer(now, MAX_CLOCK - DAY - JITTER) && preference.enabled === 1 &&
-        preference.disclosure_version === this.disclosure.version && preference.connection_mode !== 'metered' &&
+        preference.disclosure_version === this.disclosure.version &&
+        (preference.connection_mode === 'auto' || preference.connection_mode === 'unmetered') &&
         preference.revision === stamp.revision && preference.store_generation === stamp.store_generation &&
         company.enabled && company.groups.length > 0 && now >= current.clock_ms && now >= current.next_ms &&
         !(current.lease_token && now < current.lease_deadline_ms) && spent.filter(item => item.at_ms > now - WEEK).length < 7
@@ -156,14 +161,13 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     let database: DatabaseSync | undefined
     try {
       const observed = this.environment ? this.environment() : network
-      if (!['unknown', 'unmetered'].includes(observed.network) || observed.constrained !== false) return null
+      if (!observedNetwork(observed)) return null
       const now = this.now()
       if (!integer(now, MAX_CLOCK - DAY - JITTER)) return null
       database = await this.open(true)
       database.exec('BEGIN IMMEDIATE')
       const preference = this.preferences(database), company = this.company()
-      if (preference.connection_mode === 'metered' ||
-          (observed.network === 'unknown' && preference.connection_mode !== 'unmetered')) return null
+      if (!networkAdmitted(preference.connection_mode, observed)) return null
       if (preference.revision !== expected.revision || preference.store_generation !== expected.store_generation ||
           preference.enabled !== 1 || preference.disclosure_version !== this.disclosure.version || !company.enabled || !company.groups.length) return null
       const { current, spent } = state(database, preference.schema_version)
@@ -227,13 +231,13 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       store_generation: preference.store_generation }, company.groups), now, readReviewClock())) return false
     if (this.environment) {
       const observed = this.environment()
-      if (observed.constrained !== false || !['unknown', 'unmetered'].includes(observed.network) ||
-          (observed.network === 'unknown' && preference.connection_mode !== 'unmetered')) return false
+      if (!networkAdmitted(preference.connection_mode, observed)) return false
     }
     return integer(now) && this.monotonic() < report.monotonicDeadline && current.clock_ms <= now && now < current.lease_deadline_ms &&
       current.lease_deadline_ms === report.deadline && current.lease_token === report.ticket &&
       preference.revision === report.stamp.revision && preference.store_generation === report.stamp.store_generation &&
-      preference.enabled === 1 && preference.connection_mode !== 'metered' && preference.disclosure_version === this.disclosure.version && company.enabled &&
+      preference.enabled === 1 && (preference.connection_mode === 'auto' || preference.connection_mode === 'unmetered') &&
+      preference.disclosure_version === this.disclosure.version && company.enabled &&
       report.permits(company.groups)
   }
 

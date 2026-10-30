@@ -24,7 +24,7 @@ function deferred() {
   return { promise, resolve }
 }
 
-function fixture(t) {
+function fixture(t, mode = 'unmetered') {
   const page = new EventTarget(), document = Object.assign(new EventTarget(), { visibilityState: 'visible' })
   const navigator = { onLine: true }
   const values = { window: page, document, navigator }
@@ -39,7 +39,7 @@ function fixture(t) {
   const entered = deferred(), eligible = deferred()
   let enabled = true, pressureStarts = 0, reservations = 0, seen
   const client = {
-    status: () => ({ effective_enabled: enabled, connection_mode: 'unmetered', delivery_budget: { state: 'ready' } }),
+    status: () => ({ effective_enabled: enabled, connection_mode: mode, delivery_budget: { state: 'ready' } }),
     delivery: {
       eligible: () => { entered.resolve(); return eligible.promise },
       reserve: async (_stamp, _network, cohorts) => { seen = cohorts; reservations++; return null },
@@ -119,5 +119,32 @@ test('owner cancellation reaches a browser sensor that is already starting', asy
   reading.resolve(false)
   await f.settle()
   assert.equal(cancelled, true, 'The sensor lifetime must follow its existing owner')
+  assert.equal(f.reservations(), 0)
+})
+
+test('automatic mode still reaches the browser resource gate when network cost is unknown', async t => {
+  const f = fixture(t, 'auto')
+  f.offer()
+  await f.entered
+  f.eligible.resolve(true)
+  await f.settle()
+  assert.equal(f.pressureStarts(), 1)
+  assert.equal(f.reservations(), 0, 'A refused resource gate must not spend an attempt')
+})
+
+test('an observed metered network does not start a browser sensor in automatic mode', async t => {
+  const f = fixture(t, 'auto')
+  navigator.connection = { saveData: true }
+  f.offer()
+  await f.settle()
+  assert.equal(f.pressureStarts(), 0)
+  assert.equal(f.reservations(), 0)
+})
+
+test('saved metered mode does not open a browser sensor', async t => {
+  const f = fixture(t, 'metered')
+  f.offer()
+  await f.settle()
+  assert.equal(f.pressureStarts(), 0)
   assert.equal(f.reservations(), 0)
 })

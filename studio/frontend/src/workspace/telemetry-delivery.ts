@@ -19,6 +19,12 @@ export type BrowserDeliveryEnvironment = {
   conditions?: () => Network
 }
 type Network = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
+export const observedNetwork = (value: { network?: unknown; constrained?: unknown } | null | undefined): boolean =>
+  !!value && value.constrained === false && (value.network === 'unknown' || value.network === 'unmetered')
+export const networkKindAllows = (mode: unknown, network: unknown): boolean =>
+  (mode === 'auto' || mode === 'unmetered') && (network === 'unknown' || network === 'unmetered')
+export const networkAdmitted = (mode: unknown, value: { network?: unknown; constrained?: unknown } | null | undefined): boolean =>
+  networkKindAllows(mode, value?.network) && observedNetwork(value)
 
 /** The private lease survives the one-use handoff until completion or abort. */
 export class PreparedBrowserTelemetryReport {
@@ -126,7 +132,7 @@ export class BrowserTelemetryDelivery {
       await this.prepareReviewClock(stamp)
       return await this.locked(() => {
         const status = this.port.status(), now = this.environment.now()
-        if (!status.effective_enabled || status.connection_mode === 'metered' ||
+        if (!status.effective_enabled || (status.connection_mode !== 'auto' && status.connection_mode !== 'unmetered') ||
             status.revision !== stamp.revision || status.store_generation !== stamp.store_generation) return false
         const raw = this.port.storage().getItem(budgetKey)
         if (raw === null) return false
@@ -170,7 +176,7 @@ export class BrowserTelemetryDelivery {
   async reserve(stamp: TelemetryStamp, network: Network = { network: 'unknown', constrained: true },
     cohorts: unknown = {}): Promise<PreparedBrowserTelemetryReport | null> {
     if (!stamp || !clockValid(stamp.revision, 2147483646) || !generationValid(stamp.store_generation) ||
-      !['unknown', 'unmetered'].includes(network.network) || network.constrained !== false) return null
+      !observedNetwork(network)) return null
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
     try { await this.prepareReviewClock(expected) } catch { return null }
     const started = this.environment.monotonic()
@@ -181,9 +187,7 @@ export class BrowserTelemetryDelivery {
         this.port.reconcile()
         const now = this.environment.now(), status = this.port.status()
         const observed = this.environment.conditions?.() ?? network
-        if (!['unknown', 'unmetered'].includes(observed.network) || observed.constrained !== false) return null
-        if (status.connection_mode === 'metered' ||
-            (observed.network === 'unknown' && status.connection_mode !== 'unmetered')) return null
+        if (!networkAdmitted(status.connection_mode, observed)) return null
         if (!clockValid(now, MAX_CLOCK - DAY - JITTER) || !status.effective_enabled ||
           status.revision !== expected.revision || status.store_generation !== expected.store_generation ||
           this.environment.monotonic() - started >= DEADLINE) return null
@@ -243,8 +247,7 @@ export class BrowserTelemetryDelivery {
     const now = this.environment.now(), status = this.port.status()
     if (this.environment.conditions) {
       const observed = this.environment.conditions()
-      if (observed.constrained !== false || !['unknown', 'unmetered'].includes(observed.network) ||
-          (observed.network === 'unknown' && status.connection_mode !== 'unmetered')) return false
+      if (!networkAdmitted(status.connection_mode, observed)) return false
     }
     const raw = this.port.storage().getItem(budgetKey)
     if (raw === null) return false
@@ -253,7 +256,8 @@ export class BrowserTelemetryDelivery {
     return clockValid(now) && this.environment.monotonic() < report.monotonicDeadline &&
       budget.clear === 'none' && budget.clock_ms <= now && now < report.deadline &&
       budget.lease?.deadline_ms === report.deadline && budget.lease.token === report.ticket &&
-      budget.generation === report.stamp.store_generation && status.effective_enabled && status.connection_mode !== 'metered' &&
+      budget.generation === report.stamp.store_generation && status.effective_enabled &&
+      (status.connection_mode === 'auto' || status.connection_mode === 'unmetered') &&
       status.revision === report.stamp.revision && status.store_generation === report.stamp.store_generation &&
       report.permits(status.company_policy.metric_groups)
   }

@@ -134,7 +134,7 @@ export default function TelemetrySetup({ onDone }: { onDone: () => void }) {
       <dt>Included</dt><dd>{status.disclosure.includes.join(', ')}.</dd>
       <dt>Never included</dt><dd>{status.disclosure.excludes.join(', ')}.</dd>
       <dt>Sent to</dt><dd>{status.disclosure.destination}</dd>
-      <dt>Limit</dt><dd>{Math.floor(status.disclosure.limits.wire_bytes_per_day / 1024)} KiB per day; sending pauses on constrained connections or hardware.</dd>
+      <dt>Limit</dt><dd>{Math.floor(status.disclosure.limits.wire_bytes_per_day / 1024)} KiB per day. Sending pauses when available signals report a data limit, data saving, or resource pressure. Unknown cost is not a guarantee of free network use.</dd>
     </dl>
     <form onSubmit={event => { event.preventDefault(); void choose(enabled) }}>
       <label className="telemetry-setup-choice"><input type="checkbox" checked={enabled} disabled={busy || checking}

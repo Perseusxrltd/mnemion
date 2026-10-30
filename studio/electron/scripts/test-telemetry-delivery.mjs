@@ -34,14 +34,14 @@ if request.get('wait'):
  print('ready',flush=True)
  sys.stdin.readline()
 action=request['action']
-if action=='init': result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':2})
+if action=='init': result=policy.configure(root,{'enabled':True,'expected_revision':0,'disclosure_version':policy.DISCLOSURE_VERSION})
 elif action=='off': result=policy.configure(root,{'enabled':False,'expected_revision':0})
 elif action=='on':
  state=policy.status(root)
- result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':2})
+ result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':policy.DISCLOSURE_VERSION})
 elif action=='mode':
  state=policy.status(root)
- result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':2,'connection_mode':request['value']})
+ result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':policy.DISCLOSURE_VERSION,'connection_mode':request['value']})
 elif action=='company':
  company.write_text(json.dumps(request['value']))
  result=True

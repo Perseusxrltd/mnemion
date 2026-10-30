@@ -4,7 +4,7 @@ import { BrowserConditions } from './telemetry-conditions'
 import { reviewedBrowserCohorts } from './telemetry-cohorts'
 import type { BrowserTelemetry } from './telemetry-policy'
 import type { TelemetryStamp } from '../../../shared/product-telemetry'
-import type { PreparedBrowserTelemetryReport } from './telemetry-delivery'
+import { networkKindAllows, type PreparedBrowserTelemetryReport } from './telemetry-delivery'
 
 export class BrowserTelemetryActivity {
   readonly conditions = new BrowserConditions()
@@ -22,8 +22,7 @@ export class BrowserTelemetryActivity {
         // Eligibility can wait on origin-wide coordination. A choice change
         // or page exit during that wait must not start new sensor work.
         if (!await this.client.delivery.eligible(stamp) || ownerStop.aborted) return null
-        const network = this.conditions.read().network
-        if (network === 'metered' || (network === 'unknown' && status.connection_mode !== 'unmetered')) return null
+        if (!networkKindAllows(this.client.status().connection_mode, this.conditions.read().network)) return null
         const stop = this.stop = new AbortController()
         const paused = () => stop.abort()
         const hidden = () => { if (document.visibilityState !== 'visible') paused() }
