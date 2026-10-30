@@ -87,8 +87,9 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       do { const value = await check(); if (value) return value; await pause(100); } while (Date.now() < deadline);
       throw new Error(message);
     }
+    const controlLabel = node => (node.querySelector('strong')?.textContent ?? node.textContent ?? '').trim();
     const button = text => [...document.querySelectorAll('button')].find(node =>
-      node.textContent.trim() === text && !node.disabled && node.getClientRects().length);
+      controlLabel(node) === text && !node.disabled && node.getClientRects().length);
     async function click(text) {
       const node = await until(() => button(text), 'Missing installed privacy control: ' + text);
       node.click();
@@ -171,24 +172,29 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
     }
     checks.setup_disclosure_deferred_without_permission = true;
     location.hash = '/workspace';
-    await until(() => button('Join a workspace') || document.querySelector('input[aria-label="Workspace address"], input[name="endpoint"]') ||
-      [...document.querySelectorAll('label')].some(node => node.textContent.includes('Workspace address')),
+    const join = await until(() => [...document.querySelectorAll('button.ws-setup-choice')].find(node =>
+      node.querySelector('strong')?.textContent.trim() === 'Join a workspace' && !node.disabled && node.getClientRects().length),
       'The packaged app did not offer workspace join');
-    const join = button('Join a workspace');
-    if (join) join.click();
-    const address = await until(() => [...document.querySelectorAll('input')].find(node =>
-      node.getAttribute('aria-label') === 'Workspace address' || node.labels?.[0]?.textContent.includes('Workspace address')),
+    join.click();
+    const keyMethod = await until(() => [...document.querySelectorAll('[aria-label="Choose how to join"] button')].find(node =>
+      node.textContent.trim() === 'Workspace key' && !node.disabled && node.getClientRects().length),
+      'The packaged app did not offer workspace-key join');
+    keyMethod.click();
+    const form = await until(() => document.querySelector('form.ws-join-form'), 'The workspace key form did not open');
+    const address = await until(() => [...form.querySelectorAll('input')].find(node =>
+      !node.disabled && node.labels?.[0]?.textContent.includes('Workspace address')),
       'Missing workspace address');
-    const key = [...document.querySelectorAll('input')].find(node =>
-      node.getAttribute('aria-label') === 'Workspace key' || node.labels?.[0]?.textContent.includes('Workspace key'));
+    const key = [...form.querySelectorAll('input')].find(node =>
+      !node.disabled && node.labels?.[0]?.textContent.includes('Workspace key') && !node.labels?.[0]?.textContent.includes('Workspace address'));
     if (!key) throw new Error('Missing workspace key');
     setValue(address, fixture.endpoint);
     setValue(key, fixture.credential);
-    const remember = checkbox('Remember this workspace on this device');
+    const remember = [...form.querySelectorAll('input[type="checkbox"]')].find(node =>
+      node.closest('label')?.textContent.includes('Remember this workspace on this device'));
     if (remember && !remember.disabled && remember.checked) remember.click();
-    const form = address.closest('form') || document;
-    const open = [...form.querySelectorAll('button')].find(node => node.textContent.trim() === 'Open workspace' && !node.disabled);
-    if (!open) throw new Error('Missing workspace open control');
+    const open = await until(() => [...form.querySelectorAll('button')].find(node =>
+      controlLabel(node) === 'Open workspace' && !node.disabled && node.getClientRects().length),
+      'The workspace key form did not enable Open workspace');
     open.click();
     await until(() => !document.body.innerText.includes('Welcome to Mnemion') || document.querySelector('.ws-shell, .ws-workspace-name'),
       'The packaged app did not open the fixture workspace');
