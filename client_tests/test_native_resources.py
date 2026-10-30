@@ -27,7 +27,8 @@ def binary(platform, arch):
     return bytes(header)
 
 
-def fixture(root: Path, platform="linux", arch="x64"):
+def fixture(root: Path, platform="linux", arch="x64", origin: Path | None = None):
+    sealed = ROOT if origin is None else origin
     for component, folder, target in (
         ("service", "engine", "x64" if platform == "windows" else arch),
         ("postgresql", "postgresql", "x64" if platform == "windows" else arch),
@@ -61,11 +62,11 @@ def fixture(root: Path, platform="linux", arch="x64"):
             "architecture": target,
             "version": "4.0.10",
             "model_weights_bundled": False,
-            "lock_sha256": hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest(),
-            "source_sha256": source_digest(ROOT),
+            "lock_sha256": hashlib.sha256((sealed / "uv.lock").read_bytes()).hexdigest(),
+            "source_sha256": source_digest(sealed),
         }
         if component == "postgresql":
-            configuration = json.loads((ROOT / "deploy/native-postgres.json").read_text())
+            configuration = json.loads((sealed / "deploy/native-postgres.json").read_text())
             metadata["sources"] = {
                 name: configuration[name] for name in ("postgresql", "pgvector", "openssl", "zlib")
             }
@@ -172,6 +173,55 @@ def test_universal_macos_library_contains_requested_slices(tmp_path):
     path = tmp_path / "universal.dylib"
     path.write_bytes(header + bytes(128))
     assert binary_target(path) == ("macos", {"x64", "arm64"})
+
+
+def _sealed_origin(path: Path, disclosure: bytes, route: bytes) -> Path:
+    (path / "mnemion/product_telemetry").mkdir(parents=True)
+    (path / "studio/engine").mkdir(parents=True)
+    (path / "deploy").mkdir(parents=True)
+    (path / "mnemion/product_telemetry/disclosure.json").write_bytes(disclosure)
+    (path / "mnemion/product_telemetry/transport-route.json").write_bytes(route)
+    (path / "studio/engine/main.py").write_bytes(b"print('fixture')\n")
+    (path / "pyproject.toml").write_bytes(b"[project]\nname = 'fixture'\n")
+    (path / "uv.lock").write_bytes((ROOT / "uv.lock").read_bytes())
+    (path / "deploy/build_telemetry_network.py").write_bytes(b"# fixture\n")
+    (path / "deploy/build_telemetry_network.ps1").write_bytes(b"# fixture\n")
+    (path / "deploy/native-postgres.json").write_bytes(
+        (ROOT / "deploy/native-postgres.json").read_bytes()
+    )
+    return path
+
+
+def test_each_prepared_source_verifies_only_its_own_frozen_engine(tmp_path):
+    inactive_route = b'{"version":2,"address":null,"certificate_authorities":[]}\n'
+    active_route = b'{"version":2,"address":"127.0.0.1","certificate_authorities":[]}\n'
+    inactive = _sealed_origin(
+        tmp_path / "inactive-source", b'{"collection_available": false}\n', inactive_route
+    )
+    active = _sealed_origin(
+        tmp_path / "active-source", b'{"collection_available": true}\n', active_route
+    )
+    resources = fixture(tmp_path / "resources", origin=inactive)
+    verified = verify(resources, "linux", "x64", "4.0.10", source_root=inactive)
+    assert verified["model_weights_bundled"] is False
+    assert verified["version"] == "4.0.10"
+    with pytest.raises(ValueError, match="different source files"):
+        verify(resources, "linux", "x64", "4.0.10", source_root=active)
+    with pytest.raises(ValueError, match="different source files"):
+        verify(resources, "linux", "x64", "4.0.10")
+    (inactive / "mnemion/product_telemetry/disclosure.json").write_bytes(
+        b'{"collection_available": false, "tampered": true}\n'
+    )
+    with pytest.raises(ValueError, match="different source files"):
+        verify(resources, "linux", "x64", "4.0.10", source_root=inactive)
+    with pytest.raises(ValueError, match="Native engine source is missing"):
+        verify(resources, "linux", "x64", "4.0.10", source_root=tmp_path / "absent")
+    stripped = _sealed_origin(
+        tmp_path / "stripped", b'{"collection_available": false}\n', inactive_route
+    )
+    (stripped / "mnemion/product_telemetry/disclosure.json").unlink()
+    with pytest.raises(ValueError, match="telemetry JSON"):
+        verify(resources, "linux", "x64", "4.0.10", source_root=stripped)
 
 
 def test_database_matrix_builds_windows_x64_once_even_for_arm_only():

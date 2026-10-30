@@ -142,13 +142,37 @@ def test_terminal_markers_keep_verified_counts_and_unknown_progress():
     assert failed == 40
 
 
+def _prepared_source(path: Path, disclosure: bytes, route: bytes) -> Path:
+    telemetry = path / "mnemion/product_telemetry"
+    telemetry.mkdir(parents=True)
+    (telemetry / "disclosure.json").write_bytes(disclosure)
+    (telemetry / "transport-route.json").write_bytes(route)
+    return path
+
+
 def test_package_binding_uses_the_six_counterbalanced_conditions(tmp_path: Path):
     inactive = tmp_path / "inactive.exe"
     active = tmp_path / "active.exe"
     inactive.write_bytes(b"inactive-package")
     active.write_bytes(b"active-package")
+    inactive_root = _prepared_source(
+        tmp_path / "inactive-source",
+        b'{"collection_available":false}\n',
+        b'{"version":2,"address":null}\n',
+    )
+    active_root = _prepared_source(
+        tmp_path / "active-source",
+        b'{"collection_available":true}\n',
+        b'{"version":2,"address":"127.0.0.1"}\n',
+    )
     source = "a" * 40
-    manifest = bind_resource_packages(source=source, active=active, inactive=inactive)
+    manifest = bind_resource_packages(
+        source=source,
+        active=active,
+        inactive=inactive,
+        active_root=active_root,
+        inactive_root=inactive_root,
+    )
     assert [row["label"] for row in manifest["cases"]] == [
         "r1-unavailable",
         "r1-opted_out",
@@ -166,11 +190,61 @@ def test_package_binding_uses_the_six_counterbalanced_conditions(tmp_path: Path)
         "inactive",
     ]
     assert manifest["packages"]["inactive"]["sha256"] != manifest["packages"]["active"]["sha256"]
+    assert manifest["packages"]["inactive"]["source_root"] == str(inactive_root.resolve())
+    assert manifest["packages"]["active"]["source_root"] == str(active_root.resolve())
+    rendered = json.dumps(manifest)
     assert "credential" not in manifest
-    assert "api_key" not in json.dumps(manifest)
+    assert "api_key" not in rendered
+    assert "source_sha256" not in rendered
+    assert "source_digest" not in rendered
     assert manifest["cases"] == resource_counterbalance_cases()
     with pytest.raises(ValueError):
-        bind_resource_packages(source=source, active=active, inactive=active)
+        bind_resource_packages(
+            source=source,
+            active=active,
+            inactive=active,
+            active_root=active_root,
+            inactive_root=inactive_root,
+        )
+    with pytest.raises(ValueError, match="different directories"):
+        bind_resource_packages(
+            source=source,
+            active=active,
+            inactive=inactive,
+            active_root=inactive_root,
+            inactive_root=inactive_root,
+        )
+    same = _prepared_source(
+        tmp_path / "same-telemetry",
+        b'{"collection_available":false}\n',
+        b'{"version":2,"address":null}\n',
+    )
+    with pytest.raises(ValueError, match="same baked telemetry JSON"):
+        bind_resource_packages(
+            source=source,
+            active=active,
+            inactive=inactive,
+            active_root=same,
+            inactive_root=inactive_root,
+        )
+    with pytest.raises(ValueError, match="Resource source is missing"):
+        bind_resource_packages(
+            source=source,
+            active=active,
+            inactive=inactive,
+            active_root=tmp_path / "absent-source",
+            inactive_root=inactive_root,
+        )
+    empty = tmp_path / "empty-source"
+    empty.mkdir()
+    with pytest.raises(ValueError, match="telemetry JSON"):
+        bind_resource_packages(
+            source=source,
+            active=active,
+            inactive=inactive,
+            active_root=empty,
+            inactive_root=inactive_root,
+        )
 
 
 def test_windows_arm_observer_is_not_the_engine_python():

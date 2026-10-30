@@ -1175,17 +1175,51 @@ def installed_resource_case_completed(evidence, owned) -> bool:
     )
 
 
-def bind_resource_packages(*, source: str, active: Path, inactive: Path) -> dict:
-    """Hash both installers. The manifest has no credential and no private key."""
+def _baked_telemetry(root: Path) -> tuple[bytes, bytes]:
+    disclosure = root / "mnemion/product_telemetry/disclosure.json"
+    route = root / "mnemion/product_telemetry/transport-route.json"
+    if not disclosure.is_file() or not route.is_file():
+        raise ValueError("Resource source is missing its telemetry JSON")
+    return disclosure.read_bytes(), route.read_bytes()
+
+
+def bind_resource_packages(
+    *,
+    source: str,
+    active: Path,
+    inactive: Path,
+    active_root: Path,
+    inactive_root: Path,
+) -> dict:
+    """Hash both installers and bind each to the source tree this driver prepared.
+
+    The manifest keeps the declared commit and installer hashes. It does not
+    carry a source digest, a credential, or a private key.
+    """
     if type(source) is not str or not re.fullmatch(r"[0-9a-f]{40}", source):
         raise ValueError("Resource packages require the declared source")
     if active.resolve() == inactive.resolve():
         raise ValueError("Inactive and active installers must be different files")
+    prepared = {}
+    for condition, root in ("inactive", inactive_root), ("active", active_root):
+        origin = Path(root).resolve()
+        if not origin.is_dir():
+            raise ValueError("Resource source is missing")
+        prepared[condition] = origin
+    if prepared["inactive"] == prepared["active"]:
+        raise ValueError("Inactive and active sources must be different directories")
+    if _baked_telemetry(prepared["inactive"]) == _baked_telemetry(prepared["active"]):
+        raise ValueError("Inactive and active sources have the same baked telemetry JSON")
 
     def record(path: Path, condition: str) -> dict:
         if not path.is_file():
             raise ValueError("Resource installer is missing")
-        return {"installer": str(path), "sha256": _sha256_file(path), "condition": condition}
+        return {
+            "installer": str(path),
+            "sha256": _sha256_file(path),
+            "condition": condition,
+            "source_root": str(prepared[condition]),
+        }
 
     manifest = {
         "source": source,
@@ -1448,7 +1482,11 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
             if inactive_source != active_source:
                 raise RuntimeError("Resource packages diverged from the declared source")
             manifest = bind_resource_packages(
-                source=active_source, active=active_installer, inactive=inactive_installer
+                source=active_source,
+                active=active_installer,
+                inactive=inactive_installer,
+                active_root=copy,
+                inactive_root=inactive_copy,
             )
             manifest_path = copy.parent / "resource-manifest.json"
             manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpat
 import { rm } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { platformArtifacts, root } from './platform-artifacts.mjs'
 import { verifyNativeResources } from './native-resources.mjs'
@@ -13,7 +13,7 @@ import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
-import { finishResourceCleanup, inspectedBodyHex, performOwnedInstall, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps } from './installed-resource-report.mjs'
+import { finishResourceCleanup, inspectedBodyHex, performOwnedInstall, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage } from './installed-resource-report.mjs'
 import { publishResourceCase } from './resource-case-boundary.mjs'
 
 const artifacts = platformArtifacts()
@@ -111,12 +111,13 @@ async function installPrepared(destination, installer, refuseExisting) {
   if (!existsSync(executable)) throw new Error('The native installer omitted the application executable')
 }
 
-function verifyInstalled(destination) {
+function verifyInstalled(destination, manifest = undefined, packageName = undefined) {
   installationComplete = true
   uninstallDirs.push(destination)
   const resources = process.platform === 'darwin' ? join(destination, 'Mnemion Studio.app/Contents/Resources') :
     join(destination, ...(process.platform === 'linux' ? ['squashfs-root', 'resources'] : ['resources']))
-  return verifyNativeResources(resources)
+  if (manifest === undefined) return verifyNativeResources(resources)
+  return verifyPreparedPackage(manifest, packageName, resources)
 }
 
 async function install(destination = installed, installer = artifacts.installers[0], refuseExisting = true) {
@@ -293,6 +294,15 @@ function loadResourceManifest() {
     }
     const actual = createHash('sha256').update(readFileSync(item.installer)).digest('hex')
     if (actual !== item.sha256 || item.condition !== condition) throw new Error('Resource package hash did not match the manifest')
+    const sourceRoot = resourceVerificationRoot(manifest, condition)
+    const disclosure = join(sourceRoot, 'mnemion/product_telemetry/disclosure.json')
+    const route = join(sourceRoot, 'mnemion/product_telemetry/transport-route.json')
+    if (!isAbsolute(sourceRoot) || !existsSync(disclosure) || !existsSync(route)) {
+      throw new Error('Resource package preparation is missing')
+    }
+  }
+  if (resourceVerificationRoot(manifest, 'inactive') === resourceVerificationRoot(manifest, 'active')) {
+    throw new Error('Resource package preparation is missing')
   }
   if (manifest.packages.inactive.installer === manifest.packages.active.installer) throw new Error('Resource package preparation is missing')
   manifest.cases.forEach((row, index) => {
@@ -409,7 +419,7 @@ async function runInstalledTelemetryResources() {
           if (process.platform === 'win32') refuseExistingWindowsProduct()
         },
         installProduct: async () => installPrepared(destination, installer, true),
-        verify: async () => verifyInstalled(destination),
+        verify: async () => verifyInstalled(destination, manifest, step.package),
       })
       installedExecutables.set(destination, executable)
       continue

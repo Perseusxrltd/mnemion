@@ -1,3 +1,5 @@
+import { verifyNativeResources } from './native-resources.mjs'
+
 /** Allowlisted owned-launch evidence and the single-product package order. */
 
 const TOKEN = /^[A-Za-z0-9_.:-]{1,80}$/
@@ -221,6 +223,21 @@ export function publicOwnedReport(report) {
     },
     observer: typeof executable === 'string' && token(executable) && !executable.includes('/') && !executable.includes('\\') ? { executable } : {},
   }
+}
+
+export function resourceVerificationRoot(manifest, packageName) {
+  if (packageName !== 'inactive' && packageName !== 'active') {
+    throw new Error('Resource package preparation is missing')
+  }
+  const sourceRoot = manifest?.packages?.[packageName]?.source_root
+  if (typeof sourceRoot !== 'string' || sourceRoot.length === 0) {
+    throw new Error('Resource package preparation is missing')
+  }
+  return sourceRoot
+}
+
+export function verifyPreparedPackage(manifest, packageName, resources) {
+  return verifyNativeResources(resources, resourceVerificationRoot(manifest, packageName))
 }
 
 export function resourceInstallSteps(cases) {

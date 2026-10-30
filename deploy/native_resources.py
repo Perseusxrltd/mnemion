@@ -83,7 +83,9 @@ def binary_target(path: Path) -> tuple[str, set[str]] | None:
     return platform, {mapping[code] for code in codes}
 
 
-def verify_component(directory: Path, component: str, platform: str, arch: str) -> dict:
+def verify_component(
+    directory: Path, component: str, platform: str, arch: str, origin: Path = ROOT
+) -> dict:
     manifest = directory / "mnemion-runtime.json"
     if manifest.is_symlink() or not manifest.is_file() or manifest.stat().st_size > 4 * 1024**2:
         raise ValueError("Missing or oversized native file inventory")
@@ -165,7 +167,7 @@ def verify_component(directory: Path, component: str, platform: str, arch: str) 
             "licenses/" + name + ".txt" for name in ("postgresql", "pgvector", "openssl", "zlib")
         ]
         if metadata.get("sources") != {
-            name: json.loads((ROOT / "deploy/native-postgres.json").read_text())[name]
+            name: json.loads((origin / "deploy/native-postgres.json").read_text())[name]
             for name in ("postgresql", "pgvector", "openssl", "zlib")
         }:
             raise ValueError("The database does not use the reviewed source manifest")
@@ -186,19 +188,39 @@ def verify_component(directory: Path, component: str, platform: str, arch: str) 
     return metadata
 
 
+def prepared_source(source_root: Path) -> Path:
+    """The directory this driver prepared. A digest string is not a source."""
+    origin = Path(source_root)
+    if not origin.is_absolute() or not origin.is_dir():
+        raise ValueError("Native engine source is missing")
+    origin = origin.resolve()
+    disclosure = origin / "mnemion/product_telemetry/disclosure.json"
+    route = origin / "mnemion/product_telemetry/transport-route.json"
+    if not disclosure.is_file() or not route.is_file():
+        raise ValueError("Native engine source is missing its telemetry JSON")
+    return origin
+
+
 def verify(
-    resources: Path, platform: str, arch: str, version: str, *, check_source: bool = True
+    resources: Path,
+    platform: str,
+    arch: str,
+    version: str,
+    *,
+    check_source: bool = True,
+    source_root: Path | None = None,
 ) -> dict:
+    origin = ROOT if source_root is None else prepared_source(source_root)
     database_arch = "x64" if platform == "windows" else arch
     engine_arch = "x64" if platform == "windows" else arch
-    engine = verify_component(resources / "engine", "service", platform, engine_arch)
-    database = verify_component(resources / "postgresql", "postgresql", platform, database_arch)
-    if (
-        engine.get("version") != version
-        or engine.get("lock_sha256") != hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest()
-    ):
+    engine = verify_component(resources / "engine", "service", platform, engine_arch, origin)
+    database = verify_component(
+        resources / "postgresql", "postgresql", platform, database_arch, origin
+    )
+    lock_sha256 = hashlib.sha256((origin / "uv.lock").read_bytes()).hexdigest()
+    if engine.get("version") != version or engine.get("lock_sha256") != lock_sha256:
         raise ValueError("Native engine version or locked dependencies differ from the app")
-    if check_source and engine.get("source_sha256") != source_digest(ROOT):
+    if check_source and engine.get("source_sha256") != source_digest(origin):
         raise ValueError("Native engine was frozen from different source files")
     result = {
         "format": 1,
@@ -228,6 +250,7 @@ def main():
     parser.add_argument("--version", required=True)
     parser.add_argument("--engine-archive", type=Path)
     parser.add_argument("--database-archive", type=Path)
+    parser.add_argument("--source-root", type=Path)
     args = parser.parse_args()
     if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
         raise ValueError("Invalid desktop version")
@@ -239,7 +262,13 @@ def main():
         args.resources.mkdir(parents=True)
         expand(args.engine_archive, args.resources / "engine", component="service")
         expand(args.database_archive, args.resources / "postgresql")
-    result = verify(args.resources, args.platform, args.arch, args.version)
+    result = verify(
+        args.resources,
+        args.platform,
+        args.arch,
+        args.version,
+        source_root=args.source_root,
+    )
     if args.engine_archive:
         (args.resources / "native-runtime.json").write_text(json.dumps(result, indent=2) + "\n")
     elif not (args.resources / "native-runtime.json").is_file():
