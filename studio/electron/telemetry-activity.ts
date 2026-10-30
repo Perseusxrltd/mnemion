@@ -6,6 +6,9 @@ import type { MeasurementCatalog } from './telemetry-catalog.js'
 import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import { nativeTelemetryRoute, validCertificateAuthorities } from './telemetry-route.js'
 import { reviewedDesktopCohorts } from './telemetry-cohorts.js'
+import { runDiagnosticAdmission } from './admission-outcome.mjs'
+
+type AdmissionNote = { begin(): void; finish(outcome: string): void }
 
 export type TelemetryConditions = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
 
@@ -18,19 +21,31 @@ export class DesktopTelemetryActivity extends NativeTelemetryDelivery {
   private readonly activity: TelemetryActivity<PreparedTelemetryReport>
   constructor(root: string, disclosure: NativeTelemetryDisclosure, catalog: MeasurementCatalog,
     conditions: () => TelemetryConditions, companyFile?: string, address: string | null = releaseAddress(),
-    gauges?: { prepare: (stop: AbortSignal) => Promise<boolean>; close: () => void },
+    gauges?: { prepare: (stop: AbortSignal) => Promise<boolean>; close: () => void; diagnose?: AdmissionNote },
     certificateAuthorities: readonly string[] = nativeTelemetryRoute()?.certificate_authorities ?? []) {
     super(root, disclosure, catalog, companyFile, undefined, undefined, conditions)
     const authorities = Object.freeze([...certificateAuthorities])
     let releaseTrustValid: boolean | undefined
+    const diagnose = gauges?.diagnose
     this.activity = new TelemetryActivity({
       // Only the copied immutable release metadata is retained. Consent,
       // current policy, the endpoint and TLS are checked at their own gates.
       available: () => this.available && address !== null &&
         (releaseTrustValid ??= validCertificateAuthorities(authorities)),
+      ...(diagnose ? { observe: (outcome: 'release_unavailable' | 'aborted') => diagnose.finish(outcome) } : {}),
       reserve: async (stamp, stop) => {
-        if (gauges && (!await this.eligible(stamp) || !await gauges.prepare(stop) || stop.aborted)) return null
-        return this.reserve(stamp, { network: 'unknown', constrained: true }, reviewedDesktopCohorts())
+        if (!diagnose || !gauges) {
+          if (gauges && (!await this.eligible(stamp) || !await gauges.prepare(stop) || stop.aborted)) return null
+          return this.reserve(stamp, { network: 'unknown', constrained: true }, reviewedDesktopCohorts())
+        }
+        return runDiagnosticAdmission({
+          begin: () => diagnose.begin(),
+          finish: outcome => diagnose.finish(outcome),
+          eligible: () => this.eligible(stamp),
+          prepare: signal => gauges.prepare(signal),
+          reserve: () => this.reserve(stamp, { network: 'unknown', constrained: true }, reviewedDesktopCohorts()),
+          stop,
+        })
       },
       send: async (report, stop) => {
         const { TelemetryEndpoint, sendNativeTelemetry } = await import('./telemetry-transport.js')

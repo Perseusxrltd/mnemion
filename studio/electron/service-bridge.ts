@@ -30,6 +30,7 @@ import { hostMessages } from './host-control-messages.js'
 import { ProductTelemetry, telemetryMessages } from './product-telemetry.js'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from './telemetry-store.js'
 import { acceptObservation, deliveryObservationEnabled } from './telemetry-observation-diagnostic.mjs'
+import { createAdmissionNote, resourceAdmissionEnabled, unknownAdmissionOutcome } from './admission-outcome.mjs'
 import { DesktopTelemetryActivity } from './telemetry-activity.js'
 import { DesktopTelemetryConditions } from './telemetry-conditions.js'
 import { desktopIpcSelection, desktopTelemetryOrigins, measureDesktop } from './desktop-measurement.js'
@@ -40,6 +41,14 @@ import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, Captur
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 let settlePackagedProbeDelivery: (() => Promise<void>) | undefined
+let admissionArmed = false
+let admissionSnapshot: (() => ReturnType<typeof unknownAdmissionOutcome>) | undefined
+
+/** One sanitized first-attempt outcome, or null when the resource diagnostic is off. */
+export function installedAdmissionOutcome(): ReturnType<typeof unknownAdmissionOutcome> | null {
+  if (!admissionArmed) return null
+  return admissionSnapshot ? admissionSnapshot() : unknownAdmissionOutcome()
+}
 
 /** Packaged hosting probe only. This is not an IPC channel. */
 export function settleInstalledTelemetryDelivery(): Promise<void> {
@@ -218,6 +227,9 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   const telemetryPauses = new Set<string>()
   const telemetryConditions = new DesktopTelemetryConditions({ online: () => net.isOnline(),
     thermal: () => powerMonitor.getCurrentThermalState() })
+  const admissionNote = resourceAdmissionEnabled(process.env, app.isPackaged) ? createAdmissionNote(telemetryConditions) : undefined
+  admissionArmed = Boolean(admissionNote)
+  admissionSnapshot = admissionNote ? () => admissionNote.snapshot() : undefined
   function pauseTelemetry(reason: string) { telemetryPauses.add(reason); measurements?.pauseDelivery(reason) }
   function resumeTelemetry(reason: string) { telemetryPauses.delete(reason); measurements?.resumeDelivery(reason) }
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
@@ -355,7 +367,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       const { disclosure, catalog } = nativeTelemetryDefinitions()
       measurements = new DesktopTelemetryActivity(join(localBase(false), 'mnemion-product-telemetry'), disclosure, catalog,
         () => telemetryConditions.read(), undefined, undefined,
-        { prepare: stop => telemetryConditions.prepare(stop), close: () => telemetryConditions.close() })
+        { prepare: stop => telemetryConditions.prepare(stop), close: () => telemetryConditions.close(),
+          ...(admissionNote ? { diagnose: admissionNote } : {}) })
       measurements.noteUserDisabled(telemetryDisabledUntil)
       for (const reason of telemetryPauses) measurements.pauseDelivery(reason)
     }

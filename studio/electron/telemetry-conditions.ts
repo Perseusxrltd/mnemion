@@ -3,6 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import type { TelemetryConditions } from './telemetry-activity.js'
 import { NativeNetworkConditions } from './telemetry-network.js'
 import { readCpuTotals, type CpuTotals } from './telemetry-cpu.js'
+import { copyAdmissionGuard as copyGuard } from './admission-outcome.mjs'
 
 type CpuSample = CpuTotals & { at: number }
 
@@ -19,13 +20,7 @@ export type AdmissionGuard = {
 }
 
 export function copyAdmissionGuard(value: unknown): AdmissionGuard | null {
-  if (!value || typeof value !== 'object') return null
-  const record = value as Partial<AdmissionGuard>
-  if (record.schema_version !== 1 || typeof record.constrained !== 'boolean') return null
-  if (!guardNetworks.includes(record.network as AdmissionGuard['network'])) return null
-  if (!guardReasons.includes(record.reason as AdmissionGuard['reason'])) return null
-  return { schema_version: 1, network: record.network as AdmissionGuard['network'],
-    constrained: record.constrained, reason: record.reason as AdmissionGuard['reason'] }
+  return copyGuard(value)
 }
 
 export class DesktopTelemetryConditions {
@@ -52,13 +47,15 @@ export class DesktopTelemetryConditions {
     if (this.cpuConstrained) {
       try { await delay(250, undefined, { signal: stop, ref: false }) }
       catch { return false }
-      this.read()
+      // Node's timer can settle before 250 ms (observed 249.659). One fresh
+      // sample is required after that wait; ordinary reads stay cached.
+      this.read(true)
     }
     return !stop.aborted
   }
   close(): void { this.network.close() }
 
-  read(): TelemetryConditions {
+  read(freshCpu: boolean = false): TelemetryConditions {
     const trace = this.traceAdmission
     try {
       const now = this.clock()
@@ -70,7 +67,8 @@ export class DesktopTelemetryConditions {
       }
       // Reuse a sub-second CPU delta during the existing attempt's policy
       // checks. There is no sampling task or wake while the app is idle.
-      if (now - this.sampledAt >= 250) {
+      // freshCpu is only the post-wait sample: the timer may return early.
+      if (freshCpu || now - this.sampledAt >= 250) {
         const totals = this.cpu()
         const current = totals ? { ...totals, at: now } : undefined
         const prior = this.previous

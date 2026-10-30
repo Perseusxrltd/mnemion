@@ -1,4 +1,5 @@
 import { verifyNativeResources } from './native-resources.mjs'
+import { sanitizeAdmissionOutcome, unknownAdmissionOutcome } from '../admission-outcome.mjs'
 
 /** Allowlisted owned-launch evidence and the single-product package order. */
 
@@ -187,6 +188,7 @@ export function publicOwnedReport(report) {
     failure_stage: token(report?.failure_stage),
     failure_category: failureCategory(report),
     delivery_diagnostics_enabled: report?.delivery_diagnostics_enabled === true,
+    admission_diagnostic: report?.admission_diagnostic === true,
     platform_method: token(report?.platform_method),
     lifetime_cpu_microseconds: report?.lifetime_cpu_microseconds == null ? null : count(report.lifetime_cpu_microseconds),
     active_cpu_microseconds: report?.active_cpu_microseconds == null ? null : count(report.active_cpu_microseconds),
@@ -386,4 +388,13 @@ export function resourceCaseStoreReady(row, store) {
 
 export function inspectedBodyHex(value) {
   return typeof value === 'string' && HEX50.test(value) ? value : null
+}
+
+/** Present only for an opted-in launch. A missing or dirty guard does not drop the stage. */
+export function publicAdmissionReceipt(diagnostic, outcome) {
+  if (diagnostic !== true) return null
+  return {
+    admission_diagnostic: true,
+    admission_outcome: sanitizeAdmissionOutcome(outcome) ?? unknownAdmissionOutcome(),
+  }
 }

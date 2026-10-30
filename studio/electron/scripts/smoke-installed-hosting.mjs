@@ -13,7 +13,7 @@ import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
-import { finishResourceCleanup, inspectedBodyHex, nsisSilentUninstallArgs, performOwnedInstall, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage, waitForOwnedWindowsRemoval, windowsProductReadScript, windowsProductRefusalScript } from './installed-resource-report.mjs'
+import { finishResourceCleanup, inspectedBodyHex, nsisSilentUninstallArgs, performOwnedInstall, publicAdmissionReceipt, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage, waitForOwnedWindowsRemoval, windowsProductReadScript, windowsProductRefusalScript } from './installed-resource-report.mjs'
 import { publishResourceCase } from './resource-case-boundary.mjs'
 
 const artifacts = platformArtifacts()
@@ -406,6 +406,7 @@ function publicHosting(hosting) {
     qualification: 'installed resource workload',
     packaged: hosting?.packaged === true,
     runtime,
+    ...publicAdmissionReceipt(hosting?.admission_diagnostic === true, hosting?.admission_outcome) ?? {},
   }
 }
 
@@ -487,6 +488,10 @@ async function runInstalledTelemetryResources() {
     if (childEnv.MNEMION_TELEMETRY_INSTALLED_DELIVERY || childEnv.MNEMION_TELEMETRY_INSTALLED_RESOURCE || childEnv.MNEMION_TELEMETRY_FIXTURE_KEY) {
       throw new Error('Resource launches cannot inherit installed delivery diagnostics')
     }
+    // environment drops every MNEMION_* value. Put the explicit opt-in back
+    // only on this packaged resource child. Normal and delivery launches stay off.
+    if (process.env.MNEMION_TELEMETRY_RESOURCE_ADMISSION === '1') childEnv.MNEMION_TELEMETRY_RESOURCE_ADMISSION = '1'
+    else delete childEnv.MNEMION_TELEMETRY_RESOURCE_ADMISSION
     const args = process.platform === 'linux' && process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1' ? ['--password-store=gnome-libsecret'] : []
     const specPath = join(temporary, `${row.label}-owned-spec.json`)
     const reportPath = join(temporary, `${row.label}-owned-launch.json`)
@@ -514,6 +519,10 @@ async function runInstalledTelemetryResources() {
     const postgresLeft = existsSync(pidFile)
     const store = readResourceStore(profile)
     const telemetryReady = resourceCaseStoreReady(row, store)
+    const admission = publicAdmissionReceipt(
+      owned.admission_diagnostic === true || hosting.admission_diagnostic === true,
+      hosting.admission_outcome,
+    )
     const summary = {
       label: row.label, condition: row.condition, replicate: row.replicate, package_condition: row.package,
       package_sha256: manifest.packages[row.package].sha256, source: manifest.source,
@@ -527,10 +536,11 @@ async function runInstalledTelemetryResources() {
       telemetry_reserved_bytes: Number.isInteger(store.reserved_bytes) ? store.reserved_bytes : null,
       telemetry_present: store.present === true,
       inspected_body_hex: hosting.inspected_body_hex || null,
-      resource_acceptance: hosting.resource_acceptance === false ? false : null,
+      resource_acceptance: (admission || hosting.resource_acceptance === false) ? false : null,
       hosting_ready: typeof owned.hosting_ready === 'boolean' ? owned.hosting_ready : null,
       root_exit_code: owned.root_exit_code ?? null, failure_stage: owned.failure_stage ?? null,
       delivery_diagnostics_enabled: owned.delivery_diagnostics_enabled === true,
+      ...(admission ?? {}),
       workload_completed: resourceWorkloadCompleted(hosting, owned) && telemetryReady && result.status === 0 && !postgresLeft,
     }
     resourceCases.push(summary)
@@ -551,6 +561,7 @@ async function runInstalledTelemetryResources() {
     architecture: process.arch,
     source: manifest.source,
     cases: resourceCases,
+    ...(resourceCases.some(row => row.admission_diagnostic === true) ? { admission_diagnostic: true, delivery_compared: false, resource_acceptance: false } : {}),
   }
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
   console.log(JSON.stringify({ qualification: evidence.qualification, workload_completed: evidence.workload_completed, resource_acceptance: false }))
@@ -730,7 +741,7 @@ try {
   try { backupState = backupStateDiagnostic(state?.backupStateDiagnostic) } catch { invalidBackupStateDiagnostic = true }
   const observation = sanitizeObservation(state?.observation)
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, qualification: telemetryResource ? 'installed resource workload' : telemetryDelivery ? 'installed fixture delivery' : undefined, platform: process.platform, architecture: process.arch,
-    ...(telemetryResource ? { resource_acceptance: false, delivery_compared: false, production_collection_available: false, workload_completed: false, cases: resourceCases } : {}),
+    ...(telemetryResource ? { resource_acceptance: false, delivery_compared: false, production_collection_available: false, workload_completed: false, cases: resourceCases, ...(resourceCases.some(row => row.admission_diagnostic === true) ? { admission_diagnostic: true } : {}) } : {}),
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
     ...(workspaceOpen ? { workspaceOpen } : {}),

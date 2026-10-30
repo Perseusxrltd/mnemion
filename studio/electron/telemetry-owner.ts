@@ -7,6 +7,8 @@ type Port<Report> = {
   send: (report: Report, stop: AbortSignal) => Promise<unknown>
   cancel: (report: Report) => Promise<void>
   cleanup?: () => void
+  /** Set only for one opted-in resource launch. Ordinary owners omit it. */
+  observe?: (outcome: 'release_unavailable' | 'aborted') => void
 }
 
 export class TelemetryActivity<Report> {
@@ -24,7 +26,10 @@ export class TelemetryActivity<Report> {
    * One explicit approval may also ask immediately, without granting delivery.
    * Only its policy stamp can wait for active cleanup; no report or timer is kept. */
   offer(stamp: TelemetryStamp, explicitApproval = false): void {
-    if (this.closed || this.pauses.size || !this.available()) return
+    if (this.port.observe) {
+      if (this.closed || this.pauses.size) return
+      if (!this.available()) { this.port.observe('release_unavailable'); return }
+    } else if (this.closed || this.pauses.size || !this.available()) return
     // One stamp identifies previously committed local work. It is not cached
     // permission: every later reservation still checks current private state.
     if (explicitApproval !== true && (this.lastAutomatic?.revision !== stamp.revision ||
@@ -47,7 +52,10 @@ export class TelemetryActivity<Report> {
   awake(): void { if (this.lastAutomatic) this.offer(this.lastAutomatic) }
 
   private start(expected: TelemetryStamp): void {
-    if (this.closed || this.pauses.size || this.active || !this.available()) return
+    if (this.port.observe) {
+      if (this.closed || this.pauses.size || this.active) return
+      if (!this.available()) { this.port.observe('release_unavailable'); return }
+    } else if (this.closed || this.pauses.size || this.active || !this.available()) return
     const now = this.now()
     if (!Number.isFinite(now) || now < 0) return
     this.nextCheck = now + 60000
@@ -56,7 +64,10 @@ export class TelemetryActivity<Report> {
     state.done = Promise.resolve().then(async () => {
       let report: Report | null = null
       try {
-        if (state.stop.signal.aborted || !this.available()) return
+        if (this.port.observe) {
+          if (state.stop.signal.aborted) { this.port.observe('aborted'); return }
+          if (!this.available()) { this.port.observe('release_unavailable'); return }
+        } else if (state.stop.signal.aborted || !this.available()) return
         report = await this.port.reserve(expected, state.stop.signal)
         if (report !== null && !state.stop.signal.aborted && this.available()) {
           await this.port.send(report, state.stop.signal)

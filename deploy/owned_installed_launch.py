@@ -23,6 +23,7 @@ from deploy.owned_launch_accounting import (
     OwnedLaunchUnsupported,
     start_owned_launch,
 )
+from deploy.admission_outcome import admission_diagnostic_enabled
 from deploy.report_telemetry_renderer import (
     OwnedPhaseCursor,
     apply_owned_marker,
@@ -189,6 +190,7 @@ def _annotate(report: dict, *, cursor, exit_code, hosting_ready, failure_stage, 
     report["hosting_ready"] = hosting_ready
     report["failure_stage"] = failure_stage
     report["delivery_diagnostics_enabled"] = delivery_diagnostics_enabled(environ)
+    report["admission_diagnostic"] = admission_diagnostic_enabled(environ)
     report["phase_cpu"] = "sampled_descriptive"
     report["lifetime_cpu_is_separate"] = True
     report["observer"] = {

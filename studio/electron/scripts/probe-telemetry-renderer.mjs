@@ -117,9 +117,9 @@ async function bootstrap() {
     const readAdmission = DesktopTelemetryConditions.prototype.read
     // This wrapper is the only opt-in. It is set before read() so a CPU sample
     // taken in prepare keeps the same class when reserve reuses it.
-    DesktopTelemetryConditions.prototype.read = function () {
+    DesktopTelemetryConditions.prototype.read = function (...args) {
       this.traceAdmission = true
-      const value = readAdmission.call(this)
+      const value = readAdmission.apply(this, args)
       if (reserveActive && allocation.reserve_guard === null) allocation.reserve_guard = copyAdmissionGuard(this.admissionGuard)
       return value
     }

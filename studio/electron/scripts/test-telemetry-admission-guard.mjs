@@ -120,9 +120,9 @@ test('one admission read names the reserve veto without a second gauge read', ()
       () => 0)
     const original = DesktopTelemetryConditions.prototype.read
     let reserveActive = false, reserveGuard = null
-    DesktopTelemetryConditions.prototype.read = function () {
+    DesktopTelemetryConditions.prototype.read = function (...args) {
       this.traceAdmission = true
-      const value = original.call(this)
+      const value = original.apply(this, args)
       if (reserveActive && reserveGuard === null) reserveGuard = copyAdmissionGuard(this.admissionGuard)
       return value
     }
@@ -194,4 +194,66 @@ test('ordinary reads keep sensor order and allocate no admission guard', () => {
     assert.deepEqual(failed, { network: 'unknown', constrained: true })
     assert.equal(conditions.admissionGuard, undefined)
   } finally { process.availableMemory = memory }
+})
+
+test('prepare takes one fresh CPU sample when the 250 ms wait returns early', async () => {
+  // The production wait is unref'd. A referenced timer keeps this test alive, then goes away.
+  const keepalive = setTimeout(() => {}, 5000)
+  const originalMemory = process.availableMemory
+  process.availableMemory = () => 256 * 1024 * 1024
+  const original = DesktopTelemetryConditions.prototype.read
+  const seen = []
+  DesktopTelemetryConditions.prototype.read = function (...args) {
+    seen.push(args[0])
+    this.traceAdmission = true
+    return original.apply(this, args)
+  }
+  const attempt = async frames => {
+    let calls = 0
+    const started = seen.length
+    let tick = 0
+    const conditions = new DesktopTelemetryConditions(
+      { online: () => true, thermal: () => 'nominal' },
+      { read() { return { network: 'unmetered', constrained: false } }, async start() { return true }, close() {} },
+      () => { const frame = frames[Math.min(calls, frames.length - 1)]; calls += 1; return { ...frame } },
+      () => { const times = [0, 249.659]; const value = times[Math.min(tick, times.length - 1)]; tick += 1; return value })
+    const prepared = await conditions.prepare(new AbortController().signal)
+    const during = calls
+    const value = conditions.read()
+    return { prepared, during, after: calls, value, guard: copyAdmissionGuard(conditions.admissionGuard), forwarded: seen.slice(started) }
+  }
+  try {
+    const pair = [
+      { idle: 0, total: 100, count: 2, source: 'node' },
+      { idle: 40, total: 200, count: 2, source: 'node' },
+    ]
+    const allowed = await attempt(pair)
+    assert.equal(allowed.prepared, true)
+    assert.equal(allowed.during, 2)
+    assert.equal(allowed.after, 2)
+    assert.deepEqual(allowed.forwarded, [undefined, true, undefined])
+    assert.deepEqual(allowed.value, { network: 'unmetered', constrained: false })
+    assert.deepEqual(allowed.guard, { schema_version: 1, network: 'unmetered', constrained: false, reason: 'allowed' })
+
+    const unchanged = await attempt([
+      { idle: 10, total: 100, count: 2, source: 'node' },
+      { idle: 10, total: 100, count: 2, source: 'node' },
+    ])
+    assert.equal(unchanged.during, 2)
+    assert.equal(unchanged.after, 2)
+    assert.deepEqual(unchanged.guard, { schema_version: 1, network: 'unmetered', constrained: true, reason: 'cpu_unobserved' })
+
+    const invalid = await attempt([
+      { idle: 30, total: 100, count: 2, source: 'node' },
+      { idle: 10, total: 180, count: 2, source: 'node' },
+    ])
+    assert.equal(invalid.during, 2)
+    assert.equal(invalid.after, 2)
+    assert.equal(invalid.value.constrained, true)
+    assert.equal(invalid.guard.reason, 'cpu_unobserved')
+  } finally {
+    DesktopTelemetryConditions.prototype.read = original
+    process.availableMemory = originalMemory
+    clearTimeout(keepalive)
+  }
 })

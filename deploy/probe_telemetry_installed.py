@@ -29,6 +29,7 @@ import tempfile
 import threading
 
 
+from deploy.admission_outcome import public_admission_fields
 from deploy.report_telemetry_renderer import (
     INSTALLED_DESKTOP_ENV,
     PHASE_MEMORY_CHECKPOINTS,
@@ -1142,6 +1143,9 @@ def resource_journey_completed(*, returncode, cases, diagnostics, private_withhe
         and global_reports == reports
         and global_malformed == malformed
         and global_accepted == accepted
+        and not any(
+            type(item) is dict and item.get("admission_diagnostic") is True for item in cases
+        )
     )
 
 
@@ -1677,6 +1681,7 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                                 if type(raw.get("canonical_operations_known")) is bool
                                 else None,
                                 "resource_acceptance": False,
+                                **public_admission_fields(app, raw),
                                 "telemetry": {
                                     "attempts": app.get("telemetry_attempts")
                                     if type(app.get("telemetry_attempts")) is int
@@ -1731,6 +1736,10 @@ async def _serve_resources(copy: Path, output: Path, source: Path, material: Pat
                         ),
                         "resource_acceptance": False,
                         "delivery_compared": False,
+                        "admission_diagnostic": any(
+                            type(item) is dict and item.get("admission_diagnostic") is True
+                            for item in cases
+                        ),
                         "production_collection_available": False,
                         "delivery_diagnostics_enabled": diagnostics,
                         "collector": counts,

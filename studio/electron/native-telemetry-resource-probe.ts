@@ -3,7 +3,7 @@ import type { BrowserWindow } from 'electron'
 import { app } from 'electron'
 import { join } from 'node:path'
 import { canonicalLaunchPrefix, canonicalMemoryCycles, canonicalProgressWriter, canonicalRemainingBatches, canonicalTerminalMarker, resourceProgress } from './canonical-memory-cycles.mjs'
-import { settleInstalledTelemetryDelivery } from './service-bridge.js'
+import { installedAdmissionOutcome, settleInstalledTelemetryDelivery } from './service-bridge.js'
 
 const CHECKPOINTS = [
   'before_workspace_connect',
@@ -127,6 +127,12 @@ function resultScript(): string {
   })()`
 }
 
+function admissionEvidence(): Record<string, unknown> {
+  const outcome = installedAdmissionOutcome()
+  if (!outcome) return {}
+  return { admission_diagnostic: true, admission_outcome: outcome }
+}
+
 async function verifiedCycles(window: BrowserWindow): Promise<number | undefined> {
   try {
     const count = await window.webContents.executeJavaScript(`(() => {
@@ -202,6 +208,7 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
       model_calls: 0,
       forced_gc: false,
       idle_padding: false,
+      ...admissionEvidence(),
       memory_api_operations: 384,
       production_collection_available: false,
       resource_acceptance: false,
