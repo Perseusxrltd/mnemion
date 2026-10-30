@@ -61,18 +61,40 @@ function numericObject(source, ints, flags) {
   return copy
 }
 
+function absentOwnedReport(withheld = false) {
+  const report = {
+    present: false,
+    launched: null,
+    resource_acceptance: false,
+    qualification: 'unqualified',
+    missing_recorded_as_zero: false,
+  }
+  if (withheld) report.private_content_withheld = true
+  return report
+}
+
+function plainReport(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function hasCount(value) {
+  return plainReport(value) && Object.values(value).some(item => Number.isInteger(item))
+}
+
 export function publicOwnedReport(report) {
-  const executable = report?.observer?.executable
-  const rows = Array.isArray(report?.ledger) ? report.ledger.map(ledgerRow).filter(Boolean).slice(0, 512) : []
-  const coldProcesses = Array.isArray(report?.cold_start?.processes)
+  if (!plainReport(report)) return absentOwnedReport()
+  if (report.private_content_withheld === true) return absentOwnedReport(true)
+  const executable = report.observer?.executable
+  const rows = Array.isArray(report.ledger) ? report.ledger.map(ledgerRow).filter(Boolean).slice(0, 512) : []
+  const coldProcesses = Array.isArray(report.cold_start?.processes)
     ? report.cold_start.processes.filter(row => row && IDENTITY.test(row.identity || '') && Number.isInteger(row.working_set_bytes) && row.working_set_bytes >= 0)
       .slice(0, 512)
       .map(row => ({ identity: row.identity, working_set_bytes: row.working_set_bytes }))
     : []
-  const unavailable = Array.isArray(report?.unavailable_counters)
+  const unavailable = Array.isArray(report.unavailable_counters)
     ? report.unavailable_counters.filter(name => token(name)).slice(0, 32)
     : []
-  const phases = Array.isArray(report?.phases) ? report.phases.filter(phase => phase && typeof phase.name === 'string' && token(phase.name)).slice(0, 64).map(phase => ({
+  const phases = Array.isArray(report.phases) ? report.phases.filter(phase => phase && typeof phase.name === 'string' && token(phase.name)).slice(0, 64).map(phase => ({
     name: phase.name,
     active: flag(phase.active),
     cpu_microseconds: phase.cpu_microseconds == null ? null : count(phase.cpu_microseconds),
@@ -81,18 +103,69 @@ export function publicOwnedReport(report) {
     canonical_operations_at_start: phase.canonical_operations_at_start == null ? null : count(phase.canonical_operations_at_start, 1000000),
     canonical_operations_at_end: phase.canonical_operations_at_end == null ? null : count(phase.canonical_operations_at_end, 1000000),
   })) : []
-  const bounds = report?.bounds && typeof report.bounds === 'object' ? report.bounds : {}
+  const bounds = plainReport(report.bounds) ? report.bounds : {}
   const sampleSeconds = typeof bounds.sample_seconds === 'number' && Number.isFinite(bounds.sample_seconds) && bounds.sample_seconds > 0 && bounds.sample_seconds <= 1
     ? bounds.sample_seconds : null
   const lifetimeCap = typeof bounds.lifetime_seconds_cap === 'number' && Number.isFinite(bounds.lifetime_seconds_cap) && bounds.lifetime_seconds_cap > 0 && bounds.lifetime_seconds_cap <= 120
     ? bounds.lifetime_seconds_cap : null
-  const fraction = typeof report?.active_core_fraction === 'string' && FRACTION.test(report.active_core_fraction)
+  const fraction = typeof report.active_core_fraction === 'string' && FRACTION.test(report.active_core_fraction)
     ? report.active_core_fraction : null
+  const lifetime = report.lifetime_cpu_microseconds == null ? null : count(report.lifetime_cpu_microseconds)
+  const activeCpu = report.active_cpu_microseconds == null ? null : count(report.active_cpu_microseconds)
+  const activeWall = report.active_wall_microseconds == null ? null : count(report.active_wall_microseconds)
+  const identitiesMissing = report.identities_missing == null ? null : count(report.identities_missing)
+  const copiedCoverage = coverage(report.coverage)
+  const copiedKernel = numericObject(
+    report.kernel,
+    ['total_user_100ns', 'total_kernel_100ns', 'total_processes', 'active_processes', 'processes_no_longer_active', 'terminated_by_limit', 'peak_process_commit_bytes', 'peak_job_commit_bytes', 'cpu_usage_usec', 'cgroup_memory_peak_bytes', 'wait4_direct_child_cpu_microseconds'],
+    ['commit_counters_are_working_set', 'cpu_usage_includes_descendant_cgroups', 'cgroup_memory_peak_is_per_process_rss', 'includes_only_reaped_descendants', 'footprint_used_as_rss'],
+  )
+  const copiedPeaks = numericObject(report.sampled_peaks, ['sum_working_set_bytes'], ['sum_double_counts_shared', 'not_a_budget_measurement', 'sampled_pid_cpu_is_complete'])
+  const unsupported = token(report.honest_unsupported)
+  const explicitLaunch = flag(report.launched)
+  const cleanup = plainReport(report.cleanup) ? report.cleanup : null
+  const cleanupFailure = cleanup ? token(cleanup.failure) : null
+  const cleanupOk = cleanup ? flag(cleanup.ok) : null
+  const cleanupTerminated = cleanup ? flag(cleanup.terminated_owned_group) : null
+  const platformMethod = token(report.platform_method)
+  const canonicalCompleted = count(report.canonical_operations_completed, 1000000)
+  const canonicalKnown = flag(report.canonical_operations_known)
+  const observationError = token(report.observation_error)
+  const markerApplied = report.marker_applied === false ? false : null
+  const observerFlag = flag(report.observer_in_measured_group)
+  const coldKind = report.cold_start?.kind === 'first_observed_absolute' ? 'first_observed_absolute' : null
+  const coldSubtracted = flag(report.cold_start?.subtracted)
+  const ledgerTruncated = flag(report.ledger_truncated)
+  const timedOut = flag(bounds.timed_out)
+  const sampleTruncated = flag(bounds.sample_truncated)
+  const sampleError = token(bounds.sample_error)
+  const processEvidence = Boolean(
+    rows.length || coldProcesses.length || lifetime !== null || activeCpu !== null || activeWall !== null
+    || identitiesMissing !== null || fraction !== null || hasCount(copiedPeaks) || hasCount(copiedKernel),
+  )
+  const independent = Boolean(
+    processEvidence || platformMethod || Object.values(copiedCoverage).some(item => item !== null) || phases.length
+    || coldKind || coldSubtracted !== null || canonicalCompleted !== null || canonicalKnown !== null
+    || unavailable.length || cleanupFailure || cleanupOk === true || cleanupTerminated !== null
+    || (cleanup && cleanup.retried === true) || observerFlag !== null || observationError
+    || markerApplied === false || unsupported || ledgerTruncated !== null
+    || lifetimeCap !== null || timedOut !== null || sampleSeconds !== null || sampleTruncated !== null
+    || sampleError || (copiedPeaks && Object.values(copiedPeaks).some(item => item !== null))
+    || (copiedKernel && Object.values(copiedKernel).some(item => item !== null)),
+  )
+  if (report.present === false && !independent) return absentOwnedReport()
+  let launched = null
+  if (unsupported || explicitLaunch === false) launched = false
+  else if (explicitLaunch === true) launched = true
+  else if (processEvidence) launched = true
+  const present = independent || explicitLaunch !== null || Boolean(unsupported)
+  if (!present) return absentOwnedReport()
   return {
     qualification: 'unqualified',
     resource_acceptance: false,
-    launched: report?.launched !== false && !report?.honest_unsupported,
-    honest_unsupported: token(report?.honest_unsupported),
+    present,
+    launched,
+    honest_unsupported: unsupported,
     canonical_operations_completed: count(report?.canonical_operations_completed, 1000000),
     canonical_operations_known: flag(report?.canonical_operations_known),
     hosting_ready: report?.hosting_ready === true,

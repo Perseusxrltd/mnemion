@@ -859,19 +859,46 @@ def _numeric_object(value: object, ints: tuple[str, ...], flags: tuple[str, ...]
     return copied
 
 
+def _rows(value: object) -> list:
+    return value if type(value) is list else []
+
+
+def _has_count(value: dict | None) -> bool:
+    return type(value) is dict and any(type(item) is int for item in value.values())
+
+
+def _has_value(value: dict | None) -> bool:
+    return type(value) is dict and any(item is not None for item in value.values())
+
+
+def _absent_owned_launch(*, withheld: bool = False) -> dict:
+    report = {
+        "present": False,
+        "launched": None,
+        "resource_acceptance": False,
+        "qualification": "unqualified",
+        "missing_recorded_as_zero": False,
+    }
+    if withheld:
+        report["private_content_withheld"] = True
+    return report
+
+
 def retain_owned_launch(report: object) -> dict:
-    """Copy allowlisted accounting fields. A null stays null. Acceptance stays false."""
+    """Copy allowlisted accounting fields. A null stays null. Acceptance stays false.
+
+    Missing, empty, withheld, and unrecognized records are not a launched workload.
+    Launch is true for an explicit true flag or validated process evidence only.
+    Metadata without that evidence stays present and leaves launch unknown.
+    """
     if type(report) is not dict:
-        return {
-            "present": False,
-            "resource_acceptance": False,
-            "qualification": "unqualified",
-            "missing_recorded_as_zero": False,
-        }
+        return _absent_owned_launch()
+    if report.get("private_content_withheld") is True:
+        return _absent_owned_launch(withheld=True)
     coverage = _coverage(report.get("coverage"))
     cleanup_raw = report.get("cleanup") if type(report.get("cleanup")) is dict else None
     phases = []
-    for phase in report.get("phases") or []:
+    for phase in _rows(report.get("phases")):
         if type(phase) is not dict or _token(phase.get("name")) is None:
             continue
         phases.append(
@@ -900,7 +927,7 @@ def retain_owned_launch(report: object) -> dict:
     failure = None if cleanup_raw is None else _token(cleanup_raw.get("failure"))
     cold_raw = report.get("cold_start") if type(report.get("cold_start")) is dict else {}
     processes = []
-    for row in cold_raw.get("processes") or []:
+    for row in _rows(cold_raw.get("processes")):
         if type(row) is not dict or not _IDENTITY.fullmatch(str(row.get("identity") or "")):
             continue
         working = row.get("working_set_bytes")
@@ -910,7 +937,7 @@ def retain_owned_launch(report: object) -> dict:
         if len(processes) >= 512:
             break
     ledger = []
-    for row in report.get("ledger") or []:
+    for row in _rows(report.get("ledger")):
         copied = _ledger_row(row)
         if copied is None:
             continue
@@ -919,91 +946,170 @@ def retain_owned_launch(report: object) -> dict:
             break
     bounds_raw = report.get("bounds") if type(report.get("bounds")) is dict else {}
     fraction = report.get("active_core_fraction")
+    fraction_ok = fraction if type(fraction) is str and _FRACTION.fullmatch(fraction) else None
     known = report.get("canonical_operations_known")
+    lifetime = _optional_count(report.get("lifetime_cpu_microseconds"))
+    active_cpu = _optional_count(report.get("active_cpu_microseconds"))
+    active_wall = _optional_count(report.get("active_wall_microseconds"))
+    platform_method = _token(report.get("platform_method"))
+    identities_missing = _optional_count(report.get("identities_missing"))
+    canonical = _optional_count(report.get("canonical_operations_completed"), 1_000_000)
+    observation_error = _token(report.get("observation_error"))
+    marker_applied = False if report.get("marker_applied") is False else None
+    observer = _flag(report.get("observer_in_measured_group"))
+    terminated = None if cleanup_raw is None else _flag(cleanup_raw.get("terminated_owned_group"))
+    sampled_peaks = _numeric_object(
+        report.get("sampled_peaks"),
+        ("sum_working_set_bytes",),
+        (
+            "sum_double_counts_shared",
+            "not_a_budget_measurement",
+            "sampled_pid_cpu_is_complete",
+        ),
+    )
+    kernel = _numeric_object(
+        report.get("kernel"),
+        (
+            "total_user_100ns",
+            "total_kernel_100ns",
+            "total_processes",
+            "active_processes",
+            "processes_no_longer_active",
+            "terminated_by_limit",
+            "peak_process_commit_bytes",
+            "peak_job_commit_bytes",
+            "cpu_usage_usec",
+            "cgroup_memory_peak_bytes",
+            "wait4_direct_child_cpu_microseconds",
+        ),
+        (
+            "commit_counters_are_working_set",
+            "cpu_usage_includes_descendant_cgroups",
+            "cgroup_memory_peak_is_per_process_rss",
+            "includes_only_reaped_descendants",
+            "footprint_used_as_rss",
+        ),
+    )
+    unsupported = _token(report.get("honest_unsupported"))
+    explicit_launch = _flag(report.get("launched"))
+    lifetime_cap = _bounded_number(bounds_raw.get("lifetime_seconds_cap"), 0, 120)
+    timed_out = _flag(bounds_raw.get("timed_out"))
+    sample_seconds = _bounded_number(bounds_raw.get("sample_seconds"), 0, 1)
+    sample_truncated = _flag(bounds_raw.get("sample_truncated"))
+    sample_error = _token(bounds_raw.get("sample_error"))
+    subtracted = _flag(cold_raw.get("subtracted"))
+    ledger_truncated = _flag(report.get("ledger_truncated"))
+    retried_true = cleanup_raw is not None and cleanup_raw.get("retried") is True
+    # A phase name, coverage flag, platform token, or cold-start kind is metadata.
+    # It keeps the record present, and it does not prove the workload launched.
+    process_evidence = any(
+        (
+            bool(ledger),
+            bool(processes),
+            lifetime is not None,
+            active_cpu is not None,
+            active_wall is not None,
+            identities_missing is not None,
+            fraction_ok is not None,
+            _has_count(sampled_peaks),
+            _has_count(kernel),
+        )
+    )
+    independent = any(
+        (
+            process_evidence,
+            platform_method is not None,
+            any(value is not None for value in coverage.values()),
+            bool(phases),
+            cold_raw.get("kind") == "first_observed_absolute",
+            subtracted is not None,
+            canonical is not None,
+            type(known) is bool,
+            bool(unavailable),
+            failure is not None,
+            cleanup_ok is True,
+            terminated is not None,
+            retried_true,
+            observer is not None,
+            observation_error is not None,
+            marker_applied is False,
+            unsupported is not None,
+            ledger_truncated is not None,
+            _has_value(sampled_peaks),
+            _has_value(kernel),
+            any(
+                value is not None
+                for value in (
+                    lifetime_cap,
+                    timed_out,
+                    sample_seconds,
+                    sample_truncated,
+                    sample_error,
+                )
+            ),
+        )
+    )
+    # publicOwnedReport writes present:false plus default nulls for an absent file.
+    # Those defaults, including an explicit false launch flag, are not new evidence.
+    if report.get("present") is False and not independent:
+        return _absent_owned_launch()
+    if unsupported is not None or explicit_launch is False:
+        launched = False
+    elif explicit_launch is True:
+        launched = True
+    elif process_evidence:
+        launched = True
+    else:
+        launched = None
+    present = independent or explicit_launch is not None or unsupported is not None
     return {
-        "present": True,
-        "launched": report.get("launched") is not False and not report.get("honest_unsupported"),
-        "honest_unsupported": _token(report.get("honest_unsupported")),
+        "present": present,
+        "launched": launched,
+        "honest_unsupported": unsupported,
         "resource_acceptance": False,
         "qualification": "unqualified",
         "coverage_status": coverage.get("status"),
         "cpu_lifetime_complete": coverage.get("cpu_lifetime_complete"),
-        "lifetime_cpu_microseconds": _optional_count(report.get("lifetime_cpu_microseconds")),
-        "active_cpu_microseconds": _optional_count(report.get("active_cpu_microseconds")),
-        "active_wall_microseconds": _optional_count(report.get("active_wall_microseconds")),
-        "active_core_fraction": fraction
-        if type(fraction) is str and _FRACTION.fullmatch(fraction)
-        else None,
-        "identities_missing": _optional_count(report.get("identities_missing")),
+        "lifetime_cpu_microseconds": lifetime,
+        "active_cpu_microseconds": active_cpu,
+        "active_wall_microseconds": active_wall,
+        "active_core_fraction": fraction_ok,
+        "identities_missing": identities_missing,
         "unavailable_counters": unavailable,
-        "observer_in_measured_group": _flag(report.get("observer_in_measured_group")),
+        "observer_in_measured_group": observer,
         "cleanup_ok": cleanup_ok,
         "cleanup_failure": failure,
         "phases": phases,
         "missing_recorded_as_zero": False,
-        "platform_method": _token(report.get("platform_method")),
-        "canonical_operations_completed": _optional_count(
-            report.get("canonical_operations_completed"), 1_000_000
-        ),
+        "platform_method": platform_method,
+        "canonical_operations_completed": canonical,
         "canonical_operations_known": known if type(known) is bool else None,
-        "observation_error": _token(report.get("observation_error")),
-        "marker_applied": False if report.get("marker_applied") is False else None,
+        "observation_error": observation_error,
+        "marker_applied": marker_applied,
         "coverage": coverage,
         "cold_start": {
             "kind": "first_observed_absolute"
             if cold_raw.get("kind") == "first_observed_absolute"
             else None,
-            "subtracted": _flag(cold_raw.get("subtracted")),
+            "subtracted": subtracted,
             "processes": processes,
         },
         "ledger": ledger,
-        "ledger_truncated": _flag(report.get("ledger_truncated")),
-        "sampled_peaks": _numeric_object(
-            report.get("sampled_peaks"),
-            ("sum_working_set_bytes",),
-            (
-                "sum_double_counts_shared",
-                "not_a_budget_measurement",
-                "sampled_pid_cpu_is_complete",
-            ),
-        ),
-        "kernel": _numeric_object(
-            report.get("kernel"),
-            (
-                "total_user_100ns",
-                "total_kernel_100ns",
-                "total_processes",
-                "active_processes",
-                "processes_no_longer_active",
-                "terminated_by_limit",
-                "peak_process_commit_bytes",
-                "peak_job_commit_bytes",
-                "cpu_usage_usec",
-                "cgroup_memory_peak_bytes",
-                "wait4_direct_child_cpu_microseconds",
-            ),
-            (
-                "commit_counters_are_working_set",
-                "cpu_usage_includes_descendant_cgroups",
-                "cgroup_memory_peak_is_per_process_rss",
-                "includes_only_reaped_descendants",
-                "footprint_used_as_rss",
-            ),
-        ),
+        "ledger_truncated": ledger_truncated,
+        "sampled_peaks": sampled_peaks,
+        "kernel": kernel,
         "cleanup": {
             "ok": cleanup_ok,
             "failure": failure,
-            "retried": False if cleanup_raw is None else cleanup_raw.get("retried") is True,
-            "terminated_owned_group": None
-            if cleanup_raw is None
-            else _flag(cleanup_raw.get("terminated_owned_group")),
+            "retried": retried_true,
+            "terminated_owned_group": terminated,
         },
         "bounds": {
-            "lifetime_seconds_cap": _bounded_number(bounds_raw.get("lifetime_seconds_cap"), 0, 120),
-            "timed_out": _flag(bounds_raw.get("timed_out")),
-            "sample_seconds": _bounded_number(bounds_raw.get("sample_seconds"), 0, 1),
-            "sample_truncated": _flag(bounds_raw.get("sample_truncated")),
-            "sample_error": _token(bounds_raw.get("sample_error")),
+            "lifetime_seconds_cap": lifetime_cap,
+            "timed_out": timed_out,
+            "sample_seconds": sample_seconds,
+            "sample_truncated": sample_truncated,
+            "sample_error": sample_error,
         },
         "budget": {
             "additional_rss_bytes_per_process": 8_388_608,
