@@ -1,6 +1,41 @@
 /** Installed review delivery. The packaged bridge, UI and delivery owner stay in place. */
 import type { BrowserWindow } from 'electron'
 import { app } from 'electron'
+import { telemetryReadinessError, telemetrySnapshotDecision } from './telemetry-readiness.mjs'
+
+/** The page script cannot import modules. These functions carry their own allowlists. */
+function readinessRuntime(): string {
+  return `
+    const decide = ${telemetrySnapshotDecision.toString()};
+    const readinessError = ${telemetryReadinessError.toString()};
+    async function ready(phase, accept, timeout = 30000) {
+      let gate = 'review_unavailable';
+      try {
+        return await until(async () => {
+          let snapshot;
+          try { snapshot = await reviewStatus(); }
+          catch { gate = 'control_unavailable'; return null; }
+          const decision = decide(snapshot, accept);
+          if (decision.ready) return decision.snapshot;
+          gate = decision.gate || 'review_unavailable';
+          return null;
+        }, phase, timeout);
+      } catch (error) {
+        if (String((error && error.message) || error) !== phase) throw error;
+        throw new Error(readinessError(phase, gate));
+      }
+    }
+    function view(snapshot, phase) {
+      const decision = decide(snapshot, () => true);
+      if (!decision.ready) throw new Error(readinessError(phase, decision.gate));
+      return snapshot;
+    }
+    function attemptCount(snapshot) {
+      const budget = snapshot.status && snapshot.status.delivery_budget;
+      const count = budget ? budget.attempts_in_rolling_week : null;
+      return Number.isInteger(count) ? count : null;
+    }`
+}
 
 const REVIEW_CHECKS = [
   'disclosure_required',
@@ -90,16 +125,30 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
     const controlLabel = node => (node.querySelector('strong')?.textContent ?? node.textContent ?? '').trim();
     const button = text => [...document.querySelectorAll('button')].find(node =>
       controlLabel(node) === text && !node.disabled && node.getClientRects().length);
-    async function click(text) {
-      const node = await until(() => button(text), 'Missing installed privacy control: ' + text);
-      node.click();
+    async function click(text, phase) {
+      let gate = 'control_unavailable';
+      try {
+        const node = await until(() => button(text), phase || ('Missing installed privacy control: ' + text));
+        node.click();
+      } catch (error) {
+        if (!phase || String((error && error.message) || error) !== phase) throw error;
+        try {
+          const decision = decide(await reviewStatus(), () => true);
+          gate = decision.ready ? 'control_unavailable' : decision.gate;
+        } catch { gate = 'control_unavailable'; }
+        throw new Error(readinessError(phase, gate));
+      }
     }
     const checkbox = text => [...document.querySelectorAll('input[type="checkbox"]')].find(node =>
       node.closest('label')?.textContent.includes(text));
     const control = (action, value = {}) => bridge.productTelemetry('telemetry.' + action, value);
-    const review = () => control('review_status');
-    const request = value => ({ expected_revision: value.status.revision,
-      expected_generation: value.status.store_generation, expected_review_token: value.review.token });
+    const reviewStatus = () => control('review_status');
+    ${readinessRuntime()}
+    const request = value => {
+      const opened = view(value, 'review_request');
+      return { expected_revision: opened.status.revision,
+        expected_generation: opened.status.store_generation, expected_review_token: opened.review.token };
+    };
     function setValue(field, value) {
       const prototype = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement : field instanceof HTMLSelectElement ? HTMLSelectElement : HTMLInputElement;
       Object.getOwnPropertyDescriptor(prototype.prototype, 'value').set.call(field, value);
@@ -143,11 +192,36 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
         const prose = node.querySelector('.ws-prose')?.textContent || '';
         return prose.includes(canary) && prose.includes(token);
       }), 'The real lexical recall did not show the saved memory');
+    }
+    async function stageHeld() {
       await privacy();
-      await until(async () => {
-        const status = await review();
-        return status.review?.report_available ? status : null;
-      }, 'The packaged app recorded no real report after the memory actions', 60000);
+      await ready('memory_observations', snapshot => {
+        if (snapshot.review.mode !== 'review') return 'review_not_paused';
+        if (snapshot.status?.effective_enabled !== true) return 'collection_pending';
+        if (!(snapshot.status?.pending_records > 0)) return 'no_observations';
+        return true;
+      }, 60000);
+      await click('Refresh privacy status');
+      await click('Inspect next report', 'report_inspect');
+      let shown;
+      try {
+        shown = await until(() => {
+          const text = document.querySelector('[aria-label="Exact report bytes"]')?.textContent;
+          return text && text.trim() ? text.trim() : null;
+        }, 'report_bytes', 60000);
+      } catch (error) {
+        if (String((error && error.message) || error) !== 'report_bytes') throw error;
+        throw new Error(readinessError('report_bytes', 'report_not_held'));
+      }
+      const held = await ready('report_held', snapshot => {
+        if (snapshot.review.outcome !== 'held') return 'report_not_held';
+        if (snapshot.packet !== null) throw new Error('Inspecting the report disclosed or spent it');
+        const count = attemptCount(snapshot);
+        if (count === null) return 'delivery_not_ready';
+        if (count !== 0) throw new Error('Inspecting the report disclosed or spent it');
+        return true;
+      });
+      return { shown, held };
     }
     const initial = await control('status');
     if (initial.storage !== 'new' || initial.user_enabled !== true || initial.effective_enabled !== false ||
@@ -199,45 +273,46 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
     await until(() => !document.body.innerText.includes('Welcome to Mnemion') || document.querySelector('.ws-shell, .ws-workspace-name'),
       'The packaged app did not open the fixture workspace');
     await privacy();
+    await ready('manual_review', snapshot => snapshot.review.mode === 'automatic' || snapshot.review.mode === 'review' ? true : 'review_unavailable');
     const reviewBox = () => checkbox('Pause reports for manual review');
-    if (!reviewBox() || reviewBox().checked) throw new Error('Manual review was already selected');
-    reviewBox().click();
-    await until(async () => (await review()).review?.mode === 'review', 'Manual review did not save before permission');
+    const manual = reviewBox();
+    if (!manual || manual.disabled) throw new Error(readinessError('manual_review', 'review_unavailable'));
+    if (manual.checked) throw new Error('Manual review was already selected');
+    manual.click();
+    await ready('manual_review', snapshot => snapshot.review.mode === 'review' ? true : 'review_not_paused');
     const summary = [...document.querySelectorAll('summary')].find(node => node.textContent.trim() === 'Telemetry connection settings');
     if (!summary) throw new Error('Missing telemetry connection settings');
     summary.click();
     const connection = await until(() => document.getElementById('telemetry-connection-mode'), 'Missing connection choice');
     setValue(connection, 'unmetered');
-    const beforePermission = await until(async () => {
-      const value = await review();
-      return value.status?.connection_mode === 'unmetered' ? value : null;
-    }, 'The unmetered connection choice did not save');
+    const beforePermission = await ready('before_permission', snapshot => {
+      if (snapshot.review.mode !== 'review') return 'review_not_paused';
+      if (snapshot.status?.connection_mode !== 'unmetered') return 'connection_pending';
+      return true;
+    });
     if (beforePermission.status.effective_enabled !== false || beforePermission.status.disclosure_version !== 0 ||
-        beforePermission.status.pending_records !== 0 || beforePermission.review.mode !== 'review') {
+        beforePermission.status.pending_records !== 0) {
       throw new Error('The manual choice granted collection before disclosure');
     }
     checks.manual_choice_before_permission = true;
     await click('Keep product telemetry on');
-    const enabled = await until(async () => {
-      const value = await review();
-      return value.status?.effective_enabled === true ? value : null;
-    }, 'The packaged disclosure acknowledgement did not enable collection');
-    if (enabled.status.disclosure_version !== enabled.status.required_disclosure_version || enabled.review.mode !== 'review') {
+    const enabled = await ready('collection_enabled', snapshot => {
+      if (snapshot.review.mode !== 'review') return 'review_not_paused';
+      if (snapshot.status?.effective_enabled !== true) return 'collection_pending';
+      return true;
+    });
+    if (enabled.status.disclosure_version !== enabled.status.required_disclosure_version) {
       throw new Error('The packaged disclosure acknowledgement did not keep manual review');
     }
     checks.app_disclosure_acknowledged = true;
     await memoryCycle();
-    await click('Refresh privacy status');
-    await click('Inspect next report');
-    const shown = await until(() => document.querySelector('[aria-label="Exact report bytes"]')?.textContent, 'The held report did not render');
-    const held = await review();
-    if (held.review.outcome !== 'held' || held.packet !== null || held.status.delivery_budget.attempts_in_rolling_week !== 0) {
-      throw new Error('Inspecting the report disclosed or spent it');
-    }
+    const staged = await stageHeld();
+    const shown = staged.shown;
+    const held = staged.held;
     const inspected = Uint8Array.from(atob(shown), char => char.charCodeAt(0));
     if (inspected.length !== 25) throw new Error('The held report was not the 25-byte body');
-    const repeated = await control('inspect_report', request(held));
-    if (repeated.packet.body_base64 !== shown || repeated.review.expires_ms !== held.review.expires_ms || repeated.review.token !== held.review.token) {
+    const repeated = view(await control('inspect_report', request(held)), 'report_held');
+    if (!repeated.packet || repeated.packet.body_base64 !== shown || repeated.review.expires_ms !== held.review.expires_ms || repeated.review.token !== held.review.token) {
       throw new Error('Repeating inspection changed the held report');
     }
     checks.exact_review_preserved = true;
@@ -251,47 +326,50 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
     window.dispatchEvent(new Event('focus'));
     await until(() => document.body.innerText.includes('Product telemetry is off by your choice.') &&
       !document.querySelector('[aria-label="Exact report bytes"]'), 'The privacy page kept the invalidated report');
-    const cleared = await review();
-    if (cleared.status.pending_records !== 0 || cleared.status.delivery_budget.attempts_in_rolling_week !== 0 || cleared.review.report_available) {
-      throw new Error('The invalidated report remained available');
-    }
+    await ready('invalidated_report', snapshot => {
+      const count = attemptCount(snapshot);
+      if (count === null) return 'delivery_not_ready';
+      if (snapshot.status?.pending_records !== 0 || count !== 0 || snapshot.review.report_available) {
+        throw new Error('The invalidated report remained available');
+      }
+      return true;
+    });
     checks.native_optout_invalidates_review = true;
     const share = checkbox('Share anonymous product statistics');
     if (!share || share.checked) throw new Error('Opt-out did not clear the share choice');
     share.click();
-    const reenabled = await until(async () => {
-      const value = await review();
-      return value.status?.effective_enabled === true ? value : null;
-    }, 'Re-enable did not restore collection');
-    if (reenabled.status.pending_records !== 0 || reenabled.review.report_available || reenabled.review.mode !== 'review') {
+    const reenabled = await ready('collection_reenabled', snapshot => {
+      if (snapshot.review.mode !== 'review') return 'review_not_paused';
+      if (snapshot.status?.effective_enabled !== true) return 'collection_pending';
+      return true;
+    });
+    if (reenabled.status.pending_records !== 0 || reenabled.review.report_available) {
       throw new Error('Re-enable kept a report');
     }
     checks.reenable_starts_empty = true;
     await memoryCycle();
-    await click('Refresh privacy status');
-    await click('Inspect next report');
-    await until(() => document.querySelector('[aria-label="Exact report bytes"]')?.textContent, 'The discard report did not render');
-    await click('Discard report');
-    const discarded = await until(async () => {
-      const value = await review();
-      return value.review?.outcome === 'discarded' ? value : null;
-    }, 'Discard did not complete');
-    if (discarded.review.report_available || discarded.status.delivery_budget.attempts_in_rolling_week !== 0) {
-      throw new Error('Discard spent an attempt');
-    }
+    await stageHeld();
+    await click('Discard report', 'report_discard');
+    await ready('report_discarded', snapshot => {
+      if (snapshot.review.outcome !== 'discarded') return 'report_not_discarded';
+      const count = attemptCount(snapshot);
+      if (count === null) return 'delivery_not_ready';
+      if (snapshot.review.report_available || count !== 0) throw new Error('Discard spent an attempt');
+      return true;
+    });
     checks.discard_does_not_spend = true;
     await memoryCycle();
-    await click('Refresh privacy status');
-    await click('Inspect next report');
-    const approvedShown = await until(() => document.querySelector('[aria-label="Exact report bytes"]')?.textContent, 'The approved report did not render');
-    const approvedBytes = Uint8Array.from(atob(approvedShown), char => char.charCodeAt(0));
+    const approved = await stageHeld();
+    const approvedBytes = Uint8Array.from(atob(approved.shown), char => char.charCodeAt(0));
     if (approvedBytes.length !== 25) throw new Error('The approved report was not the 25-byte body');
-    await click('Approve this report');
-    const consumed = await until(async () => {
-      const value = await review();
-      return value.review?.outcome === 'consumed' && value.status?.delivery_budget?.attempts_in_rolling_week === 1 ? value : null;
-    }, 'The packaged delivery owner did not record one attempt', 60000);
-    if (consumed.status.delivery_budget.attempts_in_rolling_week !== 1) throw new Error('Approval did not spend exactly one attempt');
+    await click('Approve this report', 'report_approve');
+    await ready('report_consumed', snapshot => {
+      if (snapshot.review.outcome !== 'consumed') return 'report_not_consumed';
+      const count = attemptCount(snapshot);
+      if (count === null) return 'delivery_not_ready';
+      if (count !== 1) throw new Error('Approval did not spend exactly one attempt');
+      return true;
+    }, 60000);
     checks.approved_attempt_uses_inspected_body = true;
     const approved_body_hex = [...approvedBytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
     return { checks, approved_body_hex, app_launches: 1, delivery_pending: true };
@@ -309,11 +387,27 @@ function finalOptOut(): string {
     }
     const button = text => [...document.querySelectorAll('button')].find(node =>
       node.textContent.trim() === text && !node.disabled && node.getClientRects().length);
+    const reviewStatus = () => bridge.productTelemetry('telemetry.review_status');
+    ${readinessRuntime()}
     location.hash = '/privacy';
     await until(() => document.querySelector('#privacy-heading')?.textContent.includes('Privacy & product telemetry') &&
       button('Disable product telemetry'), 'The installed privacy page did not open');
     button('Disable product telemetry').click();
-    await until(async () => (await bridge.productTelemetry('telemetry.status')).user_enabled === false, 'Final opt-out did not save');
+    let missing = true;
+    try {
+      await until(async () => {
+        let status;
+        try { status = await bridge.productTelemetry('telemetry.status'); }
+        catch { missing = true; return null; }
+        if (!status || typeof status !== 'object' || Array.isArray(status)) { missing = true; return null; }
+        missing = false;
+        return status.user_enabled === false ? status : null;
+      }, 'final_opt_out');
+    } catch (error) {
+      if (String((error && error.message) || error) !== 'final_opt_out') throw error;
+      if (missing) throw new Error(readinessError('final_opt_out', 'control_unavailable'));
+      throw new Error('Final opt-out did not save');
+    }
     return { checks: { final_opt_out: true } };
   })()`
 }
@@ -327,22 +421,28 @@ function restartJourney(): string {
       do { const value = await check(); if (value) return value; await pause(100); } while (Date.now() < deadline);
       throw new Error(message);
     }
+    const reviewStatus = () => bridge.productTelemetry('telemetry.review_status');
+    ${readinessRuntime()}
     if ([...document.querySelectorAll('[role="dialog"], dialog')].some(node => node.textContent.includes('Your privacy choice'))) {
       throw new Error('Restart offered disclosure again after a saved opt-out');
     }
     location.hash = '/privacy';
     await until(() => document.querySelector('#privacy-heading') && document.body.innerText.includes('Product telemetry is off by your choice.'),
       'Restart did not show the saved opt-out');
-    const restored = await bridge.productTelemetry('telemetry.review_status');
     const share = [...document.querySelectorAll('input[type="checkbox"]')].find(node =>
       node.closest('label')?.textContent.includes('Share anonymous product statistics'));
     const review = [...document.querySelectorAll('input[type="checkbox"]')].find(node =>
       node.closest('label')?.textContent.includes('Pause reports for manual review'));
-    if (restored.status.user_enabled !== false || restored.status.effective_enabled !== false || restored.status.pending_records !== 0 ||
-        restored.status.delivery_budget.attempts_in_rolling_week !== 1 || restored.review.mode !== 'review' ||
-        restored.review.report_available !== false || restored.packet !== null || share?.checked !== false || review?.checked !== true) {
-      throw new Error('Opt-out or manual review did not survive the clean restart');
-    }
+    await ready('restart_review', snapshot => {
+      const count = attemptCount(snapshot);
+      if (count === null) return 'delivery_not_ready';
+      if (snapshot.status?.user_enabled !== false || snapshot.status?.effective_enabled !== false || snapshot.status?.pending_records !== 0 ||
+          count !== 1 || snapshot.review.mode !== 'review' || snapshot.review.report_available !== false || snapshot.packet !== null ||
+          share?.checked !== false || review?.checked !== true) {
+        throw new Error('Opt-out or manual review did not survive the clean restart');
+      }
+      return true;
+    });
     return { checks: { optout_and_review_survive_restart: true }, app_launches: 1 };
   })()`
 }
