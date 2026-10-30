@@ -62,82 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "11ffe6b07fc15a6aab245405e42649f9c93a0e96",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T04:16:30Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41001954572",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 5,
-        "succeeded": 5,
-        "active": [
-          {
-            "id": 123888160188,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 123888207382,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123888207411,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123888207421,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 123888207428,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 123888207447,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 123888207449,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T04:37:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41001954572"
     },
     {
       "id": 41000798048,
@@ -195,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41000796006"
     }
   ],
-  "observed_at": "2026-10-30T04:17:26+00:00"
+  "observed_at": "2026-10-30T04:37:59+00:00"
 }
