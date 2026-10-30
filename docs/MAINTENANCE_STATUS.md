@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T09:18:50+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T09:55:14+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,10 +21,25 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 41028622156](https://github.com/Perseusxrltd/mnemion/actions/runs/41028622156) |
+| ci\.yml | main | in\_progress | [Run 41036810767](https://github.com/Perseusxrltd/mnemion/actions/runs/41036810767) |
 | database-cache\.yml | main | success | [Run 41016108360](https://github.com/Perseusxrltd/mnemion/actions/runs/41016108360) |
 | public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
 | release\.yml | release/4\.46\.57 | success | [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980) |
 | verify-artifacts\.yml | main | success | [Run 41009919761](https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761) |
-| website-release\.yml | main | success | [Run 41028622149](https://github.com/Perseusxrltd/mnemion/actions/runs/41028622149) |
+| website-release\.yml | main | success | [Run 41036810705](https://github.com/Perseusxrltd/mnemion/actions/runs/41036810705) |
 | website-release\.yml | v4\.46\.57 | success | [Run 41010367987](https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987) |
+
+## Active jobs
+
+[Run 41036810767](https://github.com/Perseusxrltd/mnemion/actions/runs/41036810767): 3/12 jobs completed; 3 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Preserve native network admission component evidence.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
