@@ -168,14 +168,18 @@ export class BrowserConditions {
     }
     if (!type.refused) {
       if (type.value === 'cellular') this.cellularRestricted = true
-      else if (typeof type.value === 'string') this.cellularRestricted = false
-      else if (type.value !== undefined) refused = true
+      else if (type.value === 'bluetooth' || type.value === 'ethernet' ||
+               type.value === 'wifi' || type.value === 'wimax') this.cellularRestricted = false
+      // Unknown/mixed/other connections cannot clear a known cellular path.
+      // A disconnected or malformed observation cannot authorize sending.
+      else if (type.value !== undefined && type.value !== 'unknown' &&
+               type.value !== 'mixed' && type.value !== 'other') refused = true
     }
     if (!effectiveType.refused) {
       const kind = effectiveType.value
       if (kind === 'slow-2g' || kind === '2g') this.slowLinkRestricted = true
       else if (kind === '3g' || kind === '4g') this.slowLinkRestricted = false
-      else if (kind !== undefined && typeof kind !== 'string') refused = true
+      else if (kind !== undefined) refused = true
     }
     return this.stickyConnection(refused)
   }

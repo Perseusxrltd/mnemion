@@ -23,7 +23,7 @@ function fixture(t, delay = null, state = 'nominal') {
   const heap = Object.getOwnPropertyDescriptor(performance, 'memory')
   const clock = Object.getOwnPropertyDescriptor(performance, 'now')
   for (const [key, value] of Object.entries(values)) Object.defineProperty(globalThis, key, { configurable: true, value })
-  Object.defineProperty(performance, 'memory', { configurable: true, value: { usedJSHeapSize: 1, jsHeapSizeLimit: 100 } })
+  Object.defineProperty(performance, 'memory', { configurable: true, writable: true, value: { usedJSHeapSize: 1, jsHeapSizeLimit: 100 } })
   Object.defineProperty(performance, 'now', { configurable: true, value: () => now })
   t.after(() => {
     for (const [key, descriptor] of Object.entries(saved)) {
@@ -175,8 +175,8 @@ test('absent pressure and heap sensors do not invent a reading or an unmetered n
 })
 
 test('only the pressure error name can count as a missing capability', async t => {
+  const f = await quiet(t)
   for (const name of ['NotSupportedError', 'NotAllowedError']) {
-    const f = await quiet(t)
     globalThis.PressureObserver = class {
       observe() { return Promise.reject(named(name, 'ordinary text')) }
       disconnect() {}
@@ -191,7 +191,6 @@ test('only the pressure error name can count as a missing capability', async t =
     assert.equal(f.conditions.read().constrained, false, name)
   }
   for (const error of [new Error('NotSupportedError'), new TypeError('NotAllowedError')]) {
-    const f = await quiet(t)
     globalThis.PressureObserver = class {
       observe() { return Promise.reject(error) }
       disconnect() {}
@@ -199,7 +198,6 @@ test('only the pressure error name can count as a missing capability', async t =
     assert.equal(await f.conditions.start(f.stop.signal), false, error.name)
     assert.equal(f.conditions.read().constrained, true, error.name)
   }
-  const f = await quiet(t)
   globalThis.PressureObserver = 1
   assert.equal(await f.conditions.start(f.stop.signal), false)
   assert.equal(f.conditions.read().constrained, true)
@@ -298,8 +296,29 @@ test('a slow link stays restricted until 3g or 4g is actually reported', async t
     assert.deepEqual(f.conditions.read(), { network: 'unknown', constrained: false }, kind)
   }
   navigator.connection = { saveData: false, type: 'wifi', effectiveType: '' }
-  assert.equal(f.conditions.read().constrained, false)
+  assert.equal(f.conditions.read().constrained, true)
   navigator.connection = { saveData: false, type: 'ethernet', effectiveType: 'wifi' }
+  assert.deepEqual(f.conditions.read(), { network: 'unknown', constrained: true })
+})
+
+test('only a known noncellular connection can clear a cellular restriction', async t => {
+  const f = await quiet(t)
+  navigator.connection = { type: 'cellular' }
+  assert.deepEqual(f.conditions.read(), { network: 'metered', constrained: true })
+  for (const type of ['', 'garbage', 'unknown', 'mixed', 'other', 'none']) {
+    navigator.connection = { type }
+    assert.deepEqual(f.conditions.read(), { network: 'metered', constrained: true }, type)
+    delete navigator.connection
+    f.conditions.close()
+    assert.deepEqual(f.conditions.read(), { network: 'metered', constrained: true }, type)
+  }
+  navigator.connection = { type: 'wifi' }
+  assert.deepEqual(f.conditions.read(), { network: 'unknown', constrained: false })
+  for (const type of ['', 'garbage', 'none']) {
+    navigator.connection = { type }
+    assert.deepEqual(f.conditions.read(), { network: 'unknown', constrained: true }, type)
+  }
+  navigator.connection = { type: 'unknown' }
   assert.deepEqual(f.conditions.read(), { network: 'unknown', constrained: false })
 })
 

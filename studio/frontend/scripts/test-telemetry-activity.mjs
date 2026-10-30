@@ -136,6 +136,8 @@ test('an observed metered network does not start a browser sensor in automatic m
   const f = fixture(t, 'auto')
   navigator.connection = { saveData: true }
   f.offer()
+  await f.entered
+  f.eligible.resolve(true)
   await f.settle()
   assert.equal(f.pressureStarts(), 0)
   assert.equal(f.reservations(), 0)

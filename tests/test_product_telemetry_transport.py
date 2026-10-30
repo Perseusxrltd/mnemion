@@ -836,11 +836,27 @@ def test_real_five_second_deadline_stops_a_silent_peer(installation):
     async def run():
         async with peer(f.context, "stall_handshake") as server:
             report = f.prepare(server.endpoint)
-            started = asyncio.get_running_loop().time()
-            result = await asyncio.wait_for(transport.send(f.budget, report, server.endpoint), 6)
-            elapsed = asyncio.get_running_loop().time() - started
+            # Reservation, encoding and its durable commit already consume part
+            # of the five-second lifetime. Sending does not get a fresh window.
+            started = delivery._monotonic()
+            remaining = min(
+                report._monotonic_deadline - started,
+                (report.deadline_ms - delivery._now_ms()) / 1000,
+            )
+            assert 0 < remaining <= delivery.DEADLINE_MS / 1000
+            result = await asyncio.wait_for(
+                transport.send(f.budget, report, server.endpoint), remaining + 1
+            )
+            finished = delivery._monotonic()
+            finished_wall = delivery._now_ms()
+            elapsed = finished - started
             assert result.outcome in {"deadline", "suppressed"}
-            assert 4.5 < elapsed < 5.5 and not server.requests
+            # Either clock can expire the original lease. A wall-clock step
+            # must not grant a new monotonic window, or require a minimum wait.
+            assert (
+                finished >= report._monotonic_deadline or finished_wall >= report.deadline_ms
+            ), (result.outcome, elapsed, remaining, finished_wall, report.deadline_ms)
+            assert elapsed < remaining + 0.5 and server.entered.is_set() and not server.requests
             f.cleaned(report)
 
     asyncio.run(run())

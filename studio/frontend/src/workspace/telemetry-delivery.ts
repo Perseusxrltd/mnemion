@@ -186,7 +186,7 @@ export class BrowserTelemetryDelivery {
         // Reconcile a crash between the write-ahead intent and queue cleanup.
         this.port.reconcile()
         const now = this.environment.now(), status = this.port.status()
-        const observed = this.environment.conditions?.() ?? network
+        const observed = this.environment.conditions ? this.environment.conditions() : network
         if (!networkAdmitted(status.connection_mode, observed)) return null
         if (!clockValid(now, MAX_CLOCK - DAY - JITTER) || !status.effective_enabled ||
           status.revision !== expected.revision || status.store_generation !== expected.store_generation ||

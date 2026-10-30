@@ -743,5 +743,5 @@ test('opt-out wins over a stale disclosure and a future disclosure stays unreada
   assert.throws(() => instance.first.configure({ enabled: true, expected_revision: choice.revision,
     expected_generation: choice.store_generation, disclosure_version: contract.version }), /storage is unavailable/i)
   assert.equal(JSON.parse(instance.storage.getItem(choiceKey)).disclosure_version, contract.version + 1)
-  assert.equal(future.status().reason, 'collection_unavailable')
+  assert.equal(future.status().reason, 'disclosure_required')
 }))
