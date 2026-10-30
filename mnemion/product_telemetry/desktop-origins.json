@@ -166,6 +166,7 @@
     "sources:restore-finish": {"action": "source.restore.finish"},
     "sources:status": {"exclusion": "state_inspection"},
     "telemetry:action": {"exclusion": "privacy_control"},
+    "telemetry:observation-diagnostic": {"exclusion": "privacy_control"},
     "telemetry:record": {"exclusion": "privacy_control"},
     "telemetry:snapshot": {"exclusion": "privacy_control"},
     "vault:choose": {"exclusion": "configuration_preview"},
