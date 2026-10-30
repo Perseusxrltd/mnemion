@@ -69,8 +69,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 5,
+        "succeeded": 5,
         "active": [
           {
             "id": 124066488111,
@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Run uv sync --locked --extra supervision"
             ]
           },
           {
@@ -88,15 +88,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 124066563779,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
             ]
           },
           {
@@ -114,7 +105,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Compile and exercise the native network admission probe in Python and Node"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
@@ -123,7 +114,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -132,7 +123,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -141,16 +132,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 124066564115,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
@@ -224,5 +206,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T12:39:07+00:00"
+  "observed_at": "2026-10-30T12:39:38+00:00"
 }
