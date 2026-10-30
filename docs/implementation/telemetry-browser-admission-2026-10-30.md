@@ -1,19 +1,21 @@
 # Telemetry admission across browsers and networks
 
-30 October 2026. Approved design for V08 implementation and qualification.
+30 October 2026. Implemented admission policy with qualified source checks.
+[Validation and retained failures](../validation/2026-10-30-telemetry-browser-admission.md)
+record the scope; actual browser and installed qualification remain open.
 **This decision does not activate collection or establish browser acceptance.**
 
-The current browser owner requires both `PressureObserver` and
+The prior browser owner required both `PressureObserver` and
 `performance.memory`. Firefox and Safari do not implement these APIs according
 to the [PressureObserver compatibility data](https://github.com/mdn/browser-compat-data/blob/main/api/PressureObserver.json)
 and [Performance compatibility data](https://github.com/mdn/browser-compat-data/blob/main/api/Performance.json)
 retrieved on 30 October. The browser also normally reports an unknown network
-tariff, which automatic mode currently rejects. These defaults prevent delivery
+tariff, which automatic mode previously rejected. Those defaults prevented delivery
 even when a visible, online page has no observed restriction.
 
 ## Network decision
 
-Python, desktop and browser reservation and final-send checks must use the same
+Python, desktop and browser reservation and final-send checks use the same
 decision, after all other permission, resource and traffic-budget checks pass:
 
 | Saved connection mode | Observed network | Permit a bounded attempt |
@@ -51,10 +53,10 @@ representation; the wire format gains no identifying capability fields.
 
 Changing automatic mode requires disclosure version 3 and a fresh explicit
 acknowledgement for an enabled installation that acknowledged version 2.
-Connection-setting edits must not acknowledge the new disclosure. Old held
-reports and approvals must not authorize the new behavior.
+Connection-setting edits do not acknowledge the new disclosure. Old held
+reports and approvals do not authorize the new behavior.
 
-The app must explain that automatic sending can use a connection whose cost
+The app explains that automatic sending can use a connection whose cost
 cannot be detected; available metering, data-saving and pressure signals pause
 sending, some browsers cannot report those signals, and traffic limits still
 apply. This is not a guarantee of free network use.
@@ -65,11 +67,13 @@ configuration path without refunding attempts. Production collection, its
 destination and its route remain disabled/unconfigured until separately
 qualified.
 
-## Required evidence
+## Source checks and remaining evidence
 
-Focused tests cover the common truth table, version migration, absent APIs,
-supported-sensor failures, sticky restrictions and cancellation. Restrictions
-introduced after reservation must still prevent the final handoff and retain
+Qualified source checks cover the common truth table, version migration, absent APIs,
+supported-sensor failures, sticky restrictions and cancellation. A null live condition refuses admission instead of falling back to an earlier
+network observation. Unknown or mixed network types cannot clear a known
+cellular restriction, and malformed effective types refuse. Restrictions
+introduced after reservation still prevent the final handoff and retain
 the spent attempt. Real Firefox and WebKit journeys must run without fake
 sensors; WebKit-engine evidence does not qualify a native Safari installation.
 

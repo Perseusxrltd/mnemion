@@ -1,5 +1,9 @@
 # Telemetry evidence index
 
+The [installed diagnostic source qualification](2026-10-30-telemetry-installed-driver.md)
+records the reviewed six-target driver and its 21 focused fixture checks. Its
+first actual installed run remains required; collection stays disabled.
+
 **Index checkpoint: 30 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)
 owns current scope, invariants and acceptance ceilings. This index links the
@@ -35,8 +39,10 @@ The 4.46.13 basic controls and 4.46.22 review-mode/opt-out controls have scoped
 installed evidence; the 4.46.17 candidate passed all
 12 [source CI jobs](https://github.com/Perseusxrltd/mnemion/actions/runs/40299183411)
 before its native release driver continued. Consult [release status](../RELEASE_STATUS.md)
-for current availability. All 66 requirement texts and states and the
-2 MiB / 0.5% gates are unchanged.
+for current availability. All 66 requirement texts and states remain unchanged.
+The current [engineering budget decision](../implementation/telemetry-resource-budget-2026-10-30.md)
+sets 8 MiB / 0.5% for new installed acceptance; historical 2 MiB results retain
+their original outcomes without rescoring.
 
 The [29 October v3 client release checks](2026-10-29-telemetry-v3-release-checks.md)
 record the integrated current-format fixtures, native probe and automated parity
@@ -93,6 +99,17 @@ prevalidation without moving rejection past IPC, locks or partial writes.
 It records 134 passing native/browser/client checks, two Windows-only skips,
 27 v3 parity cases, and the retained missing-client-build prerequisite failure.
 No measured RSS/CPU saving or new installed qualification is claimed.
+
+The [30 October browser admission checks](2026-10-30-telemetry-browser-admission.md)
+qualify implemented unknown-network admission, unavailable-sensor handling and
+version-3 fresh acknowledgement. Python qualification combines 80 original
+passes and one corrected real deadline case; browser qualification combines
+89 untouched original passes and 83 corrected focused passes, without claiming
+a full rerun. The native delivery/choice regression selection passed 85 checks,
+and updated frontend typecheck passed. Original failures remain retained.
+Actual Firefox/WebKit, installed delivery, resources and production acceptance
+remain open. Installed diagnostic `42808919` has read-only review only, awaiting
+its first six-target run.
 
 ## Controls, ownership and report review
 

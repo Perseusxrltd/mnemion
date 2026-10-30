@@ -6527,7 +6527,7 @@
     "maintenance-origins.json": "7860cf8db425f8acea68233b735403767bd24ef0428d67203e62f59369e2a6eb",
     "cli-origins.json": "421e3b12d6e1af9c405370cb3de3899c8cbe53afbabb016f41830690aa619808",
     "mnemion/service/agent_contract.json": "a8d0c71ba285abafcbf67dfe79223bf67f28e76991d7e62d424d37a8aa7c3eb3",
-    "studio/electron/desktop-actions.ts": "5ad59e1f6b6de72c8972b17ba8a7ef59d4489fb6994088fe830539332d21c873",
+    "studio/electron/desktop-actions.ts": "25e250ecd8bf8f4d904e2078dd7f7e7fa1b9bff60b8ae970e735bdfc68f2f75e",
     "packages/client/src/index.ts": "28610e68b99676f01fef709d27b2c96871f7f027a26202effe55c27ee3d322f3",
     "studio/frontend/src/api/client.ts": "14f4f284dea41e855e1691ee84035e4d8f273eb6a252fa3159e4015dbb3b59fe",
     "studio/electron/preload.ts": "1963aa4773fcd6db0cb50deb6a2d26775760d8b9656bef989482285f184751c2",

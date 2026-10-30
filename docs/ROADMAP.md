@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.56**.
+Reviewed source distribution: **4.46.57**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-30**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -26,12 +26,15 @@ snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
 **30 October 2026, browser telemetry admission:**
-The [approved compatibility correction](implementation/telemetry-browser-admission-2026-10-30.md)
-separates unavailable browser sensors from observed restrictions and permits
-bounded automatic attempts when network cost is unknown. Implementation and
-real-browser qualification are underway. Disclosure version 3 requires fresh
-acknowledgement; opt-out, company restrictions and traffic limits remain.
-Production collection is still disabled.
+The [implemented compatibility correction](implementation/telemetry-browser-admission-2026-10-30.md)
+separates unavailable sensors from observed restrictions and permits bounded
+automatic attempts when network cost is unknown. [Qualified source checks](validation/2026-10-30-telemetry-browser-admission.md)
+cover the admission corrections and original reservation deadline; retained
+failures and partial reruns remain explicit. Actual Firefox/WebKit, installed
+delivery and resource acceptance remain open. Disclosure version 3 requires
+fresh acknowledgement; opt-out, company restrictions and traffic limits remain.
+Production collection/destination/route remain false/null/null. The installed
+diagnostic candidate `42808919` is reviewed only, awaiting its first six-target run.
 
 **30 October 2026, telemetry resource decision:**
 The [documented budget revision](implementation/telemetry-resource-budget-2026-10-30.md)
