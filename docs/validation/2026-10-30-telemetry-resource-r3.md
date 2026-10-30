@@ -55,8 +55,9 @@ and writer used those operations. The original unclassified failure lacks enough
 detail to identify that race as its definitive cause.
 
 macOS ARM64 completed 128 cycles in its enabled case with `hosting_ready: true`
-and root exit zero, but recorded zero telemetry attempts and zero reports. Its
-driver failure remains unresolved.
+and root exit zero, but recorded zero telemetry attempts and zero reports. The
+[CPU admission follow-up](2026-10-30-telemetry-cpu-admission.md) records a
+Node/Linux timing defect; the original Mac cause remains unresolved.
 
 ## Reviewed source corrections
 

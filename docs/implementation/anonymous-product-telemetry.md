@@ -17,7 +17,9 @@ probe reproduced cross-launch query collisions, and a native Windows fixture
 reproduced an observer/writer file-sharing race. Query isolation, bounded
 immutable progress records and preserved failure metadata now have focused
 source evidence, including 48 successful real API calls and six Windows checks.
-macOS ARM delivery and native resource coverage remain unresolved.
+The [CPU admission follow-up](../validation/2026-10-30-telemetry-cpu-admission.md)
+records a corrected Node/Linux timing defect; the original Mac ARM resource-run
+refusal and native resource coverage remain unresolved.
 
 The [live release-catalog review](../validation/2026-10-30-telemetry-live-catalog.md)
 qualifies source for a separate daily public catalog refresh and weekly collector

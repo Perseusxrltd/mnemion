@@ -5,8 +5,8 @@ The [third installed resource run](2026-10-30-telemetry-resource-r3.md) complete
 build notes recovered failure categories omitted from the final receipt.
 Bounded local fixtures reproduced query collisions and a Windows read-sharing
 race. Corrected query isolation passed 48 real API requests across eight fresh
-launches; immutable progress snapshots passed six Windows checks. The original
-native failures and resource-coverage gaps remain open.
+launches; immutable progress snapshots passed six Windows checks. Original native
+failures and coverage remain open; see the [CPU admission follow-up](2026-10-30-telemetry-cpu-admission.md).
 
 The [live release-catalog source review](2026-10-30-telemetry-live-catalog.md)
 records nine selected Linux fixture checks passing in 2.25 seconds with real

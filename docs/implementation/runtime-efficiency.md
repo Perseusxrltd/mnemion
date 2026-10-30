@@ -51,6 +51,7 @@ remains unchanged. It is not a whole-application RAM or CPU target. Establish
 whole-product targets from representative measurements and retain failed
 results; do not raise limits automatically to make a check pass.
 
-Continue the current telemetry milestone and its concrete fixes. Use this
-contract when reviewing the existing background scheduler and remaining
+Continue the current telemetry milestone and its concrete fixes, including
+the [CPU admission follow-up](../validation/2026-10-30-telemetry-cpu-admission.md).
+Use this contract when reviewing the existing background scheduler and remaining
 F06/R04 acceptance, without starting parallel fragments of the roadmap.
