@@ -75,9 +75,12 @@ class ScriptedEvent(threading.Event):
         with self._gate:
             if not self._gate.wait_for(lambda: self._waiting, 5):
                 raise AssertionError(f"runner was not asleep; waits={list(self.timeouts)}")
+            generation = self._generation
             self._release = True
             self._gate.notify_all()
-            if not self._gate.wait_for(lambda: not self._waiting, 5):
+            if not self._gate.wait_for(
+                lambda: not self._waiting or self._generation != generation, 5
+            ):
                 raise AssertionError("runner did not leave its wait")
 
     def snapshot(self):
