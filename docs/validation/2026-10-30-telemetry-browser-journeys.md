@@ -80,3 +80,22 @@ fixture failure and intermediate output remain retained. This qualifies that
 tested CLI path, alongside the existing outer hosted deadline. It is not
 browser delivery, resource acceptance, or a guarantee about arbitrary blocked
 operating-system calls.
+
+## Third hosted run and control names
+
+[Run 41009303560](https://github.com/Perseusxrltd/mnemion/actions/runs/41009303560)
+used source `23835d6f1a0f085f82ef9bf68ebfab263eee6f33`. Both Firefox 156.0
+and Playwright WebKit 26.6 passed disclosure, manual mode and workspace join.
+Each recorded four successful fixture API calls, then stopped at an exact
+`Memory type` label lookup before its first save. No report was received. All
+collector, memory API, profile and private-input cleanup checks passed; the
+production disclosure and route stayed unchanged.
+
+Grok correction `48e6326c` follows the accessible names present in the original
+failure snapshots: the `Memory type` combobox and `Memory content` textbox.
+The same wrapped-label issue also affected the later `Search method` select,
+which now uses its combobox name. The remaining controls were reviewed against
+their actual components. The original Node 25.2.1 syntax command produced no
+syntax errors; Astra did not repeat it. The application UI and telemetry rules
+are unchanged. This source correction requires the next real browser journey;
+it does not qualify delivery or native Safari.
