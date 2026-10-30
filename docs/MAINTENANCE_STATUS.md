@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T03:20:19+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T03:21:13+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.55](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.55). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40996711925](https://github.com/Perseusxrltd/mnemion/actions/runs/40996711925) |
+| ci\.yml | main | success | [Run 40996711925](https://github.com/Perseusxrltd/mnemion/actions/runs/40996711925) |
 | public-updates\.yml | v4\.46\.55 | success | [Run 40972439492](https://github.com/Perseusxrltd/mnemion/actions/runs/40972439492) |
 | release\.yml | release/4\.46\.55 | success | [Run 40965130140](https://github.com/Perseusxrltd/mnemion/actions/runs/40965130140) |
 | release\.yml | release/4\.46\.56 | in\_progress | [Run 40995339188](https://github.com/Perseusxrltd/mnemion/actions/runs/40995339188) |
@@ -31,14 +31,10 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40996711925](https://github.com/Perseusxrltd/mnemion/actions/runs/40996711925): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Run npm --prefix studio/electron test.
-
 [Run 40995339188](https://github.com/Perseusxrltd/mnemion/actions/runs/40995339188): 15/21 jobs completed; 14 succeeded.
 
 - native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-11-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 - native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 - native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
