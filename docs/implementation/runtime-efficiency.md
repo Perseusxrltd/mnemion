@@ -38,6 +38,8 @@ after a queued API run commits. Active steps retain their two-second pacing and
 resource checks. This reduces the frequency of idle queue claims; it is not a
 measurement of CPU or RAM savings across the application. Scheduled and
 cross-process submissions retain the bounded fallback.
+The [focused scheduler checks](../validation/2026-10-30-librarian-idle.md)
+cover those behaviors and their limits.
 
 ## Acceptance work
 
