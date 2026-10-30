@@ -1,5 +1,11 @@
 # Telemetry evidence index
 
+The [third installed resource run](2026-10-30-telemetry-resource-r3.md) completed
+9,350 successful memory API calls but failed all six resource jobs. Original
+build notes recovered failure categories omitted from the final receipt.
+Bounded local fixtures reproduced query collisions and a Windows read-sharing
+race. Corrections are under review; resource acceptance remains open.
+
 The [live release-catalog source review](2026-10-30-telemetry-live-catalog.md)
 records nine selected Linux fixture checks passing in 2.25 seconds with real
 Starlette and Uvicorn and no network calls. Daily public metadata synchronization

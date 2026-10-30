@@ -10,6 +10,13 @@ address and an empty certificate-authority list. Source controls, owners,
 senders and collector components exist.
 **No production product collection or qualified anonymous ingress is active.**
 
+The [third installed resource run](../validation/2026-10-30-telemetry-resource-r3.md)
+passed preparation but failed all six resource targets. Original build notes
+retain failure categories that the final receipt dropped. A real local API
+probe reproduced cross-launch query collisions, and a native Windows fixture
+reproduced an observer/writer file-sharing race. Corrections are under review;
+macOS ARM delivery and resource coverage remain unresolved.
+
 The [live release-catalog review](../validation/2026-10-30-telemetry-live-catalog.md)
 qualifies source for a separate daily public catalog refresh and weekly collector
 adoption. Nine selected Linux fixture checks passed with real runtime dependencies
