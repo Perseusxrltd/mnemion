@@ -239,20 +239,22 @@ Electron reads and writes the existing database through `node:sqlite`; it does
 not initialize a replacement store or spawn Python for each observation. Explicit
 privacy controls still use the native Python policy. On Windows, Python creates
 private settings only during an explicit supported choice and verifies existing
-permissions before use. Electron uses a small
-[read-only owner/DACL helper](../../studio/electron/native/telemetry-private-store.c),
-[compiled with MSVC](../../studio/electron/scripts/build-telemetry-private-store.ps1).
-The [helper wrapper](../../studio/electron/telemetry-private-store.ts) has a
-one-second deadline and no settings-repair behavior. Both runtimes reject
-publicly readable, linked or otherwise unsafe stores. POSIX uses owner/mode
-checks. These are source implementations, not cross-platform release acceptance.
+permissions before use. Electron calls the same read-only owner/DACL routine in
+[private-store.c](../../mnemion/product_telemetry/native/private-store.c)
+through `readPrivateStore` on `telemetry-network.node`. The
+[wrapper](../../studio/electron/telemetry-private-store.ts) has a one-second
+deadline and no settings-repair behavior. A missing or malformed export refuses.
+The packaged helper executable is the same routine's process entry and is not a
+grant fallback. Both runtimes reject publicly readable, linked or otherwise
+unsafe stores. POSIX uses owner/mode checks. These are source implementations,
+not cross-platform release acceptance.
 
 The later [storage-ownership correction](../validation/2026-10-26-telemetry-storage-slot.md)
 takes one process-wide, nonwaiting slot before asynchronous native permission or
 SQLite work and releases it only after the database actually closes. Competing
 optional samples are dropped; cross-process SQLite and current-policy fences
-remain in force. The Windows helper wrapper retains its one child until actual
-exit, including after a deadline or live-process error, and never borrows another
+remain in force. The Windows permission wrapper keeps one in-process check until
+that native call returns, including after its deadline, and never borrows another
 path's approval. This limits concurrent ownership; it is not a measured RSS bound.
 
 `store_generation` is a private random token for local compare-and-set control.

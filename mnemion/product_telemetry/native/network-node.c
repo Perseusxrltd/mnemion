@@ -13,6 +13,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include "private-store.h"
 #else
 #include <dlfcn.h>
 #endif
@@ -38,6 +39,11 @@ static struct {
     int (*create_work)(NEnv, NValue, NValue, NExecute, NComplete, void *, NWork *);
     int (*queue_work)(NEnv, NWork);
     int (*delete_work)(NEnv, NWork);
+#if defined(_WIN32)
+    int (*get_cb_info)(NEnv, NInfo, size_t *, NValue *, NValue *, void **);
+    int (*type_of)(NEnv, NValue, int *);
+    int (*utf16)(NEnv, NValue, wchar_t *, size_t, size_t *);
+#endif
 } api;
 
 static int host_symbol(void *target, size_t size, const char *name) {
@@ -126,6 +132,104 @@ static NValue initialize_review_clock(NEnv env, NInfo info) {
     return review_clock(env, 1);
 }
 
+#if defined(_WIN32)
+enum { MNM_NAPI_STRING = 4 };
+static LONG private_busy = 0;
+
+static wchar_t *copy_private_path(NEnv env, NValue value) {
+    int kind = -1;
+    size_t length = 0, written = 0;
+    wchar_t *buffer;
+    _Static_assert(sizeof(wchar_t) == 2, "Windows UTF-16 paths use 16-bit wchar_t");
+    if (!value || api.type_of(env, value, &kind) != 0 || kind != MNM_NAPI_STRING) return NULL;
+    if (api.utf16(env, value, NULL, 0, &length) != 0 || length == 0 || length > 32760) return NULL;
+    buffer = (wchar_t *)calloc(length + 1, sizeof(wchar_t));
+    if (!buffer) return NULL;
+    if (api.utf16(env, value, buffer, length + 1, &written) != 0 || written != length || wcslen(buffer) != length) {
+        free(buffer);
+        return NULL;
+    }
+    return buffer;
+}
+
+typedef struct {
+    NWork work;
+    NDeferred deferred;
+    wchar_t *root;
+    wchar_t *database;
+    int accepted;
+} PrivateObservation;
+
+static void measure_private(NEnv env, void *data) {
+    PrivateObservation *item = data;
+    (void)env;
+    item->accepted = mnemion_private_store_accessible(item->root, item->database);
+}
+
+static void complete_private(NEnv env, int status, void *data) {
+    PrivateObservation *item = data;
+    NValue value = NULL;
+    const uint32_t result = status == 0 && item->accepted == 1 ? 1u : 0u;
+    free(item->root);
+    free(item->database);
+    item->root = item->database = NULL;
+    InterlockedExchange(&private_busy, 0);
+    if (api.uint32(env, result, &value) == 0) (void)api.resolve(env, item->deferred, value);
+    if (item->work) (void)api.delete_work(env, item->work);
+    free(item);
+}
+
+static NValue resolve_private(NEnv env, NDeferred deferred, uint32_t result) {
+    NValue value = NULL;
+    if (api.uint32(env, result, &value) == 0) (void)api.resolve(env, deferred, value);
+    return NULL;
+}
+
+static NValue read_private_store(NEnv env, NInfo info) {
+    NDeferred deferred = NULL;
+    NValue promise = NULL, name = NULL;
+    PrivateObservation *item = NULL;
+    size_t argc = 2;
+    NValue argv[2] = {0};
+    wchar_t *root = NULL, *database = NULL;
+    int arguments_ok;
+    static const char work_name[] = "mnemion.private-store";
+    if (api.promise(env, &deferred, &promise) != 0) return NULL;
+    if (InterlockedCompareExchange(&private_busy, 1, 0) != 0) {
+        resolve_private(env, deferred, 0);
+        return promise;
+    }
+    arguments_ok = api.get_cb_info(env, info, &argc, argv, NULL, NULL) == 0 && argc == 2;
+    if (arguments_ok) {
+        root = copy_private_path(env, argv[0]);
+        database = copy_private_path(env, argv[1]);
+    }
+    item = calloc(1, sizeof(*item));
+    if (!arguments_ok || !root || !database || !item) {
+        free(root);
+        free(database);
+        free(item);
+        InterlockedExchange(&private_busy, 0);
+        resolve_private(env, deferred, 0);
+        return promise;
+    }
+    item->deferred = deferred;
+    item->root = root;
+    item->database = database;
+    if (api.string(env, work_name, sizeof(work_name) - 1, &name) != 0 ||
+        api.create_work(env, NULL, name, measure_private, complete_private, item, &item->work) != 0 ||
+        api.queue_work(env, item->work) != 0) {
+        free(item->root);
+        free(item->database);
+        if (item->work) (void)api.delete_work(env, item->work);
+        free(item);
+        InterlockedExchange(&private_busy, 0);
+        resolve_private(env, deferred, 0);
+    }
+    return promise;
+}
+#endif
+
 MNM_EXPORT int32_t node_api_module_get_api_version_v1(void) { return 8; }
 MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
 #define LOAD(field, name) if (!host_symbol(&api.field, sizeof(api.field), name)) return NULL
@@ -141,6 +245,11 @@ MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
     LOAD(create_work, "napi_create_async_work");
     LOAD(queue_work, "napi_queue_async_work");
     LOAD(delete_work, "napi_delete_async_work");
+#if defined(_WIN32)
+    LOAD(get_cb_info, "napi_get_cb_info");
+    LOAD(type_of, "napi_typeof");
+    LOAD(utf16, "napi_get_value_string_utf16");
+#endif
 #undef LOAD
     NValue function = NULL;
     if (api.function(env, "readState", 9, read_state, NULL, &function) != 0 ||
@@ -151,5 +260,9 @@ MNM_EXPORT NValue napi_register_module_v1(NEnv env, NValue exports) {
         api.property(env, exports, "readReviewClock", function) != 0) return NULL;
     if (api.function(env, "initializeReviewClock", 21, initialize_review_clock, NULL, &function) != 0 ||
         api.property(env, exports, "initializeReviewClock", function) != 0) return NULL;
+#if defined(_WIN32)
+    if (api.function(env, "readPrivateStore", 16, read_private_store, NULL, &function) != 0 ||
+        api.property(env, exports, "readPrivateStore", function) != 0) return NULL;
+#endif
     return exports;
 }

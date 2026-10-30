@@ -1,7 +1,10 @@
-/** An unavailable or timed-out check suppresses telemetry; it never repairs ACLs. */
-import { spawn, type ChildProcess } from 'node:child_process'
+/** An unavailable or timed-out check suppresses telemetry; it never repairs ACLs.
+ * A missing readPrivateStore export refuses. This path does not spawn the helper. */
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { deliveryObservationEnabled, noteAcl } from './telemetry-observation-diagnostic.mjs'
+
+const require = createRequire(import.meta.url)
 
 export function windowsTelemetryPrivateExecutable(moduleUrl = import.meta.url): string {
   // spawn cannot execute an entry inside ASAR. Packaging explicitly keeps this
@@ -10,49 +13,78 @@ export function windowsTelemetryPrivateExecutable(moduleUrl = import.meta.url): 
     .replace(/([\\/])app\.asar([\\/])/, '$1app.asar.unpacked$2')
 }
 
-/** One live helper, including the interval between a kill request and OS exit.
- * A deadline is a refusal, never proof that the old process has been reaped. */
+export function privateStoreBindingPath(moduleUrl = import.meta.url): string {
+  return fileURLToPath(new URL('./telemetry-network.node', moduleUrl))
+    .replace(/([\\/])app\.asar([\\/])/, '$1app.asar.unpacked$2')
+}
+
+/** The export must be a function. Older, missing, and non-function values refuse. */
+export function privateStoreReader(binding: unknown): ((root: string, database: string) => unknown) | null {
+  if (!binding || typeof binding !== 'object') return null
+  const read = (binding as { readPrivateStore?: unknown }).readPrivateStore
+  return typeof read === 'function' ? read as (root: string, database: string) => unknown : null
+}
+
+export function privateStoreQuery(binding: unknown): (root: string, database: string) => unknown {
+  const read = privateStoreReader(binding)
+  if (!read) return () => 0
+  return (root, database) => read(root, database)
+}
+
+let networkBinding: unknown | false | undefined
+function loadNetworkBinding(): unknown {
+  if (networkBinding === undefined) {
+    try { networkBinding = require(privateStoreBindingPath()) }
+    catch { networkBinding = false }
+  }
+  return networkBinding || null
+}
+
+function productionQuery(root: string, database: string): unknown {
+  const read = privateStoreReader(loadNetworkBinding())
+  if (!read) return 0
+  return read(root, database)
+}
+
+/** One unsettled native call owns the slot, including after its deadline.
+ * A later result cannot grant the timed-out call or stand in for a successor. */
 export class WindowsTelemetryPrivateProbe {
-  private child?: ChildProcess
-  constructor(private readonly launch: (root: string, database: string) => ChildProcess = (root, database) =>
-    spawn(windowsTelemetryPrivateExecutable(), [root, database], {
-      stdio: 'ignore', windowsHide: true, shell: false,
-    })) {}
+  private settled?: Promise<unknown>
+  constructor(private readonly query: (root: string, database: string) => unknown = productionQuery) {}
 
   read(root: string, database: string): Promise<boolean> {
     const diagnose = deliveryObservationEnabled()
-    if (this.child) {
+    if (this.settled) {
       if (diagnose) noteAcl('refused', 0)
       return Promise.resolve(false)
     }
     const started = diagnose ? performance.now() : 0
+    let task: Promise<unknown>
+    try { task = Promise.resolve(this.query(root, database)) }
+    catch {
+      if (diagnose) noteAcl('refused', performance.now() - started)
+      return Promise.resolve(false)
+    }
+    const gate = task
+    this.settled = gate
     return new Promise(resolve => {
       let done = false, timer: ReturnType<typeof setTimeout> | undefined
-      const finish = (accepted: boolean, outcome: 'accepted' | 'refused' | 'timed_out' = accepted ? 'accepted' : 'refused') => {
-        if (!done) {
-          done = true
-          clearTimeout(timer)
-          if (diagnose) noteAcl(outcome, performance.now() - started)
-          resolve(accepted)
-        }
+      const finish = (accepted: boolean, outcome: 'accepted' | 'refused' | 'timed_out') => {
+        if (done) return
+        done = true
+        clearTimeout(timer)
+        if (diagnose) noteAcl(outcome, performance.now() - started)
+        resolve(accepted)
       }
-      let child: ChildProcess
-      try { child = this.launch(root, database) } catch { finish(false, 'refused'); return }
-      this.child = child
-      const reaped = () => { if (this.child === child) this.child = undefined }
-      child.on('error', () => {
-        // A spawn error has no process. A kill error with a live PID does not
-        // release ownership or permit another helper to accumulate behind it.
-        if (child.pid === undefined) reaped()
-        else child.unref()
+      const release = () => { if (this.settled === gate) this.settled = undefined }
+      task.then(value => {
+        release()
+        finish(value === 1, value === 1 ? 'accepted' : 'refused')
+      }, () => {
+        release()
         finish(false, 'refused')
       })
-      child.once('exit', code => { reaped(); finish(code === 0) })
-      timer = setTimeout(() => {
-        try { child.kill() } catch { /* Keep ownership until actual exit. */ }
-        child.unref()
-        finish(false, 'timed_out')
-      }, 1000)
+      timer = setTimeout(() => finish(false, 'timed_out'), 1000)
       timer.unref()
     })
   }

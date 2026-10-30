@@ -105,7 +105,10 @@ test('a missing native reply stops preparation after its one-second deadline', a
 
 test('the compiled Node ABI exposes fixed admission and private review controls', async () => {
   const binding = createRequire(import.meta.url)('../dist/telemetry-network.node')
-  assert.deepEqual(Object.keys(binding).sort(), ['initializeReviewClock', 'readCpuTotals', 'readReviewClock', 'readState'])
+  const names = ['initializeReviewClock', 'readCpuTotals', 'readReviewClock', 'readState']
+  if (process.platform === 'win32') names.push('readPrivateStore')
+  assert.deepEqual(Object.keys(binding).sort(), names.sort())
+  if (process.platform === 'win32') assert.equal(await binding.readPrivateStore(), 0)
   const value = await binding.readState()
   assert.ok([0, 8, 9, 10, 12, 13, 14].includes(value))
   const cpu = binding.readCpuTotals()

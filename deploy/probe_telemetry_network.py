@@ -134,7 +134,11 @@ def probe(artifact: Path, *, node: str | None = None, initialize_review_clock=Fa
         program = """
 const before=process.memoryUsage().rss, started=performance.now();
 const binding=require(process.argv[1]);
-if(Object.keys(binding).sort().join()!=='initializeReviewClock,readCpuTotals,readReviewClock,readState') throw new Error('Unexpected native ABI');
+const names=Object.keys(binding).sort().join();
+const expected=process.platform==='win32'
+  ?'initializeReviewClock,readCpuTotals,readPrivateStore,readReviewClock,readState'
+  :'initializeReviewClock,readCpuTotals,readReviewClock,readState';
+if(names!==expected) throw new Error('Unexpected native ABI');
 binding.readState().then(flags=>{
   const seconds=(performance.now()-started)/1000;
   if(![0,8,9,10,12,13,14].includes(flags)||seconds>=1) throw new Error('Native probe failed');
@@ -149,9 +153,14 @@ binding.readState().then(flags=>{
   const previous=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
   if(previous&&(clock.length!==2||clock[1]!==previous.epoch||clock[0]<previous.elapsed_ms))
     throw new Error('Review clocks are not comparable across runtimes');
-  console.log(JSON.stringify({version:process.versions.node,electron:process.versions.electron??null,
+  const finish=()=>console.log(JSON.stringify({version:process.versions.node,electron:process.versions.electron??null,
     flags,seconds,aggregate_cpu_available:cpu.length===3,review_clock_available:clock.length===2,
     review_clock_shared_across_runtimes:Boolean(previous),added_rss_bytes:process.memoryUsage().rss-before}));
+  if(process.platform!=='win32'){ finish(); return; }
+  binding.readPrivateStore().then(denied=>{
+    if(denied!==0) throw new Error('Private store ABI must refuse malformed input');
+    finish();
+  });
 });
 """
         child = subprocess.run(

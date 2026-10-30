@@ -26,6 +26,8 @@ def build(destination: Path, *, architecture: str | None = None) -> Path:
     native = ROOT / "mnemion/product_telemetry/native"
     sources = [str(native / name) for name in ("network-state.c", "network-node.c")]
     if sys.platform == "win32":
+        # The PowerShell build also compiles private-store.c into this addon.
+        # macOS and Linux keep the network sources below and do not include it.
         command = [
             "powershell.exe",
             "-NoProfile",

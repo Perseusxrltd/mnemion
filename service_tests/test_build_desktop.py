@@ -10,6 +10,8 @@ def test_imported_native_engine_source_does_not_depend_on_generated_web_staging(
         "deploy/build_telemetry_network.ps1",
         "mnemion/product_telemetry/native/network-state.c",
         "mnemion/product_telemetry/native/network-state.h",
+        "mnemion/product_telemetry/native/private-store.c",
+        "mnemion/product_telemetry/native/private-store.h",
     )
     for name in (
         "studio/engine/main.py",
