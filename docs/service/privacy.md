@@ -78,14 +78,38 @@ unreadable settings keep collection off; there is no automatic repair in this
 source checkpoint. See the [privacy control guide](../guides/product-telemetry-controls.md)
 for offline usage, status and storage limits.
 
-The current [source batch](../validation/2026-10-24-telemetry-app-owners.md) adds
+The current [admission rules](../implementation/telemetry-browser-admission-2026-10-30.md) cover
 **Telemetry connection settings** and the native/private-stdin `connection_mode`
-field: `auto`, `unmetered` or `metered`. Automatic mode pauses delivery when
-metering is unknown; an unmetered declaration resolves only that uncertainty;
-metered mode pauses delivery. Detected data limits, resource pressure and
-privacy restrictions still take priority. The setting persists until changed
-without storing a network name or address. A stale opt-out preserves a newer
+field: `auto`, `unmetered` or `metered`. Automatic and unmetered modes can try a
+bounded send when connection cost is unknown or unmetered and every other check
+passes. Unknown cost does not mean free data. Known metering pauses either mode;
+metered mode always pauses delivery. Detected data limits, resource pressure and
+privacy restrictions still take priority at reservation and before sending.
+The setting persists until changed without storing a network name or address.
+A stale opt-out preserves a newer
 connection choice, and migration/choice changes retain spent delivery accounting.
+
+Disclosure version 3 explains this behavior. An enabled installation that
+acknowledged version 2 must explicitly acknowledge the new disclosure before
+sending. Editing connection settings does not acknowledge it, and an old held
+report or approval cannot authorize the changed behavior. Acknowledgement clears
+old pending/held data without refunding spent attempts. Collection remains off
+and its destination and route remain unset.
+
+Some browsers cannot report pressure or heap usage. An absent API, or a
+recognized unsupported/permission-denied pressure capability, supplies no
+invented reading and does not by itself pause sending. Supported pressure sensing
+still needs a fresh nominal result; stale or malformed readings, unexpected
+errors, startup timeouts and observed pressure pause sending. A present heap API
+must pass numeric validation and the
+existing 80% threshold; malformed data or a throwing getter pauses sending.
+An unavailable sensor or closed observer cannot clear a previously observed
+restriction; a valid fresh observation must clear it. Hidden or offline pages,
+page exit, data-saving mode, cellular or other known metered connections, slow
+links and cancellation also pause sending.
+Observers accompany offered work in an already-awake page; they add no idle
+service or identifying capability fields to reports. Missing measurements keep
+their existing missing-sensor representation.
 
 The later [native OS-cost source change](../validation/2026-10-25-telemetry-native-conditions.md)
 reads only fixed local cost/constraint flags before an eligible desktop or Python
@@ -100,8 +124,10 @@ Opportunistic desktop/browser and Python service/local stdio owners now have
 source checks and an isolated actual-browser journey. CPU admission in that
 journey was synthetic; real sensor and resource qualification remains open.
 They do not activate collection, add an idle scheduler or flush on
-shutdown; the release route address is also null. Unknown native metering and
-unsupported browser pressure/heap capabilities can prevent an attempt.
+shutdown; the release route address is also null. Missing signals are not proof
+that a connection is free or that a device has spare resources. Supported-sensor
+failures and observed restrictions still prevent an attempt. Native Safari
+acceptance cannot be inferred from a WebKit-engine journey.
 Public-ingress metadata/log privacy, whole-wire/resource limits and all-platform
 release acceptance remain open.
 

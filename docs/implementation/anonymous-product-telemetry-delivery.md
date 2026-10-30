@@ -279,11 +279,26 @@ are not retained for retry. Pause/close cancels existing work without a flush.
 | [Automatic managed-host updater](../../mnemion/service/update_measurement.py) | Both dedicated updater entrypoints use their own host-account policy. During existing five- or ten-second waits, fresh eligibility may be checked at most once per minute per watcher. A bounded current queue or still-valid approved held report can be offered, including when the ordinary pending queue is empty. A new watcher does not wait for the next six-hour update poll. The temporary delivery context closes before synchronous update work resumes; there is no extra wake schedule, thread or shutdown flush. |
 
 The Python owner transports the disclosed local queue; it does not make remote
-API/MCP traffic measurable. Unknown native metering still needs a user declaration.
-The browser requires supported, fresh pressure and heap observations; unavailable
-capabilities refuse delivery. These local gauges are admission controls, not
-exported measurements or proof of the full CPU/RAM/wire limits. The complete
-owner/lifecycle journeys remain open across supported platforms; the subsequent
+API/MCP traffic measurable. Automatic and unmetered modes can attempt delivery
+on an unknown or unmetered connection when all other gates pass; known metering
+vetoes either mode, and a metered choice pauses every attempt. Unknown cost is
+not a claim of free data.
+
+An absent browser pressure API or a recognized unsupported/permission-denied
+capability response leaves that sensor unavailable, without a fabricated nominal
+reading. Supported pressure sensing requires bounded initialization and a fresh
+nominal observation. Stale or malformed readings, unexpected failures, startup
+timeouts and observed pressure refuse delivery. An absent heap API supplies no
+heap-pressure veto or fabricated measurement; a present API must pass numeric
+validation and the existing 80% threshold. Throwing getters refuse delivery.
+A missing API or closed observer cannot erase a prior restriction; a valid fresh
+observation must clear it. Offline or hidden pages, page exit, data-saving mode,
+cellular or otherwise known metered connections, slow links and cancellation
+remain restrictive. Observers run only with offered work in an already-awake
+page. These local gauges are admission
+controls, not new identifying wire fields or proof of the CPU/RAM/wire limits.
+Missing measurements retain their existing missing-sensor representation. The
+complete owner/lifecycle journeys remain open across supported platforms; the subsequent
 browser company-policy refresh is described below. The [source validation](../validation/2026-10-24-telemetry-app-owners.md)
 records **105 Python, 40 Electron and 68 browser passes**, with two Windows-only
 Electron skips, and a passing frontend build. Its **19-assertion Chromium
@@ -328,9 +343,18 @@ Cancellation closes the gauges and invalidates late replies; queued work checks
 cancellation before invoking the OS. An outstanding OS call can finish, but the
 coordinator neither adopts its old result nor overlaps it with a new call.
 Losing an OS capability cannot erase a known metered or
-constrained observation. An explicit `unmetered` choice resolves unknown cost
-only; it cannot bypass constraints or an observed metered path. An optional
-additional detector also cannot override the OS's metered result.
+constrained observation. Automatic and unmetered modes permit unknown or
+unmetered cost only after the other gates pass; neither bypasses an observed
+metered path or another constraint. Metered mode always pauses delivery. These
+rules apply at reservation and final send. An optional additional detector also
+cannot override the OS's metered result. Under
+[disclosure version 3](telemetry-browser-admission-2026-10-30.md), an enabled
+installation that acknowledged version 2 needs a fresh explicit acknowledgement.
+Connection-setting edits do not acknowledge it; old held reports and approvals
+cannot authorize the changed behavior. Acknowledgement clears old pending/held
+data through normal configuration without refunding spent attempts. Real browser
+qualification remains open, and WebKit-engine results do not establish native
+Safari acceptance.
 
 The [desktop build](../../studio/electron/scripts/build.mjs) and
 [frozen engine builder](../../deploy/build_native_engine.py) bundle the compiled

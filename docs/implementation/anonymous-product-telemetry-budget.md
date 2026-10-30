@@ -172,9 +172,12 @@ open, and existing reservation/handoff checks are unchanged.
 
 | Persistent connection choice | Delivery admission |
 | --- | --- |
-| `auto` (default) | Unknown metering refuses the attempt; Wi-Fi/Ethernet alone does not prove an unlimited plan. |
-| `unmetered` | An explicit declaration resolves unknown metering only. Detected data limits, offline state, pressure and privacy restrictions still refuse delivery. |
+| `auto` (default) | Unknown or unmetered cost permits a bounded attempt only when every other gate passes. Known metering refuses delivery; unknown cost does not establish free or unlimited data. |
+| `unmetered` | The same unknown/unmetered admission rule applies. The saved choice cannot override observed metering, data limits, offline state, pressure or privacy restrictions. |
 | `metered` | Delivery is paused regardless of the observation. |
+
+Python, desktop and browser apply this table at reservation and final send.
+Invalid conditions and observed resource constraints still refuse delivery.
 
 App/native processes share this choice in their private OS-account store;
 browser choice remains local to its origin/profile. It is not tied to a network
@@ -182,14 +185,22 @@ name or address and persists until changed. Explicit configuration clears queued
 measurements and the lease while preserving spent attempts/cooldown. A stale
 opt-out preserves a newer connection choice; an omitted field also preserves it.
 Editing the connection choice does not acknowledge an unseen disclosure.
+Disclosure version 3 requires a fresh explicit acknowledgement from an enabled
+installation that acknowledged version 2. Old held reports and approvals cannot
+authorize the new behavior. Acknowledgement clears old pending/held data through
+the normal configuration path without refunding spent attempts.
 
 The [new headless Windows cost reader](../validation/2026-10-26-telemetry-headless-network.md)
 can supply the same OS admission flags when the packaged helper is absent;
 it does not bypass a present broken or unreadable helper. Linux/macOS source
 installs without the helper remain unknown. A completed valid unknown probe
-does not itself assert a constraint: the existing explicit unmetered choice
-can resolve unknown cost, while automatic mode and all other vetoes remain
-unchanged. The Windows component pass is not installed/resource acceptance.
+does not itself assert a constraint: automatic and unmetered modes can attempt
+delivery when all other gates pass. Observed metering and constraints remain
+vetoes, and losing a capability cannot erase an earlier restriction. The Windows
+component pass is not installed/resource acceptance. The
+[browser/network admission design](telemetry-browser-admission-2026-10-30.md)
+also distinguishes unavailable browser sensors from supported-sensor failures;
+it fabricates no reading and adds no identifying capability field to a report.
 
 Explicit native/Python `configure` permits up to **250 ms per busy SQLite lock**
 after a brief-reader regression exposed a failed opt-out. This is not a total

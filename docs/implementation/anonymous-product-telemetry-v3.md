@@ -307,8 +307,12 @@ rewritten into `no_failure`. If reliability is disabled, the reason bin stays
 Python, Electron, and browser senders call these helpers when a report is
 prepared. Manual review, the final group check, opt-out, company policy, and
 the delivery budgets stay in front of that call. The request path in source is
-`POST /v3/report` with a 25-byte body. Disclosure version 2 describes a
-collector-visible summary. Collection remains off: `collection_available` is
+`POST /v3/report` with a 25-byte body. Disclosure version 3 describes a
+collector-visible summary and the
+[current browser/network admission rules](telemetry-browser-admission-2026-10-30.md).
+An enabled installation that acknowledged version 2 needs a fresh explicit
+acknowledgement; changing connection settings or retaining an old approval does
+not supply it. Collection remains off: `collection_available` is
 false, the destination is null, and the release route address is null.
 The dedicated server defaults to legacy `/v1/report`; `--mode v3` mounts
 `/v3/report`. A v3 packet is not sent to the legacy route.
@@ -320,7 +324,7 @@ The dedicated server defaults to legacy `/v1/report`; `--mode v3` mounts
 - A qualified host. The dedicated collector can select `--mode v3` in source.
   No host was changed or started, and ingress, TLS, log and backup
   qualification for an operated path remain open.
-- Provider retention qualification. Disclosure version 2 explains that the
+- Provider retention qualification. Disclosure version 3 explains that the
   collector sees bounded summaries and noise protects the published week. It
   does not claim that provider retention has been inspected.
   `collection_available`, destination and route stay false/null/null.

@@ -3,11 +3,19 @@
 **V08 remains in development.** Collection is unavailable. The preference
 defaults to enabled. `collection_available` and `effective_enabled` stay false,
 the destination and release route stay null, and no disclosure acknowledgement
-is accepted while collection is unavailable. Published 4.46.54 uses disclosure
-version 1. The current source uses disclosure version 2 and the
+is accepted while collection is unavailable. Version 4.46.54 used disclosure
+version 1. The current source uses disclosure version 3 and the
 [wire v3 contract](../../mnemion/product_telemetry/wire-v3.json). See
 [release status](../RELEASE_STATUS.md) and the
 [v3 reference](../implementation/anonymous-product-telemetry-v3.md).
+
+The updated disclosure explains that automatic sending can use a connection
+whose data cost cannot be detected. Known metering, data-saving mode and observed
+resource pressure still pause sending; some browsers cannot report these signals.
+Traffic limits remain, but unknown cost is not a guarantee of free data. An
+enabled installation that acknowledged version 2 needs a fresh acknowledgement
+before the changed behavior applies. Editing connection settings does not supply
+it. Opt-out, manual review and company restrictions remain in force.
 
 One pending report is a 25-byte bounded summary of 19 metrics, with one secure
 per-report choice of a full release coordinate or a coarse operating system.
@@ -461,9 +469,8 @@ The maintained choice also accepts `connection_mode` and disclosure version `0`;
 zero does not acknowledge an unseen disclosure. The legacy stdio tool takes its
 advertised choice fields alongside `action` instead. Follow the connected tool's
 input schema and omit `disclosure_version` while collection is unavailable. A
-nonzero acknowledgement, including disclosure version 2, stays refused while
-no destination is configured. An older saved acknowledgement does not authorize
-the pending wire v3 contract.
+nonzero acknowledgement stays refused while no destination is configured.
+An older saved acknowledgement does not authorize a newer disclosure.
 Enabling still needs current private revision and
 generation; opt-out, company restriction and damaged-store behavior are the same
 as the native controls above.

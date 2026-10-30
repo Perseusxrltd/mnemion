@@ -117,8 +117,11 @@ Generation checks do not detect an unobservable whole-machine snapshot rollback
 restoring the old token and choice.
 
 Persistent `connection_mode` is `auto`, `unmetered` or `metered`. Automatic
-mode refuses unknown metering; an unmetered declaration resolves only unknown
-cost, never detected limits or another veto. Metered mode pauses delivery.
+and unmetered modes permit a bounded attempt on an unknown or unmetered
+connection only when every other gate passes. Unknown cost stays unknown; it
+does not establish free or unlimited data. Observed metering vetoes both modes,
+and metered mode pauses delivery regardless of the observation. Python, desktop
+and browser apply this rule at reservation and again at final send.
 Omitting the field preserves it; stale opt-out retains a newer connection choice.
 Changing it, or supplying disclosure version `0` through local stdio, does not
 acknowledge unseen disclosure. No network name or address is stored.
@@ -612,11 +615,27 @@ spending and final-send fences still control whether anything is sent.
 
 Without a packaged network helper, source Windows can use its documented local
 OS hint; Linux/macOS cost stays unknown. A present broken helper is not bypassed.
-Unsupported browser pressure/heap sensors refuse delivery. Browser attempts also
-read bounded, credential-free same-origin `/studio/telemetry-policy`, recheck
-local choice/pressure and only narrow permission until reload. Reading privacy
-status neither fetches policy nor enables collection. Component fixtures with
-synthetic CPU admission do not qualify actual sensors or pressure behavior.
+An absent browser pressure API or a recognized unsupported/permission-denied
+capability response leaves that sensor unavailable, without inventing a nominal
+reading. A supported sensor requires bounded initialization and a fresh nominal
+observation; stale or malformed readings, unexpected failures, startup timeouts
+and observed pressure refuse delivery. An absent heap API adds no heap-pressure
+veto or fabricated reading. A present API must pass numeric validation and the
+existing 80% threshold; throwing getters or malformed data refuse delivery.
+Losing a capability or closing its observer cannot clear a previously observed
+restriction; a valid fresh observation must clear it.
+
+Offline or hidden pages, page exit, data-saving mode, cellular or otherwise
+known metered connections, slow links and cancellation remain restrictive.
+Observers accompany offered work in an already-awake page; there is no new
+idle service or identifying capability field on the wire. Missing measurements
+retain their existing missing-sensor representation. Browser attempts also read
+bounded, credential-free same-origin `/studio/telemetry-policy`, recheck local
+choice/pressure and only narrow permission until reload. Reading privacy status
+neither fetches policy nor enables collection. The
+[browser/network admission design](telemetry-browser-admission-2026-10-30.md)
+does not qualify real browser sensors or resources; WebKit-engine evidence alone
+cannot qualify native Safari.
 
 Shared native/Python accounting and browser-origin coordination enforce **seven
 attempts per rolling week**, at least **24 hours plus jitter** between attempts,
@@ -688,10 +707,15 @@ The add-or-remove-one-report bound on the released vector is `ln(3)`, including
 admission and clipping. That bound is not network anonymity, collector
 blindness, a unique-user count, or an exact uncapped event total.
 
-The integrated client source uses disclosure version 2, checks metric groups
-again at final send, and invalidates a stored wire v2 manual approval instead
-of sending it. Real opt-outs, company restrictions, manual controls and the
-minimum request budget stay: seven attempts per rolling week, at least 24 hours
+The integrated client source uses disclosure version 3. An enabled installation
+that acknowledged version 2 requires a fresh explicit acknowledgement before
+the changed automatic network behavior can apply. Editing connection settings
+does not acknowledge it, and old held reports or approvals cannot authorize the
+new behavior. Acknowledgement clears old pending/held data through the normal
+configuration path without refunding spent attempts. The client checks metric
+groups again at final send and invalidates a stored wire v2 manual approval
+instead of sending it. Real opt-outs, company restrictions, manual controls and
+the minimum request budget stay: seven attempts per rolling week, at least 24 hours
 plus jitter, 64 KiB reserved per attempt, and a 256 KiB rolling-day guard.
 `default_enabled` stays true. `collection_available`, destination and route
 stay false/null. Synthetic format examples are labelled examples, not sent
