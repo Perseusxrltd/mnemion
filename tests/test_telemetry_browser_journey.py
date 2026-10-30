@@ -89,9 +89,14 @@ def test_cleanup_failure_does_not_qualify_the_journey():
     assert journey_qualified(completed, None, _clean_cleanup()) is True
     assert journey_qualified(completed, "RuntimeError: original", _clean_cleanup()) is False
     assert journey_qualified(completed, None, _clean_cleanup(collector_stopped=False)) is False
-    assert journey_qualified(
-        completed, None, _clean_cleanup(collector_shutdown_errors=["ValueError: Invalid file descriptor: -1"])
-    ) is False
+    assert (
+        journey_qualified(
+            completed,
+            None,
+            _clean_cleanup(collector_shutdown_errors=["ValueError: Invalid file descriptor: -1"]),
+        )
+        is False
+    )
     assert journey_qualified(completed[:1], None, _clean_cleanup()) is False
 
 
@@ -204,7 +209,9 @@ def test_collector_listener_stays_open_until_its_task_stops():
 
         task = asyncio.create_task(serve())
         await asyncio.sleep(0.03)
-        errors = await shutdown_owned_listener(server, task, listener, wait_seconds=2, cancel_seconds=1)
+        errors = await shutdown_owned_listener(
+            server, task, listener, wait_seconds=2, cancel_seconds=1
+        )
         assert errors == []
         assert seen["fileno"] >= 0
         assert listener.fileno() == -1
@@ -252,15 +259,20 @@ def test_collector_task_error_is_retained_and_does_not_replace_the_original():
 
         task = asyncio.create_task(serve())
         await asyncio.sleep(0.05)
-        errors = await shutdown_owned_listener(Server(), task, listener, wait_seconds=2, cancel_seconds=1)
+        errors = await shutdown_owned_listener(
+            Server(), task, listener, wait_seconds=2, cancel_seconds=1
+        )
         assert errors == ["ValueError: Invalid file descriptor: -1"]
         assert listener.fileno() == -1
         original = "RuntimeError: The memory canary was compiled into the app"
-        assert journey_qualified(
-            [{"journey_completed": True}, {"journey_completed": True}],
-            original,
-            _clean_cleanup(collector_shutdown_errors=errors),
-        ) is False
+        assert (
+            journey_qualified(
+                [{"journey_completed": True}, {"journey_completed": True}],
+                original,
+                _clean_cleanup(collector_shutdown_errors=errors),
+            )
+            is False
+        )
         assert original == "RuntimeError: The memory canary was compiled into the app"
 
     asyncio.run(exercise())
@@ -291,11 +303,14 @@ def test_collector_cancellation_is_finite_and_unsuccessful():
         assert errors == ["collector cancellation timed out"]
         assert task.done() is False
         assert listener.fileno() == -1
-        assert journey_qualified(
-            [{"journey_completed": True}, {"journey_completed": True}],
-            None,
-            _clean_cleanup(collector_stopped=False, collector_shutdown_errors=errors),
-        ) is False
+        assert (
+            journey_qualified(
+                [{"journey_completed": True}, {"journey_completed": True}],
+                None,
+                _clean_cleanup(collector_stopped=False, collector_shutdown_errors=errors),
+            )
+            is False
+        )
         release.set()
         await asyncio.wait_for(task, 1)
 

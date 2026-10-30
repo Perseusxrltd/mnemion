@@ -58,9 +58,7 @@ def reject_compiled_marker(compiled: bytes, marker: bytes) -> None:
         raise RuntimeError("The memory canary was compiled into the app")
 
 
-def matching_report(
-    shown_base64: str, received_hex: str, *stored: bytes, marker: bytes
-) -> bytes:
+def matching_report(shown_base64: str, received_hex: str, *stored: bytes, marker: bytes) -> bytes:
     """The approved body, the TLS body and retained storage must be the same 25 bytes."""
     if type(marker) is not bytes or not 1 <= len(marker) <= 25:
         raise ValueError("Fixture marker must fit in one 25-byte report")
@@ -188,7 +186,11 @@ async def shutdown_owned_listener(
                     errors.append("collector cancellation timed out")
                     task.add_done_callback(_discard_late_result)
         remember_result()
-        if task is not None and not task.done() and "collector cancellation timed out" not in errors:
+        if (
+            task is not None
+            and not task.done()
+            and "collector cancellation timed out" not in errors
+        ):
             errors.append("collector task still running")
     finally:
         if listener is not None:
@@ -662,6 +664,7 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
         original_failure = f"{type(exc).__name__}: {exc}"
         phases.append("failed")
     finally:
+
         def note(label: str, exc: Exception) -> None:
             cleanup["errors"].append(f"{label}: {type(exc).__name__}: {exc}")
 
@@ -740,7 +743,9 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
         raise caught
     if not receipt["journey_completed"]:
         detail = "; ".join(cleanup["collector_shutdown_errors"] or cleanup["errors"])
-        raise SystemExit(detail or "Inspect retained observations; the browser journey did not pass")
+        raise SystemExit(
+            detail or "Inspect retained observations; the browser journey did not pass"
+        )
     return receipt
 
 
