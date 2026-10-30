@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T08:12:56+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T08:13:35+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -33,5 +33,5 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 41024856310](https://github.com/Perseusxrltd/mnemion/actions/runs/41024856310): 7/8 jobs completed; 2 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- studio: in\_progress — Run npm --prefix studio/electron test.
 
