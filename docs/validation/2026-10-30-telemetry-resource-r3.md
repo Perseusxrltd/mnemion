@@ -50,20 +50,55 @@ preserve 128 cycles, payload sizes, checkpoints and exact content/recall checks.
 Windows x64 recorded `startup-error` / `unclassified` after 16 cycles. A separate
 native Windows fixture established that an ordinary Python read handle blocks
 Node's atomic replacement of the same progress file with `EPERM`. Closing that
-reader allowed replacement immediately; cleanup passed. The current observer
-and writer use those operations. The original unclassified failure lacks enough
+reader allowed replacement immediately; cleanup passed. The R3 observer
+and writer used those operations. The original unclassified failure lacks enough
 detail to identify that race as its definitive cause.
 
 macOS ARM64 completed 128 cycles in its enabled case with `hosting_ready: true`
 and root exit zero, but recorded zero telemetry attempts and zero reports. Its
 driver failure remains unresolved.
 
+## Reviewed source corrections
+
+The shared workload now creates one 13-character query prefix per launch before
+measurement. Payload sizes, recall limit five, 128 cycles and checkpoint order
+are unchanged. The function remains self-contained when serialized into the
+renderer: the first candidate's missing module binding was caught and corrected,
+and seven canonical Node checks passed in the original worker execution.
+
+Astra exercised that serialized function on `9456c51a` against the real loopback
+API in eight fresh JavaScript contexts. All 48 save/fetch/search requests and
+16 cycles passed in 8.245 seconds. Each launch used a distinct prefix; fetched
+content and original payload lengths matched, and each final query returned
+exactly its own note. Owned cleanup completed. This is a bounded retrieval
+regression check, not a replay of the installed 128-cycle resource comparison.
+
+The first Windows fix, allowing delete sharing on a held reader, still failed
+Node's replacement operation. The accepted source instead publishes immutable
+numbered progress files through one shared host-side writer. Each private run
+allows at most 64 records of 1,024 bytes. Readers stream a bounded directory
+scan, require the writer's ASCII filenames, and read at most 1,025 bytes to
+detect oversize data. Incomplete, malformed or ambiguous records stay unknown;
+legacy `monitor.json` is used only when the new directory is absent. There is
+no replacement of an open destination, retry loop or additional service.
+
+Six focused Windows checks passed in 0.63 seconds, including a real Node
+producer publishing its next record while Python holds the previous one open.
+The earlier test-process timeout and failed sharing proposal remain retained;
+closing the test's input pipe fixed that timeout. Review also reproduced and
+fixed acceptance of noncanonical numeric filenames. The final receipt now
+preserves allowlisted failure metadata and keeps missing hosting readiness
+unknown through Python/JavaScript conversion.
+
+A real Linux desktop build on `5fe51030` passed in 19.22 seconds with the
+project TypeScript compiler, native network build and normal runtime staging.
+The staged canonical module matches the module used by the real API probe,
+and the compiled application imports it. Build inputs were unchanged.
+
 ## Remaining acceptance
 
-The initial final-projection correction passed ten focused Python checks in
-the original Windows Grok execution. Astra requested a follow-up because missing
-hosting readiness must stay unknown through Python/JavaScript conversion.
-Query isolation and Windows read-sharing corrections are under review.
+These corrections do not rescore the original failed native run or establish
+that its Windows stop had the reproduced file-sharing cause.
 
 All retained resource coverage remains partial and no budget comparison
 completed. Windows/Linux group lifetime CPU is available; per-process residency
