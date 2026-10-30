@@ -17,6 +17,11 @@ from .librarian_provider import LibrarianProviderError
 
 logger = logging.getLogger(__name__)
 
+# Active steps keep the historical two-second cadence. Idle claims, admission
+# deferrals and transient failures stretch that pause up to a finite fallback.
+_ACTIVE_PACE_SECONDS = 2
+_IDLE_BACKOFF_SECONDS = (2, 4, 8, 16, 30)
+
 
 class LibrarianRunner:
     def __init__(self, service: LibrarianService, *, can_start=None):
@@ -28,6 +33,7 @@ class LibrarianRunner:
         self._job = None
         self._thread = None
         self._stop = threading.Event()
+        self._wake = threading.Event()
         self._step_lock = threading.Lock()
         self._can_start = can_start
 
@@ -38,18 +44,45 @@ class LibrarianRunner:
             )
             self._thread.start()
 
+    def wake(self):
+        """Coalesce a process-local hint that durable work may be waiting."""
+        self._wake.set()
+
     def stop(self):
         self._stop.set()
+        self._wake.set()
         if self._thread:
             self._thread.join(timeout=5)
 
     def _loop(self):
+        step = 0
         while not self._stop.is_set():
+            # Clear before the claim. A wake that arrives during the check stays
+            # set, so the idle wait returns instead of sleeping through it.
+            self._wake.clear()
+            if self._stop.is_set():
+                break
+            worked = False
             try:
-                self.run_once()
+                worked = bool(self.run_once())
             except Exception as exc:
                 logger.warning("Librarian deferred (%s)", type(exc).__name__)
-            self._stop.wait(2)
+            if self._stop.is_set():
+                break
+            if worked:
+                step = 0
+                # Provider steps stay on the stop event. Wake signals must not
+                # shorten the gap between calls.
+                self._stop.wait(_ACTIVE_PACE_SECONDS)
+                continue
+            delay = _IDLE_BACKOFF_SECONDS[min(step, len(_IDLE_BACKOFF_SECONDS) - 1)]
+            woken = self._wake.wait(delay)
+            if self._stop.is_set():
+                break
+            if woken:
+                step = 0
+            else:
+                step = min(step + 1, len(_IDLE_BACKOFF_SECONDS) - 1)
 
     @staticmethod
     def _identity(job):

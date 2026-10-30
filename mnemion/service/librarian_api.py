@@ -22,7 +22,7 @@ from .librarian_models import (
 )
 
 
-def attach_librarian(app, service, authenticated):
+def attach_librarian(app, service, authenticated, *, on_run_queued=None):
     Auth = Annotated[Identity, Depends(authenticated)]
     base = "/v1/spaces/{space_id}/librarian"
 
@@ -58,7 +58,12 @@ def attach_librarian(app, service, authenticated):
         identity: Auth,
         idempotency_key: str = Header(alias="Idempotency-Key"),
     ):
-        return service.create_run(identity, space_id, command, idempotency_key)
+        run = service.create_run(identity, space_id, command, idempotency_key)
+        # create_run returns only after its transaction commits. Wake is a
+        # process-local hint; the queued row remains the source of truth.
+        if on_run_queued is not None and run["state"] == "queued":
+            on_run_queued()
+        return run
 
     @app.get(base + "/runs/{run_id}", tags=["Librarian"], response_model=LibrarianRun)
     def run(space_id: UUID, run_id: UUID, identity: Auth):

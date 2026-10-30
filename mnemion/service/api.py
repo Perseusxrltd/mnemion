@@ -486,7 +486,7 @@ def create_app(
     install_capture_routes(app, authenticated, CaptureCustody(memory))
     attach_evaluations(app, database, embedder, authenticated, registry=registry)
     attach_embeddings(app, database, registry, authenticated)
-    attach_librarian(app, librarian, authenticated)
+    attach_librarian(app, librarian, authenticated, on_run_queued=librarian_runner.wake)
     attach_writeback(app, writeback, authenticated)
     from .buffer_import_api import attach_buffer_import
 
