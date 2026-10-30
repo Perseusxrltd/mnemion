@@ -299,37 +299,85 @@ def test_invalid_and_rejected_reports_do_not_complete_a_case():
 
 
 def test_journey_requires_one_accepted_report_for_each_enabled_case():
-    cases = []
-    for row in resource_counterbalance_cases():
-        cases.append(
-            {
-                "condition": row["condition"],
-                "workload_completed": True,
-                "telemetry": {"accepted": 1 if row["condition"] == "enabled" else 0},
-            }
-        )
+    def telemetry(condition):
+        enabled = condition == "enabled"
+        return {
+            "reports": 1 if enabled else 0,
+            "malformed": 0,
+            "accepted": 1 if enabled else 0,
+        }
+
+    cases = [
+        {
+            "condition": row["condition"],
+            "workload_completed": True,
+            "telemetry": telemetry(row["condition"]),
+        }
+        for row in resource_counterbalance_cases()
+    ]
+    counts = {"forbidden_metadata": 0, "reports": 2, "malformed_body": 0, "accepted": 2}
     assert resource_journey_completed(
         returncode=0,
         cases=cases,
         diagnostics=False,
         private_withheld=False,
-        counts={"forbidden_metadata": 0, "accepted": 2},
+        counts=counts,
     ) is True
     denied = [dict(item) for item in cases]
-    denied[2] = {**denied[2], "telemetry": {"accepted": 0}}
+    denied[2] = {**denied[2], "telemetry": {"reports": 0, "malformed": 0, "accepted": 0}}
     assert resource_journey_completed(
         returncode=0,
         cases=denied,
         diagnostics=False,
         private_withheld=False,
-        counts={"forbidden_metadata": 0, "accepted": 1},
+        counts={"forbidden_metadata": 0, "reports": 1, "malformed_body": 0, "accepted": 1},
     ) is False
     assert resource_journey_completed(
         returncode=0,
         cases=cases,
         diagnostics=False,
         private_withheld=False,
-        counts={"forbidden_metadata": 1, "accepted": 2},
+        counts={**counts, "forbidden_metadata": 1},
+    ) is False
+    assert resource_journey_completed(
+        returncode=0,
+        cases=cases,
+        diagnostics=False,
+        private_withheld=False,
+        counts={**counts, "reports": 3},
+    ) is False
+    assert resource_journey_completed(
+        returncode=0,
+        cases=cases,
+        diagnostics=False,
+        private_withheld=False,
+        counts={**counts, "reports": 3, "malformed_body": 1},
+    ) is False
+    for key in ("reports", "malformed_body"):
+        incomplete = dict(counts)
+        del incomplete[key]
+        assert resource_journey_completed(
+            returncode=0,
+            cases=cases,
+            diagnostics=False,
+            private_withheld=False,
+            counts=incomplete,
+        ) is False
+    omitted = [dict(item) for item in cases]
+    omitted[0] = {**omitted[0], "telemetry": {"malformed": 0, "accepted": 0}}
+    assert resource_journey_completed(
+        returncode=0,
+        cases=omitted,
+        diagnostics=False,
+        private_withheld=False,
+        counts=counts,
+    ) is False
+    assert resource_journey_completed(
+        returncode=0,
+        cases=cases,
+        diagnostics=False,
+        private_withheld=False,
+        counts={**counts, "reports": 2.0},
     ) is False
 
 

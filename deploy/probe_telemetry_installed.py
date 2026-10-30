@@ -1094,7 +1094,7 @@ def resource_observation_complete(
 def resource_journey_completed(
     *, returncode, cases, diagnostics, private_withheld, counts
 ) -> bool:
-    """The journey needs one accepted valid report from each enabled case."""
+    """Exactly two accepted reports, reconciled with every global report total."""
     if (
         returncode != 0
         or diagnostics
@@ -1108,15 +1108,42 @@ def resource_journey_completed(
         return False
     enabled = sum(1 for row in resource_counterbalance_cases() if row["condition"] == "enabled")
     accepted = 0
+    reports = 0
+    malformed = 0
     for item in cases:
         telemetry = item.get("telemetry")
-        if type(telemetry) is not dict or type(telemetry.get("accepted")) is not int:
+        if type(telemetry) is not dict:
             return False
-        accepted += telemetry["accepted"]
+        case_accepted = telemetry.get("accepted")
+        case_reports = telemetry.get("reports")
+        case_malformed = telemetry.get("malformed")
+        if (
+            type(case_accepted) is not int
+            or type(case_reports) is not int
+            or type(case_malformed) is not int
+        ):
+            return False
+        accepted += case_accepted
+        reports += case_reports
+        malformed += case_malformed
+    global_reports = counts.get("reports")
+    global_malformed = counts.get("malformed_body")
+    global_accepted = counts.get("accepted")
+    if (
+        type(global_reports) is not int
+        or type(global_malformed) is not int
+        or type(global_accepted) is not int
+    ):
+        return False
     return (
         sum(1 for item in cases if item.get("condition") == "enabled") == enabled
-        and accepted == enabled
-        and counts.get("accepted") == accepted
+        and enabled == 2
+        and accepted == 2
+        and reports == 2
+        and malformed == 0
+        and global_reports == reports
+        and global_malformed == malformed
+        and global_accepted == accepted
     )
 
 
