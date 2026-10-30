@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T16:43:43+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T22:21:41+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,20 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 41087208753](https://github.com/Perseusxrltd/mnemion/actions/runs/41087208753) |
+| ci\.yml | main | in\_progress | [Run 41137496201](https://github.com/Perseusxrltd/mnemion/actions/runs/41137496201) |
 | database-cache\.yml | main | success | [Run 41043904215](https://github.com/Perseusxrltd/mnemion/actions/runs/41043904215) |
-| public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
-| website-release\.yml | main | success | [Run 41087208725](https://github.com/Perseusxrltd/mnemion/actions/runs/41087208725) |
+| website-release\.yml | main | success | [Run 41137496042](https://github.com/Perseusxrltd/mnemion/actions/runs/41137496042) |
+
+## Active jobs
+
+[Run 41137496201](https://github.com/Perseusxrltd/mnemion/actions/runs/41137496201): 4/12 jobs completed; 4 succeeded.
+
+- studio: in\_progress — Verify wheel and source package include the matching web Studio.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
