@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import stat
@@ -673,10 +674,11 @@ def _reparse_or_link(info) -> bool:
 
 
 def _snapshot_sequence(name: str, suffix: str) -> int | None:
-    if not name.endswith(suffix):
+    """padStart names only: two ASCII digits, 01 through 64."""
+    if len(name) != len(suffix) + 2 or not name.endswith(suffix):
         return None
-    stem = name[: -len(suffix)]
-    if len(stem) != 2 or not stem.isdigit():
+    stem = name[:2]
+    if stem[0] < "0" or stem[0] > "9" or stem[1] < "0" or stem[1] > "9":
         return None
     sequence = int(stem)
     if sequence < 1 or sequence > _SNAPSHOT_LIMIT:
@@ -715,19 +717,27 @@ def _legacy_marker(path: Path) -> dict | None:
 
 def _committed_snapshot(directory: Path) -> dict | None:
     committed: list[tuple[int, Path]] = []
-    for entry in directory.iterdir():
-        try:
-            info = entry.lstat()
-        except OSError:
-            return None
-        if _reparse_or_link(info) or not stat.S_ISREG(info.st_mode):
-            return None
-        sequence = _snapshot_sequence(entry.name, ".json")
-        if sequence is not None:
-            committed.append((sequence, entry))
-            continue
-        if _snapshot_sequence(entry.name, ".json.tmp") is not None:
-            continue
+    try:
+        with os.scandir(directory) as entries:
+            seen = 0
+            for entry in entries:
+                seen += 1
+                if seen > _SNAPSHOT_LIMIT:
+                    return None
+                try:
+                    info = entry.stat(follow_symlinks=False)
+                except OSError:
+                    return None
+                if _reparse_or_link(info) or not stat.S_ISREG(info.st_mode):
+                    return None
+                sequence = _snapshot_sequence(entry.name, ".json")
+                if sequence is not None:
+                    committed.append((sequence, directory / entry.name))
+                    continue
+                if _snapshot_sequence(entry.name, ".json.tmp") is not None:
+                    continue
+                return None
+    except OSError:
         return None
     if not committed:
         return None
@@ -735,22 +745,13 @@ def _committed_snapshot(directory: Path) -> dict | None:
     sequences = [item[0] for item in committed]
     if sequences != list(range(1, sequences[-1] + 1)):
         return None
-    highest = committed[-1][1]
     try:
-        info = highest.lstat()
-    except OSError:
-        return None
-    if _reparse_or_link(info) or not stat.S_ISREG(info.st_mode) or info.st_size > _SNAPSHOT_BYTES:
-        return None
-    try:
-        raw = highest.read_bytes()
-    except OSError:
-        return None
-    if len(raw) > _SNAPSHOT_BYTES:
+        raw = read_bounded_text(committed[-1][1], limit=_SNAPSHOT_BYTES)
+    except (OSError, UnicodeError, ValueError):
         return None
     try:
         value = json.loads(raw)
-    except (UnicodeError, json.JSONDecodeError):
+    except json.JSONDecodeError:
         return None
     return value if type(value) is dict else None
 

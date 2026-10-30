@@ -222,6 +222,36 @@ def test_publish_next_snapshot_while_prior_is_held(tmp_path: Path):
             process.stderr.close()
 
 
+def test_noncanonical_digits_and_entry_bound_stay_unknown(tmp_path: Path):
+    progress = tmp_path / "owned-progress"
+    progress.mkdir()
+    (tmp_path / "monitor.json").write_text(
+        '{"phase":"finished","completed":128,"completed_known":true}',
+        encoding="utf-8",
+    )
+    (progress / "\u0660\u0661.json").write_text(
+        '{"phase":"finished","completed":128,"completed_known":true}',
+        encoding="utf-8",
+    )
+    assert read_owned_marker(tmp_path) is None
+    (progress / "\u0660\u0661.json").unlink()
+    (progress / "\uff10\uff11.json").write_text(
+        '{"phase":"16_memory_cycles","at_ms":16}',
+        encoding="utf-8",
+    )
+    assert read_owned_marker(tmp_path) is None
+    (progress / "\uff10\uff11.json").unlink()
+    record = '{"phase":"measuring","at_ms":1}'
+    for index in range(1, 65):
+        (progress / f"{index:02d}.json").write_text(record, encoding="utf-8")
+    (progress / "64.json.tmp").write_text("{", encoding="utf-8")
+    assert read_owned_marker(tmp_path) is None
+    (progress / "64.json.tmp").unlink()
+    assert read_owned_marker(tmp_path) == {"phase": "measuring", "at_ms": 1}
+    (progress / "64.json").write_bytes(b"{" + b"x" * 1024)
+    assert read_owned_marker(tmp_path) is None
+
+
 def test_symlink_snapshot_is_unknown(tmp_path: Path):
     progress = tmp_path / "owned-progress"
     progress.mkdir()
