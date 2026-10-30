@@ -62,28 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "a393144135e4d20a9488dd75f49b3637911390aa",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T07:05:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41017853375",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 123938230452,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend audit --audit-level=high"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T07:06:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41017853375"
     },
     {
       "id": 41016108360,
@@ -152,5 +134,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T07:06:00+00:00"
+  "observed_at": "2026-10-30T07:07:13+00:00"
 }
