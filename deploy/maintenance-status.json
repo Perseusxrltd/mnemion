@@ -57,15 +57,42 @@
   ],
   "runs": [
     {
-      "id": 40984130996,
+      "id": 40987958888,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "2422830b2c0d9844ba3929ec2a57229b2fc9f5f7",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-30T01:11:12Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40984130996"
+      "source_commit": "f7a80a0686774a52061db2692d62cc2b4c45e186",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-30T01:48:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40987958888",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 9,
+        "completed": 7,
+        "succeeded": 5,
+        "active": [
+          {
+            "id": 123843297150,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/electron test"
+            ]
+          },
+          {
+            "id": 123843336306,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40972439492,
@@ -101,15 +128,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40971966188"
     },
     {
-      "id": 40984130926,
+      "id": 40987958890,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "2422830b2c0d9844ba3929ec2a57229b2fc9f5f7",
+      "source_commit": "f7a80a0686774a52061db2692d62cc2b4c45e186",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-30T01:09:51Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40984130926"
+      "updated_at": "2026-10-30T01:48:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40987958890"
     },
     {
       "id": 40972436052,
@@ -123,5 +150,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40972436052"
     }
   ],
-  "observed_at": "2026-10-30T01:11:51+00:00"
+  "observed_at": "2026-10-30T01:49:05+00:00"
 }
