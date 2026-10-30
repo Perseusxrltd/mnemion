@@ -504,6 +504,8 @@ def _observation_diagnostic(value: object) -> dict | None:
     pending = value.get("pending")
     if type(cycle) is not int or cycle < 0 or cycle > 3:
         return None
+    if type(readiness) is not str or type(pending) is not str:
+        return None
     if readiness not in _OBSERVATION_READINESS or pending not in _OBSERVATION_PENDING:
         return None
     safe["cycle"] = cycle
