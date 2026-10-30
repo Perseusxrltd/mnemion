@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv sync --locked --extra supervision"
+              "Independent host control through the real desktop profile and native engine"
             ]
           }
         ]
@@ -141,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T05:59:26+00:00"
+  "observed_at": "2026-10-30T05:59:56+00:00"
 }
