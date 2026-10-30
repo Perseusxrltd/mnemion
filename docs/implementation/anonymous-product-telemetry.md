@@ -18,7 +18,10 @@ activity or delivery; its corrected probe now compiles. The
 [first Firefox/WebKit run](../validation/2026-10-30-telemetry-browser-journeys.md#first-hosted-run)
 built the frontend but failed before producing browser or cleanup receipts.
 Both original failures remain recorded. These results do not enable collection
-or qualify fleet statistics.
+or qualify fleet statistics. The
+[owned-launch accounting source](../validation/2026-10-30-telemetry-owned-launch.md)
+is reviewed for its first native lifecycle run; it has not yet measured or
+qualified installed app overhead.
 
 Release 4.46.55 includes the v3 clients, collector and private reporting tools.
 Its installed controls have the scoped qualification below; production

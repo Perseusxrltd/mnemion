@@ -131,7 +131,10 @@ def lifecycle_receipt_qualifies(data: object) -> bool:
         return False
     if data.get("platform") == "darwin":
         waited = data.get("lifetime_cpu_microseconds")
-        if data.get("coverage_status") != "partial" or data.get("cpu_lifetime_complete") is not False:
+        if (
+            data.get("coverage_status") != "partial"
+            or data.get("cpu_lifetime_complete") is not False
+        ):
             return False
         if type(waited) is not int or waited <= 0:
             return False
@@ -140,9 +143,15 @@ def lifecycle_receipt_qualifies(data: object) -> bool:
 
 def _assert_retained_cpu(report: dict) -> None:
     coverage = report["coverage"]
-    if coverage["cpu_lifetime_complete"] is not True or coverage["cpu_includes_exited_descendants"] is not True:
+    if (
+        coverage["cpu_lifetime_complete"] is not True
+        or coverage["cpu_includes_exited_descendants"] is not True
+    ):
         raise AssertionError("exited cpu was not retained")
-    if type(report["lifetime_cpu_microseconds"]) is not int or report["lifetime_cpu_microseconds"] < 5_000:
+    if (
+        type(report["lifetime_cpu_microseconds"]) is not int
+        or report["lifetime_cpu_microseconds"] < 5_000
+    ):
         raise AssertionError("lifetime cpu was missing or trivial")
     if type(report["active_cpu_microseconds"]) is not int or report["active_cpu_microseconds"] <= 0:
         raise AssertionError("active cpu was missing")
@@ -176,7 +185,10 @@ def _terminate(script: Path, marker: Path) -> dict:
         launch.mark_phase("canonical-work", canonical_operations_completed=0, active=True)
         report = launch.finish(canonical_operations_completed=0)
     _assert_common(report, str(marker))
-    if report["cleanup"]["ok"] is not True or report["cleanup"]["terminated_owned_group"] is not True:
+    if (
+        report["cleanup"]["ok"] is not True
+        or report["cleanup"]["terminated_owned_group"] is not True
+    ):
         raise AssertionError(report["cleanup"]["failure"] or "owned group was not terminated")
     if report["cleanup"]["retried"] is not False:
         raise AssertionError("termination retried")
@@ -189,7 +201,9 @@ def run_self_check() -> dict:
     signaled, signal_failure = _signal_cgroup(None)
     if signaled or signal_failure != "cgroup_missing":
         raise AssertionError("empty cleanup signaled a process")
-    if sys.platform == "win32" and (cleanup["ok"] is not False or not cleanup["failure"] or cleanup["retried"]):
+    if sys.platform == "win32" and (
+        cleanup["ok"] is not False or not cleanup["failure"] or cleanup["retried"]
+    ):
         raise AssertionError("cleanup failure was not recorded")
     root = Path(tempfile.mkdtemp(prefix="owned-launch-"))
     script = root / "worker.py"
@@ -253,8 +267,12 @@ def run_self_check() -> dict:
         "active_wall_microseconds": work["active_wall_microseconds"],
         "identities_missing": work["identities_missing"],
         "ledger_count": len(work["ledger"]),
-        "total_processes": None if not work.get("kernel") else work["kernel"].get("total_processes"),
-        "active_processes_after_exit": None if not work.get("kernel") else work["kernel"].get("active_processes"),
+        "total_processes": None
+        if not work.get("kernel")
+        else work["kernel"].get("total_processes"),
+        "active_processes_after_exit": None
+        if not work.get("kernel")
+        else work["kernel"].get("active_processes"),
         "cleanup_ok": True,
         "cleanup_failure": None,
         "termination_exercised": stopped["cleanup"]["terminated_owned_group"],
@@ -277,7 +295,15 @@ def main() -> None:
         result = run_self_check()
     except (AssertionError, OSError, subprocess.SubprocessError, OwnedLaunchError) as error:
         detail = getattr(error, "code", None) or str(error)
-        print(json.dumps({"self_check": "owned_launch_lifecycle", "held": False, "failure": str(detail)[:120]}))
+        print(
+            json.dumps(
+                {
+                    "self_check": "owned_launch_lifecycle",
+                    "held": False,
+                    "failure": str(detail)[:120],
+                }
+            )
+        )
         raise SystemExit(1) from None
     print(json.dumps(result, sort_keys=True))
 

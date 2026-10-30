@@ -71,3 +71,12 @@ before the asynchronously persisted checkbox updated; the saved DOM shows it
 checked with the expected paused status. Both original errors and zero report
 counts remain retained. The probe now accepts the already-open join form and
 uses one checkbox click followed by the existing saved-state status check.
+
+Grok's subsequent `72cec66e` replaces the unbounded `asyncio.run` cancellation
+gather with a finite wait for leftover tasks. Its new subprocess case keeps a
+cancellation-resistant task pending, exits nonzero and preserves the original
+error and failed cleanup. The final case passed in 2.92 seconds; the earlier
+fixture failure and intermediate output remain retained. This qualifies that
+tested CLI path, alongside the existing outer hosted deadline. It is not
+browser delivery, resource acceptance, or a guarantee about arbitrary blocked
+operating-system calls.

@@ -28,24 +28,38 @@ from deploy.owned_launch_self_check import (
 
 
 def test_active_cpu_keeps_missing_counters_null_and_keeps_a_measured_zero():
-    missing = combine_active_cpu([
-        {"active": True, "cpu_start": 10, "cpu_end": None, "start_ns": 0, "end_ns": 1000},
-    ])
+    missing = combine_active_cpu(
+        [
+            {"active": True, "cpu_start": 10, "cpu_end": None, "start_ns": 0, "end_ns": 1000},
+        ]
+    )
     assert missing == {"cpu_microseconds": None, "wall_microseconds": None}
-    measured = combine_active_cpu([
-        {"active": True, "cpu_start": 10, "cpu_end": 10, "start_ns": 0, "end_ns": 0},
-        {"active": False, "cpu_start": 10, "cpu_end": 90, "start_ns": 0, "end_ns": 5_000_000},
-    ])
+    measured = combine_active_cpu(
+        [
+            {"active": True, "cpu_start": 10, "cpu_end": 10, "start_ns": 0, "end_ns": 0},
+            {"active": False, "cpu_start": 10, "cpu_end": 90, "start_ns": 0, "end_ns": 5_000_000},
+        ]
+    )
     assert measured == {"cpu_microseconds": 0, "wall_microseconds": 0}
-    assert combine_active_cpu([
-        {"active": False, "cpu_start": 0, "cpu_end": 50, "start_ns": 0, "end_ns": 1000},
-    ])["cpu_microseconds"] is None
+    assert (
+        combine_active_cpu(
+            [
+                {"active": False, "cpu_start": 0, "cpu_end": 50, "start_ns": 0, "end_ns": 1000},
+            ]
+        )["cpu_microseconds"]
+        is None
+    )
 
 
 def test_negative_cpu_delta_is_unavailable_rather_than_clamped():
-    assert combine_active_cpu([
-        {"active": True, "cpu_start": 20, "cpu_end": 10, "start_ns": 0, "end_ns": 1000},
-    ])["cpu_microseconds"] is None
+    assert (
+        combine_active_cpu(
+            [
+                {"active": True, "cpu_start": 20, "cpu_end": 10, "start_ns": 0, "end_ns": 1000},
+            ]
+        )["cpu_microseconds"]
+        is None
+    )
 
 
 def test_settlement_cannot_be_marked_active():
@@ -97,10 +111,14 @@ def test_missing_active_counter_is_not_zero():
 def test_installed_launcher_is_not_wired_and_budget_is_unchanged():
     boundary = installed_journey_boundary()
     assert boundary["wired_into_smoke_installed_hosting"] is False
-    launcher = Path("studio/electron/scripts/smoke-installed-hosting.mjs").read_text(encoding="utf-8")
+    launcher = Path("studio/electron/scripts/smoke-installed-hosting.mjs").read_text(
+        encoding="utf-8"
+    )
     assert "owned_launch" not in launcher
     assert "start_owned_launch" not in launcher
-    disclosure = json.loads(Path("mnemion/product_telemetry/disclosure.json").read_text(encoding="utf-8"))
+    disclosure = json.loads(
+        Path("mnemion/product_telemetry/disclosure.json").read_text(encoding="utf-8")
+    )
     assert "owned_launch" not in json.dumps(disclosure)
 
 
@@ -163,13 +181,23 @@ def test_darwin_wait4_is_the_only_reaper_and_reads_float_seconds(monkeypatch):
     import deploy.owned_launch_accounting as accounting
 
     root = _RootProcess(4242)
-    fat = {"user": 9_000_000_000, "system": 0, "child_user": 0, "child_system": 0, "resident": 10, "start": 111}
+    fat = {
+        "user": 9_000_000_000,
+        "system": 0,
+        "child_user": 0,
+        "child_system": 0,
+        "resident": 10,
+        "start": 111,
+    }
     monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: fat)
-    seen = _patch_darwin_wait(monkeypatch, [
-        (4242, 0x7F, _FloatUsage(9.0, 9.0)),
-        (0, 0, _FloatUsage(9.0, 9.0)),
-        (4242, 3 << 8, _FloatUsage(0.5, 0.25)),
-    ])
+    seen = _patch_darwin_wait(
+        monkeypatch,
+        [
+            (4242, 0x7F, _FloatUsage(9.0, 9.0)),
+            (0, 0, _FloatUsage(9.0, 9.0)),
+            (4242, 3 << 8, _FloatUsage(0.5, 0.25)),
+        ],
+    )
     backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
     backend.process = root
     backend.root_creation = 111
@@ -226,7 +254,8 @@ def test_darwin_exited_root_reports_surviving_group_members(monkeypatch):
     monkeypatch.setattr(accounting.os, "kill", lambda pid, sig: kills.append((pid, sig)))
     monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: None)
     monkeypatch.setattr(
-        accounting, "_darwin_group_pids",
+        accounting,
+        "_darwin_group_pids",
         lambda _library, pgid: [os.getpid(), 5555] if pgid == 4242 else None,
     )
     _patch_darwin_wait(monkeypatch, [(4242, 0, _FloatUsage(0.5, 0.25))])
@@ -260,7 +289,14 @@ def test_darwin_reused_leader_is_not_signaled(monkeypatch):
 
     def rusage(_library, pid):
         if pid == 4242:
-            return {"user": 1, "system": 1, "child_user": 0, "child_system": 0, "resident": 1, "start": 999}
+            return {
+                "user": 1,
+                "system": 1,
+                "child_user": 0,
+                "child_system": 0,
+                "resident": 1,
+                "start": 999,
+            }
         return None
 
     monkeypatch.setattr(accounting, "_darwin_rusage", rusage)
@@ -419,9 +455,11 @@ def test_darwin_reused_pid_does_not_replace_the_root_identity(monkeypatch):
 
 def test_failed_owned_cleanup_does_not_qualify():
     with pytest.raises(AssertionError, match="^descendants_survived$"):
-        _require_owned_cleanup({
-            "cleanup": {"ok": False, "failure": "descendants_survived", "retried": False},
-        })
+        _require_owned_cleanup(
+            {
+                "cleanup": {"ok": False, "failure": "descendants_survived", "retried": False},
+            }
+        )
     with pytest.raises(AssertionError, match="^cleanup_missing$"):
         _require_owned_cleanup({})
 

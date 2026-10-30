@@ -217,7 +217,9 @@ class _Ledger:
         self.rows[identity] = row
         return row
 
-    def observe(self, pid: int, creation: int, *, current: int | None, high_water: int | None) -> None:
+    def observe(
+        self, pid: int, creation: int, *, current: int | None, high_water: int | None
+    ) -> None:
         row = self.add_identity(pid, creation)
         if row is None:
             return
@@ -227,7 +229,9 @@ class _Ledger:
             row["last_working_set_bytes"] = current
         if type(high_water) is int and high_water >= 0:
             previous = row["peak_working_set_bytes"]
-            row["peak_working_set_bytes"] = high_water if previous is None else max(previous, high_water)
+            row["peak_working_set_bytes"] = (
+                high_water if previous is None else max(previous, high_water)
+            )
             row["kernel_high_water_while_observed"] = True
 
     def public(self) -> list[dict]:
@@ -287,7 +291,10 @@ class OwnedLaunch:
     def wait_root(self, timeout_seconds: float) -> bool:
         if self._finished:
             raise OwnedLaunchError("already_finished")
-        if type(timeout_seconds) not in (int, float) or not 0 < float(timeout_seconds) <= MAX_BOUND_SECONDS:
+        if (
+            type(timeout_seconds) not in (int, float)
+            or not 0 < float(timeout_seconds) <= MAX_BOUND_SECONDS
+        ):
             raise OwnedLaunchError("invalid_bound")
         return self.backend.wait_root(float(timeout_seconds))
 
@@ -296,7 +303,8 @@ class OwnedLaunch:
             raise OwnedLaunchError("already_finished")
         self._finished = True
         if canonical_operations_completed is not None and (
-            type(canonical_operations_completed) is not int or not 0 <= canonical_operations_completed <= 1_000_000
+            type(canonical_operations_completed) is not int
+            or not 0 <= canonical_operations_completed <= 1_000_000
         ):
             canonical_operations_completed = None
         cleanup_failure = None
@@ -352,28 +360,40 @@ class OwnedLaunch:
         except Exception:
             self._sample_error = "sample_failed"
 
-    def _report(self, snapshot: dict, cleanup_failure: str | None, terminated: bool, timed_out: bool) -> dict:
+    def _report(
+        self, snapshot: dict, cleanup_failure: str | None, terminated: bool, timed_out: bool
+    ) -> dict:
         phases = []
         for phase in self._phases:
             cpu = None
-            if type(phase["cpu_start"]) is int and type(phase["cpu_end"]) is int and phase["cpu_end"] >= phase["cpu_start"]:
+            if (
+                type(phase["cpu_start"]) is int
+                and type(phase["cpu_end"]) is int
+                and phase["cpu_end"] >= phase["cpu_start"]
+            ):
                 cpu = phase["cpu_end"] - phase["cpu_start"]
-            phases.append({
-                "name": phase["name"],
-                "active": phase["active"],
-                "start_offset_ns": phase["start_ns"] - self.started,
-                "end_offset_ns": None if phase["end_ns"] is None else phase["end_ns"] - self.started,
-                "canonical_operations_at_start": phase["count_start"],
-                "canonical_operations_at_end": phase["count_end"],
-                "cpu_microseconds": cpu,
-            })
+            phases.append(
+                {
+                    "name": phase["name"],
+                    "active": phase["active"],
+                    "start_offset_ns": phase["start_ns"] - self.started,
+                    "end_offset_ns": None
+                    if phase["end_ns"] is None
+                    else phase["end_ns"] - self.started,
+                    "canonical_operations_at_start": phase["count_start"],
+                    "canonical_operations_at_end": phase["count_end"],
+                    "cpu_microseconds": cpu,
+                }
+            )
         active = combine_active_cpu(self._phases)
         ledger = self.backend.ledger.public()
         lifetime = snapshot.get("cpu_microseconds")
         if type(lifetime) is not int or lifetime < 0:
             lifetime = None
         coverage = self.backend.coverage(snapshot, ledger)
-        missing_high_water = any(row["peak_working_set_bytes"] is None for row in ledger) or bool(snapshot.get("identities_missing"))
+        missing_high_water = any(row["peak_working_set_bytes"] is None for row in ledger) or bool(
+            snapshot.get("identities_missing")
+        )
         if missing_high_water and coverage["rss_high_water"] == "per_process_kernel_while_alive":
             coverage["rss_high_water"] = "per_process_kernel_while_alive_partial"
             coverage["status"] = "partial" if coverage["status"] != "unsupported" else "unsupported"
@@ -415,7 +435,11 @@ class OwnedLaunch:
             "active_cpu_microseconds": active["cpu_microseconds"],
             "active_wall_microseconds": active["wall_microseconds"],
             "active_core_fraction": fraction,
-            "cold_start": {"kind": "first_observed_absolute", "subtracted": False, "processes": cold},
+            "cold_start": {
+                "kind": "first_observed_absolute",
+                "subtracted": False,
+                "processes": cold,
+            },
             "phases": phases,
             "ledger": ledger,
             "ledger_truncated": self.backend.ledger.truncated,
@@ -439,8 +463,14 @@ class OwnedLaunch:
         }
 
 
-def start_owned_launch(argv: list[str], *, cwd: str | None = None, env: dict[str, str] | None = None,
-                       bound_seconds: float = 30.0, sample_seconds: float = 0.05) -> OwnedLaunch:
+def start_owned_launch(
+    argv: list[str],
+    *,
+    cwd: str | None = None,
+    env: dict[str, str] | None = None,
+    bound_seconds: float = 30.0,
+    sample_seconds: float = 0.05,
+) -> OwnedLaunch:
     """Create the OS group, start argv inside it, and only then let it run."""
     bound, sample = _check_bound(bound_seconds, sample_seconds)
     if sys.platform == "win32":
@@ -547,11 +577,17 @@ class WindowsJobBackend:
                 if creation is not None:
                     ledger.add_identity(pid, creation)
                 continue
-            ledger.observe(pid, creation, current=memory["working_set"], high_water=memory["peak_working_set"])
+            ledger.observe(
+                pid, creation, current=memory["working_set"], high_water=memory["peak_working_set"]
+            )
             current_sum += memory["working_set"]
             saw += 1
         if saw:
-            self._sampled_sum_peak = current_sum if self._sampled_sum_peak is None else max(self._sampled_sum_peak, current_sum)
+            self._sampled_sum_peak = (
+                current_sum
+                if self._sampled_sum_peak is None
+                else max(self._sampled_sum_peak, current_sum)
+            )
 
     def terminate(self) -> tuple[bool, str | None]:
         if not self.job:
@@ -579,7 +615,9 @@ class WindowsJobBackend:
                 "not_a_budget_measurement": True,
                 "sampled_pid_cpu_is_complete": False,
             },
-            "kernel": None if info is None else {
+            "kernel": None
+            if info is None
+            else {
                 "total_user_100ns": info["user_100ns"],
                 "total_kernel_100ns": info["kernel_100ns"],
                 "total_processes": info["total_processes"],
@@ -595,7 +633,9 @@ class WindowsJobBackend:
         }
 
     def coverage(self, snapshot: dict, ledger: list[dict]) -> dict:
-        complete = snapshot.get("cpu_complete") is True and snapshot.get("cpu_microseconds") is not None
+        complete = (
+            snapshot.get("cpu_complete") is True and snapshot.get("cpu_microseconds") is not None
+        )
         # PeakWorkingSetSize is the kernel peak as of the last successful query.
         # A process can still grow, or exit, before the next query. CPU from the
         # job is complete; working-set coverage therefore stays partial.
@@ -605,9 +645,9 @@ class WindowsJobBackend:
             "cpu_lifetime_complete": complete,
             "cpu_includes_exited_descendants": complete,
             "sampled_pid_cpu_is_complete": False,
-            "rss_high_water": "per_process_kernel_while_alive" if any(
-                row["kernel_high_water_while_observed"] for row in ledger
-            ) else "unavailable",
+            "rss_high_water": "per_process_kernel_while_alive"
+            if any(row["kernel_high_water_while_observed"] for row in ledger)
+            else "unavailable",
             "rss_high_water_covers_unseen_exited_processes": False,
             "cgroup_memory_peak_is_per_process_rss": False,
         }
@@ -632,17 +672,52 @@ class _WinApi:
         k = self.kernel
         k.CreateJobObjectW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p]
         k.CreateJobObjectW.restype = ctypes.c_void_p
-        k.SetInformationJobObject.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+        k.SetInformationJobObject.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+        ]
         k.SetInformationJobObject.restype = wintypes.BOOL
-        k.QueryInformationJobObject.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p]
+        k.QueryInformationJobObject.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            ctypes.c_void_p,
+        ]
         k.QueryInformationJobObject.restype = wintypes.BOOL
-        k.InitializeProcThreadAttributeList.argtypes = [ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, ctypes.POINTER(ctypes.c_size_t)]
+        k.InitializeProcThreadAttributeList.argtypes = [
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            ctypes.POINTER(ctypes.c_size_t),
+        ]
         k.InitializeProcThreadAttributeList.restype = wintypes.BOOL
-        k.UpdateProcThreadAttribute.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+        k.UpdateProcThreadAttribute.argtypes = [
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+        ]
         k.UpdateProcThreadAttribute.restype = wintypes.BOOL
         k.DeleteProcThreadAttributeList.argtypes = [ctypes.c_void_p]
         k.DeleteProcThreadAttributeList.restype = None
-        k.CreateProcessW.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_wchar), ctypes.c_void_p, ctypes.c_void_p, wintypes.BOOL, wintypes.DWORD, ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_void_p, ctypes.c_void_p]
+        k.CreateProcessW.argtypes = [
+            ctypes.c_wchar_p,
+            ctypes.POINTER(ctypes.c_wchar),
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            wintypes.BOOL,
+            wintypes.DWORD,
+            ctypes.c_void_p,
+            ctypes.c_wchar_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+        ]
         k.CreateProcessW.restype = wintypes.BOOL
         k.ResumeThread.argtypes = [ctypes.c_void_p]
         k.ResumeThread.restype = wintypes.DWORD
@@ -656,7 +731,13 @@ class _WinApi:
         k.WaitForSingleObject.restype = wintypes.DWORD
         k.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
         k.OpenProcess.restype = ctypes.c_void_p
-        k.GetProcessTimes.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+        k.GetProcessTimes.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+        ]
         k.GetProcessTimes.restype = wintypes.BOOL
         k.K32GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD]
         k.K32GetProcessMemoryInfo.restype = wintypes.BOOL
@@ -691,7 +772,14 @@ class _WinApi:
         handles = (ctypes.c_void_p * 1)(job)
         try:
             updated = self.kernel.UpdateProcThreadAttribute(
-                buf, 0, 0x0002000D, ctypes.cast(handles, ctypes.c_void_p), ctypes.sizeof(handles), None, None)
+                buf,
+                0,
+                0x0002000D,
+                ctypes.cast(handles, ctypes.c_void_p),
+                ctypes.sizeof(handles),
+                None,
+                None,
+            )
             if not updated:
                 raise OwnedLaunchError(_code("job_attribute", ctypes.get_last_error()))
             startup = STARTUPINFOEXW()
@@ -704,9 +792,17 @@ class _WinApi:
             if environment is not None:
                 flags |= 0x400
             ok = self.kernel.CreateProcessW(
-                argv[0], command, None, None, False, flags,
+                argv[0],
+                command,
+                None,
+                None,
+                False,
+                flags,
                 None if environment is None else ctypes.cast(environment, ctypes.c_void_p),
-                cwd, ctypes.byref(startup), ctypes.byref(process_info))
+                cwd,
+                ctypes.byref(startup),
+                ctypes.byref(process_info),
+            )
             if not ok:
                 raise OwnedLaunchError(_code("create_process", ctypes.get_last_error()))
             return process_info.hProcess, process_info.hThread, int(process_info.dwProcessId)
@@ -717,7 +813,12 @@ class _WinApi:
         created = ctypes.c_uint64()
         ignored = ctypes.c_uint64()
         ok = self.kernel.GetProcessTimes(
-            process, ctypes.byref(created), ctypes.byref(ignored), ctypes.byref(ignored), ctypes.byref(ignored))
+            process,
+            ctypes.byref(created),
+            ctypes.byref(ignored),
+            ctypes.byref(ignored),
+            ctypes.byref(ignored),
+        )
         if not ok:
             return None
         return int(created.value)
@@ -729,8 +830,11 @@ class _WinApi:
                 ("count", wintypes.DWORD),
                 ("pids", ctypes.c_size_t * 64),
             ]
+
         info = Listing()
-        ok = self.kernel.QueryInformationJobObject(job, 3, ctypes.byref(info), ctypes.sizeof(info), None)
+        ok = self.kernel.QueryInformationJobObject(
+            job, 3, ctypes.byref(info), ctypes.sizeof(info), None
+        )
         if not ok and ctypes.get_last_error() == 234 and info.assigned:
             capacity = min(int(info.assigned), 512)
 
@@ -740,8 +844,11 @@ class _WinApi:
                     ("count", wintypes.DWORD),
                     ("pids", ctypes.c_size_t * capacity),
                 ]
+
             info = Larger()
-            ok = self.kernel.QueryInformationJobObject(job, 3, ctypes.byref(info), ctypes.sizeof(info), None)
+            ok = self.kernel.QueryInformationJobObject(
+                job, 3, ctypes.byref(info), ctypes.sizeof(info), None
+            )
         if not ok:
             return None
         count = min(int(info.count), len(info.pids))
@@ -749,7 +856,9 @@ class _WinApi:
 
     def accounting(self, job) -> dict | None:
         info = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION()
-        ok = self.kernel.QueryInformationJobObject(job, 1, ctypes.byref(info), ctypes.sizeof(info), None)
+        ok = self.kernel.QueryInformationJobObject(
+            job, 1, ctypes.byref(info), ctypes.sizeof(info), None
+        )
         if not ok:
             return None
         return {
@@ -762,10 +871,15 @@ class _WinApi:
 
     def extended(self, job) -> dict | None:
         info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
-        ok = self.kernel.QueryInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info), None)
+        ok = self.kernel.QueryInformationJobObject(
+            job, 9, ctypes.byref(info), ctypes.sizeof(info), None
+        )
         if not ok:
             return None
-        return {"peak_process": int(info.PeakProcessMemoryUsed), "peak_job": int(info.PeakJobMemoryUsed)}
+        return {
+            "peak_process": int(info.PeakProcessMemoryUsed),
+            "peak_job": int(info.PeakJobMemoryUsed),
+        }
 
     def working_set(self, process) -> dict | None:
         info = PROCESS_MEMORY_COUNTERS()
@@ -773,7 +887,10 @@ class _WinApi:
         ok = self.kernel.K32GetProcessMemoryInfo(process, ctypes.byref(info), info.cb)
         if not ok:
             return None
-        return {"working_set": int(info.WorkingSetSize), "peak_working_set": int(info.PeakWorkingSetSize)}
+        return {
+            "working_set": int(info.WorkingSetSize),
+            "peak_working_set": int(info.PeakWorkingSetSize),
+        }
 
     def open_query(self, pid: int):
         handle = self.kernel.OpenProcess(0x1000, False, pid)
@@ -820,9 +937,17 @@ class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
 
 
 class IO_COUNTERS(ctypes.Structure):
-    _fields_ = [(name, ctypes.c_uint64) for name in (
-        "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
-        "ReadTransferCount", "WriteTransferCount", "OtherTransferCount")]
+    _fields_ = [
+        (name, ctypes.c_uint64)
+        for name in (
+            "ReadOperationCount",
+            "WriteOperationCount",
+            "OtherOperationCount",
+            "ReadTransferCount",
+            "WriteTransferCount",
+            "OtherTransferCount",
+        )
+    ]
 
 
 class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
@@ -938,7 +1063,14 @@ def _environment_block(env: dict[str, str]):
     parts = []
     for key in sorted(env):
         value = env[key]
-        if type(key) is not str or type(value) is not str or not key or "=" in key or "\x00" in key or "\x00" in value:
+        if (
+            type(key) is not str
+            or type(value) is not str
+            or not key
+            or "=" in key
+            or "\x00" in key
+            or "\x00" in value
+        ):
             raise OwnedLaunchError("invalid_environment")
         parts.append(f"{key}={value}")
     text = "\x00".join(parts) + "\x00\x00"
@@ -992,8 +1124,14 @@ class LinuxCgroupBackend:
                 raise OSError("cgroup assignment failed")
 
         self.process = subprocess.Popen(
-            self.argv, cwd=self.cwd, env=self.env, stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=move_before_exec)
+            self.argv,
+            cwd=self.cwd,
+            env=self.env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=move_before_exec,
+        )
         ticks = _linux_start_ticks(self.process.pid)
         if ticks is None:
             raise OwnedLaunchError("identity_unavailable")
@@ -1048,7 +1186,11 @@ class LinuxCgroupBackend:
             current_sum += residency["VmRSS"]
             saw += 1
         if saw:
-            self._sampled_sum_peak = current_sum if self._sampled_sum_peak is None else max(self._sampled_sum_peak, current_sum)
+            self._sampled_sum_peak = (
+                current_sum
+                if self._sampled_sum_peak is None
+                else max(self._sampled_sum_peak, current_sum)
+            )
 
     def terminate(self) -> tuple[bool, str | None]:
         return _signal_cgroup(self.leaf)
@@ -1086,9 +1228,9 @@ class LinuxCgroupBackend:
             "cpu_lifetime_complete": complete,
             "cpu_includes_exited_descendants": complete,
             "sampled_pid_cpu_is_complete": False,
-            "rss_high_water": "per_process_kernel_while_alive" if any(
-                row["kernel_high_water_while_observed"] for row in ledger
-            ) else "unavailable",
+            "rss_high_water": "per_process_kernel_while_alive"
+            if any(row["kernel_high_water_while_observed"] for row in ledger)
+            else "unavailable",
             "rss_high_water_covers_unseen_exited_processes": False,
             "cgroup_memory_peak_is_per_process_rss": False,
             "process_lifetime_count": "unavailable",
@@ -1128,7 +1270,13 @@ def _own_cgroup_parent() -> Path | None:
     for line in raw.splitlines():
         if line.startswith("0::"):
             relative = line[3:]
-    if not relative or relative == "/" or ".." in relative or not relative.startswith("/") or "(deleted)" in relative:
+    if (
+        not relative
+        or relative == "/"
+        or ".." in relative
+        or not relative.startswith("/")
+        or "(deleted)" in relative
+    ):
         return None
     if not Path("/sys/fs/cgroup/cgroup.controllers").is_file():
         return None
@@ -1182,7 +1330,9 @@ def _pid_in_leaf(pid: int, leaf: Path) -> bool:
     except (OSError, UnicodeError):
         return False
     for line in raw.splitlines():
-        if line.startswith("0::") and os.path.realpath("/sys/fs/cgroup" + line[3:]) == os.path.realpath(leaf):
+        if line.startswith("0::") and os.path.realpath(
+            "/sys/fs/cgroup" + line[3:]
+        ) == os.path.realpath(leaf):
             return True
     return False
 
@@ -1249,8 +1399,14 @@ class DarwinBackend:
             os.setpgrp()
 
         self.process = subprocess.Popen(
-            self.argv, cwd=self.cwd, env=self.env, stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=own_group)
+            self.argv,
+            cwd=self.cwd,
+            env=self.env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=own_group,
+        )
         self.sample(self.ledger)
 
     def cpu_microseconds(self) -> int | None:
@@ -1323,8 +1479,11 @@ class DarwinBackend:
                 if _darwin_ppid(self._library(), child) == pid:
                     pending.append(child)
         if saw:
-            self._sampled_sum_peak = current_sum if self._sampled_sum_peak is None else max(
-                self._sampled_sum_peak, current_sum)
+            self._sampled_sum_peak = (
+                current_sum
+                if self._sampled_sum_peak is None
+                else max(self._sampled_sum_peak, current_sum)
+            )
 
     def terminate(self) -> tuple[bool, str | None]:
         if self.process is None:
@@ -1379,7 +1538,9 @@ class DarwinBackend:
             "cpu_lifetime_complete": False,
             "cpu_includes_exited_descendants": False,
             "sampled_pid_cpu_is_complete": False,
-            "rss_high_water": "sampled_current" if any(row["first_working_set_bytes"] is not None for row in ledger) else "unavailable",
+            "rss_high_water": "sampled_current"
+            if any(row["first_working_set_bytes"] is not None for row in ledger)
+            else "unavailable",
             "rss_high_water_covers_unseen_exited_processes": False,
             "cgroup_memory_peak_is_per_process_rss": False,
         }
@@ -1450,11 +1611,26 @@ class DarwinBackend:
             self._libproc = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True)
             self._libproc.proc_pid_rusage.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
             self._libproc.proc_pid_rusage.restype = ctypes.c_int
-            self._libproc.proc_pidinfo.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_int]
+            self._libproc.proc_pidinfo.argtypes = [
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_uint64,
+                ctypes.c_void_p,
+                ctypes.c_int,
+            ]
             self._libproc.proc_pidinfo.restype = ctypes.c_int
-            self._libproc.proc_listchildpids.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int]
+            self._libproc.proc_listchildpids.argtypes = [
+                ctypes.c_int,
+                ctypes.c_void_p,
+                ctypes.c_int,
+            ]
             self._libproc.proc_listchildpids.restype = ctypes.c_int
-            self._libproc.proc_listpids.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_int]
+            self._libproc.proc_listpids.argtypes = [
+                ctypes.c_uint32,
+                ctypes.c_uint32,
+                ctypes.c_void_p,
+                ctypes.c_int,
+            ]
             self._libproc.proc_listpids.restype = ctypes.c_int
         return self._libproc
 

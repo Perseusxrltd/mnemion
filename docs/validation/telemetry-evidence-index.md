@@ -9,6 +9,10 @@ sent; its corrected probe compiles. The
 retain the incomplete browser journey and its missing cleanup receipt.
 Collection stays disabled.
 
+The [owned-launch accounting review](2026-10-30-telemetry-owned-launch.md)
+records the corrected native measurement adapter, 13 focused source checks,
+and remaining native lifecycle and installed-overhead qualification.
+
 **Index checkpoint: 30 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)
 owns current scope, invariants and acceptance ceilings. This index links the

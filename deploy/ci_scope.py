@@ -24,15 +24,19 @@ METADATA = {
 # release workflows and unknown files still run all checks.
 RENDERER_DIAGNOSTICS = {
     ".github/workflows/telemetry-browser-journeys.yml",
+    ".github/workflows/telemetry-owned-launch.yml",
     ".github/workflows/telemetry-renderer.yml",
     "deploy/probe_telemetry_browser.mjs",
     "deploy/probe_telemetry_browser.py",
+    "deploy/owned_launch_accounting.py",
+    "deploy/owned_launch_self_check.py",
     "deploy/probe_telemetry_renderer.py",
     "deploy/report_telemetry_renderer.py",
     "deploy/telemetry_memory_fixture.py",
     "studio/electron/scripts/probe-telemetry-renderer.mjs",
     "studio/frontend/scripts/build-telemetry-probe.mjs",
     "tests/test_telemetry_browser_journey.py",
+    "tests/test_owned_launch_accounting.py",
 }
 
 # Only these existing component boundaries may use telemetry push checks.
