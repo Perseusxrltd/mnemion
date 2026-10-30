@@ -140,3 +140,98 @@ these component checks.
 The next bounded action is one attribution journey on this source. Read
 `allocation.reserve_guard.reason` for both enabled cases. Do not rerun the
 phase-memory matrix and do not reclassify run 40971963055.
+
+## Attribution run 40976743563 completed
+
+That journey has now completed on source
+`7ee617691ead16c17bbdb9eb797e03f20f186325`. Run **40976743563**, artifact
+digest `27d52409226332746627e7f345a2f3d00afc0106025dd257ea4c0e2d81796531`,
+finished all six source-bound compiled Linux cases. Electron **44.9.3**, Node
+**24.22.0**, x64, `packaged: false`. Each case matched **2,309** reviewed
+source files and **387/387** fixture API calls. Attribution was on. Comparison
+and phase memory were off. This section does not subtract run 40967691671 or
+reclassify run 40971963055. The admission trace still has no production
+behavior change.
+
+Both enabled cases were `reason: allowed` with `network: unknown` and
+`constrained: false`. Each accepted one **25-byte** `/v3/report`, reserved
+**65,536** bytes, cleared its lease, and left **8** queue cells,
+`maximum_producer_count` **64**, **106** snapshots and **65** accepted writes.
+The private database was **28,672** bytes in every case, including the
+controls. Unavailable and opted-out sent no report, recorded no instrumented
+sqlite, prepare, network, reserve or transport call, and accepted no writes.
+Opted-out still counted **53** snapshot calls; unavailable counted **0**. An
+empty call map means those snapshot calls returned before `open`. It does not
+identify which earlier branch returned.
+
+Enabled call totals, both repeats: `sqlite.open=139`, `sqlite.close=139`,
+`conditions.prepare=1`, `network_cost.start=1`, `delivery.reserve=1`,
+`transport.socket=1`. Allocation errors were empty. No new Electron process
+appeared. These are first-call windows around the named methods. They are not
+causal ownership of the resident set, and they are not the paired 2 MiB or
+0.5% comparison.
+
+| Window | r1 RSS / file / anonymous / heapUsed | r2 RSS / file / anonymous / heapUsed |
+| --- | --- | --- |
+| `sqlite.open` | 1,179,648 / 983,040 / 217,088 / 44,032 | 1,179,648 / 1,048,576 / 192,512 / 49,896 |
+| `sqlite.close` | 0 / 0 / 8,192 / 4,764 | 0 / 0 / −20,480 / 4,764 |
+| `network_cost.start` | −147,456 / 81,920 / −262,144 / 89,220 | 61,440 / 81,920 / −266,240 / 89,360 |
+| `conditions.prepare` | 1,101,824 / 278,528 / 630,784 / 798,924 | 1,073,152 / 344,064 / 667,648 / 809,340 |
+| `delivery.reserve` | 524,288 / 0 / 638,976 / 207,160 | 655,360 / 0 / 479,232 / 215,164 |
+| `transport` | 1,908,736 / 524,288 / 1,536,000 / −1,281,348 | 1,826,816 / 327,680 / 1,503,232 / −1,237,360 |
+
+`prepare()` awaits `network.start()` and then, on a first CPU sample, waits
+**250 ms** before the second `read()`. The probe records the network window
+before `prepare` completes. The prepare spans are **255.488 ms** and
+**258.189 ms**. That wait is the existing admission delta, during which other
+app work can run. It is not a spare telemetry allocation. Removing it would
+leave the first sample incomparable. This run's guard was `allowed` only after
+the second sample. Clocks stay as they are.
+
+The first `open()` window includes `import('node:sqlite')`, one
+`DatabaseSync`, and the existing pragmas, including `mmap_size=0` and
+`cache_size=-128`, before the method returns. Node's `DatabaseSync` is one
+connection, and `close()` is `sqlite3_close_v2()`. SQLite disables
+memory-mapped I/O when `mmap_size` is 0. The database file is 28,672 bytes, so
+that file cannot be the whole 983,040 / 1,048,576 file-backed rise. No mapping
+name was recorded. The rise is not labeled as a library. The other 138 opens
+were counted, not windowed. They are not 138 copies of this first-open rise.
+Each open still does a fresh filesystem check and drops the handle on close.
+Statements are already reused inside one `recordMany` transaction. The wire
+encoder and the release route address are already cached. Company policy,
+schema, consent, lease, final send, review bytes, cancellation and budgets
+are re-read on purpose. Caching a positive policy result would weaken those
+checks. A retained connection is a separate design question: it need not cache
+policy, but would require fresh transactions and independently verified file
+identity, permissions, replacement, failure and ownership handling. These
+windows do not establish that such a design would save resident memory.
+
+The transport windows rise by 1,908,736 and 1,826,816 RSS bytes while
+`heapUsed` falls by 1,281,348 and 1,237,360. The explicit buffers on that path
+are the 25-byte body, 4,096-byte socket marks, and the 32,768-byte TLS cap.
+The falling heap value is compatible with garbage collection; other app work
+and the observer can also affect the same window. The counters do not assign
+the resident-set rise to any one of those causes or identify an unnecessary
+buffer. TLS and the storage engine stay as they are.
+
+Import windows are unstable across enabled and control cases, from 2,752,512
+to 6,946,816 RSS bytes, with file-backed rises in the controls as well. They are
+not an enabled-only telemetry cost. Whole-process `electron_cpu_ms` on the
+enabled cases was 2,580 and 2,590 over about 29.3 s and 29.2 s. Comparison was
+off, so those figures are not a one-core percentage against unavailable.
+`resource_acceptance` stays false. The 2 MiB and 0.5% gates stay unaccepted.
+Collection, destination and route stay false/null/null. V08 remains Building.
+All 66 requirements remain.
+
+No runtime file was edited. No regression test was added. This clone did not
+run the Electron suite.
+
+The bounded redundant-work search in `telemetry-store.ts`,
+`telemetry-activity.ts`, `telemetry-delivery.ts` and `telemetry-transport.ts`
+did not select a runtime patch. The first-open window alone is below 2 MiB;
+accepting it does not qualify total process overhead or CPU. It includes cold
+initialization and cannot be assigned to every later connection. Neither a
+budget waiver nor weaker freshness checks follows from these observations.
+Further optimization needs a separate design with an identified avoidable cost
+and preserved ownership and policy checks. No automatic repeat of this
+attribution or phase-memory workload is selected by this review.

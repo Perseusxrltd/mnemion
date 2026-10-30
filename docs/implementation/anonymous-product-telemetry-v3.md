@@ -3,12 +3,18 @@
 **V08 remains Building.** Collection stays unavailable. The current source
 includes the v3 clients, collector and private maintainer reports. The ordinary
 privacy-settings page shows local controls; it does not show fleet data.
-Attribution run 40971963055 made no enabled reservations. Aggregate open/close
-counts and sub-millisecond reserve windows point to the pre-database checks.
-They do not prove the exact guard: the clock bound can change after eligible,
-and a caught exception is still possible. The exact refusal is not yet recorded.
-A later owned read can name the clause. It does not qualify the 2 MiB or 0.5%
-gates, and `resource_acceptance` stays false.
+Attribution run 40971963055 made no enabled reservations and remains
+unexplained. Run 40976743563, on source `7ee617691ead16c17bbdb9eb797e03f20f186325`,
+completed all six compiled Linux journeys. Both enabled guards were `allowed`
+and each sent one 25-byte v3 report. The controls sent none. That success does
+not account for 40971963055. The admission trace still changes no production
+behavior. No small redundant cut was found inside the fresh per-transaction
+store, activity, delivery or transport paths. The first `sqlite.open` rose
+1,179,648 RSS bytes in both enabled repeats; the transport windows rose
+1,908,736 and 1,826,816 bytes while `heapUsed` fell. Those windows are not gate acceptance.
+The 2 MiB and 0.5% gates stay unaccepted, and `resource_acceptance` stays false.
+The measurement limits are in the
+[29 October resource note](../validation/2026-10-29-telemetry-v3-resource.md).
 
 The approved direction is a trusted first-party collector and
 publication-side differential privacy. That is a different promise from wire
@@ -282,8 +288,9 @@ The dedicated server defaults to legacy `/v1/report`; `--mode v3` mounts
   does not claim that provider retention has been inspected.
   `collection_available`, destination and route stay false/null/null.
 - The installed 2 MiB / 0.5% resource gates. This packet is 25 bytes in source.
-  That is not an installed measurement. The failed full-app trials were not
-  rerun.
+  That is not an installed measurement. Run 40976743563 is an unpacked Linux
+  attribution journey, not those gates. The failed full-app trials were not
+  rerun, and run 40971963055 is still unexplained.
 - The private HTML file is a local maintainer export. It is not an
   unauthenticated report endpoint and it is not added to ordinary privacy
   settings.
