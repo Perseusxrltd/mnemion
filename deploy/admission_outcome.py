@@ -91,7 +91,9 @@ def public_admission_fields(app: object, raw: object) -> dict:
     )
     if not diagnostic:
         return {}
-    outcome = sanitize_admission_outcome(app.get("admission_outcome") if type(app) is dict else None)
+    outcome = sanitize_admission_outcome(
+        app.get("admission_outcome") if type(app) is dict else None
+    )
     return {
         "admission_diagnostic": True,
         "admission_outcome": outcome if outcome is not None else unknown_admission_outcome(),

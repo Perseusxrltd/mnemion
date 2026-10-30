@@ -90,7 +90,12 @@ def test_corrupt_fields_match_the_javascript_sanitizer():
             {"schema_version": 1, "outcome": "unknown", "guard": None},
         ),
         (
-            {"schema_version": 1, "outcome": "prepare_refused", "guard": VALID_GUARD, "secret": SECRET},
+            {
+                "schema_version": 1,
+                "outcome": "prepare_refused",
+                "guard": VALID_GUARD,
+                "secret": SECRET,
+            },
             {
                 "schema_version": 1,
                 "outcome": "prepare_refused",
