@@ -28,6 +28,11 @@ on:
 permissions:
   contents: read
 
+# Linux compiled-source x64 only. A comparison or attribution dispatch runs the
+# journey as one transient service: Delegate=yes, the runner User and Group,
+# the workspace, and a tool/home environment. A root scope is not used. This
+# is not installed or all-OS acceptance.
+
 concurrency:
   group: telemetry-renderer-${{ inputs.source }}${{ inputs.review_journey && '-review' || '' }}
   cancel-in-progress: false
@@ -112,14 +117,90 @@ jobs:
           TELEMETRY_PHASE_MEMORY: ${{ inputs.phase_memory }}
           TELEMETRY_REVIEW_JOURNEY: ${{ inputs.review_journey }}
         run: |
-          args=()
-          if [ "$TELEMETRY_ATTRIBUTION" = "true" ]; then args+=(--attribution); fi
-          if [ "$TELEMETRY_COMPARISON" = "true" ]; then args+=(--comparison); fi
-          if [ "$TELEMETRY_PHASE_MEMORY" = "true" ]; then args+=(--phase-memory); fi
-          if [ "$TELEMETRY_REVIEW_JOURNEY" = "true" ]; then args+=(--review-journey); fi
-          xvfb-run -a uv run --no-sync python -m deploy.probe_telemetry_renderer \
-            --source "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/output/telemetry-renderer/workload" \
-            --playwright-module "$RUNNER_TEMP/telemetry-controller/node_modules/playwright/index.mjs" "${args[@]}"
+          uv run --no-sync python - <<'PY'
+          import json, os, shutil, subprocess
+          from pathlib import Path
+          from deploy.report_telemetry_renderer import (
+              owned_delegate_identity_ok,
+              owned_scope_command,
+          )
+
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          attribution = os.environ["TELEMETRY_ATTRIBUTION"] == "true"
+          comparison = os.environ["TELEMETRY_COMPARISON"] == "true"
+          phase_memory = os.environ["TELEMETRY_PHASE_MEMORY"] == "true"
+          review = os.environ["TELEMETRY_REVIEW_JOURNEY"] == "true"
+          requested = attribution or comparison
+          output = workspace / "output/telemetry-renderer/workload"
+          playwright = Path(os.environ["RUNNER_TEMP"]) / "telemetry-controller/node_modules/playwright/index.mjs"
+          flags = []
+          if attribution:
+              flags.append("--attribution")
+          if comparison:
+              flags.append("--comparison")
+          if phase_memory:
+              flags.append("--phase-memory")
+          if review:
+              flags.append("--review-journey")
+          command = [
+              "xvfb-run", "-a", "uv", "run", "--no-sync", "python", "-m",
+              "deploy.probe_telemetry_renderer",
+              "--source", str(workspace),
+              "--output", str(output),
+              "--playwright-module", str(playwright),
+              *flags,
+          ]
+          mode = "not_requested"
+          if requested:
+              python_bin = workspace / ".venv" / "bin" / "python"
+              xvfb = shutil.which("xvfb-run")
+              identity = shutil.which("id")
+              if (
+                  xvfb and Path(xvfb).is_absolute()
+                  and python_bin.is_file()
+                  and identity and Path(identity).is_absolute()
+              ):
+                  command = [
+                      xvfb, "-a", str(python_bin), "-m", "deploy.probe_telemetry_renderer",
+                      "--source", str(workspace),
+                      "--output", str(output),
+                      "--playwright-module", str(playwright),
+                      *flags,
+                  ]
+              common = dict(
+                  requested=True,
+                  systemd=shutil.which("systemd-run"),
+                  sudo=shutil.which("sudo"),
+                  euid=os.geteuid(),
+                  egid=os.getegid(),
+                  cwd=str(workspace),
+                  environ=dict(os.environ),
+                  probe_accepted=None,
+              )
+              plain = list(command)
+              command, mode = owned_scope_command(plain, **common)
+              if mode == "systemd_service_delegate":
+                  probe, probe_mode = owned_scope_command([identity, "-u"], **common)
+                  accepted = False
+                  if probe_mode == "systemd_service_delegate":
+                      completed = subprocess.run(probe, capture_output=True, text=True)
+                      accepted = owned_delegate_identity_ok(
+                          completed.returncode, completed.stdout, common["euid"]
+                      )
+                  if not accepted:
+                      command, mode = owned_scope_command(
+                          plain, **{**common, "probe_accepted": False}
+                      )
+              record = workspace / "output/telemetry-renderer/owned-launch-scope.json"
+              record.write_text(json.dumps({
+                  "launch": mode,
+                  "requested": True,
+                  "resource_acceptance": False,
+                  "installed_acceptance": False,
+                  "scope": "linux-compiled-source-x64",
+              }, sort_keys=True) + "\n", encoding="utf-8")
+          raise SystemExit(subprocess.run(command).returncode)
+          PY
       - name: Summarize retained measurements
         if: ${{ !inputs.review_journey }}
         run: uv run --no-sync python -m deploy.report_telemetry_renderer output/telemetry-renderer/workload --output output/telemetry-renderer/summary.json

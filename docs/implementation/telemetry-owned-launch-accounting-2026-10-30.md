@@ -28,9 +28,12 @@ coverage, and cleanup. Cold start is the first observed absolute working set,
 not a subtracted delta. The report's qualification is `unqualified`.
 
 The installed launcher `studio/electron/scripts/smoke-installed-hosting.mjs`
-does not call this adapter. `installed_journey_boundary()` is the next call:
-one owned launch around the existing 128-cycle workload and one fixed
-counterbalance. No extra launches and no retries.
+does not call this adapter. The compiled-source probe does, and only for the
+existing six-launch counterbalance (`--comparison` or `--attribution`). It
+calls `start_owned_launch` on `probe-telemetry-renderer.mjs` before that
+controller runs. The 128 cycles, the unavailable/opted-out/enabled order, and
+the one reversed repeat stay as they are. Review and the three-case journey
+are unchanged. This is a Linux source-app bridge, not installed acceptance.
 
 ## Platform accounting
 
@@ -103,11 +106,35 @@ high-water for the tree. Coverage stays `partial`. `cpu_lifetime_complete`
 and `cpu_includes_exited_descendants` stay false. Partial coverage is the
 limit of this counter. It is not a zero CPU result.
 
-The next measurement boundary is unchanged: one owned launch around the
-existing 128-cycle workload and one fixed counterbalance, after Astra's
-hosted self-check on the six native targets. This note does not attach that
-workload. The allowance stays 8,388,608 bytes and 0.5% of one core, both
-UNACCEPTED. Production collection stays off.
+Native workflow run 41009326091 on source `23835d6f1a0f085f82ef9bf68ebfab263eee6f33`
+passed all six targets. Windows and Linux lifetime CPU were complete. macOS
+descendant CPU stayed incomplete. Linux `memory.peak` was missing. Windows ARM
+had two sampled identities missing. None of those receipts accept app overhead.
+
+The next hosted run is one manual dispatch of
+`.github/workflows/telemetry-renderer.yml` with comparison and without
+attribution, phase-memory, or review. That job is Linux compiled source on
+`ubuntu-22.04` only. When that mode is selected, a short `id -u` child must
+print the runner uid. The journey then runs as one transient service with
+`Delegate=yes`, `User=` and `Group=` set to that runner, `WorkingDirectory`
+set to the workspace, and only the tool/home environment (`PATH`, `HOME`,
+and the other listed names). `sudo -n` does not preserve the caller's
+environment. A root scope is not used: it would run PostgreSQL and git as
+root and drop the runner `PATH`. The native self-check remains a scope
+because that command is stdlib and does not start this fixture. The service
+does not write host `cgroup.subtree_control`. If the probe does not show
+the runner uid, the journey runs once as the runner without the service and
+the adapter's unsupported result stays unqualified. `Delegate=yes` with
+`User=` makes that service's cgroup writable by the runner. The controller
+is moved into the disposable child before exec, so its children stay there
+and exited processes remain in the cgroup CPU counter. The builder, the
+frontend server, and the Python observer stay outside that child. The
+adapter sampler still stops at 120 seconds. Lifetime and phase CPU are read
+from the counter at each mark and at finish. RSS samples may truncate. The
+cap is not raised. The probe still waits up to 240 seconds, then `finish()`
+terminates the owned group once. `--collect` unloads the transient unit
+after it exits. The allowance stays 8,388,608 bytes and 0.5% of one core,
+both UNACCEPTED. Production collection stays off. Old results are not rescored.
 
 Any platform that cannot account for the whole lifetime reports `partial` or
 `unsupported` and stays unqualified.
@@ -175,7 +202,10 @@ pass.
   documents `ru_utime` and `ru_stime` as float seconds.
 - POSIX `kill`: a pid less than -1 signals the process group whose id is
   the absolute value. The group remains until its members are gone.
-- systemd `Delegate=`: a scope with delegation is the cut at which the unit
-  may create child cgroups. The service manager keeps the cgroup tree at
-  and above that unit. `Delegate=yes` does not by itself write the host
-  `cgroup.subtree_control`.
+- systemd `Delegate=` and cgroup delegation: delegation is the cut at which
+  the unit may create child cgroups. For a service with `User=`, systemd
+  chowns that subtree to the user. `Delegate=yes` does not by itself write
+  the host `cgroup.subtree_control`. `systemd-run` without `--scope` starts
+  a transient service in a clean environment, so the caller must set
+  `User=`, `Group=`, `WorkingDirectory=`, and the variables it needs.
+  `--collect` unloads that unit after it exits.

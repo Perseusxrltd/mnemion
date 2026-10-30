@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from mnemion.product_telemetry.wire_v3 import PACKET_BYTES
 
@@ -422,6 +423,271 @@ def allocation_windows(result):
     return rows
 
 
+_OWNED_PHASE = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
+_OWNED_ACTIVE = {
+    "measuring",
+    "before-workspace-connect",
+    "workspace-connected",
+    "first-memory-cycle-and-delivery",
+}
+_OWNED_INACTIVE = {"starting", "finished", "closed"}
+# A transient service gets a clean environment. These are the runner
+# tool and home values the fixture needs. Tokens and the rest of the
+# job environment are not copied.
+_SERVICE_ENV = (
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "LOGNAME",
+    "PATH",
+    "TEMP",
+    "TMP",
+    "TMPDIR",
+    "USER",
+    "XDG_CACHE_HOME",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_RUNTIME_DIR",
+)
+
+
+class OwnedPhaseCursor:
+    def __init__(self):
+        self.seen = None
+        self.completed = 0
+
+
+def owned_counterbalance(attribution: bool, comparison: bool) -> bool:
+    """The existing six-launch order. Review and the three-case journey stay outside it."""
+    return bool(attribution or comparison) and not (attribution and comparison)
+
+
+def owned_controller_argv(application: Path) -> list[str]:
+    """The compiled-source controller. Not a new benchmark and not the installed app."""
+    return ["node", str(application / "probe-telemetry-renderer.mjs")]
+
+
+def owned_phase_from_marker(phase: object, completed: int) -> tuple[str, bool, int] | None:
+    """One phase already written to monitor.json.
+
+    Startup and close stay inactive. The measuring interval, including the
+    existing connection work and the 128 memory cycles, stays active. An
+    unknown label is ignored. A missing cycle count is not filled in.
+    """
+    if type(phase) is not str or type(completed) is not int or completed < 0:
+        return None
+    name = phase.replace("_", "-")
+    if not _OWNED_PHASE.fullmatch(name):
+        return None
+    count = completed
+    if name in _OWNED_INACTIVE:
+        active = False
+    elif name in _OWNED_ACTIVE:
+        active = True
+        if name == "first-memory-cycle-and-delivery":
+            count = 1
+    elif name.endswith("-memory-cycles"):
+        head = name[: -len("-memory-cycles")]
+        if not head.isdigit():
+            return None
+        count = int(head)
+        if not 0 < count <= 128:
+            return None
+        active = True
+    else:
+        return None
+    return name, active, count
+
+
+def apply_owned_marker(launch, marker: object, cursor: OwnedPhaseCursor) -> None:
+    if type(marker) is not dict:
+        return
+    decided = owned_phase_from_marker(marker.get("phase"), cursor.completed)
+    if decided is None or decided[0] == cursor.seen:
+        return
+    name, active, count = decided
+    cursor.seen = name
+    cursor.completed = count
+    launch.mark_phase(name, canonical_operations_completed=count, active=active)
+
+
+def read_owned_marker(root: Path) -> dict | None:
+    try:
+        value = json.loads((root / "monitor.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    return value if type(value) is dict else None
+
+
+def owned_unsupported_report(code: str) -> dict:
+    """No child was started. Missing counters stay null."""
+    return {
+        "qualification": "unqualified",
+        "resource_acceptance": False,
+        "honest_unsupported": code,
+        "launched": False,
+        "lifetime_cpu_microseconds": None,
+        "active_cpu_microseconds": None,
+        "active_wall_microseconds": None,
+        "identities_missing": None,
+        "missing_recorded_as_zero": False,
+        "coverage": {"status": "unsupported", "cpu_lifetime_complete": None},
+        "unavailable_counters": ["lifetime_cpu_microseconds", "active_cpu_microseconds"],
+        "cleanup": {"ok": None, "failure": None, "retried": False},
+        "phases": [],
+    }
+
+
+def _absolute_tool(value: object) -> bool:
+    return type(value) is str and value.startswith("/") and "\x00" not in value
+
+
+def _service_text(value: object) -> bool:
+    """Reject expansions and line breaks. A normal path or PATH stays."""
+    return (
+        type(value) is str
+        and value != ""
+        and not any(character in value for character in "\n\r\x00%$`")
+    )
+
+
+def owned_delegate_identity_ok(returncode: object, stdout: object, euid: object) -> bool:
+    """The harmless probe printed the original non-root uid and nothing else."""
+    if type(returncode) is not int or type(stdout) is not str or type(euid) is not int:
+        return False
+    if returncode != 0 or euid <= 0:
+        return False
+    return stdout.strip() == str(euid)
+
+
+def owned_scope_command(
+    command: list[str],
+    *,
+    requested: bool,
+    systemd: str | None,
+    sudo: str | None,
+    euid: int,
+    egid: int,
+    cwd: str,
+    environ: dict,
+    probe_accepted: bool | None,
+) -> tuple[list[str], str]:
+    """Wrap a counterbalance in one transient service, or leave it unchanged.
+
+    The service keeps the caller's uid, gid, working directory, and tool/home
+    environment. It is not a root scope. Nothing here writes a host cgroup
+    controller. A rejected probe returns the original command.
+    """
+    if not requested:
+        return list(command), "not_requested"
+    if not _absolute_tool(systemd):
+        return list(command), "direct_systemd_missing"
+    if type(euid) is not int or type(egid) is not int or euid <= 0 or egid <= 0:
+        return list(command), "direct_non_root_required"
+    if not _absolute_tool(sudo):
+        return list(command), "direct_sudo_missing"
+    if not _service_text(cwd) or not cwd.startswith("/"):
+        return list(command), "direct_identity_unavailable"
+    if type(environ) is not dict:
+        return list(command), "direct_identity_unavailable"
+    selected = []
+    for name in _SERVICE_ENV:
+        if name not in environ:
+            continue
+        value = environ[name]
+        if not _service_text(value):
+            return list(command), "direct_identity_unavailable"
+        selected.append(f"--setenv={name}={value}")
+    if "PATH" not in environ or "HOME" not in environ:
+        return list(command), "direct_identity_unavailable"
+    if not command or not _absolute_tool(command[0]):
+        return list(command), "direct_tool_path_missing"
+    if probe_accepted is False:
+        return list(command), "direct_service_unavailable"
+    prefix = [
+        sudo,
+        "-n",
+        systemd,
+        "--quiet",
+        "--collect",
+        "--pipe",
+        "--service-type=exec",
+        "-p",
+        "Delegate=yes",
+        "-p",
+        f"User={euid}",
+        "-p",
+        f"Group={egid}",
+        "-p",
+        f"WorkingDirectory={cwd}",
+        *selected,
+        "--",
+    ]
+    return prefix + list(command), "systemd_service_delegate"
+
+
+def retain_owned_launch(report: object) -> dict:
+    """Copy adapter fields. A null stays null. Partial coverage is not a pass."""
+    if type(report) is not dict:
+        return {
+            "present": False,
+            "resource_acceptance": False,
+            "qualification": "unqualified",
+            "missing_recorded_as_zero": False,
+        }
+    coverage = report.get("coverage") if type(report.get("coverage")) is dict else {}
+    cleanup = report.get("cleanup") if type(report.get("cleanup")) is dict else None
+    phases = []
+    for phase in report.get("phases") or []:
+        if type(phase) is not dict or type(phase.get("name")) is not str:
+            continue
+        cpu = phase.get("cpu_microseconds")
+        phases.append(
+            {
+                "name": phase["name"],
+                "active": phase.get("active") if type(phase.get("active")) is bool else None,
+                "cpu_microseconds": cpu if type(cpu) is int else None,
+            }
+        )
+    unavailable = report.get("unavailable_counters")
+    if type(unavailable) is not list or any(type(name) is not str for name in unavailable):
+        unavailable = None
+    lifetime = report.get("lifetime_cpu_microseconds")
+    active = report.get("active_cpu_microseconds")
+    wall = report.get("active_wall_microseconds")
+    missing = report.get("identities_missing")
+    complete = coverage.get("cpu_lifetime_complete")
+    cleanup_ok = None if cleanup is None else cleanup.get("ok")
+    if type(cleanup_ok) is not bool:
+        cleanup_ok = None
+    failure = None if cleanup is None else cleanup.get("failure")
+    if failure is not None and type(failure) is not str:
+        failure = None
+    observer = report.get("observer_in_measured_group")
+    return {
+        "present": True,
+        "launched": report.get("launched") is not False and not report.get("honest_unsupported"),
+        "honest_unsupported": report.get("honest_unsupported")
+        if type(report.get("honest_unsupported")) is str
+        else None,
+        "resource_acceptance": False,
+        "qualification": "unqualified",
+        "coverage_status": coverage.get("status") if type(coverage.get("status")) is str else None,
+        "cpu_lifetime_complete": complete if type(complete) is bool else None,
+        "lifetime_cpu_microseconds": lifetime if type(lifetime) is int else None,
+        "active_cpu_microseconds": active if type(active) is int else None,
+        "active_wall_microseconds": wall if type(wall) is int else None,
+        "identities_missing": missing if type(missing) is int else None,
+        "unavailable_counters": unavailable,
+        "observer_in_measured_group": observer if type(observer) is bool else None,
+        "cleanup_ok": cleanup_ok,
+        "cleanup_failure": failure,
+        "phases": phases,
+        "missing_recorded_as_zero": False,
+    }
+
+
 def summarize(directory: Path) -> dict:
     receipt = json.loads((directory / "receipt.json").read_text())
     wire = describe_diagnostic_wire(receipt)
@@ -512,6 +778,13 @@ def summarize(directory: Path) -> dict:
                 }
             )
         external = json.loads((directory / f"{result['variant']}-processes.json").read_text())
+        owned_path = directory / f"{result['variant']}-owned-launch.json"
+        owned_report = None
+        if owned_path.is_file():
+            try:
+                owned_report = json.loads(owned_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                owned_report = None
         observations.append(
             {
                 "variant": result["variant"],
@@ -536,6 +809,7 @@ def summarize(directory: Path) -> dict:
                         for row in sample["processes"]
                     }
                 ),
+                "owned_launch": retain_owned_launch(owned_report),
                 "first_activation_windows": allocation_windows(result),
                 "attribution_calls": result.get("allocation", {}).get("calls", {}),
             }
@@ -635,6 +909,15 @@ def summarize(directory: Path) -> dict:
             "First-call windows can overlap other work, and attribution instrumentation changes allocation and timing. Profiled CPU is not qualification.",
             "Electron CPU comparisons cover processes present at both boundaries; external helpers are sampled separately.",
             "100 ms external sampling can miss short-lived children; negative differences are variance, not savings.",
+            *(
+                [
+                    "Owned-launch figures are the adapter's group counters for the compiled source controller. Null stays null. Partial coverage is not a zero or a pass. They do not replace Electron sample CPU and they are not app-overhead acceptance."
+                ]
+                if any(
+                    row.get("owned_launch", {}).get("present") is True for row in observations
+                )
+                else []
+            ),
             *(
                 [
                     "Phase-memory counters are an opt-in main-process diagnostic on a comparison run. Null is unavailable, not zero. They do not replace working-set RSS and do not pass the 2 MiB or 0.5 percent gates."

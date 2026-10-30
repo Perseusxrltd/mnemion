@@ -31,7 +31,7 @@ cgroup memory totals are not substituted for RSS.
 The native group query is bounded to 64 entries and rejects a full buffer as
 incomplete. PID reuse does not replace the original launch identity or authorize
 signaling another group. Native receipts are required before attaching this
-adapter to the existing 128-cycle installed workload and its fixed counterbalance.
+adapter to an app workload and its fixed counterbalance.
 No resource-budget pass follows from these source checks.
 
 ## First native run
@@ -55,3 +55,18 @@ They qualify attaching the adapter to the existing 128-cycle workload and fixed
 counterbalance, using equivalent ownership capability. They do not qualify app
 overhead, the 8 MiB/0.5% budgets, or production collection. The next compiled
 Linux workload also cannot establish installed acceptance on the other targets.
+
+## Compiled-workload attachment
+
+Grok candidate `7751354e` attaches the adapter to the existing Linux compiled
+128-cycle workload and six-launch counterbalance. A transient service runs with
+the runner's uid, gid, working directory and selected tool/home environment;
+its identity probe must return that runner uid. If this capability is unavailable,
+the original command runs once and accounting remains explicitly unqualified.
+The observer stays outside the controller's owned child group. Phase boundaries
+are sampled and descriptive; lifetime CPU is retained separately.
+
+Astra reviewed the source for this one measurement. Five focused source cases
+passed before the execution-identity correction; only the changed identity case
+was repeated and passed. The installed launcher is not attached by this change,
+and no compiled-workload result or resource-budget pass is claimed yet.

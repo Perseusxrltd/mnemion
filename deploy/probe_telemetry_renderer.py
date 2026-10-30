@@ -24,6 +24,10 @@ import time
 import psutil
 import uvicorn
 
+from deploy.owned_launch_accounting import (
+    OwnedLaunchUnsupported,
+    start_owned_launch,
+)
 from mnemion.product_telemetry import policy
 from mnemion.product_telemetry.collector_v3 import CollectorV3
 from mnemion.product_telemetry.wire_v3 import PACKET_BYTES, WIRE
@@ -32,7 +36,14 @@ from tests.test_product_telemetry_transport import certificates
 from .telemetry_memory_fixture import memory_workspace
 from .report_telemetry_renderer import (
     V3_WIRE_PATH,
+    OwnedPhaseCursor,
     absorb_reviewed_chunk,
+    apply_owned_marker,
+    owned_controller_argv,
+    owned_counterbalance,
+    owned_unsupported_report,
+    read_owned_marker,
+    retain_owned_launch,
     retain_reviewed_packet,
     verify_phase_memory,
     verify_setup_controls,
@@ -409,7 +420,9 @@ async def run(
                                     MNEMION_PROBE_ELECTRON=str(electron),
                                     VITE_DEV_PORT=str(port),
                                 )
-                                builder = frontend = process = None
+                                builder = frontend = process = owned = None
+                                owned_cursor = OwnedPhaseCursor()
+                                owned_report = None
                                 done = asyncio.Event()
                                 observer = asyncio.create_task(
                                     observe_tree(root, done, attribution=attribution)
@@ -483,28 +496,112 @@ async def run(
                                                     break
                                                 except OSError:
                                                     await asyncio.sleep(0.05)
-                                        with (output / f"{label}.log").open("x") as app_log:
-                                            process = await asyncio.create_subprocess_exec(
-                                                "node",
-                                                str(app / "probe-telemetry-renderer.mjs"),
-                                                cwd=app,
-                                                env=environment,
-                                                stdout=app_log,
-                                                stderr=asyncio.subprocess.STDOUT,
-                                            )
-                                            await asyncio.wait_for(process.wait(), 240)
-                                            if process.returncode:
-                                                raise RuntimeError(
-                                                    f"Inspect retained {label}.log; fixture failed"
+                                        timed_out = False
+                                        owned_returncode = None
+                                        if owned_counterbalance(attribution, comparison):
+                                            # The adapter keeps the controller's
+                                            # own stdout. The failure file and
+                                            # the owned report stay on disk.
+                                            with (output / f"{label}.log").open(
+                                                "x", encoding="utf-8"
+                                            ) as app_log:
+                                                app_log.write(
+                                                    "Owned controller stdout is discarded by the adapter. "
+                                                    f"The retained report is {label}-owned-launch.json.\n"
                                                 )
+                                            try:
+                                                owned = start_owned_launch(
+                                                    owned_controller_argv(app),
+                                                    cwd=str(app),
+                                                    env=environment,
+                                                    bound_seconds=120,
+                                                    sample_seconds=0.05,
+                                                )
+                                            except OwnedLaunchUnsupported as error:
+                                                write_json(
+                                                    output / f"{label}-owned-launch.json",
+                                                    owned_unsupported_report(error.code),
+                                                )
+                                                raise RuntimeError(error.code) from None
+                                            deadline = time.monotonic() + 240
+                                            while time.monotonic() < deadline:
+                                                apply_owned_marker(
+                                                    owned,
+                                                    read_owned_marker(root),
+                                                    owned_cursor,
+                                                )
+                                                if await asyncio.to_thread(owned.wait_root, 0.05):
+                                                    owned_returncode = (
+                                                        owned.backend.process.returncode
+                                                    )
+                                                    break
+                                            else:
+                                                timed_out = True
+                                            # The last marker can land while the
+                                            # root is exiting. Read it once more
+                                            # so finish closes on that boundary.
+                                            apply_owned_marker(
+                                                owned,
+                                                read_owned_marker(root),
+                                                owned_cursor,
+                                            )
+                                        else:
+                                            with (output / f"{label}.log").open("x") as app_log:
+                                                process = await asyncio.create_subprocess_exec(
+                                                    "node",
+                                                    str(app / "probe-telemetry-renderer.mjs"),
+                                                    cwd=app,
+                                                    env=environment,
+                                                    stdout=app_log,
+                                                    stderr=asyncio.subprocess.STDOUT,
+                                                )
+                                                await asyncio.wait_for(process.wait(), 240)
+                                                if process.returncode:
+                                                    raise RuntimeError(
+                                                        f"Inspect retained {label}.log; fixture failed"
+                                                    )
+                                        if timed_out:
+                                            raise TimeoutError("owned controller timed out")
+                                        if owned is not None and owned_returncode:
+                                            raise RuntimeError(
+                                                f"Inspect retained {label}.log; fixture failed"
+                                            )
                                 finally:
-                                    await stop(process)
+                                    if owned is not None:
+                                        try:
+                                            owned_report = await asyncio.to_thread(
+                                                owned.finish,
+                                                canonical_operations_completed=owned_cursor.completed,
+                                            )
+                                        except Exception as error:
+                                            code = getattr(error, "code", None) or "finish_failed"
+                                            owned_report = {
+                                                "qualification": "unqualified",
+                                                "resource_acceptance": False,
+                                                "launched": True,
+                                                "lifetime_cpu_microseconds": None,
+                                                "active_cpu_microseconds": None,
+                                                "missing_recorded_as_zero": False,
+                                                "cleanup": {
+                                                    "ok": False,
+                                                    "failure": str(code),
+                                                    "retried": False,
+                                                },
+                                            }
+                                        write_json(
+                                            output / f"{label}-owned-launch.json",
+                                            owned_report,
+                                        )
+                                    else:
+                                        await stop(process)
                                     await stop(frontend)
                                     await stop(builder)
                                     done.set()
                                     samples = await observer
                                     write_json(output / f"{label}-processes.json", samples)
                                 result = json.loads((output / f"{label}.json").read_text())
+                                if owned_report is not None:
+                                    result["owned_launch"] = retain_owned_launch(owned_report)
                                 result["frontend"] = compiled["frontend"]
                                 result["shared_app_policy_and_client_modules"] = compiled[
                                     "shared_app_policy_and_client_modules"
@@ -655,6 +752,11 @@ async def run(
             "setup_controls_required": not review_journey,
             "declared_case_order": [row[0] for row in cases],
             "resource_limits": "Observed RSS sums double-count shared pages. Short-lived helpers between samples can be missed; CPU totals are sampled lower bounds. The declared runs are descriptive, not stable overhead or installed-target acceptance. Attribution instruments first activation and can perturb allocations and timing; profiled CPU is not qualification."
+            + (
+                " Counterbalance launches own the controller before it runs. The adapter report keeps nulls and partial coverage, does not subtract other process CPU, and is not app-overhead acceptance."
+                if owned_counterbalance(attribution, comparison)
+                else ""
+            )
             + (
                 " Phase-memory counters are an opt-in main-process diagnostic. Null is unavailable, not zero. They do not replace working-set RSS and do not pass a resource gate."
                 if phase_memory
