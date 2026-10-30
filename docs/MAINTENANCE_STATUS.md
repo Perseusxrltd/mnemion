@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T16:38:30+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T16:43:43+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,15 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41087208753](https://github.com/Perseusxrltd/mnemion/actions/runs/41087208753) |
+| ci\.yml | main | success | [Run 41087208753](https://github.com/Perseusxrltd/mnemion/actions/runs/41087208753) |
 | database-cache\.yml | main | success | [Run 41043904215](https://github.com/Perseusxrltd/mnemion/actions/runs/41043904215) |
 | public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
 | website-release\.yml | main | success | [Run 41087208725](https://github.com/Perseusxrltd/mnemion/actions/runs/41087208725) |
-| website-release\.yml | v4\.46\.57 | success | [Run 41010367987](https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987) |
-
-## Active jobs
-
-[Run 41087208753](https://github.com/Perseusxrltd/mnemion/actions/runs/41087208753): 11/12 jobs completed; 11 succeeded.
-
-- supervision \(macos-26\): in\_progress — Install the native service without building on a managed host.
-
