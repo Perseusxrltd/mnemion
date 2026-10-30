@@ -183,10 +183,16 @@ def run_self_check() -> dict:
                 "cleanup_failure_recorded": cleanup["failure"] if sys.platform == "win32" else signal_failure,
             }
         if sys.platform == "darwin":
-            if work["coverage"]["status"] != "partial" or work["coverage"]["cpu_lifetime_complete"] is not False:
+            coverage = work["coverage"]
+            if coverage["status"] != "partial" or coverage["cpu_lifetime_complete"] is not False:
                 raise AssertionError("darwin was reported as complete lifetime accounting")
-            if type(work["lifetime_cpu_microseconds"]) is not int or work["lifetime_cpu_microseconds"] <= 0:
-                raise AssertionError("darwin direct-child rusage was missing")
+            if coverage["cpu_includes_exited_descendants"] is not False:
+                raise AssertionError("darwin descendant cpu was reported complete")
+            waited = (work.get("kernel") or {}).get("wait4_direct_child_cpu_microseconds")
+            if type(waited) is not int or waited <= 0:
+                raise AssertionError("darwin wait4 resource result was missing")
+            if work["lifetime_cpu_microseconds"] != waited:
+                raise AssertionError("darwin lifetime cpu did not use the waited resource result")
         else:
             _assert_retained_cpu(work)
             if sys.platform == "win32":

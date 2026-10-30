@@ -1,0 +1,145 @@
+name: Owned-launch resource lifecycle
+run-name: Owned launch ${{ inputs.source }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact reviewed source commit (40 hex characters)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telemetry-owned-launch-${{ inputs.source }}
+  cancel-in-progress: false
+
+# One self-check per native target. No installer, model download, or benchmark.
+# A hosted Linux job may use one disposable systemd scope with Delegate=yes.
+# Do not write the host cgroup.subtree_control.
+jobs:
+  owned-launch:
+    name: ${{ matrix.target }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-2022, target: windows, arch: x64, python_arch: x64 }
+          - { os: windows-11-arm, target: windows, arch: arm64, python_arch: arm64 }
+          - { os: macos-15-intel, target: macos, arch: x64, python_arch: x64 }
+          - { os: macos-26, target: macos, arch: arm64, python_arch: arm64 }
+          - { os: ubuntu-22.04, target: linux, arch: x64, python_arch: x64 }
+          - { os: ubuntu-22.04-arm, target: linux, arch: arm64, python_arch: arm64 }
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.python_arch }}
+      - name: Run the owned-launch self-check once
+        shell: python {0}
+        env:
+          REVIEWED_SOURCE: ${{ inputs.source }}
+        run: |
+          import json, os, re, shutil, subprocess, sys
+          from pathlib import Path
+
+          out = Path("output/owned-launch")
+          out.mkdir(parents=True, exist_ok=True)
+          receipt = out / "receipt.json"
+          launch_path = out / "launch.json"
+
+          def write_receipt(payload):
+              receipt.write_text(json.dumps(payload, sort_keys=True) + "\n", encoding="utf-8")
+
+          def fail(detail):
+              if not receipt.exists():
+                  write_receipt({
+                      "self_check": "owned_launch_lifecycle",
+                      "held": False,
+                      "failure": str(detail)[:120],
+                  })
+              raise SystemExit(1)
+
+          source = os.environ["REVIEWED_SOURCE"]
+          if re.fullmatch(r"[0-9a-f]{40}", source) is None:
+              fail("source_not_exact")
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          if head != source:
+              fail("head_mismatch")
+
+          command = [sys.executable, "-m", "deploy.owned_launch_self_check"]
+          mode = "direct"
+          if sys.platform == "linux":
+              systemd = shutil.which("systemd-run")
+              sudo = shutil.which("sudo")
+              if systemd:
+                  probe = [systemd, "--scope", "--collect", "-p", "Delegate=yes", "--", "true"]
+                  if hasattr(os, "geteuid") and os.geteuid() != 0 and sudo:
+                      probe = [sudo, "-n", *probe]
+                  probed = subprocess.run(probe, capture_output=True, text=True)
+                  if probed.returncode == 0:
+                      command = probe[:-1] + command
+                      mode = "systemd_scope_delegate"
+                  else:
+                      mode = "direct_scope_unavailable"
+              else:
+                  mode = "direct_systemd_missing"
+
+          completed = subprocess.run(command, capture_output=True, text=True)
+          json_lines = [line.strip() for line in completed.stdout.splitlines() if line.strip().startswith("{")]
+          stdout = json_lines[-1] if json_lines else ""
+          if completed.stderr.strip():
+              (out / "stderr.txt").write_text(completed.stderr, encoding="utf-8")
+          if stdout.startswith("{"):
+              receipt.write_text(stdout + "\n", encoding="utf-8")
+              try:
+                  data = json.loads(stdout)
+              except json.JSONDecodeError:
+                  data = None
+          else:
+              data = None
+              write_receipt({
+                  "self_check": "owned_launch_lifecycle",
+                  "held": False,
+                  "failure": "no_json_receipt",
+                  "returncode": completed.returncode,
+              })
+          launch_path.write_text(json.dumps({
+              "launch": mode,
+              "returncode": completed.returncode,
+              "source": source,
+          }, sort_keys=True) + "\n", encoding="utf-8")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary and data is not None:
+              line = data.get("honest_unsupported") or (
+                  "partial" if data.get("coverage_status") == "partial" else "held" if data.get("held") else "failed"
+              )
+              with open(summary, "a", encoding="utf-8") as handle:
+                  handle.write("owned-launch " + mode + ": " + str(line) + "\n")
+          if data is None:
+              raise SystemExit(completed.returncode or 1)
+          if data.get("resource_acceptance") is not False:
+              raise SystemExit(1)
+          if data.get("platform") == "darwin":
+              waited = data.get("lifetime_cpu_microseconds")
+              if data.get("coverage_status") != "partial" or data.get("cpu_lifetime_complete") is not False:
+                  raise SystemExit(1)
+              if type(waited) is not int or waited <= 0:
+                  raise SystemExit(1)
+          if completed.returncode != 0 or data.get("held") is not True:
+              raise SystemExit(completed.returncode or 1)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: owned-launch-${{ matrix.target }}-${{ matrix.arch }}
+          retention-days: 14
+          if-no-files-found: error
+          path: output/owned-launch/*

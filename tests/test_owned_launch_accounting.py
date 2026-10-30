@@ -3,7 +3,9 @@
 The lifecycle case is the adapter's own self-check. It is not resource acceptance.
 """
 
+import ctypes
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -104,6 +106,213 @@ def test_ledger_does_not_reuse_a_pid_identity_or_invent_rss():
     ledger.observe(15, 200, current=None, high_water=None)
     assert [row["identity"] for row in ledger.public()] == ["15:100", "15:200"]
     assert ledger.public()[1]["peak_working_set_bytes"] is None
+
+
+class _FloatUsage:
+    def __init__(self, user, system):
+        self.ru_utime = user
+        self.ru_stime = system
+
+
+class _Timeval:
+    def __init__(self, sec, usec):
+        self.tv_sec = sec
+        self.tv_usec = usec
+
+
+class _TimevalUsage:
+    def __init__(self):
+        self.ru_utime = _Timeval(4, 5)
+        self.ru_stime = _Timeval(6, 7)
+
+
+class _RootProcess:
+    def __init__(self, pid):
+        self.pid = pid
+        self.returncode = None
+        self.polls = 0
+
+    def poll(self):
+        self.polls += 1
+        self.returncode = 0
+        return self.returncode
+
+
+def _patch_darwin_wait(monkeypatch, scripted):
+    import deploy.owned_launch_accounting as accounting
+
+    pending = list(scripted)
+    seen = []
+
+    def wait4(pid, options):
+        seen.append((pid, options))
+        if not pending:
+            raise AssertionError("wait4 called after the scripted root exit")
+        return pending.pop(0)
+
+    monkeypatch.setattr(accounting.os, "wait4", wait4, raising=False)
+    monkeypatch.setattr(accounting.os, "WNOHANG", 1, raising=False)
+    return seen
+
+
+def test_darwin_wait4_is_the_only_reaper_and_reads_float_seconds(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    root = _RootProcess(4242)
+    fat = {"user": 9_000_000_000, "system": 0, "child_user": 0, "child_system": 0, "resident": 10, "start": 111}
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: fat)
+    seen = _patch_darwin_wait(monkeypatch, [
+        (4242, 0x7F, _FloatUsage(9.0, 9.0)),
+        (0, 0, _FloatUsage(9.0, 9.0)),
+        (4242, 3 << 8, _FloatUsage(0.5, 0.25)),
+    ])
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = root
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._timebase = (1, 1)
+    assert backend.still_active() is True
+    assert root.returncode is None
+    assert backend._waited is None
+    assert backend.wait_root(1) is True
+    assert root.polls == 0
+    assert root.returncode == 3
+    assert seen == [(4242, 1), (4242, 1), (4242, 1)]
+    snapshot = backend.snapshot()
+    assert snapshot["cpu_microseconds"] == 750_000
+    assert snapshot["kernel"]["wait4_direct_child_cpu_microseconds"] == 750_000
+    assert snapshot["cpu_complete"] is False
+    assert backend.coverage(snapshot, [])["status"] == "partial"
+    assert backend.coverage(snapshot, [])["cpu_lifetime_complete"] is False
+    assert backend.coverage(snapshot, [])["cpu_includes_exited_descendants"] is False
+
+    signaled = _RootProcess(4242)
+    signaled_seen = _patch_darwin_wait(monkeypatch, [(4242, 9, _FloatUsage(0.125, 0.125))])
+    signaled_backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    signaled_backend.process = signaled
+    signaled_backend.root_creation = 111
+    signaled_backend._libproc = object()
+    signaled_backend._timebase = (1, 1)
+    assert signaled_backend.wait_root(1) is True
+    assert signaled.polls == 0
+    assert signaled.returncode == -9
+    assert signaled_backend.snapshot()["cpu_microseconds"] == 250_000
+    assert signaled_seen == [(4242, 1)]
+
+    missed = _RootProcess(4242)
+    _patch_darwin_wait(monkeypatch, [(4242, 1 << 8, _TimevalUsage())])
+    missed_backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    missed_backend.process = missed
+    missed_backend.root_creation = 111
+    missed_backend._libproc = object()
+    missed_backend._timebase = (1, 1)
+    assert missed_backend.wait_root(1) is True
+    assert missed.polls == 0
+    assert missed.returncode == 1
+    missed_snapshot = missed_backend.snapshot()
+    assert missed_snapshot["cpu_microseconds"] is None
+    assert missed_snapshot["kernel"]["wait4_direct_child_cpu_microseconds"] is None
+    assert missed_snapshot["cpu_microseconds"] != 9_000_000
+
+
+def test_darwin_exited_root_reports_surviving_group_members(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    kills = []
+    monkeypatch.setattr(accounting.os, "kill", lambda pid, sig: kills.append((pid, sig)))
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: None)
+    monkeypatch.setattr(
+        accounting, "_darwin_group_pids",
+        lambda _library, pgid: [os.getpid(), 5555] if pgid == 4242 else None,
+    )
+    _patch_darwin_wait(monkeypatch, [(4242, 0, _FloatUsage(0.5, 0.25))])
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._timebase = (1, 1)
+    backend.sample = lambda _ledger: None
+    launch = accounting.OwnedLaunch(backend, bound_seconds=5, sample_seconds=0.02)
+    report = launch.finish(canonical_operations_completed=0)
+    assert backend.process.polls == 0
+    assert kills == [(-4242, 9)]
+    assert report["cleanup"]["ok"] is False
+    assert report["cleanup"]["failure"] == "descendants_survived"
+    assert report["cleanup"]["retried"] is False
+    assert report["coverage"]["status"] == "partial"
+    assert report["coverage"]["cpu_lifetime_complete"] is False
+    assert report["coverage"]["cpu_includes_exited_descendants"] is False
+    assert report["kernel"]["wait4_direct_child_cpu_microseconds"] == 750_000
+    assert report["lifetime_cpu_microseconds"] == 750_000
+    assert report["resource_acceptance"] is False
+    assert report["kernel"]["includes_only_reaped_descendants"] is True
+
+
+def test_darwin_reused_leader_is_not_signaled(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    kills = []
+    monkeypatch.setattr(accounting.os, "kill", lambda pid, sig: kills.append((pid, sig)))
+
+    def rusage(_library, pid):
+        if pid == 4242:
+            return {"user": 1, "system": 1, "child_user": 0, "child_system": 0, "resident": 1, "start": 999}
+        return None
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", rusage)
+    monkeypatch.setattr(accounting, "_darwin_group_pids", lambda _library, _pgid: [4242, 5555])
+    _patch_darwin_wait(monkeypatch, [(4242, 0, _FloatUsage(0.5, 0.25))])
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._timebase = (1, 1)
+    backend.sample = lambda _ledger: None
+    launch = accounting.OwnedLaunch(backend, bound_seconds=5, sample_seconds=0.02)
+    report = launch.finish(canonical_operations_completed=0)
+    assert kills == []
+    assert backend.process.polls == 0
+    assert report["cleanup"]["ok"] is False
+    assert report["cleanup"]["failure"] == "pid_reused"
+    assert report["cleanup"]["retried"] is False
+    assert report["coverage"]["cpu_lifetime_complete"] is False
+    assert report["lifetime_cpu_microseconds"] == 750_000
+
+
+def test_darwin_group_list_reads_only_that_process_group():
+    import deploy.owned_launch_accounting as accounting
+
+    calls = []
+
+    class Library:
+        def proc_listpids(self, kind, pgid, buf, size):
+            calls.append((kind, pgid, size))
+            if size == 0:
+                return ctypes.sizeof(ctypes.c_int) * 3
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 4242
+            values[1] = 0
+            values[2] = 5555
+            return ctypes.sizeof(ctypes.c_int) * 3
+
+    assert accounting._darwin_group_pids(Library(), 4242) == [4242, 5555]
+    assert calls == [(2, 4242, 0), (2, 4242, ctypes.sizeof(ctypes.c_int) * 3)]
+
+    class Huge:
+        def proc_listpids(self, kind, pgid, buf, size):
+            calls.append(("huge", size))
+            return 256 * 4 + 4
+
+    assert accounting._darwin_group_pids(Huge(), 4242) is None
+    assert ("huge", 0) in calls
+    assert ("huge", 256 * 4) not in calls
+
+    class Empty:
+        def proc_listpids(self, kind, pgid, buf, size):
+            return 0
+
+    assert accounting._darwin_group_pids(Empty(), 4242) == []
+    assert accounting._darwin_group_pids(Empty(), 1) is None
 
 
 def test_owned_launch_lifecycle_self_check():

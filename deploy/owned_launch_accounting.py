@@ -1222,7 +1222,9 @@ class DarwinBackend:
 
     Darwin has no job-wide lifetime counter. wait4 reports the direct child
     and descendants that child reaped. Orphans are outside that total, so
-    coverage stays partial. Physical footprint is not read.
+    coverage stays partial. Physical footprint is not read. Cleanup follows
+    the owned process group after the root exits; that does not make the
+    CPU total complete.
     """
 
     def __init__(self, argv, *, cwd, env):
@@ -1237,6 +1239,8 @@ class DarwinBackend:
         self._sampled_sum_peak = None
         self._closed = False
         self._waited = None
+        self._reaped = False
+        self._terminate_attempted = False
         self._libproc = None
         self._timebase = None
 
@@ -1252,7 +1256,7 @@ class DarwinBackend:
     def cpu_microseconds(self) -> int | None:
         if self._waited is not None:
             return self._waited
-        if self.process is None:
+        if self._reaped or self.process is None:
             return None
         usage = _darwin_rusage(self._library(), self.process.pid)
         if usage is None:
@@ -1266,21 +1270,27 @@ class DarwinBackend:
     def still_active(self) -> bool | None:
         if self.process is None:
             return None
-        return self.process.poll() is None
+        self._capture_wait4()
+        if not self._reaped:
+            return True
+        state = self._group_state()
+        if state == "occupied":
+            return True
+        if state == "empty":
+            return False
+        return None
 
     def wait_root(self, timeout_seconds: float) -> bool:
         if self.process is None:
             return False
         deadline = time.monotonic() + timeout_seconds
-        while time.monotonic() < deadline:
-            if self.process.poll() is not None:
-                self._capture_wait4()
-                return True
-            time.sleep(0.02)
-        if self.process.poll() is not None:
+        while True:
             self._capture_wait4()
-            return True
-        return False
+            if self._reaped:
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.02)
 
     def sample(self, ledger: _Ledger) -> None:
         if self.process is None:
@@ -1316,12 +1326,17 @@ class DarwinBackend:
     def terminate(self) -> tuple[bool, str | None]:
         if self.process is None:
             return False, "process_missing"
-        pid = self.process.pid
-        usage = _darwin_rusage(self._library(), pid)
-        if usage is not None and self.root_creation is not None and usage["start"] != self.root_creation:
+        if self._terminate_attempted:
+            return False, "already_attempted"
+        self._terminate_attempted = True
+        pgid = self.process.pid
+        if pgid <= 1 or pgid == os.getpid() or self.root_creation is None:
+            return False, "group_unverified"
+        leader = _darwin_rusage(self._library(), pgid)
+        if leader is not None and leader["start"] != self.root_creation:
             return False, "pid_reused"
         try:
-            os.kill(-pid, signal.SIGKILL)
+            os.kill(-pgid, getattr(signal, "SIGKILL", 9))
         except ProcessLookupError:
             return True, None
         except OSError:
@@ -1330,7 +1345,7 @@ class DarwinBackend:
 
     def snapshot(self) -> dict:
         self._capture_wait4()
-        cpu = self._waited if self._waited is not None else self.cpu_microseconds()
+        cpu = self._waited if self._reaped else self.cpu_microseconds()
         return {
             "method": "darwin_wait4_and_resident_size",
             "cpu_microseconds": cpu,
@@ -1370,25 +1385,62 @@ class DarwinBackend:
         if self._closed:
             return True, None
         self._closed = True
-        if self.process is not None and self.process.poll() is None:
-            self.terminate()
-            self.wait_root(2)
-        return True, None
+        if self.process is None:
+            return False, "process_missing"
+        self._capture_wait4()
+        if not self._terminate_attempted and self._group_state() != "empty":
+            ok, failure = self.terminate()
+            if not ok:
+                return False, failure
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline and self._group_state() == "occupied":
+            self._capture_wait4()
+            time.sleep(0.02)
+        state = self._group_state()
+        if state == "empty":
+            return True, None
+        if state == "reused":
+            return False, "pid_reused"
+        if state == "occupied":
+            return False, "descendants_survived"
+        return False, "group_unverified"
+
+    def _group_state(self) -> str:
+        """empty, occupied, reused, or unverified. Never a full pid scan."""
+        if self.process is None:
+            return "unverified"
+        pgid = self.process.pid
+        if pgid <= 1 or self.root_creation is None:
+            return "unverified"
+        leader = _darwin_rusage(self._library(), pgid)
+        if leader is not None and leader["start"] != self.root_creation:
+            return "reused"
+        members = _darwin_group_pids(self._library(), pgid)
+        if members is None:
+            return "unverified"
+        if any(pid > 0 and pid != os.getpid() for pid in members):
+            return "occupied"
+        return "empty"
 
     def _capture_wait4(self) -> None:
-        if self._waited is not None or self.process is None or self.process.poll() is None:
+        if self.process is None or self._reaped:
             return
         try:
-            _pid, _status, usage = os.wait4(self.process.pid, os.WNOHANG)
-        except (ChildProcessError, OSError, AttributeError):
+            waited_pid, status, usage = os.wait4(self.process.pid, os.WNOHANG)
+        except ChildProcessError:
+            self._reaped = True
             return
-        if usage is None:
+        except (AttributeError, OSError):
             return
-        microseconds = int(usage.ru_utime.tv_sec) * 1_000_000 + int(usage.ru_utime.tv_usec)
-        microseconds += int(usage.ru_stime.tv_sec) * 1_000_000 + int(usage.ru_stime.tv_usec)
-        if microseconds < 0:
+        if waited_pid != self.process.pid:
             return
-        self._waited = microseconds
+        returncode = _wait_status_returncode(status)
+        if returncode is None:
+            return
+        self._reaped = True
+        if self.process.returncode is None:
+            self.process.returncode = returncode
+        self._waited = _rusage_microseconds(usage)
 
     def _library(self):
         if self._libproc is None:
@@ -1399,6 +1451,8 @@ class DarwinBackend:
             self._libproc.proc_pidinfo.restype = ctypes.c_int
             self._libproc.proc_listchildpids.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int]
             self._libproc.proc_listchildpids.restype = ctypes.c_int
+            self._libproc.proc_listpids.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_int]
+            self._libproc.proc_listpids.restype = ctypes.c_int
         return self._libproc
 
     def _base(self) -> tuple[int, int] | None:
@@ -1438,6 +1492,67 @@ class _DarwinRUsage(ctypes.Structure):
         ("child_pageins", ctypes.c_uint64),
         ("child_elapsed", ctypes.c_uint64),
     ]
+
+
+def _wait_status_returncode(status: int) -> int | None:
+    """BSD wait status. Stopped (0x7f) is not an exit. Signaled keeps the low 7 bits."""
+    if type(status) is not int or status < 0:
+        return None
+    low = status & 0x7F
+    if low == 0:
+        return (status >> 8) & 0xFF
+    if low == 0x7F:
+        return None
+    return -low
+
+
+def _rusage_microseconds(usage) -> int | None:
+    """Python resource rusage stores ru_utime and ru_stime as float seconds."""
+    try:
+        user = usage.ru_utime
+        system = usage.ru_stime
+    except AttributeError:
+        return None
+    if type(user) is not float or type(system) is not float:
+        return None
+    if user < 0 or system < 0 or user != user or system != system:
+        return None
+    if user == float("inf") or system == float("inf"):
+        return None
+    microseconds = int((user + system) * 1_000_000)
+    if microseconds < 0:
+        return None
+    return microseconds
+
+
+def _darwin_group_pids(library, pgid: int) -> list[int] | None:
+    """PIDs in one process group. PROC_PGRP_ONLY is 2 in Apple proc_info.h.
+
+    A group larger than the cap is unverified. A short list would hide a
+    descendant and look like a finished cleanup.
+    """
+    if library is None or pgid <= 1:
+        return None
+    try:
+        needed = library.proc_listpids(2, pgid, None, 0)
+    except (AttributeError, OSError):
+        return None
+    if type(needed) is not int or needed < 0:
+        return None
+    if needed == 0:
+        return []
+    if needed > 256 * 4:
+        return None
+    buf = ctypes.create_string_buffer(needed)
+    try:
+        written = library.proc_listpids(2, pgid, buf, needed)
+    except (AttributeError, OSError):
+        return None
+    if type(written) is not int or written <= 0 or written > needed:
+        return None
+    count = written // ctypes.sizeof(ctypes.c_int)
+    values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+    return [int(values[index]) for index in range(count) if int(values[index]) > 0]
 
 
 def _darwin_rusage(library, pid: int) -> dict | None:
