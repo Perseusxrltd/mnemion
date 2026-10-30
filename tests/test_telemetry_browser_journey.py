@@ -39,7 +39,8 @@ def test_reviewed_body_must_match_the_received_25_byte_report():
     with pytest.raises(ValueError, match="25-byte"):
         matching_report(shown, bytes(range(1, 26)).hex())
     leaked = bytearray(body)
-    leaked[: len(CANARY)] = CANARY.encode()[:25]
+    assert len(CANARY.encode()) < len(body)
+    leaked[: len(CANARY)] = CANARY.encode()
     leaked_shown = __import__("base64").b64encode(bytes(leaked)).decode()
     with pytest.raises(ValueError, match="Fixture memory"):
         matching_report(leaked_shown, bytes(leaked).hex())
@@ -65,7 +66,9 @@ def test_loopback_bake_changes_only_the_copy(tmp_path):
     source = ROOT
     disclosure = (source / "mnemion/product_telemetry/disclosure.json").read_bytes()
     route = (source / "mnemion/product_telemetry/transport-route.json").read_bytes()
-    assert_production_inactive(__import__("json").loads(disclosure), __import__("json").loads(route))
+    assert_production_inactive(
+        __import__("json").loads(disclosure), __import__("json").loads(route)
+    )
     copy = tmp_path / "copy"
     for relative in (
         "mnemion/product_telemetry/disclosure.json",
@@ -73,11 +76,9 @@ def test_loopback_bake_changes_only_the_copy(tmp_path):
         "studio/electron/package.json",
     ):
         target = copy / relative
-        target.parent.mkdir(parents=True)
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes((source / relative).read_bytes())
-    certificate = "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"
-    # The production validator requires a well-formed public certificate. Use the
-    # fixture helper's own sample only when the copied route is still inactive.
+    # Generate an ephemeral certificate accepted by the production validator.
     from tests.test_product_telemetry_transport import _certificates
 
     class Factory:
@@ -97,15 +98,21 @@ def test_loopback_bake_changes_only_the_copy(tmp_path):
     assert inventory["production_collection_available"] is False
     assert (source / "mnemion/product_telemetry/disclosure.json").read_bytes() == disclosure
     assert (source / "mnemion/product_telemetry/transport-route.json").read_bytes() == route
-    baked = __import__("json").loads((copy / "mnemion/product_telemetry/disclosure.json").read_text())
+    baked = __import__("json").loads(
+        (copy / "mnemion/product_telemetry/disclosure.json").read_text()
+    )
     assert baked["collection_available"] is True
     assert baked["destination"] == "https://localhost:48763/v3/report"
     assert list(copy.rglob("*"))  # the copy exists
-    assert not any(CANARY.encode() in path.read_bytes() for path in copy.rglob("*") if path.is_file())
+    assert not any(
+        CANARY.encode() in path.read_bytes() for path in copy.rglob("*") if path.is_file()
+    )
 
 
 def test_workflow_is_manual_linux_and_uses_both_engines():
-    workflow = (ROOT / ".github/workflows/telemetry-browser-journeys.yml").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/telemetry-browser-journeys.yml").read_text(
+        encoding="utf-8"
+    )
     assert "workflow_dispatch:" in workflow
     assert "\n  push:" not in workflow
     assert "ubuntu-22.04" in workflow
@@ -133,7 +140,9 @@ def test_driver_syntax():
 def test_owned_process_cleanup_is_finite():
     async def exercise():
         process = await asyncio.create_subprocess_exec(
-            sys.executable, "-c", "import time; time.sleep(60)",
+            sys.executable,
+            "-c",
+            "import time; time.sleep(60)",
             start_new_session=True,
         )
         await stop_owned(process)

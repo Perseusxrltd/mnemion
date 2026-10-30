@@ -128,6 +128,8 @@ async function journey() {
     await page.getByLabel('Memory content', { exact: true }).fill(content)
     await page.getByRole('button', { name: 'Save memory', exact: true }).click()
     await page.waitForURL(/\/workspace\/memory\//)
+    const savedMemory = page.url().match(/\/workspace\/memory\/([a-f0-9-]{36})(?:[/?#]|$)/)?.[1]
+    assert.ok(savedMemory, 'The saved memory did not expose its canonical detail URL')
     checks.memory_saved = true
     phase('fetch')
     await page.getByText(input.query, { exact: false }).first().waitFor()
@@ -138,7 +140,11 @@ async function journey() {
     await page.getByLabel('Search method', { exact: true }).selectOption('lexical')
     await page.getByLabel('Search shared memory', { exact: true }).fill(input.query)
     await page.getByRole('button', { name: 'Search', exact: true }).click()
-    await page.getByText(/Exact-text rank \d+/).waitFor()
+    const recalledMemory = page.locator('article').filter({
+      has: page.locator(`a[href$="/workspace/memory/${savedMemory}"]`),
+    })
+    await recalledMemory.getByText('Why this result?', { exact: true }).click()
+    await recalledMemory.getByText(/Exact-text rank \d+/).waitFor()
     checks.lexical_recall = true
     await page.waitForFunction(() => {
       const raw = localStorage.getItem('mnemion.product-telemetry.pending.v1')

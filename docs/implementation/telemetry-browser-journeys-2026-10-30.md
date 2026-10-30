@@ -27,7 +27,7 @@ route. Each engine gets a new empty profile and one pass, not a retry:
 1. Save the disclosure from the privacy dialog.
 2. Pause reports for manual review before any workspace action.
 3. Join the fixture with its real address and key.
-4. Save a memory whose content contains `PRIVATE_BROWSER_MEMORY_CANARY`, fetch
+4. Save a memory whose content contains `PRIVATE_BROWSER_CANARY`, fetch
    that memory, and run an exact-text search.
 5. Inspect the next report, approve those exact bytes, and wait until the
    collector has that one 25-byte v3 body.

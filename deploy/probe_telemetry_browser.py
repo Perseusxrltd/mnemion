@@ -24,7 +24,8 @@ import tempfile
 
 ENGINES = ("firefox", "webkit")
 JOURNEY_ATTEMPTS = 1
-CANARY = "PRIVATE_BROWSER_MEMORY_CANARY"
+# Short enough to detect a content leak inside the fixed 25-byte report.
+CANARY = "PRIVATE_BROWSER_CANARY"
 CANARY_BYTES = CANARY.encode()
 BUILD_TIMEOUT_SECONDS = 600
 JOURNEY_TIMEOUT_SECONDS = 300
@@ -130,7 +131,10 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
         raise RuntimeError("The pinned Playwright module is required")
     source = source.resolve()
     output = output.resolve()
-    output.mkdir(mode=0o700)
+    # The workflow records dispatch.json before calling this driver.
+    output.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if any(path.name != "dispatch.json" for path in output.iterdir()):
+        raise RuntimeError("Use a fresh browser journey evidence directory")
     disclosure_path = source / BAKED_FILES[0]
     route_path = source / BAKED_FILES[1]
     original_disclosure = disclosure_path.read_bytes()
@@ -185,8 +189,16 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
     secret = ""
 
     async def ingress(scope, receive, send):
-        post = scope.get("type") == "http" and scope.get("method") == "POST" and scope.get("path") == "/v3/report"
-        options = scope.get("type") == "http" and scope.get("method") == "OPTIONS" and scope.get("path") == "/v3/report"
+        post = (
+            scope.get("type") == "http"
+            and scope.get("method") == "POST"
+            and scope.get("path") == "/v3/report"
+        )
+        options = (
+            scope.get("type") == "http"
+            and scope.get("method") == "OPTIONS"
+            and scope.get("path") == "/v3/report"
+        )
         captured = bytearray() if post else None
         chunks = 0
         if post or options:
@@ -233,7 +245,9 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
             certificate = tls_root / "certificate.pem"
             key_path = tls_root / "key.pem"
             if output in key_path.resolve().parents or key_path.resolve().is_relative_to(output):
-                raise RuntimeError("The loopback private key must stay outside the evidence directory")
+                raise RuntimeError(
+                    "The loopback private key must stay outside the evidence directory"
+                )
             with socket.socket() as listener:
                 listener.bind(("127.0.0.1", 0))
                 listener.listen(8)
@@ -264,37 +278,52 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                 copy = root / "source"
                 identity = await asyncio.to_thread(copy_declared_source, source, copy)
                 phases.append("source_copied")
-                inventory = write_bake(copy, destination, "127.0.0.1", certificate.read_text(encoding="utf-8"))
+                inventory = write_bake(
+                    copy, destination, "127.0.0.1", certificate.read_text(encoding="utf-8")
+                )
                 if inventory["baked_files"] != list(BAKED_FILES):
-                    raise RuntimeError("The loopback bake touched more than the disclosure and route")
+                    raise RuntimeError(
+                        "The loopback bake touched more than the disclosure and route"
+                    )
                 for relative in ("packages/client/node_modules", "studio/frontend/node_modules"):
                     (copy / relative).symlink_to(source / relative, target_is_directory=True)
                 phases.append("disclosure_baked")
-                _write_json(output / "source.json", {
-                    "source": identity["source"],
-                    "tracked_sha256": identity["tracked_sha256"],
-                    "production_disclosure_sha256": _sha256(original_disclosure),
-                    "production_route_sha256": _sha256(original_route),
-                    **{key: inventory[key] for key in (
-                        "baked_files",
-                        "diagnostic_disclosure_sha256",
-                        "diagnostic_route_sha256",
-                        "destination_host",
-                        "destination_path",
-                        "route_address",
-                        "diagnostic_collection_available",
-                        "production_collection_available",
-                    )},
-                })
+                _write_json(
+                    output / "source.json",
+                    {
+                        "source": identity["source"],
+                        "tracked_sha256": identity["tracked_sha256"],
+                        "production_disclosure_sha256": _sha256(original_disclosure),
+                        "production_route_sha256": _sha256(original_route),
+                        **{
+                            key: inventory[key]
+                            for key in (
+                                "baked_files",
+                                "diagnostic_disclosure_sha256",
+                                "diagnostic_route_sha256",
+                                "destination_host",
+                                "destination_path",
+                                "route_address",
+                                "diagnostic_collection_available",
+                                "production_collection_available",
+                            )
+                        },
+                    },
+                )
                 build_env = {
-                    key: value for key, value in os.environ.items()
+                    key: value
+                    for key, value in os.environ.items()
                     if key not in {"ELECTRON_BUILD", "GH_TOKEN", "GITHUB_TOKEN", "NODE_AUTH_TOKEN"}
                     and not key.startswith("MNEMION_")
                 }
                 builder = None
                 with (output / "frontend-build.log").open("x", encoding="utf-8") as log:
                     builder = await asyncio.create_subprocess_exec(
-                        "npm", "--prefix", str(copy / "studio/frontend"), "run", "build",
+                        "npm",
+                        "--prefix",
+                        str(copy / "studio/frontend"),
+                        "run",
+                        "build",
                         cwd=copy / "studio/frontend",
                         env=build_env,
                         stdout=log,
@@ -309,10 +338,14 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                     raise RuntimeError("Inspect retained frontend-build.log")
                 dist = copy / "studio/frontend/dist"
                 compiled = b"".join(
-                    path.read_bytes() for path in dist.rglob("*") if path.is_file() and path.suffix in {".js", ".html"}
+                    path.read_bytes()
+                    for path in dist.rglob("*")
+                    if path.is_file() and path.suffix in {".js", ".html"}
                 )
                 if destination.encode() not in compiled:
-                    raise RuntimeError("The built frontend does not contain the baked loopback destination")
+                    raise RuntimeError(
+                        "The built frontend does not contain the baked loopback destination"
+                    )
                 if CANARY_BYTES in compiled:
                     raise RuntimeError("The memory canary was compiled into the app")
                 phases.append("frontend_built")
@@ -337,17 +370,20 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                             profile = root / f"profile-{engine}"
                             profile.mkdir(mode=0o700)
                             secret_path = root / f"{engine}-input.json"
-                            _write_json(secret_path, {
-                                "engine": engine,
-                                "origin": origin,
-                                "memory": memory,
-                                "canary": CANARY,
-                                "query": "browserjourneylexical",
-                                "received_flag": str(received_flag),
-                                "result": str(output / f"{engine}.json"),
-                                "failure": str(output / f"{engine}-failure.json"),
-                                "profile": str(profile),
-                            })
+                            _write_json(
+                                secret_path,
+                                {
+                                    "engine": engine,
+                                    "origin": origin,
+                                    "memory": memory,
+                                    "canary": CANARY,
+                                    "query": f"browserjourneylexical{engine}",
+                                    "received_flag": str(received_flag),
+                                    "result": str(output / f"{engine}.json"),
+                                    "failure": str(output / f"{engine}-failure.json"),
+                                    "profile": str(profile),
+                                },
+                            )
                             secret_path.chmod(0o600)
                             child_env["MNEMION_BROWSER_JOURNEY_INPUT"] = str(secret_path)
                             phases.append(f"{engine}_starting")
@@ -356,7 +392,8 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                             try:
                                 with (output / f"{engine}.log").open("x", encoding="utf-8") as log:
                                     driver = await asyncio.create_subprocess_exec(
-                                        "node", str(source / "deploy/probe_telemetry_browser.mjs"),
+                                        "node",
+                                        str(source / "deploy/probe_telemetry_browser.mjs"),
                                         cwd=source,
                                         env=child_env,
                                         stdout=log,
@@ -364,19 +401,23 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                                         start_new_session=True,
                                     )
                                     try:
-                                        await asyncio.wait_for(driver.wait(), JOURNEY_TIMEOUT_SECONDS)
+                                        await asyncio.wait_for(
+                                            driver.wait(), JOURNEY_TIMEOUT_SECONDS
+                                        )
                                     except TimeoutError:
                                         timed_out = True
                                         await stop_owned(driver)
                                 engine_result = {"engine": engine}
                                 result_path = output / f"{engine}.json"
                                 if result_path.is_file():
-                                    engine_result.update(json.loads(result_path.read_text(encoding="utf-8")))
+                                    engine_result.update(
+                                        json.loads(result_path.read_text(encoding="utf-8"))
+                                    )
                                 if timed_out:
                                     engine_result["original_failure"] = (
                                         f"{engine} journey exceeded {JOURNEY_TIMEOUT_SECONDS}s"
                                     )
-                                new_reports = reviewed[len(before_reports):]
+                                new_reports = reviewed[len(before_reports) :]
                                 shown = engine_result.get("approved_body_base64")
                                 approved_hex = engine_result.get("approved_body_hex")
                                 matched = False
@@ -384,29 +425,57 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                                 same_body = False
                                 if isinstance(approved_hex, str):
                                     try:
-                                        same_body = new_reports == [bytes.fromhex(approved_hex).hex()]
+                                        same_body = new_reports == [
+                                            bytes.fromhex(approved_hex).hex()
+                                        ]
                                     except ValueError:
                                         same_body = False
-                                if driver is not None and driver.returncode == 0 and isinstance(shown, str) and same_body:
+                                if (
+                                    driver is not None
+                                    and driver.returncode == 0
+                                    and isinstance(shown, str)
+                                    and same_body
+                                ):
                                     try:
                                         matching_report(shown, new_reports[0])
                                         matched = True
                                     except ValueError as exc:
                                         match_error = str(exc)
                                 elif driver is not None and driver.returncode == 0:
-                                    match_error = "The collector did not receive exactly the approved body"
+                                    match_error = (
+                                        "The collector did not receive exactly the approved body"
+                                    )
                                 engine_result["collector_reports"] = new_reports
                                 engine_result["collector_body_matches_inspection"] = matched
                                 engine_result["match_error"] = match_error
-                                engine_result["api_requests"] = memory_counts["api_requests"] - before_api["api_requests"]
-                                engine_result["api_successful"] = memory_counts["api_successful"] - before_api["api_successful"]
-                                engine_result["driver_exit_code"] = None if driver is None else driver.returncode
-                                checks = engine_result.get("checks") if isinstance(engine_result.get("checks"), dict) else {}
-                                sensors = engine_result.get("sensors") if isinstance(engine_result.get("sensors"), dict) else {}
+                                engine_result["api_requests"] = (
+                                    memory_counts["api_requests"] - before_api["api_requests"]
+                                )
+                                engine_result["api_successful"] = (
+                                    memory_counts["api_successful"] - before_api["api_successful"]
+                                )
+                                engine_result["driver_exit_code"] = (
+                                    None if driver is None else driver.returncode
+                                )
+                                checks = (
+                                    engine_result.get("checks")
+                                    if isinstance(engine_result.get("checks"), dict)
+                                    else {}
+                                )
+                                sensors = (
+                                    engine_result.get("sensors")
+                                    if isinstance(engine_result.get("sensors"), dict)
+                                    else {}
+                                )
                                 try:
-                                    sensor_record = {name: sensor_availability(sensors.get(name)) for name in (
-                                        "pressure_observer", "heap_memory", "network_information",
-                                    )}
+                                    sensor_record = {
+                                        name: sensor_availability(sensors.get(name))
+                                        for name in (
+                                            "pressure_observer",
+                                            "heap_memory",
+                                            "network_information",
+                                        )
+                                    }
                                 except ValueError as exc:
                                     sensor_record = {}
                                     match_error = str(exc)
@@ -421,50 +490,61 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                                     and engine_result.get("attempts") == JOURNEY_ATTEMPTS
                                     and engine_result.get("native_safari_acceptance") is False
                                     and engine_result.get("resource_acceptance") is False
-                                    and engine_result.get("production_collection_available") is False
-                                    and all(checks.get(name) is True for name in (
-                                        "disclosure_acknowledged",
-                                        "manual_review_configured",
-                                        "memory_saved",
-                                        "memory_fetched",
-                                        "lexical_recall",
-                                        "inspected_25_byte_report",
-                                        "approved_exact_body",
-                                        "received_matching_report",
-                                        "spent_budget_preserved",
-                                        "opt_out_persisted",
-                                        "manual_review_persisted",
-                                        "canary_absent_from_origin_storage",
-                                        "canary_absent_from_reviewed_body",
-                                    ))
+                                    and engine_result.get("production_collection_available")
+                                    is False
+                                    and all(
+                                        checks.get(name) is True
+                                        for name in (
+                                            "disclosure_acknowledged",
+                                            "manual_review_configured",
+                                            "memory_saved",
+                                            "memory_fetched",
+                                            "lexical_recall",
+                                            "inspected_25_byte_report",
+                                            "approved_exact_body",
+                                            "received_matching_report",
+                                            "spent_budget_preserved",
+                                            "opt_out_persisted",
+                                            "manual_review_persisted",
+                                            "canary_absent_from_origin_storage",
+                                            "canary_absent_from_reviewed_body",
+                                        )
+                                    )
                                     and engine_result.get("budget_attempts_after_reload") == 1
                                     and engine_result.get("api_successful", 0) >= 4
-                                    and counts["credential_headers"] == before_api.get("_credentials", counts["credential_headers"])
-                                    and counts["referer_headers"] == before_api.get("_referers", counts["referer_headers"])
+                                    and counts["credential_headers"]
+                                    == before_api.get("_credentials", counts["credential_headers"])
+                                    and counts["referer_headers"]
+                                    == before_api.get("_referers", counts["referer_headers"])
                                     and isinstance(engine_result.get("browser_version"), str)
                                     and engine_result["browser_version"]
                                     and not engine_result.get("page_errors")
                                 )
                                 if engine == "webkit":
-                                    engine_result["acceptance"] = "webkit_engine_evidence_not_native_safari"
+                                    engine_result["acceptance"] = (
+                                        "webkit_engine_evidence_not_native_safari"
+                                    )
                                 results.append(engine_result)
                                 _write_json(output / f"{engine}-result.json", engine_result)
                                 phases.append(f"{engine}_finished")
                             except Exception as exc:
                                 if not any(row.get("engine") == engine for row in results):
-                                    results.append({
-                                        "engine": engine,
-                                        "journey_completed": False,
-                                        "original_failure": f"{type(exc).__name__}: {exc}",
-                                        "native_safari_acceptance": False,
-                                        "resource_acceptance": False,
-                                        "production_collection_available": False,
-                                    })
+                                    results.append(
+                                        {
+                                            "engine": engine,
+                                            "journey_completed": False,
+                                            "original_failure": f"{type(exc).__name__}: {exc}",
+                                            "native_safari_acceptance": False,
+                                            "resource_acceptance": False,
+                                            "production_collection_available": False,
+                                        }
+                                    )
                                 phases.append(f"{engine}_failed")
                             finally:
                                 await stop_owned(driver)
                                 secret_path.unlink(missing_ok=True)
                                 import shutil
+
                                 shutil.rmtree(profile, ignore_errors=True)
                         cleanup["profiles_removed"] = all(
                             not (root / f"profile-{engine}").exists() for engine in ENGINES
@@ -491,7 +571,9 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
             except TimeoutError:
                 task.cancel()
             cleanup["collector_stopped"] = task.done()
-        cleanup["production_disclosure_unchanged"] = disclosure_path.read_bytes() == original_disclosure
+        cleanup["production_disclosure_unchanged"] = (
+            disclosure_path.read_bytes() == original_disclosure
+        )
         cleanup["production_route_unchanged"] = route_path.read_bytes() == original_route
         if secret:
             for path in output.rglob("*"):
@@ -511,7 +593,9 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                     "journey_completed": row.get("journey_completed"),
                     "browser_version": row.get("browser_version"),
                     "sensors": row.get("sensors"),
-                    "collector_body_matches_inspection": row.get("collector_body_matches_inspection"),
+                    "collector_body_matches_inspection": row.get(
+                        "collector_body_matches_inspection"
+                    ),
                     "api_successful": row.get("api_successful"),
                     "budget_attempts_after_reload": row.get("budget_attempts_after_reload"),
                     "original_failure": row.get("original_failure"),
@@ -530,7 +614,12 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
             "webkit_engine_evidence_only": True,
             "original_failure": original_failure,
             "cleanup": cleanup,
-            "journey_completed": bool(results) and all(row.get("journey_completed") is True for row in results) and len(results) == len(ENGINES) and original_failure is None and cleanup["production_disclosure_unchanged"] and cleanup["production_route_unchanged"],
+            "journey_completed": bool(results)
+            and all(row.get("journey_completed") is True for row in results)
+            and len(results) == len(ENGINES)
+            and original_failure is None
+            and cleanup["production_disclosure_unchanged"]
+            and cleanup["production_route_unchanged"],
         }
         require_diagnostic_limits(receipt)
         _write_json(output / "receipt.json", receipt)

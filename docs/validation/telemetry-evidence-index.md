@@ -1,8 +1,11 @@
 # Telemetry evidence index
 
-The [installed diagnostic source qualification](2026-10-30-telemetry-installed-driver.md)
-records the reviewed six-target driver and its 21 focused fixture checks. Its
-first actual installed run remains required; collection stays disabled.
+The [local v3 systemd check](2026-10-30-telemetry-v3-systemd-local.md) passed
+socket activation, TLS delivery, credential isolation and cleanup.
+The [installed diagnostic qualification](2026-10-30-telemetry-installed-driver.md)
+preserves the first six-target failure at workspace join, before any report was
+sent. The [Firefox/WebKit journey source checks](2026-10-30-telemetry-browser-journeys.md)
+passed with actual browser execution pending. Collection stays disabled.
 
 **Index checkpoint: 30 October 2026.** The
 [canonical V08 contract](../implementation/anonymous-product-telemetry.md)
