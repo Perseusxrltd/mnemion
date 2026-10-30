@@ -784,6 +784,39 @@ def _token(value: object) -> str | None:
     return None
 
 
+_STARTUP_FAILURE_CATEGORIES = frozenset(
+    {
+        "isolated_profile",
+        "invalid_resource_config",
+        "invalid_hosting_config",
+        "non_loopback_destination",
+        "session_connection",
+        "workspace_bridge",
+        "workspace_handle",
+        "memory_client",
+        "not_packaged",
+        "memory_save",
+        "memory_fetch",
+        "memory_recall",
+        "workload_incomplete",
+        "delivery_settlement",
+        "private_evidence",
+        "disposable_profile",
+        "unclassified",
+    }
+)
+
+
+def _startup_failure_category(report: dict) -> str | None:
+    """Allowlisted class only. A raw error string is never copied."""
+    if _token(report.get("failure_stage")) != "startup-error":
+        return None
+    category = report.get("failure_category")
+    if type(category) is str and category in _STARTUP_FAILURE_CATEGORIES:
+        return category
+    return None
+
+
 def _count(value: object, limit: int = 2**62) -> int | None:
     if type(value) is int and 0 <= value <= limit:
         return value
@@ -1062,9 +1095,24 @@ def retain_owned_launch(report: object) -> dict:
     else:
         launched = None
     present = independent or explicit_launch is not None or unsupported is not None
+    if present:
+        hosting_ready = report.get("hosting_ready") is True
+        exit_code = report.get("root_exit_code")
+        root_exit_code = exit_code if type(exit_code) is int else None
+        failure_stage = _token(report.get("failure_stage"))
+        failure_category = _startup_failure_category(report)
+    else:
+        hosting_ready = None
+        root_exit_code = None
+        failure_stage = None
+        failure_category = None
     return {
         "present": present,
         "launched": launched,
+        "hosting_ready": hosting_ready,
+        "root_exit_code": root_exit_code,
+        "failure_stage": failure_stage,
+        "failure_category": failure_category,
         "honest_unsupported": unsupported,
         "resource_acceptance": False,
         "qualification": "unqualified",

@@ -343,4 +343,47 @@ def test_startup_label_alone_stays_absent_and_launch_keeps_the_category():
     assert launched["python"]["launched"] is True
     assert launched["javascript"]["failure_stage"] == "startup-error"
     assert launched["javascript"]["failure_category"] == "memory_fetch"
+    assert launched["again"]["failure_stage"] == "startup-error"
+    assert launched["again"]["failure_category"] == "memory_fetch"
     assert launched["javascript"]["resource_acceptance"] is False
+
+
+def test_failed_launch_diagnostics_survive_the_final_projection():
+    secret = "super-secret-token-value"
+    report = {
+        "present": True,
+        "launched": True,
+        "hosting_ready": False,
+        "root_exit_code": 1,
+        "failure_stage": "startup-error",
+        "failure_category": "memory_fetch",
+        "error": f"Real fetch changed content: {secret}",
+    }
+    verdict = _verdict(report)
+    for copy in (verdict["python"], verdict["javascript"], verdict["again"]):
+        assert copy["present"] is True
+        assert copy["launched"] is True
+        assert copy["hosting_ready"] is False
+        assert copy["root_exit_code"] == 1
+        assert copy["failure_stage"] == "startup-error"
+        assert copy["failure_category"] == "memory_fetch"
+        assert copy["resource_acceptance"] is False
+        assert copy.get("lifetime_cpu_microseconds") is None
+        assert secret not in json.dumps(copy)
+    rejected = _verdict(
+        {
+            "launched": True,
+            "hosting_ready": False,
+            "root_exit_code": True,
+            "failure_stage": "startup-error",
+            "failure_category": secret,
+            "error": secret,
+        }
+    )
+    assert rejected["again"]["present"] is True
+    assert rejected["again"]["launched"] is True
+    assert rejected["again"]["failure_stage"] == "startup-error"
+    assert rejected["again"]["failure_category"] is None
+    assert rejected["again"]["root_exit_code"] is None
+    assert rejected["again"].get("lifetime_cpu_microseconds") is None
+    assert secret not in json.dumps(rejected["again"])
