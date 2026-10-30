@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Check the lightweight native client before six-platform packaging"
+              "Verify wheel and source package include the matching web Studio"
             ]
           }
         ]
@@ -141,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T06:40:00+00:00"
+  "observed_at": "2026-10-30T06:40:31+00:00"
 }

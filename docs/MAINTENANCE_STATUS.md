@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T06:40:00+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T06:40:31+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -32,5 +32,5 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 41015332369](https://github.com/Perseusxrltd/mnemion/actions/runs/41015332369): 7/8 jobs completed; 2 succeeded.
 
-- studio: in\_progress — Check the lightweight native client before six-platform packaging.
+- studio: in\_progress — Verify wheel and source package include the matching web Studio.
 
