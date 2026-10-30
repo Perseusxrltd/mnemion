@@ -62,28 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "43fbfdd16c2d2224647cbe8344f7ae30ae58064e",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-30T10:23:18Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41040357893",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 124011347187,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify wheel and source package include the matching web Studio"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-30T10:24:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41040357893"
     },
     {
       "id": 41016108360,
@@ -152,5 +134,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987"
     }
   ],
-  "observed_at": "2026-10-30T10:24:08+00:00"
+  "observed_at": "2026-10-30T10:25:18+00:00"
 }
