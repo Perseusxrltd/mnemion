@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T05:48:05+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T06:00:41+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,28 +21,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41009262656](https://github.com/Perseusxrltd/mnemion/actions/runs/41009262656) |
-| public-updates\.yml | v4\.46\.57 | in\_progress | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
+| ci\.yml | main | success | [Run 41011337874](https://github.com/Perseusxrltd/mnemion/actions/runs/41011337874) |
+| public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
 | release\.yml | release/4\.46\.57 | success | [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980) |
 | verify-artifacts\.yml | main | success | [Run 41009919761](https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761) |
-| website-release\.yml | main | success | [Run 41001954540](https://github.com/Perseusxrltd/mnemion/actions/runs/41001954540) |
+| website-release\.yml | main | success | [Run 41011337815](https://github.com/Perseusxrltd/mnemion/actions/runs/41011337815) |
 | website-release\.yml | v4\.46\.57 | success | [Run 41010367987](https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987) |
-
-## Active jobs
-
-[Run 41009262656](https://github.com/Perseusxrltd/mnemion/actions/runs/41009262656): 8/12 jobs completed; 8 succeeded.
-
-- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711): 1/7 jobs completed; 1 succeeded.
-
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-
