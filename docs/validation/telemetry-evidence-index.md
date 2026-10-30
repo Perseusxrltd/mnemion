@@ -27,9 +27,14 @@ artifact/source bindings and package/collector evidence limits are recorded in
 the report. Fifth-run Windows ARM64 failed with `The installed privacy page did
 not open` after 3 successful API calls, at cycle 0 with all observation and ACL
 counters zero. This neither reproduces nor clears its earlier admission failure.
-The cause is unproven; Grok's diagnosis/correction is underway. The original
-failure is retained, and the separate installed resource correction remains
-unaccepted. Full installed, production and resource acceptance remain open;
+The cause is unproven. The reviewed correction waits for the workspace's settled
+route before opening Privacy and preserves a bounded failure gate. The original
+failure is retained. Corrected source and declarations passed the combined
+Electron build; the frontend build also compiled the optional resource client
+entry. Resource controller corrections are reviewed, including acknowledged
+case boundaries, normal input-handle release and exact global packet totals.
+The corrected ARM64 journey and installed resource execution remain pending.
+Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
 production hosting unresolved. The
 [Firefox/WebKit journey evidence](2026-10-30-telemetry-browser-journeys.md)

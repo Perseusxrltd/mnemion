@@ -33,9 +33,13 @@ isolate ACL/process startup, IPC, scheduling or store-open latency. In the fifth
 run, Windows ARM64 instead failed with `The installed privacy page did not open`
 after 3 successful API calls, before any observation cycle or ACL check. That
 stop neither reproduces nor clears its fourth-run admission failure.
-Grok's diagnosis and correction are underway; the Privacy-page failure's cause
-is not established. The separate installed resource correction remains
-unaccepted. Full installed, production and resource acceptance remain open;
+The reviewed correction waits for the settled workspace before opening Privacy
+and retains a bounded failure gate. The original ARM64 failure's cause remains
+unproven; the corrected installed journey is pending. The reviewed resource
+controller now acknowledges each case before the next begins, reconciles all
+collector packets and releases its input handle on completion. The combined
+Electron and diagnostic frontend builds passed. Installed resource execution
+and budget qualification remain pending. Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and
 production hosting unresolved. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)

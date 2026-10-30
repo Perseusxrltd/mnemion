@@ -328,3 +328,26 @@ heading and an enabled, visible Disable control within the existing 30 seconds.
 A timeout records `privacy_open` and one of `privacy_navigation`,
 `privacy_page`, `privacy_state`, or `privacy_control`. Those enums are the
 whole diagnostic. The 25 ms deadline is unchanged.
+
+The first full Electron build of this correction failed with two TS2305 errors:
+the new runtime helpers lacked declarations in `telemetry-readiness.d.mts`.
+Grok's declaration-only follow-up `5f1bb68b` fixes those exports. The original
+failed build remains retained. With that follow-up and the reviewed resource
+series through `6334e3fc` integrated, the full Electron build passed in 34.596
+seconds and the frontend TypeScript/Vite build passed in 76.891 seconds. The
+frontend build included the optional packaged resource-client entry.
+
+The resource series preserves optional target selection and keeps resource
+comparison disabled by default. Each case freezes collector counters before
+acknowledging the next case; completion requires exactly two accepted reports,
+no malformed or extra packets, and matching per-case totals. The controller
+releases its input reference after acknowledgement, including after the final
+case. Installation ownership is recorded before effects, and incomplete
+terminal progress remains a lower bound. Original source reviews and focused
+checks remain retained; this integration did not repeat them.
+
+Build receipts are in the private completion evidence under
+`telemetry-installed-delivery/combined-privacy-resources/verification/`.
+These builds qualify source integration only. The corrected ARM64 installed
+journey and subsequent installed resource comparison remain pending; no
+resource budget, live collector or fleet statistics are accepted by them.
