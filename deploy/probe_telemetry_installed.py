@@ -71,7 +71,8 @@ def read_delivery_store(profile: Path, secret: bytes) -> dict:
         "attempts": [1, RESERVED_BYTES],
         "lease_cleared": True,
         "queue_cells": pending[0],
-        "fixture_content_absent": b"PRIVATE_RENDERER_MEMORY_CANARY" not in raw and secret not in raw,
+        "fixture_content_absent": b"PRIVATE_RENDERER_MEMORY_CANARY" not in raw
+        and secret not in raw,
     }
 
 
@@ -80,7 +81,11 @@ def copy_declared_source(source: Path, destination: Path) -> dict[str, str]:
     if status.strip(b"\0"):
         raise RuntimeError("Diagnostic packaging requires a clean tracked checkout")
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip()
-    names = subprocess.check_output(["git", "ls-files", "--cached", "-z"], cwd=source).decode().split("\0")
+    names = (
+        subprocess.check_output(["git", "ls-files", "--cached", "-z"], cwd=source)
+        .decode()
+        .split("\0")
+    )
     digest = hashlib.sha256()
     for name in sorted(set(names) - {""}):
         path = source / name
@@ -130,10 +135,14 @@ def _build_env(source: Path) -> dict[str, str]:
         if found:
             environment["MNEMION_ENGINE_PYTHON"] = str(found)
     if not build:
-        found = _interpreter(source, "studio/client/.venv", "Scripts/python.exe" if windows else "bin/python")
+        found = _interpreter(
+            source, "studio/client/.venv", "Scripts/python.exe" if windows else "bin/python"
+        )
         if found:
             environment["MNEMION_BUILD_PYTHON"] = str(found)
-    archives = environment.get("MNEMION_POSTGRES_ARCHIVES") or str(source / "build-tmp/native-postgres")
+    archives = environment.get("MNEMION_POSTGRES_ARCHIVES") or str(
+        source / "build-tmp/native-postgres"
+    )
     environment["MNEMION_POSTGRES_ARCHIVES"] = archives
     engine = environment.get("MNEMION_ENGINE_ARCHIVES", "").strip()
     if sys.platform == "win32" and engine:
@@ -218,7 +227,9 @@ def _stop_process(process: subprocess.Popen) -> None:
     if process.poll() is not None:
         return
     if os.name == "nt":
-        killer = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "taskkill.exe")
+        killer = os.path.join(
+            os.environ.get("SystemRoot", r"C:\Windows"), "System32", "taskkill.exe"
+        )
         subprocess.run(
             [killer, "/F", "/T", "/PID", str(process.pid)],
             stdout=subprocess.DEVNULL,
@@ -239,7 +250,9 @@ def _stop_process(process: subprocess.Popen) -> None:
 
 def _popen(command: list[str], cwd: Path, env: dict[str, str], stdout) -> subprocess.Popen:
     kwargs = {"start_new_session": True} if os.name != "nt" else {}
-    return subprocess.Popen(command, cwd=cwd, env=env, stdout=stdout, stderr=subprocess.STDOUT, **kwargs)
+    return subprocess.Popen(
+        command, cwd=cwd, env=env, stdout=stdout, stderr=subprocess.STDOUT, **kwargs
+    )
 
 
 def _run_logged(
@@ -275,7 +288,9 @@ def _run_logged(
         return subprocess.CompletedProcess(command, code)
 
 
-def _run_inherited(command: list[str], cwd: Path, env: dict[str, str], timeout: int) -> subprocess.CompletedProcess:
+def _run_inherited(
+    command: list[str], cwd: Path, env: dict[str, str], timeout: int
+) -> subprocess.CompletedProcess:
     """Wait for the installed app without writing its stdout into the uploaded evidence."""
     process = _popen(command, cwd, env, None)
     try:
@@ -315,8 +330,10 @@ def _expected_installers(copy: Path) -> list[Path]:
         names = [f"Mnemion-Studio-{version}-windows-{arch}.exe"]
     else:
         stem = f"Mnemion-Studio-{version}-linux"
-        names = [f"{stem}-x86_64.AppImage" if arch == "x64" else f"{stem}-{arch}.AppImage",
-                 f"{stem}-amd64.deb" if arch == "x64" else f"{stem}-{arch}.deb"]
+        names = [
+            f"{stem}-x86_64.AppImage" if arch == "x64" else f"{stem}-{arch}.AppImage",
+            f"{stem}-amd64.deb" if arch == "x64" else f"{stem}-{arch}.deb",
+        ]
     paths = [output / name for name in names]
     missing = [path.name for path in paths if not path.is_file()]
     if missing:
@@ -333,7 +350,9 @@ async def _logged(
     return await asyncio.wait_for(asyncio.to_thread(run), timeout + 30)
 
 
-async def _inherited(command: list[str], cwd: Path, env: dict[str, str], timeout: int) -> subprocess.CompletedProcess:
+async def _inherited(
+    command: list[str], cwd: Path, env: dict[str, str], timeout: int
+) -> subprocess.CompletedProcess:
     def run() -> subprocess.CompletedProcess:
         return _run_inherited(command, cwd, env, timeout)
 
@@ -341,8 +360,8 @@ async def _inherited(command: list[str], cwd: Path, env: dict[str, str], timeout
 
 
 def _require_loopback_material(material: Path) -> tuple[Path, Path, str]:
-    certificate = (material / "certificate.pem")
-    key = (material / "key.pem")
+    certificate = material / "certificate.pem"
+    key = material / "key.pem"
     if (
         not certificate.is_file()
         or not key.is_file()
@@ -351,11 +370,15 @@ def _require_loopback_material(material: Path) -> tuple[Path, Path, str]:
         or certificate.stat().st_size > 4096
         or key.stat().st_size > 8192
     ):
-        raise RuntimeError("Installed fixture delivery requires the shared loopback certificate and key")
+        raise RuntimeError(
+            "Installed fixture delivery requires the shared loopback certificate and key"
+        )
     public = certificate.read_text(encoding="utf-8")
     private = key.read_text(encoding="utf-8")
     if "PRIVATE KEY" in public or "BEGIN CERTIFICATE" not in public or "PRIVATE KEY" not in private:
-        raise RuntimeError("Loopback material must keep the public certificate and private key separate")
+        raise RuntimeError(
+            "Loopback material must keep the public certificate and private key separate"
+        )
     validate_loopback_target(loopback_destination(), "127.0.0.1", public)
     return certificate, key, public
 
@@ -456,7 +479,8 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
         if report:
             counts["reports"] += 1
             counts["forbidden_metadata"] += bool(
-                {name for name, _ in scope.get("headers", [])} & {b"cookie", b"authorization", b"referer", b"user-agent"}
+                {name for name, _ in scope.get("headers", [])}
+                & {b"cookie", b"authorization", b"referer", b"user-agent"}
             )
 
         async def received():
@@ -494,8 +518,14 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
             raise RuntimeError("The installed fixture loopback port did not bind") from exc
         listener.listen(8)
         config = uvicorn.Config(
-            ingress, log_config=None, access_log=False, server_header=False, date_header=False,
-            timeout_keep_alive=0, ssl_certfile=str(certificate), ssl_keyfile=str(key_path),
+            ingress,
+            log_config=None,
+            access_log=False,
+            server_header=False,
+            date_header=False,
+            timeout_keep_alive=0,
+            ssl_certfile=str(certificate),
+            ssl_keyfile=str(key_path),
         )
         config.load()
         config.ssl = context
@@ -514,28 +544,42 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
                 ("studio/frontend", "npm-studio-frontend.log"),
                 ("studio/electron", "npm-studio-electron.log"),
             ):
-                installed = await _logged(_npm(prefix), copy, environment, output / log_name, 20 * 60)
+                installed = await _logged(
+                    _npm(prefix), copy, environment, output / log_name, 20 * 60
+                )
                 if installed.returncode:
                     raise RuntimeError("Diagnostic copy dependency install failed")
             inventory = write_bake(copy, destination, "127.0.0.1", public)
-            inventory.update({
-                "source": copied["source"],
-                "tracked_sha256": copied["tracked_sha256"],
-                "package_output": "dist-electron",
-                "production_engine_archive_used": False,
-            })
-            (output / "diagnostic-inventory.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
+            inventory.update(
+                {
+                    "source": copied["source"],
+                    "tracked_sha256": copied["tracked_sha256"],
+                    "package_output": "dist-electron",
+                    "production_engine_archive_used": False,
+                }
+            )
+            (output / "diagnostic-inventory.json").write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
             build = await _logged(
-                [sys.executable, "-m", "deploy.build_desktop"], copy, environment, output / "packaging.log", 50 * 60
+                [sys.executable, "-m", "deploy.build_desktop"],
+                copy,
+                environment,
+                output / "packaging.log",
+                50 * 60,
             )
             if build.returncode:
-                raise RuntimeError("Diagnostic packaging failed; production disclosure was not published")
+                raise RuntimeError(
+                    "Diagnostic packaging failed; production disclosure was not published"
+                )
             package_output = copy / "dist-electron"
             removed = _exclude_update_feeds(package_output)
             inventory["update_feeds_removed"] = removed
             installers = _expected_installers(copy)
             inventory["installer_sha256"] = {path.name: _sha256_file(path) for path in installers}
-            (output / "diagnostic-inventory.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
+            (output / "diagnostic-inventory.json").write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
             from mnemion.local_state import temporary_directory
 
             with temporary_directory(prefix="mnemion-owned-telemetry-") as owned:
@@ -550,16 +594,29 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
                         MNEMION_TELEMETRY_FIXTURE_KEY=memory["api_key"],
                     )
                     if sys.platform == "linux":
-                        smoke = ["dbus-run-session", "--", "xvfb-run", "-a", "bash", "deploy/native-keyring-test.sh", "installed-hosting"]
+                        smoke = [
+                            "dbus-run-session",
+                            "--",
+                            "xvfb-run",
+                            "-a",
+                            "bash",
+                            "deploy/native-keyring-test.sh",
+                            "installed-hosting",
+                        ]
                     else:
                         smoke = ["node", "studio/electron/scripts/smoke-installed-hosting.mjs"]
                     probe = await _inherited(smoke, copy, smoke_env, 45 * 60)
                     evidence_path = copy / "build-tmp/telemetry-installed-delivery.json"
                     evidence = _load_app_evidence(evidence_path, str(memory["api_key"]))
-                    (output / "app-evidence.json").write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+                    (output / "app-evidence.json").write_text(
+                        json.dumps(evidence, indent=2) + "\n", encoding="utf-8"
+                    )
                     approved = evidence.get("approved_body_hex")
                     counts_ok = counts == {
-                        "reports": 1, "accepted": 1, "body_bytes": PACKET_BYTES, "forbidden_metadata": 0,
+                        "reports": 1,
+                        "accepted": 1,
+                        "body_bytes": PACKET_BYTES,
+                        "forbidden_metadata": 0,
                     }
                     body_match = reviewed == [approved]
                     private_absent = (
@@ -571,8 +628,11 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
                     receipt = {
                         "qualification": "installed fixture delivery",
                         "journey_completed": bool(
-                            probe.returncode == 0 and evidence.get("app_checks_passed") is True
-                            and counts_ok and body_match and private_absent
+                            probe.returncode == 0
+                            and evidence.get("app_checks_passed") is True
+                            and counts_ok
+                            and body_match
+                            and private_absent
                         ),
                         "collector_body_matches_inspection": body_match,
                         "collector": counts,
@@ -608,8 +668,13 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
 
 def run(source: Path, output: Path, material: Path) -> dict:
     output.mkdir(parents=True, exist_ok=True)
-    if sys.platform == "win32" and (os.environ.get("CI") != "true" or os.environ.get("RUNNER_OS") != "Windows"):
-        _refuse(output, "The installed telemetry package is installed only on a disposable Windows CI runner")
+    if sys.platform == "win32" and (
+        os.environ.get("CI") != "true" or os.environ.get("RUNNER_OS") != "Windows"
+    ):
+        _refuse(
+            output,
+            "The installed telemetry package is installed only on a disposable Windows CI runner",
+        )
     if sys.platform == "win32" and os.environ.get("RUNNER_ARCH", "").upper() == "ARM64":
         if not os.environ.get("MNEMION_ENGINE_ARCHIVES", "").strip():
             _refuse(output, "Windows ARM requires the same-source diagnostic x64 engine archive")
@@ -638,9 +703,13 @@ def run(source: Path, output: Path, material: Path) -> dict:
                 disclosure_now = (source / "mnemion/product_telemetry/disclosure.json").read_bytes()
                 route_now = (source / "mnemion/product_telemetry/transport-route.json").read_bytes()
                 if disclosure_now != original or route_now != route_bytes:
-                    receipt = _receipt("Production disclosure or route changed during diagnostic staging")
+                    receipt = _receipt(
+                        "Production disclosure or route changed during diagnostic staging"
+                    )
                     _write_receipt(output, receipt)
-                    raise RuntimeError("Production disclosure or route changed during diagnostic staging")
+                    raise RuntimeError(
+                        "Production disclosure or route changed during diagnostic staging"
+                    )
                 _write_receipt(output, receipt)
         return receipt
     finally:

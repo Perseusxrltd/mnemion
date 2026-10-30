@@ -292,7 +292,10 @@ class DeliveryBudget:
                 connection.execute("BEGIN")
                 preference = policy._preferences(connection)
                 company = policy.company_policy(self.policy_path)
-                if preference["connection_mode"] not in ("auto", "unmetered") or not aggregate._permitted(
+                if preference["connection_mode"] not in (
+                    "auto",
+                    "unmetered",
+                ) or not aggregate._permitted(
                     preference, company, expected_revision, expected_generation
                 ):
                     return False

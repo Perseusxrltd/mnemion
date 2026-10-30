@@ -24,9 +24,16 @@ def _sha256(payload: bytes) -> str:
 
 
 def assert_production_inactive(disclosure: dict, route: dict) -> None:
-    if disclosure.get("collection_available") is not False or disclosure.get("destination") is not None:
+    if (
+        disclosure.get("collection_available") is not False
+        or disclosure.get("destination") is not None
+    ):
         raise ValueError("Production disclosure is not inactive")
-    if route.get("version") != 2 or route.get("address") is not None or route.get("certificate_authorities") != []:
+    if (
+        route.get("version") != 2
+        or route.get("address") is not None
+        or route.get("certificate_authorities") != []
+    ):
         raise ValueError("Production route is not inactive")
 
 
@@ -71,7 +78,9 @@ def validate_loopback_target(destination: str, address: str, certificate: str) -
         raise ValueError("Telemetry fixture requires one public test certificate")
 
 
-def baked_documents(disclosure: dict, route: dict, destination: str, address: str, certificate: str) -> tuple[dict, dict]:
+def baked_documents(
+    disclosure: dict, route: dict, destination: str, address: str, certificate: str
+) -> tuple[dict, dict]:
     assert_production_inactive(disclosure, route)
     validate_loopback_target(destination, address, certificate)
     updated = dict(disclosure)
@@ -85,7 +94,11 @@ def write_bake(copy: Path, destination: str, address: str, certificate: str) -> 
     original_disclosure = (copy / DISCLOSURE).read_bytes()
     original_route = (copy / ROUTE).read_bytes()
     baked_disclosure, baked_route = baked_documents(
-        json.loads(original_disclosure), json.loads(original_route), destination, address, certificate
+        json.loads(original_disclosure),
+        json.loads(original_route),
+        destination,
+        address,
+        certificate,
     )
     disclosure_bytes = (json.dumps(baked_disclosure, indent=2) + "\n").encode()
     route_bytes = (json.dumps(baked_route, indent=2) + "\n").encode()
@@ -93,7 +106,9 @@ def write_bake(copy: Path, destination: str, address: str, certificate: str) -> 
     (copy / ROUTE).write_bytes(route_bytes)
     package = json.loads((copy / "studio/electron/package.json").read_text(encoding="utf-8"))
     if package.get("main") != "dist/main.js" or "--publish never" not in package["scripts"]["dist"]:
-        raise ValueError("Refusing a diagnostic package that changes the app entry or publish script")
+        raise ValueError(
+            "Refusing a diagnostic package that changes the app entry or publish script"
+        )
     return {
         "baked_files": [path.as_posix() for path in BAKED],
         "production_disclosure_sha256": _sha256(original_disclosure),
@@ -116,6 +131,7 @@ def issue_loopback(output: Path) -> None:
     from tests.test_product_telemetry_transport import _certificates
 
     output.mkdir(parents=True, mode=0o700)
+
     class Factory:
         def mktemp(self, name: str) -> Path:
             path = output / name
@@ -123,13 +139,15 @@ def issue_loopback(output: Path) -> None:
             return path
 
     certificate, _context = _certificates(Factory(), "localhost")
-    public = (output / "certificate.pem")
+    public = output / "certificate.pem"
     private = output / "key.pem"
     public.write_bytes(certificate.read_bytes())
     key = certificate.parent / "key.pem"
     private.write_bytes(key.read_bytes())
     private.chmod(0o600)
-    validate_loopback_target(loopback_destination(), "127.0.0.1", public.read_text(encoding="utf-8"))
+    validate_loopback_target(
+        loopback_destination(), "127.0.0.1", public.read_text(encoding="utf-8")
+    )
 
 
 def bake_checkout(checkout: Path, certificate: Path) -> None:
@@ -141,6 +159,7 @@ def bake_checkout(checkout: Path, certificate: Path) -> None:
 
 def main() -> None:
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--issue-loopback", action="store_true")
     parser.add_argument("--output", type=Path)

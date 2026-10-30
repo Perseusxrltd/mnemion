@@ -77,12 +77,16 @@ def test_active_production_disclosure_is_refused(tmp_path: Path):
     copy = tmp_path / "copy"
     target = copy / "mnemion/product_telemetry"
     target.mkdir(parents=True)
-    (target / "disclosure.json").write_text(json.dumps({**DISCLOSURE, "collection_available": True}), encoding="utf-8")
+    (target / "disclosure.json").write_text(
+        json.dumps({**DISCLOSURE, "collection_available": True}), encoding="utf-8"
+    )
     (target / "transport-route.json").write_text(json.dumps(ROUTE), encoding="utf-8")
     package = copy / "studio/electron"
     package.mkdir(parents=True)
     (package / "package.json").write_text(
-        json.dumps({"main": "dist/main.js", "scripts": {"dist": "electron-builder --publish never"}}),
+        json.dumps(
+            {"main": "dist/main.js", "scripts": {"dist": "electron-builder --publish never"}}
+        ),
         encoding="utf-8",
     )
     from deploy.telemetry_installed_fixture import write_bake
@@ -92,7 +96,9 @@ def test_active_production_disclosure_is_refused(tmp_path: Path):
 
 
 def test_cli_requires_the_shared_loopback_material(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["probe_telemetry_installed", "--source", "source", "--output", "output"])
+    monkeypatch.setattr(
+        sys, "argv", ["probe_telemetry_installed", "--source", "source", "--output", "output"]
+    )
     from deploy.probe_telemetry_installed import main
 
     with pytest.raises(SystemExit):
@@ -105,7 +111,9 @@ def test_loopback_material_keeps_the_private_key_separate(tmp_path: Path):
     material = tmp_path / "loopback"
     material.mkdir()
     (material / "certificate.pem").write_text(CERTIFICATE, encoding="utf-8")
-    (material / "key.pem").write_text("-----BEGIN PRIVATE KEY-----\nQUJD\n-----END PRIVATE KEY-----\n", encoding="utf-8")
+    (material / "key.pem").write_text(
+        "-----BEGIN PRIVATE KEY-----\nQUJD\n-----END PRIVATE KEY-----\n", encoding="utf-8"
+    )
     certificate, key, public = _require_loopback_material(material)
     assert certificate.name == "certificate.pem"
     assert "PRIVATE KEY" not in public
@@ -158,7 +166,16 @@ def test_copy_declared_source_keeps_tracked_bytes_and_refuses_a_dirty_tree(tmp_p
         script.chmod(0o755)
     subprocess.check_call(["git", "add", "tool.sh"], cwd=source)
     subprocess.check_call(
-        ["git", "-c", "user.email=probe@example.com", "-c", "user.name=probe", "commit", "-m", "init"],
+        [
+            "git",
+            "-c",
+            "user.email=probe@example.com",
+            "-c",
+            "user.name=probe",
+            "commit",
+            "-m",
+            "init",
+        ],
         cwd=source,
     )
     destination = tmp_path / "copy"
@@ -180,7 +197,13 @@ def test_logged_command_timeout_kills_the_process(tmp_path: Path):
 
     log_path = tmp_path / "command.log"
     with pytest.raises(TimeoutError, match="finite timeout"):
-        _run_logged([sys.executable, "-c", "import time; time.sleep(30)"], tmp_path, os.environ.copy(), log_path, 1)
+        _run_logged(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            tmp_path,
+            os.environ.copy(),
+            log_path,
+            1,
+        )
 
 
 def test_native_cluster_cleanup_does_not_hide_a_live_postmaster(tmp_path: Path):

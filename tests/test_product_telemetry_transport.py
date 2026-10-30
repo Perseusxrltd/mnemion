@@ -853,9 +853,13 @@ def test_real_five_second_deadline_stops_a_silent_peer(installation):
             assert result.outcome in {"deadline", "suppressed"}
             # Either clock can expire the original lease. A wall-clock step
             # must not grant a new monotonic window, or require a minimum wait.
-            assert (
-                finished >= report._monotonic_deadline or finished_wall >= report.deadline_ms
-            ), (result.outcome, elapsed, remaining, finished_wall, report.deadline_ms)
+            assert finished >= report._monotonic_deadline or finished_wall >= report.deadline_ms, (
+                result.outcome,
+                elapsed,
+                remaining,
+                finished_wall,
+                report.deadline_ms,
+            )
             assert elapsed < remaining + 0.5 and server.entered.is_set() and not server.requests
             f.cleaned(report)
 

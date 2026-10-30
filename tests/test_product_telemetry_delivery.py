@@ -72,7 +72,12 @@ def test_unavailable_network_pressure_and_unavailable_collection_never_spend(
 ):
     f = installation
     f.fill()
-    for network, constrained in [("metered", False), ("unknown", True), ("unmetered", True), ("wifi", False)]:
+    for network, constrained in [
+        ("metered", False),
+        ("unknown", True),
+        ("unmetered", True),
+        ("wifi", False),
+    ]:
         assert (
             f.budget.reserve(
                 expected_revision=f.initial["revision"],

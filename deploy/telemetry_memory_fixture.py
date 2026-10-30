@@ -21,14 +21,18 @@ import uvicorn
 
 def _native_archive() -> Path:
     directory = Path(os.environ["MNEMION_POSTGRES_ARCHIVES"])
-    archives = sorted(path for path in directory.glob("*.zip") if path.is_file() and not path.is_symlink())
+    archives = sorted(
+        path for path in directory.glob("*.zip") if path.is_file() and not path.is_symlink()
+    )
     if len(archives) != 1:
         raise RuntimeError("Supply exactly one verified native PostgreSQL archive")
     return archives[0]
 
 
 class _NativeCluster:
-    def __init__(self, root: Path, data: Path, binaries: Path, port: int, environment: dict[str, str]):
+    def __init__(
+        self, root: Path, data: Path, binaries: Path, port: int, environment: dict[str, str]
+    ):
         self.root = root
         self.data = data
         self.binaries = binaries
@@ -52,7 +56,9 @@ class _NativeCluster:
         """Stop the cluster and refuse success while its postmaster is still present."""
         error: Exception | None = None
         try:
-            self.run("pg_ctl", ("stop", "-D", str(self.data), "-m", "fast", "-w", "-t", "30"), timeout=40)
+            self.run(
+                "pg_ctl", ("stop", "-D", str(self.data), "-m", "fast", "-w", "-t", "30"), timeout=40
+            )
         except Exception as exc:
             error = exc
         if (self.data / "postmaster.pid").is_file():
@@ -79,7 +85,8 @@ def _start_native_cluster(root: Path) -> _NativeCluster:
         key: value
         for key, value in os.environ.items()
         if not key.startswith("PG")
-        and key not in {
+        and key
+        not in {
             "LD_LIBRARY_PATH",
             "DYLD_LIBRARY_PATH",
             "DYLD_FALLBACK_LIBRARY_PATH",
@@ -127,7 +134,9 @@ def _start_native_cluster(root: Path) -> _NativeCluster:
         try:
             cluster.cleanup()
         except Exception as cleanup_error:
-            raise RuntimeError("Native PostgreSQL remained running after a failed start") from cleanup_error
+            raise RuntimeError(
+                "Native PostgreSQL remained running after a failed start"
+            ) from cleanup_error
         raise start_error
     return cluster
 
