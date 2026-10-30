@@ -388,7 +388,11 @@ class OwnedLaunch:
             self._sample_error = "sample_failed"
 
     def _report(
-        self, snapshot: dict, cleanup_failure: str | None, terminated: bool, timed_out: bool,
+        self,
+        snapshot: dict,
+        cleanup_failure: str | None,
+        terminated: bool,
+        timed_out: bool,
         retried: bool = False,
     ) -> dict:
         phases = []

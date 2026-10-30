@@ -97,7 +97,10 @@ _STARTUP_PAIRS = (
     ("Real fetch changed content", "memory_fetch"),
     ("Real recall omitted the saved memory", "memory_recall"),
     ("Canonical memory workload did not complete", "workload_incomplete"),
-    ("Installed delivery settlement is only available to the packaged hosting probe", "delivery_settlement"),
+    (
+        "Installed delivery settlement is only available to the packaged hosting probe",
+        "delivery_settlement",
+    ),
     ("Resource evidence contained private fixture material", "private_evidence"),
     ("Disposable profile required", "disposable_profile"),
 )

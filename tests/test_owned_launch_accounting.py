@@ -598,7 +598,9 @@ def test_linux_cleanup_drains_owned_members_before_removal(tmp_path, monkeypatch
     backend._sampled_sum_peak = None
     signaled = []
     killed = []
-    monkeypatch.setattr(accounting, "_signal_cgroup", lambda _leaf: signaled.append(_leaf) or (True, None))
+    monkeypatch.setattr(
+        accounting, "_signal_cgroup", lambda _leaf: signaled.append(_leaf) or (True, None)
+    )
     monkeypatch.setattr(accounting.os, "kill", lambda *_args: killed.append(_args))
 
     def clear():
@@ -683,7 +685,9 @@ def test_startup_category_does_not_complete_or_keep_a_message(tmp_path):
     stage, category = _smoke_observation(smoke)
     assert (stage, category) == ("startup-error", "memory_save")
     smoke.write_text(
-        json.dumps({"stage": "startup-error", "failure_category": secret, "error": f"C:\\Users\\{secret}"}),
+        json.dumps(
+            {"stage": "startup-error", "failure_category": secret, "error": f"C:\\Users\\{secret}"}
+        ),
         encoding="utf-8",
     )
     stage, category = _smoke_observation(smoke)

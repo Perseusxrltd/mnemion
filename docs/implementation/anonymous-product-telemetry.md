@@ -73,6 +73,12 @@ Linux x64 failed cleanup. Linux ARM64 and both Macs accepted six 25-byte
 fixture reports in total. Recorded accounting coverage remains partial and
 no budget comparison completed or passed. Deeper failure causes remain
 unproven; the earlier delivery passes retain their scope.
+The [runtime source corrections](../validation/2026-10-30-telemetry-installed-driver.md#runtime-source-corrections-after-r2)
+address owned Windows uninstall, Linux cleanup/counter ordering and allowlisted
+startup diagnostics. The reviewed serializer correction preserves absent and
+unknown state through Python/JavaScript round trips. One real Linux desktop build
+passed, including project TypeScript and runtime module staging; no native rerun
+or resource pass is qualified.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and
 production hosting unresolved. The

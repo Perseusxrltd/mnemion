@@ -114,3 +114,8 @@ remains six preparation failures, zero completed workload cases and 36 rejected
 placeholder claims. Earlier scoped delivery passes cover six targets across
 four sources. Their evidence and limits remain in the
 [installed journey report](2026-10-30-telemetry-installed-driver.md).
+The [runtime source corrections](2026-10-30-telemetry-installed-driver.md#runtime-source-corrections-after-r2)
+address owned cleanup and add allowlisted startup diagnostics while preserving
+absent/unknown report state. One real Linux desktop build passed, including
+project TypeScript and runtime module staging; no native rerun or resource pass
+is qualified.

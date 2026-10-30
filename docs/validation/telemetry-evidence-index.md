@@ -69,6 +69,12 @@ cleanup. Linux ARM64 and both Macs accepted six 25-byte fixture reports in
 total. Coverage remains partial, no budget comparison completed or passed,
 and deeper failure causes remain unproven. The installed report retains the
 original r1 preparation failure and its earlier partial observation separately.
+The [runtime source review](2026-10-30-telemetry-installed-driver.md#runtime-source-corrections-after-r2)
+records owned uninstall/drain corrections and allowlisted startup diagnostics.
+The startup-metadata absence mismatch is corrected, with nine Python presence
+and seven Node checks passing. One real Linux desktop build passed, including
+project TypeScript and runtime module staging; no native rerun or resource pass
+follows from these source checks.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
 production hosting unresolved. The

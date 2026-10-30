@@ -522,3 +522,49 @@ placeholder claims. Earlier scoped delivery passes still cover six targets
 across four sources. Collection stays off, hosting remains pending, and there
 are no qualified fleet statistics, public telemetry release or completion
 email. All 66 requirement texts and states are unchanged; V08 remains Building.
+
+## Runtime source corrections after r2
+
+Grok's `8d02cf06` and review correction `734bc57a` were adopted as
+[`16a58890`](https://github.com/Perseusxrltd/mnemion/commit/16a5889092da7b4cc7860a61e03cfd3229846703)
+and [`56ea9b19`](https://github.com/Perseusxrltd/mnemion/commit/56ea9b191be4097c1fb40cec7f155cbb119affd1).
+The owned Windows NSIS uninstall runs synchronously and waits for registration
+removal within a bound; refusal to modify a pre-existing product remains.
+Linux shares one five-second cleanup deadline between root exit and owned-group
+drain, then reads the final kernel CPU counter before removing the leaf. A group
+that remains populated keeps failed cleanup and incomplete CPU coverage;
+failed removal retains the leaf. Startup receipts retain only an allowlisted
+category, excluding raw error text. The original `startup-error` cause remains unproven.
+
+The original three Python and seven Node checks passed; two initial Python
+fixture class-name failures remain retained. The follow-up passed four affected
+Python checks and five existing accounting/Darwin checks. The retained counter
+ordering probe uses a fixture, not native CPU measurement. Astra's project
+typecheck failed with TS7016. Grok's project compiler invocation ran and failed
+with a missing module, and its global compiler failed with missing dependencies.
+These failures remain retained and do not qualify a build.
+
+A separate pure serializer review found that startup metadata could make an
+absent report present in JavaScript while Python kept it absent. Grok's
+`8cf31deb`, adopted as
+[`345bb79c`](https://github.com/Perseusxrltd/mnemion/commit/345bb79cda6d291d78c12f8f0f796c059c960f58),
+removes presence inferred solely from a failure stage and preserves the category
+on explicitly launched reports. Nine Python presence checks and seven Node
+checks passed, including missing/unknown state through Python/JavaScript round
+trips. Astra reused those original results. Four Python files were formatted
+with unchanged ASTs and passing lint.
+
+At 14:09:06 UTC, one real Linux desktop build on `345bb79c` plus that formatting
+passed in 23.664 seconds. It ran project TypeScript and compiled the native
+network module. Runtime source inputs stayed unchanged;
+`dist/startup-failure-category.mjs` is byte-identical to source and the compiled
+`application.js` imports it, qualifying the corrected declaration and staging.
+
+Original source checks and Astra's typecheck, counter-ordering and serializer
+receipts remain under the private `telemetry-owned-resources/runtime-focused/`
+directory, including `astra-review/`. The later check, formatting and desktop
+build receipts are in `telemetry-owned-resources/runtime-final/astra-integration/`.
+No native rerun or resource, production or hosting acceptance follows from these
+source checks. Original r1/r2 results and the six scoped delivery targets across
+four sources are unchanged. Collection stays false and V08 stays Building;
+all 66 requirement texts and states remain unchanged.
