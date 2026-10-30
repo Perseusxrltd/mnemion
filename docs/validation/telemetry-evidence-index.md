@@ -66,10 +66,27 @@ legacy default and both report stores. Three focused template/CLI and real TLS
 checks passed. The operator guide includes mode changes and private exports;
 no deployed systemd, provider, resource or fleet-collection acceptance follows.
 
+The [30 October compiled Linux app review](2026-10-30-telemetry-v3-app-review.md)
+records original run 40981256191 on this source. Ten review controls passed in
+the unpackaged Electron 44.9.3 / Node 24.22.0 x64 app, including one inspected
+25-byte v3 fixture delivery. A private reader that required `comparison: false`
+in `source.json` was corrected to the three-field review schema; the same
+original artifact qualified with no app rerun. Installed delivery, resources,
+whole-wire measurement and hosting or provider acceptance stay outside that scope.
+
+The [30 October SQLite lifecycle probes](2026-10-30-telemetry-sqlite-lifecycle.md)
+reject an idle retained connection for this release. Both retained Windows
+handles blocked atomic replacement with `EPERM`. Linux held connections kept
+the old generation until reopen. These are standalone Node probes, not Electron
+builds or resource measurements. No new resource run is justified. The 2 MiB
+and 0.5% gates stay unaccepted.
+
 ## Controls, ownership and report review
 
 | Date | Original evidence | Scope and boundary |
 | --- | --- | --- |
+| 30 October | [Compiled Linux v3 app review](2026-10-30-telemetry-v3-app-review.md) | Run 40981256191 on `e36b51a72ca16ec0692d427bbeee912e098d21ef`: 10 controls passed, two launches, three save/fetch/recall cycles, 12/12 API requests, one inspected 25-byte v3 packet, opt-out and manual mode held across restart, cleanup passed, 2,311 source inputs matched. First reader rejection of missing `comparison: false` retained; corrected reader accepted the same original and rejected nine negative cases. No installed, resource, whole-wire or provider acceptance. |
+| 30 October | [SQLite handle lifecycle](2026-10-30-telemetry-sqlite-lifecycle.md) | Standalone Node 22.22.0 Linux and Node 25.2.1 Windows probes. Other-process commits were visible. Baseline replacement was visible after reopen on both. Both retained Windows handles returned `EPERM` and kept the old generation. Linux retained handles read the old generation until reopen. Idle-handle proposal rejected. Not an Electron build or a resource measurement. |
 | 27 October | [Catalog compatibility and the remaining declared CLI paths](2026-10-27-telemetry-catalog-compatibility.md) | Catalog v2 appends capture.split and models.test while preserving stored coordinates, counts and contribution limits. Checkpoint inventory: 96 mapped categories; 701 actions (398 mapped, 295 excluded, eight delegated, zero unmeasured). All 322 scoped checks passed without failures or skips; Electron build and frontend typecheck passed. New report schema 4 adds feature labels while wire v2 and immutable report schemas 1–3 retain their original meanings. Earlier failures, resource limits and remaining privacy, installed and full telemetry acceptance are unchanged. |
 | 27 October | [CLI variants, outcomes and repair preview](2026-10-27-telemetry-cli-outcomes.md) | Checkpoint inventory: 700 rows (396 mapped, 294 excluded, eight delegated, two unmeasured); classic CLI has 63 rows (32 mapped, 29 excluded, split and llm test unmeasured). Invocation-only suppression leaves saved policy unchanged and covers both automatic hook-mine subprocesses. Fixed variants and unconfirmed outcomes retain opaque results; repair dry-run stops before extraction/backup/delete/rewrite. Two defect reproductions and three malformed quarantine fixtures retained. Qualified 128 distinct Python cases: 125 unchanged passes plus three corrected fixtures; one existing browser-source preview passed, SDK/frontend builds and lint/format passed. All 584 source inputs unchanged. No model/app/native run, resource saving, collection activation or full acceptance. |
 | 27 October | [Classic CLI ownership and visible gaps](2026-10-27-telemetry-cli-coverage.md) | Two original regressions retained; 66 Python checks and one targeted source-preview check passed. Nine reviewed commands share the local installation choice, with no CLI sender or keepalive. Static extraction exposes 49 leaf paths / 51 rows, including 29 unmeasured paths. Checkpoint total: 688 rows (373 mapped, 278 excluded, eight delegated, 29 unmeasured), eight interfaces / seven checked owners; 94 categories remain mapped. All 690 CLI check inputs remained unchanged; no dependencies installed. SDK/Electron/frontend builds passed. No installed or resource acceptance; the failed catalog comparison remains retained. |
