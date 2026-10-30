@@ -16,9 +16,10 @@ The [installed delivery journeys](../validation/2026-10-30-telemetry-installed-d
 preserve the first workspace-join failure; the corrected run reached the memory
 API but still stopped before report delivery. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
-retain their original failures. The latest run passed cleanup and stopped at a
-diagnostic memory-type selector. These results do not enable collection or
-qualify fleet statistics. The
+retain their original failures. The fourth run passed real memory actions,
+matching inspected-report delivery, opt-out/reload persistence and cleanup in
+both engines. This uses disposable loopback TLS and does not qualify production
+trust, native Safari or fleet statistics. The
 [owned-launch accounting source](../validation/2026-10-30-telemetry-owned-launch.md)
 passed launch-ownership and cleanup checks on all six native targets. Its
 recorded coverage limits remain; it has not yet measured or qualified installed

@@ -6,8 +6,10 @@ The [installed diagnostic qualification](2026-10-30-telemetry-installed-driver.m
 preserves the first six-target failure at workspace join. Its corrected run
 reached the memory API but still stopped before report delivery. The
 [Firefox/WebKit journey evidence](2026-10-30-telemetry-browser-journeys.md)
-retains the original failures; the latest run completed cleanup but stopped at
-a diagnostic memory-type selector before saving its first memory.
+retains the original failures and the successful fourth run: real memory
+actions, two matching 25-byte reports, opt-out/reload persistence and cleanup.
+Production trust, native Safari and resource acceptance remain outside that
+qualification.
 Collection stays disabled.
 
 The [owned-launch accounting review](2026-10-30-telemetry-owned-launch.md)

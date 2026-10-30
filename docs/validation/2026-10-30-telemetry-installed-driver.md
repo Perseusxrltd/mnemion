@@ -48,3 +48,35 @@ workspace-key method, scopes inputs to its form, and waits for the enabled
 open control. Astra imported it as `659bcb30`; the Electron build passed.
 The original failure remains retained and installed delivery still requires
 the corrected hosted run. No application controls or admission rules changed.
+
+## Second installed run and report readiness
+
+[Run 41006912127](https://github.com/Perseusxrltd/mnemion/actions/runs/41006912127)
+used source `2053fa9f6f51f28914af97d2e8d0574a72cdb8c2`. All eleven prerequisite
+jobs passed. The six installed apps reached the memory API, then stopped before
+delivery: Windows x64/ARM64, Linux x64 and macOS ARM64 waited for a held report;
+Linux ARM64 and macOS x64 encountered a null review snapshot while checking
+manual mode. No report was received. Original package hashes and failures are
+retained.
+
+Astra found a diagnostic ordering error: `review_status` is read-only and its
+`report_available` field describes an already held report. Normal producer
+observations enter `pending`; **Inspect next report** creates the held report
+from those rows. Waiting for a held report before clicking Inspect cannot test
+first-report staging. The failed run did not retain a pending-count snapshot,
+so it does not establish whether producers staged observations successfully.
+
+Grok correction `29db8646` waits for a coherent permitted/manual-review snapshot
+with pending observations, refreshes the privacy UI and uses its normal Inspect
+control. A small shared diagnostic helper handles null snapshots and retains
+only allowed phase/gate codes. Three focused Node cases passed; production
+ownership and admission are unchanged. The next installed run must qualify the
+corrected ordering and the UI readiness follow-up, including final opt-out and
+restart. No successful installed delivery follows from these source checks.
+
+The UI readiness follow-up (`31c9a0e9`) refreshes Privacy after native state is
+ready, then waits for the normal manual-review checkbox to become visible and
+enabled. A native read alone does not refresh the page's earlier null snapshot.
+Astra reviewed both changes and built the Electron bridge once successfully.
+The three unchanged focused cases were not repeated. The next six-target run
+must establish actual staging and delivery; the original failures remain.

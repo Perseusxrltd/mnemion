@@ -99,3 +99,21 @@ their actual components. The original Node 25.2.1 syntax command produced no
 syntax errors; Astra did not repeat it. The application UI and telemetry rules
 are unchanged. This source correction requires the next real browser journey;
 it does not qualify delivery or native Safari.
+
+## Fourth hosted run
+
+[Run 41011399926](https://github.com/Perseusxrltd/mnemion/actions/runs/41011399926)
+passed on source `1ab761ee7826d96d89701376e2a248634b832451`. Firefox 156.0 and
+Playwright WebKit 26.6 each completed the real save/fetch/lexical-recall flow,
+inspected and approved one report, received exactly the inspected 25 bytes, then
+preserved opt-out, manual mode and one spent attempt after reload. Each engine
+recorded eight successful fixture API calls. The collector accepted two reports,
+50 body bytes in total. Every recorded cleanup check passed.
+
+All three browser sensors remained explicitly unavailable. No credential or
+referrer header was observed; browser User-Agent headers were present, and only
+header names/counts were retained. The run used a disposable loopback TLS
+exception. It qualifies this browser delivery and reload journey, without
+qualifying production trust, ingress anonymity, resource budgets or native
+Safari. The original three failed runs remain evidence above. This successful
+run was not repeated.
