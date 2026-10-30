@@ -184,6 +184,23 @@ def install_catalog(directory: Path, releases: object, *, generated_at: int) -> 
     return destination
 
 
+def _read_capped_text(path: Path) -> str:
+    """Read at most one byte past the catalog ceiling from the opened handle."""
+    with path.open("rb", buffering=0) as handle:
+        blob = handle.read(MAX_LOCAL_BYTES + 1)
+    if type(blob) is not bytes or not 0 < len(blob) <= MAX_LOCAL_BYTES:
+        raise CatalogError
+    return blob.decode("utf-8")
+
+
+def _parse_json(payload: object):
+    """Parser failures, including nesting past the recursion ceiling, are catalog errors."""
+    try:
+        return json.loads(payload)
+    except (RecursionError, OverflowError, UnicodeError, ValueError, TypeError):
+        raise CatalogError from None
+
+
 def read_local(path: Path, now: object) -> tuple[ReleaseCatalog, int] | str:
     """Load one local file. The reason is missing, malformed, or stale; packets stay valid."""
     try:
@@ -193,10 +210,7 @@ def read_local(path: Path, now: object) -> tuple[ReleaseCatalog, int] | str:
             return "missing"
         if not path.is_file():
             return "malformed"
-        size = path.stat().st_size
-        if type(size) is not int or not 0 < size <= MAX_LOCAL_BYTES:
-            return "malformed"
-        document = json.loads(path.read_text(encoding="utf-8"))
+        document = _parse_json(_read_capped_text(path))
         if (
             type(document) is not dict
             or set(document) != LOCAL_KEYS
@@ -210,7 +224,16 @@ def read_local(path: Path, now: object) -> tuple[ReleaseCatalog, int] | str:
             return "malformed"
         snapshot = validate_releases(document.get("release_allowlist"))
         seconds = _seconds(now)
-    except (CatalogError, OSError, UnicodeError, json.JSONDecodeError, WireV3Error, TypeError):
+    except (
+        CatalogError,
+        OSError,
+        UnicodeError,
+        RecursionError,
+        OverflowError,
+        WireV3Error,
+        TypeError,
+        ValueError,
+    ):
         return "malformed"
     if generated_at > seconds + FUTURE_SKEW_SECONDS or generated_at < seconds - FRESHNESS_SECONDS:
         return "stale"
@@ -228,7 +251,15 @@ def adopt_catalog(path: Path | None, *, now: object, previous: CatalogAdoption |
             found = "malformed"
         else:
             found = read_local(path, now)
-    except (CatalogError, OSError, WireV3Error, TypeError, ValueError):
+    except (
+        CatalogError,
+        OSError,
+        WireV3Error,
+        TypeError,
+        ValueError,
+        RecursionError,
+        OverflowError,
+    ):
         found = "malformed"
     if type(found) is tuple:
         snapshot, generated_at = found
@@ -245,6 +276,17 @@ def adopt_catalog(path: Path | None, *, now: object, previous: CatalogAdoption |
             return previous
         raise
     return CatalogAdoption("bundled", reason, BUNDLED_SOURCE, None, snapshot)
+
+
+def recover_catalog(previous: CatalogAdoption | None) -> CatalogAdoption:
+    """Last valid snapshot, or the bundled allowlist, after a read that must not escape."""
+    if previous is not None and previous.state in {"local", "retained"}:
+        return CatalogAdoption(
+            "retained", "malformed", previous.source, previous.generated_at, previous.snapshot
+        )
+    if previous is not None:
+        return CatalogAdoption("bundled", "malformed", BUNDLED_SOURCE, None, previous.snapshot)
+    return CatalogAdoption("bundled", "malformed", BUNDLED_SOURCE, None, snapshot_from_allowlist())
 
 
 def catalog_path_for(publisher: object) -> Path | None:
@@ -320,11 +362,7 @@ def fetch_public_allowlist(opener=None) -> ReleaseCatalog:
         raise
     except (urllib.error.URLError, TimeoutError, OSError, ValueError):
         raise CatalogError from None
-    try:
-        document = json.loads(payload)
-    except (UnicodeError, json.JSONDecodeError):
-        raise CatalogError from None
-    return allowlist_from_public_wire(document)
+    return allowlist_from_public_wire(_parse_json(payload))
 
 
 def sync_catalog(state: Path, *, now: object = None, opener=None) -> Path:

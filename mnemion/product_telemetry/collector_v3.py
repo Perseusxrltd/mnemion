@@ -19,7 +19,7 @@ from contextlib import suppress
 import time
 
 from .aggregate_v3 import AggregateWindow
-from .release_catalog import adopt_catalog, catalog_path_for
+from .release_catalog import adopt_catalog, catalog_path_for, recover_catalog
 from .reporting import reporting_week
 from .wire_v3 import PACKET_BYTES, WIRE, WireV3Error
 
@@ -85,10 +85,13 @@ class CollectorV3:
                 if self._random_below is not None
                 else self._window.seal()
             )
-            # Seal finished first. A bad catalog cannot throw those counters away.
-            self._adoption = adopt_catalog(
-                self._catalog_path, now=self._clock(), previous=self._adoption
-            )
+            # Seal finished first. A parser failure must not skip publication of result.
+            try:
+                self._adoption = adopt_catalog(
+                    self._catalog_path, now=self._clock(), previous=self._adoption
+                )
+            except Exception:
+                self._adoption = recover_catalog(self._adoption)
             self._window = AggregateWindow(week, release_catalog=self._adoption.snapshot)
             prune = getattr(self._publish, "prune", None)
             if callable(prune):

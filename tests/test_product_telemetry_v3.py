@@ -1188,3 +1188,119 @@ def test_invalid_catalogs_keep_the_week_and_accept_unknown_versions(tmp_path):
     ]
     with pytest.raises(WireV3Error):
         install_catalog(tmp_path, too_many, generated_at=moment)
+
+
+class _WireBody:
+    def __init__(self, payload: bytes):
+        self._payload = payload
+        self.status = 200
+
+    def read(self, amount: int) -> bytes:
+        block = self._payload[:amount]
+        self._payload = self._payload[amount:]
+        return block
+
+    def geturl(self) -> str:
+        from mnemion.product_telemetry.release_catalog import SOURCE
+
+        return SOURCE
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+
+def test_deep_malformed_catalog_falls_back_and_still_publishes_the_sealed_week(tmp_path):
+    """Nesting under the byte ceiling is malformed. The sealed week still publishes once."""
+    from mnemion.product_telemetry.release_catalog import (
+        MAX_LOCAL_BYTES,
+        SOURCE,
+        CatalogError,
+        adopt_catalog,
+        install_catalog,
+        sync_catalog,
+    )
+
+    deep = "[" * 16000 + "0" + "]" * 16000
+    assert len(deep.encode("utf-8")) == 32001
+    assert len(deep.encode("utf-8")) <= MAX_LOCAL_BYTES
+    moment = stamp(2900)
+    listed = {"slot": 0, "major": 4, "minor": 46, "patch": 53, "id": "4.46.53"}
+    packet = encode("release", [2] * len(METRICS), release=(4, 46, 53))
+    unknown = encode("release", [2] * len(METRICS), release=(9, 9, 9))
+
+    startup_dir = tmp_path / "startup"
+    startup_dir.mkdir()
+    startup_file = startup_dir / "release-catalog.json"
+    startup_file.write_text(deep, encoding="utf-8")
+    adopted = adopt_catalog(startup_file, now=moment)
+    assert adopted.describe() == {
+        "state": "bundled",
+        "reason": "malformed",
+        "source": "bundled-wire-v3",
+        "generated_at": None,
+        "release_ids": [item["id"] for item in WIRE["release_allowlist"]],
+    }
+    started = CollectorV3(lambda _result: None, clock=lambda: moment, catalog_path=startup_file)
+    assert started.catalog_adoption["state"] == "bundled"
+    assert started.catalog_adoption["reason"] == "malformed"
+    assert started._window.contribute(packet)
+    assert _release_count(started._window, "4.46.53") == 1
+    assert started._window.week == 2900
+
+    live = tmp_path / "live"
+    live.mkdir()
+    catalog = install_catalog(live, (listed,), generated_at=moment)
+    clock = {"now": moment}
+    published = []
+    app = CollectorV3(
+        published.append,
+        clock=lambda: clock["now"],
+        random_below=stop,
+        catalog_path=catalog,
+    )
+    assert app._window.contribute(packet)
+    assert app.catalog_adoption["state"] == "local"
+    assert app.catalog_adoption["release_ids"] == ["4.46.53"]
+    catalog.write_text(deep, encoding="utf-8")
+    clock["now"] = stamp(2901)
+    assert app._advance()
+    assert len(published) == 1
+    assert published[0]["window_week"] == 2900
+    assert published[0]["domain"]["releases"] == [listed]
+    assert published[0]["domain"]["unlisted_release"] == {"slot": 1, "id": "unlisted"}
+    assert validate(published[0])["domain"]["releases"] == [listed]
+    assert app._advance()
+    assert len(published) == 1
+    assert app._window.week == 2901
+    assert app._window._total == 0
+    assert app.catalog_adoption["state"] == "retained"
+    assert app.catalog_adoption["reason"] == "malformed"
+    assert app.catalog_adoption["source"] == SOURCE
+    assert app.catalog_adoption["release_ids"] == ["4.46.53"]
+    assert app._window.contribute(packet)
+    assert app._window.contribute(unknown)
+    assert _release_count(app._window, "4.46.53") == 1
+    assert _release_count(app._window, "unlisted") == 1
+
+    oversized = tmp_path / "oversized"
+    oversized.mkdir()
+    (oversized / "release-catalog.json").write_bytes(b"{" * (MAX_LOCAL_BYTES + 1))
+    capped = adopt_catalog(oversized / "release-catalog.json", now=moment)
+    assert capped.state == "bundled"
+    assert capped.reason == "malformed"
+
+    sync_dir = tmp_path / "sync"
+    sync_dir.mkdir()
+    kept = install_catalog(sync_dir, (listed,), generated_at=moment)
+    before = kept.read_bytes()
+
+    def opener(_request, timeout):
+        assert timeout == 15
+        return _WireBody(deep.encode("utf-8"))
+
+    with pytest.raises(CatalogError):
+        sync_catalog(kept.parent, now=moment + 5, opener=opener)
+    assert kept.read_bytes() == before
