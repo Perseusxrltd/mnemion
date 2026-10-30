@@ -1,7 +1,8 @@
 # Owned-launch accounting source qualification
 
-30 October 2026. The resource-accounting adapter is diagnostic source. It has
-not yet qualified native lifecycle behavior or measured installed app overhead.
+30 October 2026. The resource-accounting adapter is diagnostic source. Its first
+native run qualifies launch ownership and cleanup on all six targets. It has
+not yet measured installed app overhead.
 The 8 MiB additional RSS allowance per participating process and 0.5% of one
 CPU core remain unaccepted. Production collection stays off.
 
@@ -32,3 +33,25 @@ incomplete. PID reuse does not replace the original launch identity or authorize
 signaling another group. Native receipts are required before attaching this
 adapter to the existing 128-cycle installed workload and its fixed counterbalance.
 No resource-budget pass follows from these source checks.
+
+## First native run
+
+[Run 41009326091](https://github.com/Perseusxrltd/mnemion/actions/runs/41009326091)
+used source `23835d6f1a0f085f82ef9bf68ebfab263eee6f33`. All six original jobs
+passed. Each launch receipt records that source and exit code zero; each
+lifecycle receipt records ownership held, successful real cleanup, no cleanup
+failure, and exercised termination. The Windows invalid-handle exercise is
+separate from actual cleanup and did not authorize a retry.
+
+| Target | Lifetime CPU coverage | Retained measurement limits |
+| --- | --- | --- |
+| Windows x64 | Complete for the owned job | Working-set observations remain sampled. |
+| Windows ARM64 | Complete for the owned job | Two short-lived process identities were not sampled. |
+| Linux x64 and ARM64 | Complete for the delegated cgroup | `memory.peak` was unavailable; cgroup totals are not substituted for RSS. |
+| macOS x64 and ARM64 | Partial | Unreaped descendant CPU and RSS high-water counters remain unavailable. |
+
+Astra reviewed these original artifacts without repeating the self-checks.
+They qualify attaching the adapter to the existing 128-cycle workload and fixed
+counterbalance, using equivalent ownership capability. They do not qualify app
+overhead, the 8 MiB/0.5% budgets, or production collection. The next compiled
+Linux workload also cannot establish installed acceptance on the other targets.

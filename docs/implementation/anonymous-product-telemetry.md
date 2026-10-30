@@ -12,16 +12,17 @@ senders and collector components exist.
 
 The [local v3 systemd check](../validation/2026-10-30-telemetry-v3-systemd-local.md)
 passed socket activation, TLS delivery, credential isolation and cleanup.
-The [first six installed delivery journeys](../validation/2026-10-30-telemetry-installed-driver.md#first-installed-run)
-stopped at a shared workspace-join selector in the diagnostic, before memory
-activity or delivery; its corrected probe now compiles. The
-[first Firefox/WebKit run](../validation/2026-10-30-telemetry-browser-journeys.md#first-hosted-run)
-built the frontend but failed before producing browser or cleanup receipts.
-Both original failures remain recorded. These results do not enable collection
-or qualify fleet statistics. The
+The [installed delivery journeys](../validation/2026-10-30-telemetry-installed-driver.md)
+preserve the first workspace-join failure; the corrected run reached the memory
+API but still stopped before report delivery. The
+[Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
+retain their original failures. The latest run passed cleanup and stopped at a
+diagnostic memory-type selector. These results do not enable collection or
+qualify fleet statistics. The
 [owned-launch accounting source](../validation/2026-10-30-telemetry-owned-launch.md)
-is reviewed for its first native lifecycle run; it has not yet measured or
-qualified installed app overhead.
+passed launch-ownership and cleanup checks on all six native targets. Its
+recorded coverage limits remain; it has not yet measured or qualified installed
+app overhead.
 
 Release 4.46.55 includes the v3 clients, collector and private reporting tools.
 Its installed controls have the scoped qualification below; production
