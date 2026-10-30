@@ -480,6 +480,7 @@ _DESKTOP_ENV = (
     "MNEMION_TELEMETRY_FIXTURE_KEY",
     "MNEMION_TELEMETRY_RESOURCE_MANIFEST",
     "MNEMION_TELEMETRY_RESOURCE_PROBE",
+    "MNEMION_TELEMETRY_RESOURCE_ADMISSION",
 )
 INSTALLED_DESKTOP_ENV = _SERVICE_ENV + _DESKTOP_ENV
 
@@ -855,6 +856,10 @@ def owned_scope_command(
         if name not in environ:
             continue
         value = environ[name]
+        # Dispatch sends an empty string when the diagnostic is off. Only explicit
+        # 1 is the opt-in. Any other value stays off and must not reject the delegate.
+        if name == "MNEMION_TELEMETRY_RESOURCE_ADMISSION" and value != "1":
+            continue
         if not _service_text(value):
             return list(command), "direct_identity_unavailable"
         selected.append(f"--setenv={name}={value}")

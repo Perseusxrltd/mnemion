@@ -298,6 +298,9 @@ def test_default_service_environment_does_not_pass_the_fixture_key():
         "PATH": "/usr/bin",
         "HOME": "/home/runner",
         "MNEMION_TELEMETRY_FIXTURE_KEY": "fixture-key-not-for-the-default-service",
+        "MNEMION_TELEMETRY_RESOURCE_ADMISSION": "1",
+        "MNEMION_TELEMETRY_INSTALLED_DELIVERY": "1",
+        "GITHUB_TOKEN": "not-for-the-service",
     }
     common = dict(
         requested=True,
@@ -312,11 +315,34 @@ def test_default_service_environment_does_not_pass_the_fixture_key():
     command, mode = owned_scope_command(["/usr/bin/true"], **common)
     assert mode == "systemd_service_delegate"
     assert all("fixture-key-not-for-the-default-service" not in part for part in command)
+    assert all("MNEMION_TELEMETRY_RESOURCE_ADMISSION" not in part for part in command)
     wider, wider_mode = owned_scope_command(
         ["/usr/bin/true"], **common, env_names=INSTALLED_DESKTOP_ENV
     )
     assert wider_mode == "systemd_service_delegate"
+    assert "MNEMION_TELEMETRY_RESOURCE_ADMISSION" in INSTALLED_DESKTOP_ENV
     assert any(part.endswith("fixture-key-not-for-the-default-service") for part in wider)
+    assert "--setenv=MNEMION_TELEMETRY_RESOURCE_ADMISSION=1" in wider
+    assert all("MNEMION_TELEMETRY_INSTALLED_DELIVERY" not in part for part in wider)
+    assert all("GITHUB_TOKEN" not in part and "not-for-the-service" not in part for part in wider)
+    omitted = dict(environ)
+    del omitted["MNEMION_TELEMETRY_RESOURCE_ADMISSION"]
+    omitted_common = dict(common)
+    omitted_common["environ"] = omitted
+    without, without_mode = owned_scope_command(
+        ["/usr/bin/true"], **omitted_common, env_names=INSTALLED_DESKTOP_ENV
+    )
+    assert without_mode == "systemd_service_delegate"
+    assert all("MNEMION_TELEMETRY_RESOURCE_ADMISSION" not in part for part in without)
+    blank = dict(environ)
+    blank["MNEMION_TELEMETRY_RESOURCE_ADMISSION"] = ""
+    blank_common = dict(common)
+    blank_common["environ"] = blank
+    quiet, quiet_mode = owned_scope_command(
+        ["/usr/bin/true"], **blank_common, env_names=INSTALLED_DESKTOP_ENV
+    )
+    assert quiet_mode == "systemd_service_delegate"
+    assert all("MNEMION_TELEMETRY_RESOURCE_ADMISSION" not in part for part in quiet)
 
 
 def test_delivery_flag_is_the_only_diagnostic_detector():
@@ -348,9 +374,25 @@ def test_resource_smoke_environment_drops_delivery_mode(tmp_path: Path):
         manifest=manifest,
     )
     assert "MNEMION_TELEMETRY_INSTALLED_DELIVERY" not in env
+    assert "MNEMION_TELEMETRY_RESOURCE_ADMISSION" not in env
     assert env["MNEMION_TELEMETRY_INSTALLED_RESOURCE"] == "1"
     assert env["MNEMION_OWNED_LAUNCH_PYTHON"] == "client-python"
     assert env["MNEMION_ENGINE_PYTHON"] == "engine-python"
+    opted = resource_smoke_environment(
+        {
+            "MNEMION_TELEMETRY_INSTALLED_DELIVERY": "1",
+            "MNEMION_TELEMETRY_RESOURCE_ADMISSION": "1",
+            "MNEMION_ENGINE_PYTHON": "engine-python",
+            "PATH": "/usr/bin",
+        },
+        observer="client-python",
+        endpoint="http://127.0.0.1:9",
+        space="space",
+        fixture_key="fixture-key",
+        manifest=manifest,
+    )
+    assert "MNEMION_TELEMETRY_INSTALLED_DELIVERY" not in opted
+    assert opted["MNEMION_TELEMETRY_RESOURCE_ADMISSION"] == "1"
 
 
 def test_matching_counts_do_not_grant_resource_acceptance():
@@ -406,9 +448,19 @@ def test_public_errors_drop_paths_and_fixture_material():
 def test_resource_workflow_is_optional_and_independent_of_target_selection():
     text = Path(".github/workflows/telemetry-installed-delivery.yml").read_text(encoding="utf-8")
     assert "resource_comparison:" in text
+    assert "admission_diagnostic:" in text
     assert "type: boolean" in text
     assert "default: false" in text
     assert "--resource-comparison" in text
     assert "MNEMION_OWNED_LAUNCH_PYTHON" in text
     assert "--targets" in text
     assert "telemetry-diagnostic-engine-windows-x64-inactive" in text
+    flag = "MNEMION_TELEMETRY_RESOURCE_ADMISSION: ${{ inputs.admission_diagnostic && '1' || '' }}"
+    assert text.count(flag) == 1
+    delivery_job = text.split("  delivery:", 1)[1]
+    job_env, _, steps = delivery_job.partition("    steps:")
+    assert "MNEMION_TELEMETRY_RESOURCE_ADMISSION" not in job_env
+    resource_step = steps.split("Exercise the optional installed resource comparison", 1)[1]
+    resource_step = resource_step.split("\n      - name:", 1)[0]
+    assert flag in resource_step
+    assert "inputs.targets" in text
