@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { canonicalTerminalMarker, resourceProgress } from '../canonical-memory-cycles.mjs'
-import { finishResourceCleanup, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps } from './installed-resource-report.mjs'
+import { finishResourceCleanup, nsisSilentUninstallArgs, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, waitForOwnedWindowsRemoval, windowsInstallBlocked, windowsProductReadScript, windowsProductRefusalScript } from './installed-resource-report.mjs'
+import { startupFailureCategory } from '../startup-failure-category.mjs'
 
 const CASES = [
   { label: 'r1-unavailable', condition: 'unavailable', package: 'inactive' },
@@ -122,4 +123,70 @@ test('the public report keeps partial ram and drops a path', () => {
   assert.equal(report.resource_acceptance, false)
   assert.equal(report.budget.compared, false)
   assert.equal(JSON.stringify(report).includes('secret-trace'), false)
+})
+
+test('owned windows uninstall waits for this registration and still refuses another product', () => {
+  const directory = 'C:\\runner\\Équipe package'
+  assert.deepEqual(nsisSilentUninstallArgs(directory), ['/S', '_?=C:\\runner\\Équipe package'])
+  assert.equal(nsisSilentUninstallArgs(directory).at(-1).startsWith('_?='), true)
+  assert.throws(() => nsisSilentUninstallArgs('C:\\path\\bad"quote'), /uninstall_failed/)
+  const refusal = windowsProductRefusalScript()
+  const reader = windowsProductReadScript()
+  assert.match(refusal, /Refusing to modify an existing Mnemion installation/)
+  assert.equal(/Remove-Item|reg delete|DeleteKey/i.test(refusal + reader), false)
+  const foreign = {
+    displayName: 'Mnemion Studio',
+    installLocation: 'C:\\Program Files\\Mnemion Studio\\',
+    uninstallString: '"C:\\Program Files\\Mnemion Studio\\Uninstall Mnemion Studio.exe"',
+  }
+  const owned = {
+    displayName: 'Mnemion Studio',
+    installLocation: `${directory}\\`,
+    uninstallString: `"${directory}\\Uninstall Mnemion Studio.exe"`,
+  }
+  assert.equal(windowsInstallBlocked([foreign]), true)
+  assert.equal(windowsInstallBlocked([]), false)
+  const snapshots = [[owned, foreign], [owned, foreign], [foreign]]
+  let reads = 0
+  let sleeps = 0
+  const result = waitForOwnedWindowsRemoval(directory, () => snapshots[reads++], () => { sleeps += 1 }, 5)
+  assert.deepEqual(result, { cleared: true, otherPresent: true })
+  assert.equal(windowsInstallBlocked([foreign]), true)
+  assert.equal(reads, 3)
+  assert.equal(sleeps, 2)
+  assert.throws(() => waitForOwnedWindowsRemoval(directory, () => [owned], () => {}, 2), /uninstall_failed/)
+})
+
+test('a startup category cannot complete the case or keep the message', () => {
+  const secret = 'super-secret-token-value'
+  assert.equal(startupFailureCategory(`Error: Real save failed: ${secret}`), 'memory_save')
+  assert.equal(String(startupFailureCategory(`Error: Real save failed: ${secret}`)).includes(secret), false)
+  const report = publicOwnedReport({
+    failure_stage: 'startup-error',
+    failure_category: 'memory_save',
+    hosting_ready: false,
+    root_exit_code: 0,
+    canonical_operations_completed: 16,
+    canonical_operations_known: true,
+    resource_acceptance: true,
+    error: secret,
+    cleanup: { ok: false, failure: 'cgroup_rmdir_failed', retried: false, terminated_owned_group: true },
+  })
+  assert.equal(report.failure_stage, 'startup-error')
+  assert.equal(report.failure_category, 'memory_save')
+  assert.equal(report.hosting_ready, false)
+  assert.equal(report.root_exit_code, 0)
+  assert.equal(report.cleanup.ok, false)
+  assert.equal(report.cleanup.failure, 'cgroup_rmdir_failed')
+  assert.equal(report.resource_acceptance, false)
+  assert.equal(JSON.stringify(report).includes(secret), false)
+  const rejected = publicOwnedReport({
+    failure_stage: 'startup-error',
+    failure_category: secret,
+    hosting_ready: false,
+    root_exit_code: 0,
+    error: secret,
+  })
+  assert.equal(rejected.failure_category, null)
+  assert.equal(JSON.stringify(rejected).includes(secret), false)
 })

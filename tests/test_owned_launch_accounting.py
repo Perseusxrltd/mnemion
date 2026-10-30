@@ -579,3 +579,117 @@ class _FakeBackend:
 
     def close(self):
         return True, None
+
+
+def test_linux_cleanup_drains_owned_members_before_removal(tmp_path, monkeypatch):
+    import threading
+    import time
+
+    import deploy.owned_launch_accounting as accounting
+
+    leaf = tmp_path / "owned-leaf"
+    leaf.mkdir()
+    (leaf / "cgroup.procs").write_text("4242\n", encoding="ascii")
+    (leaf / "cgroup.events").write_text("populated 1\n", encoding="ascii")
+    backend = accounting.LinuxCgroupBackend.__new__(accounting.LinuxCgroupBackend)
+    backend.leaf = leaf
+    backend.process = _RootProcess(50)
+    backend._closed = False
+    signaled = []
+    killed = []
+    monkeypatch.setattr(accounting, "_signal_cgroup", lambda _leaf: signaled.append(_leaf) or (True, None))
+    monkeypatch.setattr(accounting.os, "kill", lambda *_args: killed.append(_args))
+
+    def clear():
+        time.sleep(0.12)
+        (leaf / "cgroup.procs").write_text("", encoding="ascii")
+        (leaf / "cgroup.events").write_text("populated 0\n", encoding="ascii")
+
+    threading.Thread(target=clear, daemon=True).start()
+
+    def remove():
+        assert backend._member_state() == "empty"
+        for child in list(leaf.iterdir()):
+            child.unlink()
+        leaf.rmdir()
+        return not leaf.exists()
+
+    backend._rmdir_leaf = remove
+    ok, failure = backend.close(drain_seconds=2)
+    assert ok is True and failure is None
+    assert not leaf.exists()
+    assert backend.leaf is None
+    assert signaled == []
+    assert killed == []
+    assert backend._cleanup_retried is False
+
+
+def test_linux_cleanup_keeps_a_group_that_remains(tmp_path, monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    leaf = tmp_path / "owned-leaf"
+    leaf.mkdir()
+    (leaf / "cgroup.procs").write_text("", encoding="ascii")
+    (leaf / "cgroup.events").write_text("populated 0\n", encoding="ascii")
+    (leaf / "child").mkdir()
+    backend = accounting.LinuxCgroupBackend.__new__(accounting.LinuxCgroupBackend)
+    backend.leaf = leaf
+    backend.process = _RootProcess(50)
+    backend._closed = False
+    monkeypatch.setattr(
+        accounting.os, "kill", lambda *_args: (_ for _ in ()).throw(AssertionError("killed"))
+    )
+    ok, failure = backend.close(drain_seconds=0.2)
+    assert ok is False
+    assert failure == "cgroup_rmdir_failed"
+    assert leaf.exists()
+    assert backend.leaf == leaf
+    assert backend._cleanup_retried is True
+    again_ok, again_failure = backend.close()
+    assert (again_ok, again_failure) == (False, "cgroup_rmdir_failed")
+    assert leaf.exists()
+
+
+def test_startup_category_does_not_complete_or_keep_a_message(tmp_path):
+    import json
+
+    from deploy.owned_installed_launch import (
+        _smoke_observation,
+        owned_launch_succeeded,
+        startup_failure_category,
+    )
+
+    secret = "super-secret-token-value"
+    assert startup_failure_category(f"Error: Real save failed: {secret}") == "memory_save"
+    assert secret not in startup_failure_category(f"Error: Real save failed: {secret}")
+    assert startup_failure_category("not a known probe failure") == "unclassified"
+    assert startup_failure_category(None) is None
+    assert owned_launch_succeeded(False, 0, True, "startup-error") is False
+    assert owned_launch_succeeded(True, 0, False, None) is False
+    assert owned_launch_succeeded(True, 0, True, None) is True
+    smoke = tmp_path / "smoke.json"
+    smoke.write_text(
+        json.dumps(
+            {
+                "stage": "startup-error",
+                "error": f"Error: Real save failed: {secret}",
+                "failure_category": "memory_save",
+            }
+        ),
+        encoding="utf-8",
+    )
+    stage, category = _smoke_observation(smoke)
+    assert (stage, category) == ("startup-error", "memory_save")
+    smoke.write_text(
+        json.dumps({"stage": "startup-error", "failure_category": secret, "error": f"C:\\Users\\{secret}"}),
+        encoding="utf-8",
+    )
+    stage, category = _smoke_observation(smoke)
+    assert stage == "startup-error"
+    assert category == "unclassified"
+    assert secret not in category
+    smoke.write_text(
+        json.dumps({"stage": "hosting-ready", "error": secret, "failure_category": "memory_save"}),
+        encoding="utf-8",
+    )
+    assert _smoke_observation(smoke) == ("hosting-ready", None)

@@ -13,7 +13,7 @@ import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
-import { finishResourceCleanup, inspectedBodyHex, performOwnedInstall, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage } from './installed-resource-report.mjs'
+import { finishResourceCleanup, inspectedBodyHex, nsisSilentUninstallArgs, performOwnedInstall, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage, waitForOwnedWindowsRemoval, windowsProductReadScript, windowsProductRefusalScript } from './installed-resource-report.mjs'
 import { publishResourceCase } from './resource-case-boundary.mjs'
 
 const artifacts = platformArtifacts()
@@ -78,9 +78,20 @@ function refuseExistingWindowsProduct() {
   if (process.platform !== 'win32') return
   const env = { ...environment }
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key]
-  run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-    '$ErrorActionPreference="Stop"; $entries=Get-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*" -ErrorAction SilentlyContinue; '
-    + 'if ($entries | Where-Object { $_.DisplayName -like "Mnemion Studio*" }) { throw "Refusing to modify an existing Mnemion installation" }'], { env })
+  run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', windowsProductRefusalScript()], { env })
+}
+
+function readWindowsMnemionProducts() {
+  const env = { ...environment }
+  for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key]
+  let stdout
+  try {
+    stdout = run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', windowsProductReadScript()], { env })
+  } catch { throw new Error('uninstall_failed') }
+  try {
+    const parsed = JSON.parse(stdout || '[]')
+    return Array.isArray(parsed) ? parsed : [parsed]
+  } catch { throw new Error('uninstall_failed') }
 }
 
 async function installPrepared(destination, installer, refuseExisting) {
@@ -322,7 +333,16 @@ function uninstallWindowsProduct(directory) {
   try { names = readdirSync(directory) } catch { throw new Error('uninstall_unreadable') }
   const uninstaller = names.find(name => /^Uninstall .*\.exe$/.test(name))
   if (!uninstaller) throw new Error('uninstall_missing')
-  try { run(join(directory, uninstaller), ['/S']) } catch { throw new Error('uninstall_failed') }
+  let args
+  try { args = nsisSilentUninstallArgs(directory) } catch { throw new Error('uninstall_failed') }
+  // _?= keeps NSIS in this directory so the process exit is the real uninstall.
+  // The following poll only confirms this run's registration. It deletes nothing.
+  try {
+    run(join(directory, uninstaller), args, { windowsVerbatimArguments: true })
+  } catch { throw new Error('uninstall_failed') }
+  waitForOwnedWindowsRemoval(directory, readWindowsMnemionProducts, () => {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500)
+  }, 60)
 }
 
 function retireInstallation(item) {

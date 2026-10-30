@@ -14,6 +14,7 @@ import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
 import { verifyNativeHostControl } from './native-host-control-probe.js'
 import { verifyLocalHostingProbe, watchHostingProbeQuit } from './local-hosting-probe.js'
 import { deliveryObservationEnabled, publicObservation } from './telemetry-observation-diagnostic.mjs'
+import { startupFailureCategory } from './startup-failure-category.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -609,7 +610,7 @@ if (!hasSingleInstanceLock) {
       })
     } catch (e) {
       console.error('[main] App startup failed:', e)
-      writeSmokeStatus('startup-error', { error: String(e), localDiagnostic: desktopBridge.localDiagnostic(),
+      writeSmokeStatus('startup-error', { error: String(e), failure_category: startupFailureCategory(e), localDiagnostic: desktopBridge.localDiagnostic(),
         backupDiagnostic: desktopBridge.backupDiagnostic(), backupStateDiagnostic: desktopBridge.backupStateDiagnostic() })
     }
   })

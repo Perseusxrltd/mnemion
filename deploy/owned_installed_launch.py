@@ -82,17 +82,75 @@ def _root_exit_code(launch) -> int | None:
     return code
 
 
-def _smoke_stage(path: Path) -> str | None:
+_STARTUP_PAIRS = (
+    ("Hosting validation requires an isolated profile and evidence directory", "isolated_profile"),
+    ("Invalid telemetry resource configuration", "invalid_resource_config"),
+    ("Invalid hosting validation configuration", "invalid_hosting_config"),
+    ("Telemetry resource fixture refused a non-loopback destination", "non_loopback_destination"),
+    ("Session-only native connection required", "session_connection"),
+    ("The packaged workspace bridge is unavailable", "workspace_bridge"),
+    ("Renderer received a workspace key instead of a handle", "workspace_handle"),
+    ("The packaged memory client did not start", "memory_client"),
+    ("Installed telemetry resource workload requires the packaged application", "not_packaged"),
+    ("Canonical memory cycles require the real client", "memory_client"),
+    ("Real save failed", "memory_save"),
+    ("Real fetch changed content", "memory_fetch"),
+    ("Real recall omitted the saved memory", "memory_recall"),
+    ("Canonical memory workload did not complete", "workload_incomplete"),
+    ("Installed delivery settlement is only available to the packaged hosting probe", "delivery_settlement"),
+    ("Resource evidence contained private fixture material", "private_evidence"),
+    ("Disposable profile required", "disposable_profile"),
+)
+_STARTUP_ALLOWLIST = {category for _, category in _STARTUP_PAIRS} | {"unclassified"}
+
+
+def startup_failure_category(message: object) -> str | None:
+    """One allowlisted class. The message itself is never returned."""
+    if type(message) is not str or not message:
+        return None
+    line = message.splitlines()[0].strip()
+    for _ in range(3):
+        if line.startswith("Error: "):
+            line = line[len("Error: ") :].strip()
+        else:
+            break
+    if not line or len(line) > 500:
+        return "unclassified"
+    for sentence, category in _STARTUP_PAIRS:
+        if line == sentence or line.startswith((sentence + ":", sentence + ".", sentence + " ")):
+            return category
+    if len(line) <= 400:
+        for sentence, category in _STARTUP_PAIRS:
+            at = line.find(sentence)
+            if at < 0:
+                continue
+            after = line[at + len(sentence) : at + len(sentence) + 1]
+            if after in {"", ":", ".", " "}:
+                return category
+    return "unclassified"
+
+
+def _smoke_observation(path: Path) -> tuple[str | None, str | None]:
+    """Stage plus a startup class. Raw smoke text stays on the runner."""
     try:
+        if path.stat().st_size > 65536:
+            return None, None
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
-        return None
+        return None, None
     if type(value) is not dict:
-        return None
+        return None, None
     stage = value.get("stage")
     if type(stage) is not str or not _STAGE.fullmatch(stage):
-        return None
-    return stage
+        return None, None
+    if stage != "startup-error":
+        return stage, None
+    recorded = value.get("failure_category")
+    if type(recorded) is str and recorded in _STARTUP_ALLOWLIST:
+        return stage, recorded
+    if "error" not in value:
+        return stage, None
+    return stage, startup_failure_category(value.get("error"))
 
 
 def _write_quit(path: Path) -> None:
@@ -215,11 +273,14 @@ def finalize_owned_launch(launch, cursor, observe) -> dict:
     exit_code = None
     hosting_ready = False
     failure_stage = None
+    startup_category = None
     try:
         observed = observe()
-        if type(observed) is not tuple or len(observed) != 3:
+        if type(observed) is not tuple or len(observed) not in (3, 4):
             raise OwnedLaunchError("observation_failed")
-        hosting_ready, failure_stage, exit_code = observed
+        hosting_ready, failure_stage, exit_code = observed[:3]
+        if len(observed) == 4 and type(observed[3]) is str and observed[3] in _STARTUP_ALLOWLIST:
+            startup_category = observed[3]
     except Exception as error:
         observation_error = error
         try:
@@ -241,6 +302,8 @@ def finalize_owned_launch(launch, cursor, observe) -> dict:
     report["root_exit_code"] = exit_code
     report["hosting_ready"] = hosting_ready is True
     report["failure_stage"] = failure_stage if type(failure_stage) is str else None
+    if report["failure_stage"] == "startup-error" and startup_category in _STARTUP_ALLOWLIST:
+        report["failure_category"] = startup_category
     _progress_fields(report, cursor)
     report["resource_acceptance"] = False
     return report
@@ -282,6 +345,7 @@ def run_spec(spec_path: Path) -> int:
     def observe():
         hosting_ready = False
         failure_stage = None
+        startup_category = None
         root_done = False
         exit_code = None
         deadline = time.monotonic() + _APP_WAIT_SECONDS
@@ -290,7 +354,9 @@ def run_spec(spec_path: Path) -> int:
                 apply_owned_marker(launch, read_owned_marker(profile), cursor)
             except Exception as error:
                 _remember_marker_failure(cursor, error)
-            stage = _smoke_stage(smoke_file)
+            stage, seen_category = _smoke_observation(smoke_file)
+            if stage == "startup-error":
+                startup_category = seen_category
             if stage == "hosting-ready":
                 hosting_ready = True
                 break
@@ -322,7 +388,7 @@ def run_spec(spec_path: Path) -> int:
             exit_code = _root_exit_code(launch)
         except Exception:
             exit_code = None
-        return hosting_ready, failure_stage, exit_code
+        return hosting_ready, failure_stage, exit_code, startup_category
 
     report = finalize_owned_launch(launch, cursor, observe)
     report = _annotate(

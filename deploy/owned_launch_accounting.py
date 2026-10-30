@@ -343,7 +343,8 @@ class OwnedLaunch:
         ok, failure = self.backend.close()
         if not ok and cleanup_failure is None:
             cleanup_failure = failure or "close_failed"
-        return self._report(snapshot, cleanup_failure, terminated, timed_out)
+        retried = getattr(self.backend, "_cleanup_retried", False) is True
+        return self._report(snapshot, cleanup_failure, terminated, timed_out, retried)
 
     def _close_open(self, count: int | None) -> None:
         if self._open is None:
@@ -371,7 +372,8 @@ class OwnedLaunch:
             self._sample_error = "sample_failed"
 
     def _report(
-        self, snapshot: dict, cleanup_failure: str | None, terminated: bool, timed_out: bool
+        self, snapshot: dict, cleanup_failure: str | None, terminated: bool, timed_out: bool,
+        retried: bool = False,
     ) -> dict:
         phases = []
         for phase in self._phases:
@@ -460,7 +462,7 @@ class OwnedLaunch:
             "cleanup": {
                 "ok": cleanup_failure is None,
                 "failure": cleanup_failure,
-                "retried": False,
+                "retried": retried is True,
                 "terminated_owned_group": terminated,
             },
             "bounds": {
@@ -1108,6 +1110,7 @@ class LinuxCgroupBackend:
         self.leaf = None
         self._sampled_sum_peak = None
         self._closed = False
+        self._cleanup_retried = False
         parent = _own_cgroup_parent()
         if parent is None:
             raise OwnedLaunchUnsupported("cgroup_unavailable")
@@ -1246,21 +1249,72 @@ class LinuxCgroupBackend:
             "process_lifetime_count": "unavailable",
         }
 
-    def close(self) -> tuple[bool, str | None]:
+    def close(self, drain_seconds: float = 5.0) -> tuple[bool, str | None]:
+        """Remove this leaf only after its members are gone.
+
+        wait_root can return as soon as the root exits. Descendants keep the
+        cgroup populated, and rmdir then fails with the directory still there.
+        The leaf handle stays until removal succeeds. The drain budget is the
+        same five seconds finish already allows for the root.
+        """
         if self._closed:
-            return True, None
+            return getattr(self, "_close_result", (False, "cgroup_rmdir_failed"))
         self._closed = True
+        self._cleanup_retried = False
+        if type(drain_seconds) not in (int, float) or not 0 < float(drain_seconds) <= 5:
+            drain_seconds = 5.0
+        drain_seconds = float(drain_seconds)
         if self.process is not None and self.process.poll() is None:
             _signal_cgroup(self.leaf)
-            self.wait_root(2)
-        failure = None
-        if self.leaf is not None:
-            try:
-                self.leaf.rmdir()
-            except OSError:
-                failure = "cgroup_rmdir_failed"
-            self.leaf = None
-        return failure is None, failure
+            self.wait_root(min(2.0, drain_seconds))
+        if self.leaf is None:
+            self._close_result = (False, "cgroup_missing")
+            return self._close_result
+        deadline = time.monotonic() + drain_seconds
+        removal_attempts = 0
+        while True:
+            if self._member_state() == "empty":
+                removal_attempts += 1
+                if removal_attempts > 1:
+                    self._cleanup_retried = True
+                if self._rmdir_leaf():
+                    self.leaf = None
+                    self._close_result = (True, None)
+                    return self._close_result
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.05)
+        self._close_result = (False, "cgroup_rmdir_failed")
+        return self._close_result
+
+    def _member_state(self) -> str:
+        """empty, populated, or unreadable. This owned leaf only."""
+        if self.leaf is None:
+            return "unreadable"
+        try:
+            raw = (self.leaf / "cgroup.procs").read_text(encoding="ascii")
+        except (OSError, UnicodeError):
+            return "unreadable"
+        if any(line.isdigit() for line in raw.splitlines()):
+            return "populated"
+        try:
+            events = (self.leaf / "cgroup.events").read_text(encoding="ascii")
+        except (OSError, UnicodeError):
+            return "empty"
+        for line in events.splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[0] == "populated" and parts[1] == "1":
+                return "populated"
+        return "empty"
+
+    def _rmdir_leaf(self) -> bool:
+        if self.leaf is None:
+            return False
+        try:
+            self.leaf.rmdir()
+        except OSError:
+            return False
+        return not self.leaf.exists()
 
     def _remove_leaf(self) -> None:
         if self.leaf is not None:

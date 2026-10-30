@@ -3,12 +3,24 @@ import { verifyNativeResources } from './native-resources.mjs'
 /** Allowlisted owned-launch evidence and the single-product package order. */
 
 const TOKEN = /^[A-Za-z0-9_.:-]{1,80}$/
+const STARTUP_FAILURE_CATEGORIES = new Set([
+  'isolated_profile', 'invalid_resource_config', 'invalid_hosting_config', 'non_loopback_destination',
+  'session_connection', 'workspace_bridge', 'workspace_handle', 'memory_client', 'not_packaged',
+  'memory_save', 'memory_fetch', 'memory_recall', 'workload_incomplete', 'delivery_settlement',
+  'private_evidence', 'disposable_profile', 'unclassified',
+])
+const MNEMION_PRODUCT = /^Mnemion Studio/
 const IDENTITY = /^[0-9]{1,10}:[0-9]{1,20}$/
 const FRACTION = /^[0-9]{1,6}\.[0-9]{6}$/
 const HEX50 = /^[0-9a-f]{50}$/
 
 function token(value) {
   return typeof value === 'string' && TOKEN.test(value) ? value : null
+}
+
+function failureCategory(report) {
+  if (token(report?.failure_stage) !== 'startup-error') return null
+  return STARTUP_FAILURE_CATEGORIES.has(report?.failure_category) ? report.failure_category : null
 }
 
 function count(value, limit = Number.MAX_SAFE_INTEGER) {
@@ -153,7 +165,8 @@ export function publicOwnedReport(report) {
     || markerApplied === false || unsupported || ledgerTruncated !== null
     || lifetimeCap !== null || timedOut !== null || sampleSeconds !== null || sampleTruncated !== null
     || sampleError || (copiedPeaks && Object.values(copiedPeaks).some(item => item !== null))
-    || (copiedKernel && Object.values(copiedKernel).some(item => item !== null)),
+    || (copiedKernel && Object.values(copiedKernel).some(item => item !== null))
+    || token(report?.failure_stage),
   )
   if (report.present === false && !independent) return absentOwnedReport()
   let launched = null
@@ -173,6 +186,7 @@ export function publicOwnedReport(report) {
     hosting_ready: report?.hosting_ready === true,
     root_exit_code: Number.isInteger(report?.root_exit_code) ? report.root_exit_code : null,
     failure_stage: token(report?.failure_stage),
+    failure_category: failureCategory(report),
     delivery_diagnostics_enabled: report?.delivery_diagnostics_enabled === true,
     platform_method: token(report?.platform_method),
     lifetime_cpu_microseconds: report?.lifetime_cpu_microseconds == null ? null : count(report.lifetime_cpu_microseconds),
@@ -255,6 +269,72 @@ export function resourceInstallSteps(cases) {
   }
   if (current) steps.push({ action: 'uninstall', id: current.id, package: current.package })
   return steps
+}
+
+function windowsPathKey(value) {
+  if (typeof value !== 'string') return ''
+  let text = value.trim().replaceAll('/', '\\').replaceAll('"', '')
+  while (text.endsWith('\\')) text = text.slice(0, -1)
+  return text.toLowerCase()
+}
+
+function productEntries(value) {
+  if (Array.isArray(value)) return value
+  if (value && typeof value === 'object') return [value]
+  return []
+}
+
+/** NSIS waits for uninstall only when _?= is last and unquoted, including spaces. */
+export function nsisSilentUninstallArgs(directory) {
+  if (typeof directory !== 'string' || directory.length === 0 || directory.length > 240 || /["\r\n\u0000]/.test(directory)) {
+    throw new Error('uninstall_failed')
+  }
+  return ['/S', `_?=${directory}`]
+}
+
+export function classifyWindowsProducts(entries, directory) {
+  const ownedKey = windowsPathKey(directory)
+  let ownedPresent = false
+  let otherPresent = false
+  for (const entry of productEntries(entries)) {
+    const name = entry && typeof entry.displayName === 'string' ? entry.displayName : ''
+    if (!MNEMION_PRODUCT.test(name)) continue
+    const location = windowsPathKey(entry.installLocation)
+    const uninstall = windowsPathKey(entry.uninstallString)
+    const owned = ownedKey.length > 0 && (location === ownedKey || uninstall === ownedKey || uninstall.startsWith(`${ownedKey}\\`))
+    if (owned) ownedPresent = true
+    else otherPresent = true
+  }
+  return { ownedPresent, otherPresent }
+}
+
+export function windowsInstallBlocked(entries) {
+  return productEntries(entries).some(entry => entry && typeof entry.displayName === 'string' && MNEMION_PRODUCT.test(entry.displayName))
+}
+
+export function windowsProductRefusalScript() {
+  return '$ErrorActionPreference="Stop"; $entries=Get-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*" -ErrorAction SilentlyContinue; '
+    + 'if ($entries | Where-Object { $_.DisplayName -like "Mnemion Studio*" }) { throw "Refusing to modify an existing Mnemion installation" }'
+}
+
+export function windowsProductReadScript() {
+  return '$ErrorActionPreference="Stop"; $paths=@("HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*","HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*"); '
+    + '$entries=@(Get-ItemProperty -Path $paths -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "Mnemion Studio*" } | ForEach-Object { [PSCustomObject]@{ displayName=[string]$_.DisplayName; installLocation=[string]$_.InstallLocation; uninstallString=[string]$_.UninstallString } }); '
+    + 'if ($entries.Count -eq 0) { "[]" } else { $entries | ConvertTo-Json -Compress }'
+}
+
+export function waitForOwnedWindowsRemoval(directory, readEntries, sleep, attempts = 60) {
+  if (typeof readEntries !== 'function' || typeof sleep !== 'function' || !Number.isInteger(attempts) || attempts < 1 || attempts > 80) {
+    throw new Error('uninstall_failed')
+  }
+  let otherPresent = false
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const classified = classifyWindowsProducts(readEntries(), directory)
+    otherPresent = classified.otherPresent
+    if (!classified.ownedPresent) return { cleared: true, otherPresent }
+    if (attempt + 1 < attempts) sleep()
+  }
+  throw new Error('uninstall_failed')
 }
 
 export async function performOwnedInstall(installations, record, actions) {
