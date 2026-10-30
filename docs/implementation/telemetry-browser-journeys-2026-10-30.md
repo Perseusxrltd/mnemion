@@ -27,8 +27,11 @@ route. Each engine gets a new empty profile and one pass, not a retry:
 1. Save the disclosure from the privacy dialog.
 2. Pause reports for manual review before any workspace action.
 3. Join the fixture with its real address and key.
-4. Save a memory whose content contains `PRIVATE_BROWSER_CANARY`, fetch
-   that memory, and run an exact-text search.
+4. Save a memory whose subject and content contain a private marker generated
+   for that run, fetch that memory, and run an exact-text search. The marker
+   fits in a 25-byte report and is not written into this document or the
+   source tree. The built app, the reviewed report, and origin storage must
+   not contain it.
 5. Inspect the next report, approve those exact bytes, and wait until the
    collector has that one 25-byte v3 body.
 6. Turn product telemetry off, reload the same profile, and check that the
@@ -51,8 +54,11 @@ review, and the traffic budget keep their normal decisions.
 phases, per-engine versions and sensor states, API success counts, whether the
 reviewed body matched the received body, the original failure text, cleanup,
 and `resource_acceptance: false` / `production_collection_available: false`.
-The private key and workspace key are not written there. A local source check
-does not mean the journey passed. Only this hosted job can say that.
+The collector listener stays open until that server task has stopped. A
+shutdown error is stored beside the original failure, and either one leaves
+the journey unqualified. The private key and workspace key are not written
+there. A local source check does not mean the journey passed. Only this
+hosted job can say that.
 
 ## Limits
 

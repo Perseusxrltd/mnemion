@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import secrets
 import signal
 import socket
 import sys
@@ -24,9 +25,6 @@ import tempfile
 
 ENGINES = ("firefox", "webkit")
 JOURNEY_ATTEMPTS = 1
-# Short enough to detect a content leak inside the fixed 25-byte report.
-CANARY = "PRIVATE_BROWSER_CANARY"
-CANARY_BYTES = CANARY.encode()
 BUILD_TIMEOUT_SECONDS = 600
 JOURNEY_TIMEOUT_SECONDS = 300
 SENSOR_STATES = ("unavailable", "present")
@@ -43,17 +41,59 @@ def sensor_availability(observed: object) -> str:
     return observed
 
 
-def matching_report(shown_base64: str, received_hex: str, *stored: bytes) -> bytes:
+def fixture_marker() -> str:
+    """A private marker for one run. It is not a source or documentation literal."""
+    marker = secrets.token_hex(10)
+    raw = marker.encode("ascii")
+    if len(raw) > 25 or len(raw) < 16 or not marker.isascii() or not marker.isalnum():
+        raise RuntimeError("Fixture marker must fit in one 25-byte report")
+    return marker
+
+
+def reject_compiled_marker(compiled: bytes, marker: bytes) -> None:
+    """The built app must not contain this run's memory marker."""
+    if type(marker) is not bytes or not 1 <= len(marker) <= 25:
+        raise ValueError("Fixture marker must fit in one 25-byte report")
+    if marker in compiled:
+        raise RuntimeError("The memory canary was compiled into the app")
+
+
+def matching_report(
+    shown_base64: str, received_hex: str, *stored: bytes, marker: bytes
+) -> bytes:
     """The approved body, the TLS body and retained storage must be the same 25 bytes."""
+    if type(marker) is not bytes or not 1 <= len(marker) <= 25:
+        raise ValueError("Fixture marker must fit in one 25-byte report")
     try:
         body = base64.b64decode(shown_base64, validate=True)
     except Exception as exc:
         raise ValueError("Reviewed report is not canonical base64") from exc
     if len(body) != 25 or body.hex() != received_hex:
         raise ValueError("Reviewed report does not match the received 25-byte body")
-    if CANARY_BYTES in body or any(CANARY_BYTES in blob for blob in stored):
+    if marker in body or any(marker in blob for blob in stored):
         raise ValueError("Fixture memory content appeared in telemetry")
     return body
+
+
+def journey_qualified(results: list, original_failure: str | None, cleanup: dict) -> bool:
+    """A cleanup or collector failure does not qualify the journey."""
+    required = (
+        "collector_stopped",
+        "memory_api_stopped",
+        "profiles_removed",
+        "private_input_removed",
+        "production_disclosure_unchanged",
+        "production_route_unchanged",
+    )
+    if original_failure is not None:
+        return False
+    if cleanup.get("collector_shutdown_errors") or cleanup.get("errors"):
+        return False
+    if any(cleanup.get(name) is not True for name in required):
+        return False
+    return len(results) == len(ENGINES) and all(
+        isinstance(row, dict) and row.get("journey_completed") is True for row in results
+    )
 
 
 def require_diagnostic_limits(receipt: dict) -> None:
@@ -116,6 +156,56 @@ async def stop_owned(process: asyncio.subprocess.Process | None) -> None:
             pass
 
 
+async def shutdown_owned_listener(
+    server, task, listener, *, wait_seconds: float = 10, cancel_seconds: float = 5
+) -> list[str]:
+    """Stop one owned server while its listener still exists, then close that socket.
+
+    Closing the listener first makes the server touch a dead descriptor and can
+    replace the original failure. Shutdown errors are returned, not raised.
+    """
+    errors: list[str] = []
+
+    def remember_result() -> None:
+        if task is None or not task.done():
+            return
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            return
+        except Exception as exc:
+            errors.append(f"{type(exc).__name__}: {exc}")
+
+    try:
+        if server is not None:
+            server.should_exit = True
+        if task is not None and not task.done():
+            done, _pending = await asyncio.wait({task}, timeout=wait_seconds)
+            if task not in done:
+                task.cancel()
+                done, _pending = await asyncio.wait({task}, timeout=cancel_seconds)
+                if task not in done:
+                    errors.append("collector cancellation timed out")
+                    task.add_done_callback(_discard_late_result)
+        remember_result()
+        if task is not None and not task.done() and "collector cancellation timed out" not in errors:
+            errors.append("collector task still running")
+    finally:
+        if listener is not None:
+            try:
+                listener.close()
+            except OSError as exc:
+                errors.append(f"{type(exc).__name__}: {exc}")
+    return errors
+
+
+def _discard_late_result(task: asyncio.Task) -> None:
+    try:
+        task.result()
+    except BaseException:
+        return
+
+
 def _header_names(scope: dict) -> set[str]:
     names = set()
     for name, _value in scope.get("headers", []):
@@ -162,13 +252,17 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
     phases = ["collector_starting"]
     results = []
     original_failure = None
+    caught = None
+    listener = None
     cleanup = {
         "collector_stopped": False,
+        "collector_shutdown_errors": [],
         "memory_api_stopped": False,
         "profiles_removed": False,
         "private_input_removed": True,
         "production_disclosure_unchanged": False,
         "production_route_unchanged": False,
+        "errors": [],
     }
     published: list = []
     reviewed: list[str] = []
@@ -248,7 +342,8 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                 raise RuntimeError(
                     "The loopback private key must stay outside the evidence directory"
                 )
-            with socket.socket() as listener:
+            listener = socket.socket()
+            try:
                 listener.bind(("127.0.0.1", 0))
                 listener.listen(8)
                 port = listener.getsockname()[1]
@@ -336,6 +431,8 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                         await stop_owned(builder)
                 if builder.returncode:
                     raise RuntimeError("Inspect retained frontend-build.log")
+                marker = fixture_marker()
+                marker_bytes = marker.encode("ascii")
                 dist = copy / "studio/frontend/dist"
                 compiled = b"".join(
                     path.read_bytes()
@@ -346,8 +443,7 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                     raise RuntimeError(
                         "The built frontend does not contain the baked loopback destination"
                     )
-                if CANARY_BYTES in compiled:
-                    raise RuntimeError("The memory canary was compiled into the app")
+                reject_compiled_marker(compiled, marker_bytes)
                 phases.append("frontend_built")
                 child_env = dict(build_env)
                 child_env["MNEMION_PROBE_PLAYWRIGHT"] = str(playwright.resolve())
@@ -376,7 +472,7 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                                     "engine": engine,
                                     "origin": origin,
                                     "memory": memory,
-                                    "canary": CANARY,
+                                    "canary": marker,
                                     "query": f"browserjourneylexical{engine}",
                                     "received_flag": str(received_flag),
                                     "result": str(output / f"{engine}.json"),
@@ -437,7 +533,7 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                                     and same_body
                                 ):
                                     try:
-                                        matching_report(shown, new_reports[0])
+                                        matching_report(shown, new_reports[0], marker=marker_bytes)
                                         matched = True
                                     except ValueError as exc:
                                         match_error = str(exc)
@@ -549,38 +645,48 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
                         cleanup["profiles_removed"] = all(
                             not (root / f"profile-{engine}").exists() for engine in ENGINES
                         )
-                        cleanup["memory_api_stopped"] = True
-                        phases.append("memory_api_stopped")
-                if server is not None and task is not None:
-                    server.should_exit = True
-                    try:
-                        await asyncio.wait_for(task, 10)
-                    except TimeoutError:
-                        task.cancel()
-                cleanup["collector_stopped"] = task is None or task.done()
+                    cleanup["memory_api_stopped"] = True
+                    phases.append("memory_api_stopped")
+            finally:
+                try:
+                    shutdown_errors = await shutdown_owned_listener(server, task, listener)
+                except Exception as exc:
+                    shutdown_errors = [f"{type(exc).__name__}: {exc}"]
+                cleanup["collector_shutdown_errors"] = shutdown_errors
+                cleanup["collector_stopped"] = bool(
+                    task is not None and task.done() and not shutdown_errors
+                )
+                listener = None
     except Exception as exc:
+        caught = exc
         original_failure = f"{type(exc).__name__}: {exc}"
         phases.append("failed")
-        raise
     finally:
-        if server is not None:
-            server.should_exit = True
-        if task is not None:
-            try:
-                await asyncio.wait_for(task, 10)
-            except TimeoutError:
-                task.cancel()
-            cleanup["collector_stopped"] = task.done()
-        cleanup["production_disclosure_unchanged"] = (
-            disclosure_path.read_bytes() == original_disclosure
-        )
-        cleanup["production_route_unchanged"] = route_path.read_bytes() == original_route
-        if secret:
-            for path in output.rglob("*"):
-                if path.is_file() and path.suffix in {".json", ".log", ".txt", ".md"}:
-                    _scrub(path, secret)
-        cleanup["private_input_removed"] = not any(output.rglob("*input.json"))
-        _write_json(output / "cleanup.json", cleanup)
+        def note(label: str, exc: Exception) -> None:
+            cleanup["errors"].append(f"{label}: {type(exc).__name__}: {exc}")
+
+        try:
+            cleanup["production_disclosure_unchanged"] = (
+                disclosure_path.read_bytes() == original_disclosure
+            )
+        except Exception as exc:
+            cleanup["production_disclosure_unchanged"] = False
+            note("production_disclosure", exc)
+        try:
+            cleanup["production_route_unchanged"] = route_path.read_bytes() == original_route
+        except Exception as exc:
+            cleanup["production_route_unchanged"] = False
+            note("production_route", exc)
+        try:
+            if secret:
+                for path in output.rglob("*"):
+                    if path.is_file() and path.suffix in {".json", ".log", ".txt", ".md"}:
+                        _scrub(path, secret)
+            cleanup["private_input_removed"] = not any(output.rglob("*input.json"))
+        except Exception as exc:
+            cleanup["private_input_removed"] = False
+            note("private_input", exc)
+        qualified = journey_qualified(results, original_failure, cleanup)
         receipt = {
             "schema_version": 1,
             "at": datetime.now(timezone.utc).isoformat(),
@@ -614,17 +720,27 @@ async def run(source: Path, output: Path, playwright: Path) -> dict:
             "webkit_engine_evidence_only": True,
             "original_failure": original_failure,
             "cleanup": cleanup,
-            "journey_completed": bool(results)
-            and all(row.get("journey_completed") is True for row in results)
-            and len(results) == len(ENGINES)
-            and original_failure is None
-            and cleanup["production_disclosure_unchanged"]
-            and cleanup["production_route_unchanged"],
+            "journey_completed": qualified,
         }
-        require_diagnostic_limits(receipt)
-        _write_json(output / "receipt.json", receipt)
+        try:
+            require_diagnostic_limits(receipt)
+            _write_json(output / "cleanup.json", cleanup)
+            _write_json(output / "receipt.json", receipt)
+        except Exception as exc:
+            note("receipt", exc)
+            receipt["journey_completed"] = False
+            receipt["original_failure"] = original_failure
+            receipt["cleanup"] = cleanup
+            try:
+                _write_json(output / "cleanup.json", cleanup)
+                _write_json(output / "receipt.json", receipt)
+            except Exception:
+                pass
+    if caught is not None:
+        raise caught
     if not receipt["journey_completed"]:
-        raise SystemExit("Inspect retained observations; the browser journey did not pass")
+        detail = "; ".join(cleanup["collector_shutdown_errors"] or cleanup["errors"])
+        raise SystemExit(detail or "Inspect retained observations; the browser journey did not pass")
     return receipt
 
 
