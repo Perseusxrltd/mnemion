@@ -351,3 +351,59 @@ Build receipts are in the private completion evidence under
 These builds qualify source integration only. The corrected ARM64 installed
 journey and subsequent installed resource comparison remain pending; no
 resource budget, live collector or fleet statistics are accepted by them.
+
+## Sixth installed run: Windows ARM64 delivery qualified
+
+Original run [41036977655](https://github.com/Perseusxrltd/mnemion/actions/runs/41036977655)
+on source `46d4f730149ed639a975b7c0456e620837a32cd1` selected only Windows
+ARM64 and passed. It completed 21 successful memory API requests and three
+actual memory cycles. All six snapshots were admitted and committed: five in
+the below-5-ms bucket and one below 25 ms, with no null, rejection or admission
+deadline. All 20 native ownership checks were accepted below 50 ms. These
+coarse buckets do not isolate every component's execution time.
+
+The loopback collector accepted exactly one 25-byte report matching the body's
+prior inspection, with no forbidden metadata and no published aggregate. All
+11 disclosure/review/opt-out controls passed. Two clean launches preserved
+opt-out and manual review, an empty queue and one cleared reservation
+`[1, 65536]`. Fixture content and its credential were absent from the inspected
+private store and report according to the source-bound original driver.
+
+The app ran packaged Electron 44.9.3 / Node 24.22.0 on native Windows ARM64.
+Its same-source x64 engine and database ran under emulation. Package and
+native-resource verification passed. The diagnostic installer digest is
+`83ca313ea1f0250cc984fc8a665bfdba352ead7f3518b99ed292ba5e346ce01c`.
+
+Astra verified the original archive against GitHub artifact metadata, all eight
+extracted files against that archive, and all 2,371 tracked source inputs from
+the exact Git commit. Git's Windows checkout conversion reproduced the
+retained tracked digest
+`cc9d37745a86f2f2e752a39b59866f0509c4644453339f717045e0b6dedbb78a`.
+The source verification used an isolated temporary index; it ran no app or
+test. Installer/runtime archives and private store/packet bytes are not
+separately retained for local rehashing. Clean shutdown and disposal remain
+source-bound evidence, not a separately retained OS process snapshot.
+
+The private qualification is
+`telemetry-installed-delivery/privacy-ready-native-run/matrix-review.json`;
+`artifact-source-bindings.json` retains the automated byte verification.
+Six targets now have scoped delivery passes across four original sources.
+The earlier failures remain intact, and this passing correction does not
+establish the exact cause of the earlier ARM64 Privacy-page failure.
+
+## Installed resource comparison started
+
+Original run [41039553671](https://github.com/Perseusxrltd/mnemion/actions/runs/41039553671)
+uses source `15715800c58c9aa0958e29ea0173d0c65291ba4f` and the optional
+`resource_comparison` input on all six desktop targets. The intervening source
+change fixed only the separate compiled-controller staging path; the installed
+driver and product runtime were unchanged from the sixth delivery run.
+
+The run prepares inactive and active diagnostic packages from the same source
+and uses the fixed counterbalanced 128-cycle cases. Its original observer
+retains outcomes and missing accounting rather than retrying failures or
+accepting budgets automatically. Private evidence is under
+`telemetry-owned-resources/installed-native-run/`.
+Execution, resource accounting, the 8 MiB/0.5% budgets and production collection
+remain unqualified while that original run is in progress. All 66 requirements
+retain their text and state; V08 remains Building with collection off.

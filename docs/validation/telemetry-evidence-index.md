@@ -13,8 +13,11 @@ Linux ARM64 completed 21 successful API calls, delivered one matching inspected
 launches. Fifth run 41028940251 (`d8dc845e`) selected only Windows x64 and ARM64.
 Windows x64 passed 21 successful API calls, six admitted/committed observations,
 one matching inspected 25-byte report, all 11 review controls and two clean
-launches with persisted opt-out/manual-review mode. Five scoped targets now
-have passing evidence across three original sources, not a complete passing
+launches with persisted opt-out/manual-review mode. Sixth run 41036977655
+(`46d4f730`) passed Windows ARM64 with the same 21 successful API calls,
+six committed observations, matching 25-byte report, all 11 controls and
+opt-out/manual-review persistence across two clean launches. All six targets
+now have scoped passing evidence across four original sources, not a complete passing
 matrix on one source; the earlier passes were not repeated.
 
 In the fourth run, both Windows targets completed 9 successful API calls and
@@ -33,7 +36,10 @@ failure is retained. Corrected source and declarations passed the combined
 Electron build; the frontend build also compiled the optional resource client
 entry. Resource controller corrections are reviewed, including acknowledged
 case boundaries, normal input-handle release and exact global packet totals.
-The corrected ARM64 journey and installed resource execution remain pending.
+The corrected ARM64 journey passed, with no snapshot admission deadline loss.
+Original installed resource comparison 41039553671 on `15715800` is running
+across all six desktop targets. Its execution, accounting and budgets remain
+unqualified; partial counters cannot become a resource pass.
 Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection is disabled and
 production hosting unresolved. The

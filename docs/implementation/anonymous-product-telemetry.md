@@ -22,8 +22,11 @@ API calls, one matching 25-byte report, all 11 review controls and persistence
 across two launches. Fifth run 41028940251 on `d8dc845e` selected only Windows
 x64 and ARM64. Windows x64 passed: 21 successful API calls, six admitted and
 committed observations, one matching inspected 25-byte report, all 11 review
-controls, two clean launches and persisted opt-out/manual-review mode. Five
-targets have scoped passing evidence across these three original sources;
+controls, two clean launches and persisted opt-out/manual-review mode. Sixth
+run 41036977655 on `46d4f730` passed Windows ARM64: 21 successful API calls,
+six admitted and committed observations, one matching inspected 25-byte report,
+all 11 controls and opt-out/manual-review persistence across two clean launches.
+All six targets have scoped passing evidence across four original sources;
 this is not a complete passing matrix on one source.
 
 The fourth run's Windows failures remain: each completed 9 successful API calls
@@ -35,11 +38,15 @@ after 3 successful API calls, before any observation cycle or ACL check. That
 stop neither reproduces nor clears its fourth-run admission failure.
 The reviewed correction waits for the settled workspace before opening Privacy
 and retains a bounded failure gate. The original ARM64 failure's cause remains
-unproven; the corrected installed journey is pending. The reviewed resource
+unproven; the corrected sixth journey passed without changing the 25 ms
+admission deadline. The reviewed resource
 controller now acknowledges each case before the next begins, reconciles all
 collector packets and releases its input handle on completion. The combined
-Electron and diagnostic frontend builds passed. Installed resource execution
-and budget qualification remain pending. Full installed, production and resource acceptance remain open;
+Electron and diagnostic frontend builds passed. Original installed resource
+comparison 41039553671 on `15715800` is running across all six targets; it
+compares unavailable, opted-out and enabled conditions using the fixed
+128-cycle workload. Its execution, accounting and budgets are not yet qualified.
+Full installed, production and resource acceptance remain open;
 there are no qualified fleet statistics. Public collection remains off and
 production hosting unresolved. The
 [Firefox/WebKit journeys](../validation/2026-10-30-telemetry-browser-journeys.md)
