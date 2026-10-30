@@ -2,6 +2,7 @@
 import type { BrowserWindow } from 'electron'
 import { app } from 'electron'
 import { telemetryReadinessError, telemetrySnapshotDecision } from './telemetry-readiness.mjs'
+import { publicObservation } from './telemetry-observation-diagnostic.mjs'
 
 /** The page script cannot import modules. These functions carry their own allowlists. */
 function readinessRuntime(): string {
@@ -11,7 +12,7 @@ function readinessRuntime(): string {
     async function ready(phase, accept, timeout = 30000) {
       let gate = 'review_unavailable';
       try {
-        return await until(async () => {
+        const snapshot = await until(async () => {
           let snapshot;
           try { snapshot = await reviewStatus(); }
           catch { gate = 'control_unavailable'; return null; }
@@ -20,14 +21,20 @@ function readinessRuntime(): string {
           gate = decision.gate || 'review_unavailable';
           return null;
         }, phase, timeout);
+        if (typeof noteProbe === 'function') noteProbe(phase, 'none');
+        return snapshot;
       } catch (error) {
         if (String((error && error.message) || error) !== phase) throw error;
+        if (typeof publishProbe === 'function') await publishProbe(phase, gate);
         throw new Error(readinessError(phase, gate));
       }
     }
     function view(snapshot, phase) {
       const decision = decide(snapshot, () => true);
-      if (!decision.ready) throw new Error(readinessError(phase, decision.gate));
+      if (!decision.ready) {
+        if (typeof noteProbe === 'function') noteProbe(phase, decision.gate);
+        throw new Error(readinessError(phase, decision.gate));
+      }
       return snapshot;
     }
     function attemptCount(snapshot) {
@@ -108,7 +115,8 @@ export async function verifyInstalledTelemetryDelivery(window: BrowserWindow, co
     arch: process.arch,
     packaged: app.isPackaged,
   }
-  return { ...evidence, packaged: true, runtime, qualification: 'installed fixture delivery' }
+  const observation = publicObservation()
+  return { ...evidence, ...(observation ? { observation } : {}), packaged: true, runtime, qualification: 'installed fixture delivery' }
 }
 
 function deliveryJourney(config: { endpoint: string; spaceId: string; credential: string }): string {
@@ -136,6 +144,7 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
           const decision = decide(await reviewStatus(), () => true);
           gate = decision.ready ? 'control_unavailable' : decision.gate;
         } catch { gate = 'control_unavailable'; }
+        if (typeof publishProbe === 'function') await publishProbe(phase, gate);
         throw new Error(readinessError(phase, gate));
       }
     }
@@ -160,7 +169,34 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       await until(() => document.querySelector('#privacy-heading')?.textContent.includes('Privacy & product telemetry') &&
         button('Disable product telemetry'), 'The installed privacy page did not open');
     }
+    const probePhases = ['none', 'manual_review', 'before_permission', 'collection_enabled', 'memory_observations', 'report_inspect', 'report_bytes', 'report_held', 'invalidated_report', 'collection_reenabled', 'report_discard', 'report_discarded', 'report_approve', 'report_consumed', 'final_opt_out', 'restart_review', 'review_request', 'unknown_phase'];
+    const probeGates = ['none', 'unavailable', 'not_initialized', 'upgrade_required', 'stored_snapshot', 'inactive', 'paused', 'held', 'discarded', 'approved', 'consumed', 'expired', 'invalidated', 'no_report', 'no_observations', 'collection_not_permitted', 'transport_unavailable', 'delivery_not_ready', 'control_unavailable', 'review_unavailable', 'review_not_paused', 'connection_pending', 'collection_pending', 'observations_pending', 'report_not_held', 'report_not_discarded', 'report_not_consumed'];
+    const probeDiagnostic = { cycle: 0, readiness: 'none', pending: 'none' };
+    function noteProbe(phase, pending) {
+      probeDiagnostic.readiness = probePhases.includes(phase) ? phase : 'unknown_phase';
+      probeDiagnostic.pending = probeGates.includes(pending) ? pending : 'review_unavailable';
+    }
+    function rendererObservation() {
+      const value = globalThis.__mnObservationDiagnostic;
+      const keys = ['snapshot_admitted', 'snapshot_null', 'snapshot_rejected', 'snapshot_deadline', 'snapshot_elapsed_lt_5', 'snapshot_elapsed_lt_25', 'snapshot_elapsed_ge_25'];
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+      const safe = {};
+      for (const key of keys) {
+        const number = value[key];
+        if (!Number.isInteger(number) || number < 0 || number > 255) return null;
+        safe[key] = number;
+      }
+      return safe;
+    }
+    async function publishProbe(phase, pending) {
+      noteProbe(phase, pending);
+      if (typeof bridge.observationDiagnostic !== 'function') return;
+      try {
+        await bridge.observationDiagnostic({ cycle: probeDiagnostic.cycle, readiness: probeDiagnostic.readiness, pending: probeDiagnostic.pending, renderer: rendererObservation() });
+      } catch { /* Diagnostic retention cannot change the journey. */ }
+    }
     async function memoryCycle() {
+      probeDiagnostic.cycle = Math.min(3, probeDiagnostic.cycle + 1);
       const token = crypto.randomUUID().replaceAll('-', '');
       const canary = 'PRIVATE_RENDERER_MEMORY_CANARY';
       location.hash = '/workspace/new';
@@ -211,6 +247,7 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
         }, 'report_bytes', 60000);
       } catch (error) {
         if (String((error && error.message) || error) !== 'report_bytes') throw error;
+        await publishProbe('report_bytes', 'report_not_held');
         throw new Error(readinessError('report_bytes', 'report_not_held'));
       }
       const held = await ready('report_held', snapshot => {
@@ -223,6 +260,7 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       });
       return { shown, held };
     }
+    try {
     const initial = await control('status');
     if (initial.storage !== 'new' || initial.user_enabled !== true || initial.effective_enabled !== false ||
         initial.reason !== 'disclosure_required' || initial.disclosure_version !== 0) {
@@ -284,15 +322,32 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
       }, 'manual_review_control');
     } catch (error) {
       if (String((error && error.message) || error) !== 'manual_review_control') throw error;
+      await publishProbe('manual_review', 'review_unavailable');
       throw new Error(readinessError('manual_review', 'review_unavailable'));
     }
     if (manual.checked) throw new Error('Manual review was already selected');
     manual.click();
     await ready('manual_review', snapshot => snapshot.review.mode === 'review' ? true : 'review_not_paused');
     const summary = [...document.querySelectorAll('summary')].find(node => node.textContent.trim() === 'Telemetry connection settings');
-    if (!summary) throw new Error('Missing telemetry connection settings');
+    if (!summary) {
+      await publishProbe('before_permission', 'control_unavailable');
+      throw new Error(readinessError('before_permission', 'control_unavailable'));
+    }
     summary.click();
-    const connection = await until(() => document.getElementById('telemetry-connection-mode'), 'Missing connection choice');
+    let connection;
+    try {
+      connection = await until(() => {
+        const node = document.getElementById('telemetry-connection-mode');
+        const review = reviewBox();
+        const reviewSettled = Boolean(review && review.checked && !review.disabled && review.getClientRects().length);
+        if (!(node instanceof HTMLSelectElement) || node.disabled || !node.getClientRects().length || !reviewSettled) return null;
+        return node;
+      }, 'connection_control');
+    } catch (error) {
+      if (String((error && error.message) || error) !== 'connection_control') throw error;
+      await publishProbe('before_permission', 'control_unavailable');
+      throw new Error(readinessError('before_permission', 'control_unavailable'));
+    }
     setValue(connection, 'unmetered');
     const beforePermission = await ready('before_permission', snapshot => {
       if (snapshot.review.mode !== 'review') return 'review_not_paused';
@@ -381,7 +436,12 @@ function deliveryJourney(config: { endpoint: string; spaceId: string; credential
     }, 60000);
     checks.approved_attempt_uses_inspected_body = true;
     const approved_body_hex = [...approvedBytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    await publishProbe('report_consumed', 'none');
     return { checks, approved_body_hex, app_launches: 1, delivery_pending: true };
+    } catch (error) {
+      await publishProbe(probeDiagnostic.readiness, probeDiagnostic.pending);
+      throw error;
+    }
   })()`
 }
 

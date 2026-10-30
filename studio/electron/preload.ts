@@ -49,6 +49,9 @@ contextBridge.exposeInMainWorld('mnemion', {
   productTelemetry: (action: string, input: Record<string, unknown> = {}) => transfer('telemetry:action', action, input),
   productTelemetrySnapshot: (workflow?: string) => ipcRenderer.invoke('telemetry:snapshot', workflow),
   productTelemetryRecord: (values: unknown, stamp: unknown) => ipcRenderer.invoke('telemetry:record', values, stamp),
+  ...(process.env.MNEMION_STUDIO_HOSTING_PROBE && process.env.MNEMION_TELEMETRY_INSTALLED_DELIVERY === '1' ? {
+    observationDiagnostic: (sample: unknown) => ipcRenderer.invoke('telemetry:observation-diagnostic', sample),
+  } : {}),
   hostControl: (action: string, input: Record<string, unknown> = {}) => transfer('hosts:action', action, input),
   agentSetupStatus: () => transfer('agents:status'),
   agentSetupChoose: (client: string) => transfer('agents:choose', client),

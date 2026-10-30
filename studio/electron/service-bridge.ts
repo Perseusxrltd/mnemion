@@ -29,6 +29,7 @@ import { HostProfiles } from './host-profiles.js'
 import { hostMessages } from './host-control-messages.js'
 import { ProductTelemetry, telemetryMessages } from './product-telemetry.js'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from './telemetry-store.js'
+import { acceptObservation, deliveryObservationEnabled } from './telemetry-observation-diagnostic.mjs'
 import { DesktopTelemetryActivity } from './telemetry-activity.js'
 import { DesktopTelemetryConditions } from './telemetry-conditions.js'
 import { desktopIpcSelection, desktopTelemetryOrigins, measureDesktop } from './desktop-measurement.js'
@@ -561,6 +562,12 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       return await telemetryStore().recordMany(input, stamp)
     } catch { return false }
   })
+  if (deliveryObservationEnabled()) {
+    handle('telemetry:observation-diagnostic', (event, sample: unknown) => {
+      trusted(event)
+      return acceptObservation(sample)
+    })
+  }
   handle('agents:status', event => { trusted(event); return desktopAgents().status() })
   handle('hosts:action', (event, action: string, input: Record<string, unknown>) => {
     trusted(event)

@@ -12,6 +12,7 @@ import { localDiagnostic } from '../dist/local-diagnostics.js'
 import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
+import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
 
 const artifacts = platformArtifacts()
 // Production NSIS owns registry entries. Run only on a fresh hosted CI machine,
@@ -114,7 +115,9 @@ async function launch(config) {
   const args = process.platform === 'linux' && process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1' ? ['--password-store=gnome-libsecret'] : []
   child = spawn(executable, args, { cwd: installed, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...environment, MNEMION_STUDIO_USER_DATA: userData, MNEMION_STUDIO_SMOKE_FILE: smokeFile,
-      MNEMION_STUDIO_HOSTING_PROBE: probeFile, MNEMION_AUTO_UPDATE: '0', MNEMION_START_AT_LOGIN: '0', ELECTRON_ENABLE_LOGGING: '1' } })
+      MNEMION_STUDIO_HOSTING_PROBE: probeFile,
+      ...(telemetryDelivery ? { MNEMION_TELEMETRY_INSTALLED_DELIVERY: '1' } : {}),
+      MNEMION_AUTO_UPDATE: '0', MNEMION_START_AT_LOGIN: '0', ELECTRON_ENABLE_LOGGING: '1' } })
   let spawnError
   child.on('error', error => { spawnError = error })
   child.stdout.on('data', bytes => { stdout = (stdout + bytes).slice(-16000) })
@@ -196,6 +199,7 @@ async function runInstalledTelemetryDelivery(nativeRuntime) {
   }
   if (store.fixture_content_absent !== true) throw new Error('Installed telemetry store retained fixture content')
   const installer = artifacts.installers[0]
+  const observation = sanitizeObservation(first.observation)
   const evidence = {
     qualification: 'installed fixture delivery',
     app_checks_passed: true,
@@ -216,6 +220,7 @@ async function runInstalledTelemetryDelivery(nativeRuntime) {
       queue_cells: store.queue_cells,
       fixture_content_absent: store.fixture_content_absent === true,
     },
+    ...(observation ? { observation } : {}),
     nativeRuntime,
     scope: 'Diagnostic packaged app, loopback fixture disclosure baked before packaging, one inspected report and one restart. Production ingress, provider privacy, resources and full V08 remain unqualified.',
   }
@@ -391,6 +396,7 @@ try {
   let backupState
   let invalidBackupStateDiagnostic = false
   try { backupState = backupStateDiagnostic(state?.backupStateDiagnostic) } catch { invalidBackupStateDiagnostic = true }
+  const observation = sanitizeObservation(state?.observation)
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, qualification: telemetryDelivery ? 'installed fixture delivery' : undefined, platform: process.platform, architecture: process.arch,
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
@@ -399,6 +405,7 @@ try {
     ...(engineDiagnostic ? { engineDiagnostic } : {}), ...(invalidEngineDiagnostic ? { invalidEngineDiagnostic: true } : {}),
     ...(backupDiagnostic ? { backupDiagnostic } : {}), ...(invalidBackupDiagnostic ? { invalidBackupDiagnostic: true } : {}),
     ...(backupState ? { backupStateDiagnostic: backupState } : {}), ...(invalidBackupStateDiagnostic ? { invalidBackupStateDiagnostic: true } : {}),
+    ...(observation ? { observation } : {}),
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error
 } finally {

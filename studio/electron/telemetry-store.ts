@@ -6,6 +6,7 @@ import type { DatabaseSync, StatementSync } from 'node:sqlite'
 import type { TelemetryConnectionMode, TelemetryDisclosure, TelemetryStamp } from '../shared/product-telemetry.js'
 import { TelemetryCatalog, type MeasurementCatalog } from './telemetry-catalog.js'
 import { windowsTelemetryPrivateStore } from './telemetry-private-store.js'
+import { noteObservation } from './telemetry-observation-diagnostic.mjs'
 import { clearReview, loadReview, salvageStaleReview, serializeReview } from './telemetry-review.js'
 import { checkReviewLifetime } from './telemetry-review-lifetime.js'
 import { readReviewClock } from './telemetry-review-clock.js'
@@ -280,7 +281,10 @@ export class NativeTelemetryStore {
   }
 
   snapshot(workflow?: string, surface?: string): Promise<TelemetryStamp | null> | null {
-    if (!this.available || storageOwner) return null
+    if (!this.available || storageOwner) {
+      if (storageOwner) noteObservation('snapshot_suppressed_owner')
+      return null
+    }
     let scope = -1
     const day = Math.floor(Date.now() / 86400000)
     if (workflow !== undefined || surface !== undefined) {
@@ -288,7 +292,10 @@ export class NativeTelemetryStore {
       if (index < 0 || origin < 0) return null
       scope = index * 4 + origin
     }
-    if (this.exhausted(scope, day)) return null
+    if (this.exhausted(scope, day)) {
+      noteObservation('snapshot_suppressed_hint')
+      return null
+    }
     return this.readStamp(day)
   }
 
@@ -313,25 +320,39 @@ export class NativeTelemetryStore {
   }
 
   async recordMany(inputs: unknown[], stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): Promise<boolean> {
-    if (!this.available || storageOwner || !stampValid(stamp) || !integer(day, 1000000)) return false
+    noteObservation('record_attempted')
+    if (!this.available || storageOwner || !stampValid(stamp) || !integer(day, 1000000)) {
+      noteObservation(storageOwner ? 'record_refused_owner' : !stampValid(stamp) ? 'record_refused_stamp' : !this.available ? 'record_refused_storage' : 'record_refused_policy')
+      return false
+    }
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
     let database: DatabaseSync | undefined
     try {
       // Encode before the async boundary. The queue never retains a caller's
       // object, private arguments, exact numeric values or exception text.
-      if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) return false
+      if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) {
+        noteObservation('record_refused_policy')
+        return false
+      }
       const observations = inputs.map(input => this.catalog.observation(input))
-      if (this.exhausted(observations.map(value => value.scope), day)) return false
+      if (this.exhausted(observations.map(value => value.scope), day)) {
+        noteObservation('record_refused_policy')
+        return false
+      }
       database = await this.open(true)
       database.exec('BEGIN IMMEDIATE')
       const preference = this.preferences(database)
-      if (preference.revision !== expected.revision || preference.store_generation !== expected.store_generation) return false
+      if (preference.revision !== expected.revision || preference.store_generation !== expected.store_generation) {
+        noteObservation('record_refused_stamp')
+        return false
+      }
       const company = this.company()
       this.maintainReview(database, preference, company)
       if (preference.enabled !== 1 || preference.disclosure_version !== this.disclosure.version || !company.enabled || !company.groups.length) {
         this.saturated = undefined
         database.exec('DELETE FROM pending; DELETE FROM producer_budget; COMMIT;')
         if (preference.enabled !== 1) this.rememberExhausted([], day, true)
+        noteObservation('record_refused_policy')
         return false
       }
       database.prepare('DELETE FROM pending WHERE window_day < ? OR window_day > ?').run(day - 1, day)
@@ -369,8 +390,12 @@ export class NativeTelemetryStore {
       }
       database.exec('COMMIT')
       this.rememberExhausted(exhausted, day)
+      noteObservation(recorded ? 'record_committed' : 'record_refused_policy')
       return recorded
-    } catch { return false }
+    } catch {
+      noteObservation('record_refused_storage')
+      return false
+    }
     finally { this.closeDatabase(database) }
   }
 }

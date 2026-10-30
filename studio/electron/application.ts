@@ -13,6 +13,7 @@ import { desktopUpdateMenu } from './update-menu.js'
 import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
 import { verifyNativeHostControl } from './native-host-control-probe.js'
 import { verifyLocalHostingProbe, watchHostingProbeQuit } from './local-hosting-probe.js'
+import { deliveryObservationEnabled, publicObservation } from './telemetry-observation-diagnostic.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -108,6 +109,7 @@ function writeSmokeStatus(stage: string, extra: Record<string, unknown> = {}) {
         trayIconLoaded,
         trayIconSource,
         windowCreated: mainWindow !== null,
+        ...(deliveryObservationEnabled() ? { observation: publicObservation() } : {}),
         ...extra,
       }, null, 2),
       'utf8',

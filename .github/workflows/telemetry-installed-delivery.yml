@@ -2,12 +2,19 @@ name: Installed telemetry delivery
 
 # Manual diagnostic only. This does not publish, sign a release, or accept the
 # installed journey. One disposable localhost certificate is shared by a Windows
-# x64 engine freeze and all six packaging jobs. The private key is a one-day
-# diagnostic artifact, never a release asset or a packaged file. Windows ARM
+# x64 engine freeze and the selected packaging jobs. No target input runs all
+# six. The private key is a one-day diagnostic artifact, never a release asset
+# or a packaged file. Windows ARM
 # imports that engine. build-resources.mjs still refuses to freeze an engine there.
 
 on:
   workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Comma-separated matrix OS names. Empty runs all six delivery targets.'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -27,7 +34,9 @@ jobs:
         with:
           persist-credentials: false
       - id: select
-        run: python -m deploy.release_targets >> "$GITHUB_OUTPUT"
+        env:
+          MNEMION_TELEMETRY_TARGETS: ${{ inputs.targets }}
+        run: python -m deploy.release_targets --targets "$MNEMION_TELEMETRY_TARGETS" >> "$GITHUB_OUTPUT"
 
   native_database:
     needs: targets

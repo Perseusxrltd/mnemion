@@ -8,6 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const check = spawnSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '-p', resolve(root, 'tsconfig.json')], { stdio: 'inherit' })
 if (check.status !== 0) process.exit(check.status || 1)
 copyFileSync(resolve(root, 'telemetry-readiness.mjs'), resolve(root, 'dist/telemetry-readiness.mjs'))
+copyFileSync(resolve(root, 'telemetry-observation-diagnostic.mjs'), resolve(root, 'dist/telemetry-observation-diagnostic.mjs'))
 const probe = spawnSync(process.env.MNEMION_BUILD_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'),
   ['-m', 'deploy.build_telemetry_network', '--arch', process.arch, '--output', resolve(root, 'dist/telemetry-network.node')],
   { cwd: resolve(root, '../..'), stdio: 'inherit', windowsHide: true })

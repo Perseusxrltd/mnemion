@@ -20,20 +20,77 @@ export function studioMeasurementSelection(method: string, arguments_: unknown[]
   return workflow && spec.completion ? { workflow, completion: spec.completion, fresh: spec.fresh_receipt === true } : null
 }
 
+const OBSERVATION_LIMIT = 255
+type ObservationTally = {
+  snapshot_admitted: number
+  snapshot_null: number
+  snapshot_rejected: number
+  snapshot_deadline: number
+  snapshot_elapsed_lt_5: number
+  snapshot_elapsed_lt_25: number
+  snapshot_elapsed_ge_25: number
+}
+
+function deliveryObservationEnabled(): boolean {
+  if (typeof window === 'undefined' || typeof globalThis === 'undefined') return false
+  return typeof window.mnemion?.observationDiagnostic === 'function'
+}
+
+function observationTally(): ObservationTally | null {
+  if (!deliveryObservationEnabled()) return null
+  const holder = globalThis as typeof globalThis & { __mnObservationDiagnostic?: ObservationTally }
+  holder.__mnObservationDiagnostic ??= {
+    snapshot_admitted: 0, snapshot_null: 0, snapshot_rejected: 0, snapshot_deadline: 0,
+    snapshot_elapsed_lt_5: 0, snapshot_elapsed_lt_25: 0, snapshot_elapsed_ge_25: 0,
+  }
+  return holder.__mnObservationDiagnostic
+}
+
+function tallyObservation(outcome: 'admitted' | 'null' | 'rejected' | 'deadline', elapsed: number): void {
+  const counts = observationTally()
+  if (!counts) return
+  const name = outcome === 'admitted' ? 'snapshot_admitted' : outcome === 'null' ? 'snapshot_null' : outcome === 'rejected' ? 'snapshot_rejected' : 'snapshot_deadline'
+  if (counts[name] < OBSERVATION_LIMIT) counts[name] += 1
+  const bucket = Number.isFinite(elapsed) && elapsed >= 0 && elapsed < 5 ? 'snapshot_elapsed_lt_5'
+    : Number.isFinite(elapsed) && elapsed >= 0 && elapsed < 25 ? 'snapshot_elapsed_lt_25'
+    : 'snapshot_elapsed_ge_25'
+  if (counts[bucket] < OBSERVATION_LIMIT) counts[bucket] += 1
+}
+
 async function observed<T>(client: MnemionClient, store: WorkflowStore, method: string, arguments_: unknown[], run: () => Promise<T>, surface: 'desktop' | 'browser'): Promise<T> {
   let selection: Selection | null = null, measurement: TelemetryWorkflow | null = null
+  let outcome: 'admitted' | 'null' | 'rejected' | 'deadline' | null = null
+  let elapsed = 0
+  const diagnose = deliveryObservationEnabled()
   try {
     selection = store.available ? studioMeasurementSelection(method, arguments_) : null
     if (selection) {
       const pending = TelemetryWorkflow.begin(store, selection.workflow, surface)
       if (pending !== null) {
         let timer: ReturnType<typeof setTimeout> | undefined
-        try { measurement = await Promise.race([pending,
-          new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })]) }
-        finally { if (timer) clearTimeout(timer) }
-      }
+        let deadline = false
+        const clock = diagnose && typeof performance !== 'undefined' && typeof performance.now === 'function'
+        let started = 0
+        try {
+          if (clock) started = performance.now()
+          measurement = await Promise.race([pending,
+            new Promise<null>(resolve => { timer = setTimeout(() => { deadline = true; resolve(null) }, 25) })])
+        } finally {
+          if (timer) clearTimeout(timer)
+          if (clock) {
+            try { elapsed = performance.now() - started } catch { elapsed = Number.POSITIVE_INFINITY }
+          } else if (diagnose) elapsed = Number.POSITIVE_INFINITY
+        }
+        outcome = deadline && !measurement ? 'deadline' : measurement ? 'admitted' : 'null'
+      } else outcome = 'null'
     }
-  } catch { /* Optional collection cannot prevent the user's action. */ }
+  } catch {
+    outcome = 'rejected'
+    measurement = null
+  }
+  if (diagnose && outcome) {
+    try { tallyObservation(outcome, elapsed) } catch { /* Diagnosis never changes the action. */ }
+  }
   // A refused or expired observation has no reason to inspect the result,
   // retry receipt or exception. Run outside the optional-work catch so a
   // synchronous action failure cannot invoke the callback a second time.

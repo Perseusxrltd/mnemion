@@ -66,13 +66,38 @@ def release_platforms(version: str | None = None, path: Path | None = None) -> l
     return list(release_targets(version, path))
 
 
+def reviewed_targets(selection: str) -> list[dict]:
+    """Select matrix rows by OS name. Empty keeps the full six-target matrix."""
+    if selection.strip() == "":
+        return list(MATRIX)
+    parts = [part.strip() for part in selection.split(",")]
+    if not parts or any(part == "" for part in parts) or len(parts) != len(set(parts)):
+        raise ValueError("Telemetry delivery targets must be unique comma-separated matrix OS names")
+    known = {item["os"] for item in MATRIX}
+    if any(part not in known for part in parts):
+        raise ValueError("Telemetry delivery targets include a name outside the release matrix")
+    selected = set(parts)
+    return [item for item in MATRIX if item["os"] in selected]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release", action="store_true")
     parser.add_argument("--macos-only", action="store_true")
     parser.add_argument("--windows-only", action="store_true")
     parser.add_argument("--architecture", choices=["all", "x64", "arm64"], default="all")
+    parser.add_argument("--targets", default="", help="Comma-separated matrix OS names. Empty selects all six.")
     args = parser.parse_args()
+    if args.targets and (args.release or args.macos_only or args.windows_only or args.architecture != "all"):
+        raise SystemExit("Reviewed delivery targets cannot be combined with another selector")
+    if args.targets:
+        try:
+            desktops = reviewed_targets(args.targets)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
+        print("matrix=" + json.dumps(desktops))
+        print("database_matrix=" + json.dumps(database_targets(desktops)))
+        return
     selected = (
         release_targets()
         if args.release

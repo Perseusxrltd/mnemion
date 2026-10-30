@@ -414,6 +414,104 @@ def _fixture_absent_from_packets(reviewed: list, secret: str) -> bool:
     return True
 
 
+_OBSERVATION_COUNTERS = (
+    "snapshot_admitted",
+    "snapshot_null",
+    "snapshot_rejected",
+    "snapshot_deadline",
+    "snapshot_elapsed_lt_5",
+    "snapshot_elapsed_lt_25",
+    "snapshot_elapsed_ge_25",
+    "acl_accepted",
+    "acl_refused",
+    "acl_timed_out",
+    "acl_duration_lt_50",
+    "acl_duration_lt_250",
+    "acl_duration_lt_1000",
+    "acl_duration_ge_1000",
+    "snapshot_suppressed_owner",
+    "snapshot_suppressed_hint",
+    "record_attempted",
+    "record_committed",
+    "record_refused_owner",
+    "record_refused_stamp",
+    "record_refused_policy",
+    "record_refused_storage",
+)
+_OBSERVATION_READINESS = frozenset({
+    "none",
+    "manual_review",
+    "before_permission",
+    "collection_enabled",
+    "memory_observations",
+    "report_inspect",
+    "report_bytes",
+    "report_held",
+    "invalidated_report",
+    "collection_reenabled",
+    "report_discard",
+    "report_discarded",
+    "report_approve",
+    "report_consumed",
+    "final_opt_out",
+    "restart_review",
+    "review_request",
+    "unknown_phase",
+})
+_OBSERVATION_PENDING = frozenset({
+    "none",
+    "unavailable",
+    "not_initialized",
+    "upgrade_required",
+    "stored_snapshot",
+    "inactive",
+    "paused",
+    "held",
+    "discarded",
+    "approved",
+    "consumed",
+    "expired",
+    "invalidated",
+    "no_report",
+    "no_observations",
+    "collection_not_permitted",
+    "transport_unavailable",
+    "delivery_not_ready",
+    "control_unavailable",
+    "review_unavailable",
+    "review_not_paused",
+    "connection_pending",
+    "collection_pending",
+    "observations_pending",
+    "report_not_held",
+    "report_not_discarded",
+    "report_not_consumed",
+})
+
+
+def _observation_diagnostic(value: object) -> dict | None:
+    """Copy fixed counters only. Drop the field when any token or count is outside the bound."""
+    if not isinstance(value, dict):
+        return None
+    safe: dict = {}
+    for name in _OBSERVATION_COUNTERS:
+        number = value.get(name)
+        if type(number) is not int or number < 0 or number > 255:
+            return None
+        safe[name] = number
+    cycle = value.get("cycle")
+    readiness = value.get("readiness")
+    pending = value.get("pending")
+    if type(cycle) is not int or cycle < 0 or cycle > 3:
+        return None
+    if readiness not in _OBSERVATION_READINESS or pending not in _OBSERVATION_PENDING:
+        return None
+    safe["cycle"] = cycle
+    safe["readiness"] = readiness
+    safe["pending"] = pending
+    return safe
+
+
 def _load_app_evidence(path: Path, secret: str) -> dict:
     if not path.is_file():
         return {"app_checks_passed": False}
@@ -656,6 +754,11 @@ async def _serve(copy: Path, output: Path, source: Path, material: Path) -> dict
                             "excluded_from_publication": True,
                             "update_feeds_removed": removed,
                         },
+                        **(
+                            {"observation": observation}
+                            if (observation := _observation_diagnostic(evidence.get("observation")))
+                            else {}
+                        ),
                         "production_collection_available": False,
                         "resource_acceptance": False,
                         "scope": _SCOPE,

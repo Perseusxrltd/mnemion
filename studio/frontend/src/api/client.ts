@@ -47,6 +47,7 @@ declare global {
       }
       productTelemetrySnapshot?: (workflow?: string) => Promise<TelemetryStamp | null>
       productTelemetryRecord?: (values: unknown[], stamp: TelemetryStamp) => Promise<boolean>
+      observationDiagnostic?: (sample: unknown) => Promise<unknown>
       hostControl?: {
         (action: 'host.profiles', input?: Record<string, never>): Promise<HostProfilesStatus>
         (action: 'host.inspect', input: { id: string }): Promise<HostInspection>

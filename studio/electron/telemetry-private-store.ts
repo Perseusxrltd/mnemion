@@ -1,6 +1,7 @@
 /** An unavailable or timed-out check suppresses telemetry; it never repairs ACLs. */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { deliveryObservationEnabled, noteAcl } from './telemetry-observation-diagnostic.mjs'
 
 export function windowsTelemetryPrivateExecutable(moduleUrl = import.meta.url): string {
   // spawn cannot execute an entry inside ASAR. Packaging explicitly keeps this
@@ -19,12 +20,24 @@ export class WindowsTelemetryPrivateProbe {
     })) {}
 
   read(root: string, database: string): Promise<boolean> {
-    if (this.child) return Promise.resolve(false)
+    const diagnose = deliveryObservationEnabled()
+    if (this.child) {
+      if (diagnose) noteAcl('refused', 0)
+      return Promise.resolve(false)
+    }
+    const started = diagnose ? performance.now() : 0
     return new Promise(resolve => {
       let done = false, timer: ReturnType<typeof setTimeout> | undefined
-      const finish = (accepted: boolean) => { if (!done) { done = true; clearTimeout(timer); resolve(accepted) } }
+      const finish = (accepted: boolean, outcome: 'accepted' | 'refused' | 'timed_out' = accepted ? 'accepted' : 'refused') => {
+        if (!done) {
+          done = true
+          clearTimeout(timer)
+          if (diagnose) noteAcl(outcome, performance.now() - started)
+          resolve(accepted)
+        }
+      }
       let child: ChildProcess
-      try { child = this.launch(root, database) } catch { finish(false); return }
+      try { child = this.launch(root, database) } catch { finish(false, 'refused'); return }
       this.child = child
       const reaped = () => { if (this.child === child) this.child = undefined }
       child.on('error', () => {
@@ -32,13 +45,13 @@ export class WindowsTelemetryPrivateProbe {
         // release ownership or permit another helper to accumulate behind it.
         if (child.pid === undefined) reaped()
         else child.unref()
-        finish(false)
+        finish(false, 'refused')
       })
       child.once('exit', code => { reaped(); finish(code === 0) })
       timer = setTimeout(() => {
         try { child.kill() } catch { /* Keep ownership until actual exit. */ }
         child.unref()
-        finish(false)
+        finish(false, 'timed_out')
       }, 1000)
       timer.unref()
     })
