@@ -165,8 +165,7 @@ export function publicOwnedReport(report) {
     || markerApplied === false || unsupported || ledgerTruncated !== null
     || lifetimeCap !== null || timedOut !== null || sampleSeconds !== null || sampleTruncated !== null
     || sampleError || (copiedPeaks && Object.values(copiedPeaks).some(item => item !== null))
-    || (copiedKernel && Object.values(copiedKernel).some(item => item !== null))
-    || token(report?.failure_stage),
+    || (copiedKernel && Object.values(copiedKernel).some(item => item !== null)),
   )
   if (report.present === false && !independent) return absentOwnedReport()
   let launched = null

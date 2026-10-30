@@ -303,3 +303,38 @@ def test_absent_sentinel_and_default_false_fields_stay_absent():
     assert explicit["present"] is True
     assert explicit["launched"] is False
     assert _verdict({"launched": False})["again"]["launched"] is False
+
+
+def test_startup_label_alone_stays_absent_and_launch_keeps_the_category():
+    absent = {
+        "present": False,
+        "failure_stage": "startup-error",
+        "failure_category": "memory_fetch",
+    }
+    verdict = _verdict(absent)
+    for copy in (verdict["python"], verdict["javascript"], verdict["again"]):
+        assert copy["present"] is False
+        assert copy["launched"] is None
+    assert verdict["javascript"].get("failure_category") is None
+    assert "memory_fetch" not in json.dumps(verdict["javascript"])
+
+    unmarked = {
+        "failure_stage": "startup-error",
+        "failure_category": "memory_fetch",
+    }
+    unmarked_verdict = _verdict(unmarked)
+    for copy in (unmarked_verdict["python"], unmarked_verdict["javascript"], unmarked_verdict["again"]):
+        assert copy["present"] is False
+        assert copy["launched"] is None
+    assert unmarked_verdict["javascript"].get("failure_category") is None
+
+    launched = _verdict({
+        "launched": True,
+        "failure_stage": "startup-error",
+        "failure_category": "memory_fetch",
+    })
+    assert launched["python"]["present"] is True
+    assert launched["python"]["launched"] is True
+    assert launched["javascript"]["failure_stage"] == "startup-error"
+    assert launched["javascript"]["failure_category"] == "memory_fetch"
+    assert launched["javascript"]["resource_acceptance"] is False

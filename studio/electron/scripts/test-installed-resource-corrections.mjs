@@ -162,6 +162,7 @@ test('a startup category cannot complete the case or keep the message', () => {
   assert.equal(startupFailureCategory(`Error: Real save failed: ${secret}`), 'memory_save')
   assert.equal(String(startupFailureCategory(`Error: Real save failed: ${secret}`)).includes(secret), false)
   const report = publicOwnedReport({
+    launched: true,
     failure_stage: 'startup-error',
     failure_category: 'memory_save',
     hosting_ready: false,
@@ -172,6 +173,8 @@ test('a startup category cannot complete the case or keep the message', () => {
     error: secret,
     cleanup: { ok: false, failure: 'cgroup_rmdir_failed', retried: false, terminated_owned_group: true },
   })
+  assert.equal(report.present, true)
+  assert.equal(report.launched, true)
   assert.equal(report.failure_stage, 'startup-error')
   assert.equal(report.failure_category, 'memory_save')
   assert.equal(report.hosting_ready, false)
@@ -181,6 +184,7 @@ test('a startup category cannot complete the case or keep the message', () => {
   assert.equal(report.resource_acceptance, false)
   assert.equal(JSON.stringify(report).includes(secret), false)
   const rejected = publicOwnedReport({
+    launched: true,
     failure_stage: 'startup-error',
     failure_category: secret,
     hosting_ready: false,
