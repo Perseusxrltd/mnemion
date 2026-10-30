@@ -82,6 +82,13 @@ the old generation until reopen. These are standalone Node probes, not Electron
 builds or resource measurements. These observations do not justify repeating
 the unchanged resource workload. The 2 MiB and 0.5% gates stay unaccepted.
 
+The [30 October validation allocation follow-up](2026-10-30-telemetry-validation-allocation.md)
+removes discarded encoded objects and cell arrays from desktop/browser
+prevalidation without moving rejection past IPC, locks or partial writes.
+It records 134 passing native/browser/client checks, two Windows-only skips,
+27 v3 parity cases, and the retained missing-client-build prerequisite failure.
+No measured RSS/CPU saving or new installed qualification is claimed.
+
 ## Controls, ownership and report review
 
 | Date | Original evidence | Scope and boundary |

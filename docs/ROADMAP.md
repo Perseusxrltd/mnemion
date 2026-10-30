@@ -52,6 +52,13 @@ rejected retaining an idle connection: both retained modes blocked database
 replacement on Windows. No runtime optimization or resource acceptance follows
 from these observations; live fleet collection is still disabled.
 
+The [validation allocation follow-up](validation/2026-10-30-telemetry-validation-allocation.md)
+removes discarded encodings from desktop and browser prevalidation while
+retaining rejection before IPC, locks and paired writes. The focused store,
+workflow, browser, client and v3 parity checks pass. This is a source
+optimization with no measured resource saving; the existing resource gates
+and production collection status are unchanged.
+
 **29 October 2026, MemPalace product comparison:**
 The [current upstream review](research/2026-10-29-mempalace-product-review.md)
 compares published MemPalace 3.11 and its unreleased 3.12 branch with Mnemion

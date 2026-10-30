@@ -60,9 +60,7 @@ export class TelemetryCatalog {
   }
 
   observation(value: unknown): EncodedObservation {
-    const encoded = this.walk(value, true)
-    if (!encoded) throw invalid()
-    return encoded
+    return this.walk(value, true)
   }
 
   /** Same refusal as observation(), without a cell list or encoded object to discard. */

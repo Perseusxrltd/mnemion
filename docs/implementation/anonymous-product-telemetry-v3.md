@@ -5,6 +5,12 @@ includes the v3 clients, collector and private maintainer reports. The ordinary
 privacy-settings page shows local controls; it does not show fleet data.
 No fleet statistics can be pulled while collection stays off.
 
+The [30 October validation allocation follow-up](../validation/2026-10-30-telemetry-validation-allocation.md)
+removes encoded objects and cell lists that desktop/browser prevalidation
+immediately discarded. Invalid data is still rejected before IPC, browser
+locks or any partial paired write. Focused regression and v3 parity checks
+pass; no resource saving or installed-delivery acceptance is inferred.
+
 The [30 October compiled-app review](../validation/2026-10-30-telemetry-v3-app-review.md)
 qualifies run 40981256191 on `e36b51a72ca16ec0692d427bbeee912e098d21ef`.
 Ten controls passed in the unpackaged
