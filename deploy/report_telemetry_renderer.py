@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import stat
 
 from mnemion.product_telemetry.wire_v3 import PACKET_BYTES
 
@@ -546,7 +547,7 @@ def owned_controller_argv(application: Path) -> list[str]:
 def owned_phase_from_marker(
     phase: object, completed: int, reported: int | None = None
 ) -> tuple[str, bool, int] | None:
-    """One phase already written to monitor.json.
+    """One phase from an owned progress snapshot or a legacy monitor.json.
 
     Startup and close stay inactive. The measuring interval, including the
     existing connection work and the 128 memory cycles, stays active. An
@@ -657,12 +658,118 @@ def close_owned_progress(cursor) -> None:
         cursor.completed_known = False
 
 
-def read_owned_marker(root: Path) -> dict | None:
+_MARKER_READ_LIMIT = 65536
+_SNAPSHOT_BYTES = 1024
+_SNAPSHOT_LIMIT = 64
+_PROGRESS_DIR = "owned-progress"
+
+
+def _reparse_or_link(info) -> bool:
+    if stat.S_ISLNK(info.st_mode):
+        return True
+    attributes = getattr(info, "st_file_attributes", 0) or 0
+    flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return bool(attributes & flag)
+
+
+def _snapshot_sequence(name: str, suffix: str) -> int | None:
+    if not name.endswith(suffix):
+        return None
+    stem = name[: -len(suffix)]
+    if len(stem) != 2 or not stem.isdigit():
+        return None
+    sequence = int(stem)
+    if sequence < 1 or sequence > _SNAPSHOT_LIMIT:
+        return None
+    return sequence
+
+
+def read_bounded_text(path: Path, *, limit: int = _MARKER_READ_LIMIT) -> str:
+    """UTF-8 text, at most 64 KiB."""
+    if type(limit) is not int or not 1 <= limit <= _MARKER_READ_LIMIT:
+        raise ValueError("marker read bound")
+    file = Path(path)
     try:
-        value = json.loads((root / "monitor.json").read_text(encoding="utf-8"))
+        info = file.lstat()
+    except OSError:
+        raise OSError(0, "marker unreadable") from None
+    if _reparse_or_link(info) or not stat.S_ISREG(info.st_mode) or info.st_size > limit:
+        raise OSError(0, "marker unreadable")
+    try:
+        with file.open("rb") as stream:
+            raw = stream.read(limit + 1)
+    except OSError:
+        raise OSError(0, "marker unreadable") from None
+    if len(raw) > limit:
+        raise OSError(0, "marker unreadable")
+    return raw.decode("utf-8")
+
+
+def _legacy_marker(path: Path) -> dict | None:
+    try:
+        value = json.loads(read_bounded_text(path))
     except (OSError, UnicodeError, json.JSONDecodeError):
         return None
     return value if type(value) is dict else None
+
+
+def _committed_snapshot(directory: Path) -> dict | None:
+    committed: list[tuple[int, Path]] = []
+    for entry in directory.iterdir():
+        try:
+            info = entry.lstat()
+        except OSError:
+            return None
+        if _reparse_or_link(info) or not stat.S_ISREG(info.st_mode):
+            return None
+        sequence = _snapshot_sequence(entry.name, ".json")
+        if sequence is not None:
+            committed.append((sequence, entry))
+            continue
+        if _snapshot_sequence(entry.name, ".json.tmp") is not None:
+            continue
+        return None
+    if not committed:
+        return None
+    committed.sort(key=lambda item: item[0])
+    sequences = [item[0] for item in committed]
+    if sequences != list(range(1, sequences[-1] + 1)):
+        return None
+    highest = committed[-1][1]
+    try:
+        info = highest.lstat()
+    except OSError:
+        return None
+    if _reparse_or_link(info) or not stat.S_ISREG(info.st_mode) or info.st_size > _SNAPSHOT_BYTES:
+        return None
+    try:
+        raw = highest.read_bytes()
+    except OSError:
+        return None
+    if len(raw) > _SNAPSHOT_BYTES:
+        return None
+    try:
+        value = json.loads(raw)
+    except (UnicodeError, json.JSONDecodeError):
+        return None
+    return value if type(value) is dict else None
+
+
+def read_owned_marker(root: Path) -> dict | None:
+    """Highest committed snapshot, or a legacy monitor.json when that directory is absent."""
+    progress = Path(root) / _PROGRESS_DIR
+    try:
+        info = progress.lstat()
+    except FileNotFoundError:
+        return _legacy_marker(Path(root) / "monitor.json")
+    except OSError:
+        return None
+    if _reparse_or_link(info) or not stat.S_ISDIR(info.st_mode):
+        return None
+    try:
+        return _committed_snapshot(progress)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+        return None
 
 
 def owned_unsupported_report(code: str) -> dict:
@@ -1096,7 +1203,8 @@ def retain_owned_launch(report: object) -> dict:
         launched = None
     present = independent or explicit_launch is not None or unsupported is not None
     if present:
-        hosting_ready = report.get("hosting_ready") is True
+        ready = report.get("hosting_ready")
+        hosting_ready = ready if type(ready) is bool else None
         exit_code = report.get("root_exit_code")
         root_exit_code = exit_code if type(exit_code) is int else None
         failure_stage = _token(report.get("failure_stage"))

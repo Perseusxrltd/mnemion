@@ -130,7 +130,9 @@ async def observe_tree(root, done, *, attribution=False):
     samples = []
     while not done.is_set():
         try:
-            marker = json.loads((root / "monitor.json").read_text())
+            marker = read_owned_marker(root)
+            if marker is None:
+                raise OSError(0, "marker unreadable")
             owner = psutil.Process(marker["pid"])
             processes = []
             for child in [owner, *owner.children(recursive=True)]:

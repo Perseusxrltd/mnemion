@@ -387,3 +387,50 @@ def test_failed_launch_diagnostics_survive_the_final_projection():
     assert rejected["again"]["root_exit_code"] is None
     assert rejected["again"].get("lifetime_cpu_microseconds") is None
     assert secret not in json.dumps(rejected["again"])
+
+
+def test_hosting_ready_stays_null_until_it_is_a_boolean():
+    unknown = _verdict(
+        {
+            "launched": True,
+            "failure_stage": "startup-error",
+            "failure_category": "memory_recall",
+        }
+    )
+    missing = _verdict(
+        {
+            "launched": True,
+            "hosting_ready": None,
+            "failure_stage": "startup-error",
+            "failure_category": "memory_recall",
+        }
+    )
+    coerced = _verdict(
+        {
+            "launched": True,
+            "hosting_ready": 1,
+            "failure_stage": "startup-error",
+            "failure_category": "memory_recall",
+        }
+    )
+    false_report = _verdict(
+        {
+            "launched": True,
+            "hosting_ready": False,
+            "root_exit_code": 0,
+            "failure_stage": "startup-error",
+            "failure_category": "memory_recall",
+        }
+    )
+    true_report = _verdict({"launched": True, "hosting_ready": True, "root_exit_code": 0})
+    for verdict in (unknown, missing, coerced):
+        for copy in (verdict["python"], verdict["javascript"], verdict["again"]):
+            assert copy["present"] is True
+            assert copy["launched"] is True
+            assert copy["hosting_ready"] is None
+    for copy in (false_report["python"], false_report["javascript"], false_report["again"]):
+        assert copy["hosting_ready"] is False
+        assert copy["failure_category"] == "memory_recall"
+    for copy in (true_report["python"], true_report["javascript"], true_report["again"]):
+        assert copy["hosting_ready"] is True
+        assert copy["root_exit_code"] == 0

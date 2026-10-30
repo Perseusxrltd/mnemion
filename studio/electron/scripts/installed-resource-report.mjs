@@ -182,7 +182,7 @@ export function publicOwnedReport(report) {
     honest_unsupported: unsupported,
     canonical_operations_completed: count(report?.canonical_operations_completed, 1000000),
     canonical_operations_known: flag(report?.canonical_operations_known),
-    hosting_ready: report?.hosting_ready === true,
+    hosting_ready: flag(report?.hosting_ready),
     root_exit_code: Number.isInteger(report?.root_exit_code) ? report.root_exit_code : null,
     failure_stage: token(report?.failure_stage),
     failure_category: failureCategory(report),

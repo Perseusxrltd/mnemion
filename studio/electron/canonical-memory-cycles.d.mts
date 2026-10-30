@@ -1,4 +1,6 @@
 /** Types for the shared cycle module. The runtime file is copied beside the compiled main process. */
+export function canonicalLaunchPrefix(): string
+export function canonicalProgressWriter(directory: string): (record: object) => void
 export function canonicalMemoryCycles(input: { number: number; space: string }): Promise<void>
 export function canonicalRemainingBatches(comparison: boolean): Array<[number, number]>
 export function canonicalTerminalMarker(

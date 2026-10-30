@@ -29,6 +29,7 @@ from deploy.report_telemetry_renderer import (
     close_owned_progress,
     observation_failure_code,
     owned_unsupported_report,
+    read_bounded_text,
     read_owned_marker,
 )
 
@@ -136,9 +137,7 @@ def startup_failure_category(message: object) -> str | None:
 def _smoke_observation(path: Path) -> tuple[str | None, str | None]:
     """Stage plus a startup class. Raw smoke text stays on the runner."""
     try:
-        if path.stat().st_size > 65536:
-            return None, None
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(read_bounded_text(path))
     except (OSError, UnicodeError, json.JSONDecodeError):
         return None, None
     if type(value) is not dict:

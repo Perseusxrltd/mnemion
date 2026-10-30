@@ -1,10 +1,10 @@
 /** Owned compiled-source diagnostic. Never loads an installed user profile. */
-import { readFileSync, writeFileSync, renameSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { readBoundedLinuxStatus, selectHeap, unavailableLinux } from './phase-memory.mjs'
-import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker } from './canonical-memory-cycles.mjs'
+import { canonicalLaunchPrefix, canonicalMemoryCycles, canonicalProgressWriter, canonicalRemainingBatches, canonicalTerminalMarker } from './canonical-memory-cycles.mjs'
 
 const root = process.env.MNEMION_STUDIO_USER_DATA
 if (!root?.includes('mnemion-owned-renderer-')) throw new Error('Disposable renderer profile required')
@@ -16,10 +16,9 @@ if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(input.memory.base_url) ||
     !/^https:\/\/localhost:\d+\/v3\/report$/.test(input.destination) ||
     !/^\/assets\/[A-Za-z0-9._-]+\.js$/.test(input.probe_entry)) throw new Error('Owned loopback fixtures required')
 const application = join(root, 'source/studio/electron')
+const publishProgress = canonicalProgressWriter(join(root, 'owned-progress'))
 const marker = value => {
-  const file = join(root, 'monitor.json')
-  writeFileSync(file + '.tmp', JSON.stringify({ at_ms: Date.now(), ...value }))
-  renameSync(file + '.tmp', file)
+  publishProgress({ at_ms: Date.now(), ...value })
 }
 
 async function bootstrap() {
@@ -257,6 +256,7 @@ async function controller() {
       marker({ phase: name, pid })
       if (!value.ownership.valid) throw new Error('Resource sample has an unexpected or unowned app process')
     }
+    const launchPrefix = canonicalLaunchPrefix()
     // The interval includes first connection and cold telemetry work. No forced
     // GC, synthetic idle interval or resource-admission replacement is used.
     marker({ phase: 'measuring', pid })
@@ -270,15 +270,15 @@ async function controller() {
     await page.getByRole('form', { name: 'Connect a workspace' }).getByRole('button', { name: 'Open workspace', exact: true }).click()
     await page.getByRole('heading', { name: 'Welcome to Mnemion' }).waitFor({ state: 'hidden' })
     await sample('workspace_connected')
-    const connection = await page.evaluate(async entry => {
+    const connection = await page.evaluate(async payload => {
       const session = await window.mnemion.workspaceResume()
       if (!session?.sessionToken || session.remembered) throw new Error('Session-only native connection required')
-      const { MnemionClient, measuredStudioClient, nativeFetch } = await import(entry)
+      const { MnemionClient, measuredStudioClient, nativeFetch } = await import(payload.entry)
       window.__mnemionMemoryProbe = { client: measuredStudioClient(new MnemionClient({
         baseUrl: session.endpoint, apiKey: session.sessionToken, retries: 0, fetch: nativeFetch,
-      })), latencies: [], cycles: 0 }
+      })), latencies: [], cycles: 0, queryPrefix: payload.queryPrefix }
       return { native_handle_only: /^mnm_session_[A-Za-z0-9_-]{43}$/.test(session.sessionToken), remembered: session.remembered }
-    }, input.probe_entry)
+    }, { entry: input.probe_entry, queryPrefix: launchPrefix })
     if (!connection.native_handle_only) throw new Error('Renderer received a workspace key instead of a handle')
     const cycles = number => page.evaluate(canonicalMemoryCycles, { number, space: input.memory.space_id })
     await cycles(1)

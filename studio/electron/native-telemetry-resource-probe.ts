@@ -1,9 +1,8 @@
 /** Installed 128-cycle resource workload. Delivery stays a separate two-launch check. */
 import type { BrowserWindow } from 'electron'
 import { app } from 'electron'
-import { renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { canonicalMemoryCycles, canonicalRemainingBatches, canonicalTerminalMarker, resourceProgress } from './canonical-memory-cycles.mjs'
+import { canonicalLaunchPrefix, canonicalMemoryCycles, canonicalProgressWriter, canonicalRemainingBatches, canonicalTerminalMarker, resourceProgress } from './canonical-memory-cycles.mjs'
 import { settleInstalledTelemetryDelivery } from './service-bridge.js'
 
 const CHECKPOINTS = [
@@ -21,19 +20,17 @@ const CHECKPOINTS = [
 const PROBE_ENTRY = './assets/packaged-memory-probe.js'
 
 let persistedPhase: string | null = null
+let publishProgress: ((record: object) => void) | null = null
 
 function marker(phase: string, completed?: number, known = true): void {
-  const root = process.env.MNEMION_STUDIO_USER_DATA
-  if (!root) throw new Error('Disposable profile required')
+  if (!publishProgress) throw new Error('Progress writer required')
   const terminal = phase === 'finished' || phase === 'closed' || phase === 'failed'
   const body = terminal
     ? { at_ms: Date.now(), ...canonicalTerminalMarker(phase, completed, known) }
     : known === false
       ? { at_ms: Date.now(), phase, completed, completed_known: false }
       : { at_ms: Date.now(), phase }
-  const file = join(root, 'monitor.json')
-  writeFileSync(`${file}.tmp`, JSON.stringify(body))
-  renameSync(`${file}.tmp`, file)
+  publishProgress(body)
   if (!terminal) persistedPhase = phase
 }
 
@@ -99,14 +96,15 @@ function connectScript(fixture: { endpoint: string; credential: string }): strin
   })()`
 }
 
-function clientScript(): string {
+function clientScript(queryPrefix: string): string {
+  if (!/^[a-z][a-f0-9]{12}$/.test(queryPrefix)) throw new Error('Canonical memory cycles require a launch query prefix')
   return `(async () => {
     const session = await window.mnemion.workspaceResume();
     if (!session?.sessionToken || session.remembered) throw new Error('Session-only native connection required');
     const { MnemionClient, measuredStudioClient, nativeFetch } = await import(${JSON.stringify(PROBE_ENTRY)});
     window.__mnemionMemoryProbe = { client: measuredStudioClient(new MnemionClient({
       baseUrl: session.endpoint, apiKey: session.sessionToken, retries: 0, fetch: nativeFetch,
-    })), latencies: [], cycles: 0 };
+    })), latencies: [], cycles: 0, queryPrefix: ${JSON.stringify(queryPrefix)} };
     return { ready: true };
   })()`
 }
@@ -144,6 +142,10 @@ async function verifiedCycles(window: BrowserWindow): Promise<number | undefined
 export async function verifyInstalledTelemetryResource(window: BrowserWindow, config: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!app.isPackaged) throw new Error('Installed telemetry resource workload requires the packaged application')
   const fixture = resourceConfig(config)
+  const root = process.env.MNEMION_STUDIO_USER_DATA
+  if (!root) throw new Error('Disposable profile required')
+  publishProgress = canonicalProgressWriter(join(root, 'owned-progress'))
+  const launchPrefix = canonicalLaunchPrefix()
   let progress: { verified?: number; progressKnown: boolean } = { progressKnown: false }
   const settleCount = (count: unknown) => {
     progress = resourceProgress(progress, { settled: typeof count === 'number' ? count : undefined })
@@ -161,7 +163,7 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
     const connected = await window.webContents.executeJavaScript(connectScript(fixture))
     if (connected?.native_handle_only !== true || connected.remembered !== false) throw new Error('Session-only native connection required')
     marker('workspace_connected')
-    const ready = await window.webContents.executeJavaScript(clientScript())
+    const ready = await window.webContents.executeJavaScript(clientScript(launchPrefix))
     if (ready?.ready !== true) throw new Error('The packaged memory client did not start')
     markInflight()
     settleCount(await window.webContents.executeJavaScript(cyclesScript(1, fixture.spaceId)))
