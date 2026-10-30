@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-30T06:40:31+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-30T06:41:42+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.57](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.57). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,16 +21,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41015332369](https://github.com/Perseusxrltd/mnemion/actions/runs/41015332369) |
+| ci\.yml | main | success | [Run 41015332369](https://github.com/Perseusxrltd/mnemion/actions/runs/41015332369) |
 | public-updates\.yml | v4\.46\.57 | success | [Run 41010370711](https://github.com/Perseusxrltd/mnemion/actions/runs/41010370711) |
 | release\.yml | release/4\.46\.57 | success | [Run 41004315980](https://github.com/Perseusxrltd/mnemion/actions/runs/41004315980) |
 | verify-artifacts\.yml | main | success | [Run 41009919761](https://github.com/Perseusxrltd/mnemion/actions/runs/41009919761) |
 | website-release\.yml | main | success | [Run 41015332379](https://github.com/Perseusxrltd/mnemion/actions/runs/41015332379) |
 | website-release\.yml | v4\.46\.57 | success | [Run 41010367987](https://github.com/Perseusxrltd/mnemion/actions/runs/41010367987) |
-
-## Active jobs
-
-[Run 41015332369](https://github.com/Perseusxrltd/mnemion/actions/runs/41015332369): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Verify wheel and source package include the matching web Studio.
-
