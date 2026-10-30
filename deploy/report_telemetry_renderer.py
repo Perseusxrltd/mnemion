@@ -913,9 +913,7 @@ def summarize(directory: Path) -> dict:
                 [
                     "Owned-launch figures are the adapter's group counters for the compiled source controller. Null stays null. Partial coverage is not a zero or a pass. They do not replace Electron sample CPU and they are not app-overhead acceptance."
                 ]
-                if any(
-                    row.get("owned_launch", {}).get("present") is True for row in observations
-                )
+                if any(row.get("owned_launch", {}).get("present") is True for row in observations)
                 else []
             ),
             *(
