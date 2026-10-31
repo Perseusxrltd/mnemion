@@ -60,8 +60,10 @@ remains incomplete.
 The [installed process-role evidence](../validation/2026-10-31-installed-process-roles.md)
 adds absolute RSS observations at the existing workload checkpoints, with
 explicit ownership and missing-data checks. It adds no production polling.
-Focused source checks passed; native installed verification and the full
-CPU/RAM comparison remain open.
+Focused source checks and the installed Mac ARM workload passed. All six cases
+retained the nine expected checkpoints and completed 128 memory cycles each,
+with 2,310 successful API requests overall. The role comparisons are available;
+whole-process lifetime coverage and the full CPU/RAM comparison remain open.
 
 ## Acceptance work
 

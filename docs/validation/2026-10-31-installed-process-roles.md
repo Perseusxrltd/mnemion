@@ -1,7 +1,8 @@
 # Installed process-role RSS evidence
 
 31 October 2026. Reviewed source `85476a0f` passed the focused checks below.
-Native installed verification remains pending. Production telemetry stays off.
+The installed Mac ARM workload passed at integrated source `0ff248b8`.
+Whole-resource acceptance remains open. Production telemetry stays off.
 
 The existing installed 128-cycle workload adds one Electron metrics
 observation at each of its nine checkpoints: before workspace connection,
@@ -61,8 +62,44 @@ A failed devtools URL read also remains an observation failure.
 The final affected test file passed all 12 checks in 162.1089 ms. TypeScript
 `--noEmit` passed after restoring the existing Electron type dependencies;
 the original missing-dependency attempt is retained. Passing checks were
-not repeated merely to produce a log. These are source checks, not native
-installed measurements.
+not repeated merely to produce a log. Those source checks are separate from
+the installed measurements below.
+
+## Original installed result
+
+[Run 41165832667](https://github.com/Perseusxrltd/mnemion/actions/runs/41165832667)
+completed successfully on `macos-26` ARM64 at source
+`0ff248b82317111ca4b54ec96caf603039805fd0`. Its original
+`telemetry-installed-resources-macos-arm64` archive has SHA-256
+`b3ad8256a37f81101e80c0ef834d68ed55b88e03e517e4fb85934711d0d216fc`.
+The retained archive and all 18 extracted files passed digest verification.
+
+All six counterbalanced cases completed their 128 memory cycles: all 2,310
+memory API requests succeeded, each host became ready and exited with code
+zero, and no cleanup failures were reported. Each enabled case delivered one
+25-byte report to the test collector. Opted-out and unavailable cases delivered
+none. This was test delivery; production collection remains unavailable.
+
+Each case retained all nine phases and one stable identity per observed
+`app_main`, `app_renderer`, `utility` and `gpu` role. Phase and ownership checks
+passed with no checkpoint overflow. The original report marks the scoped
+role comparison available. Its maximum signed RSS differences, in bytes,
+are shown below; each uses the same repeat's unavailable case as baseline.
+
+| Repeat / condition | App main | App renderer | Utility | GPU |
+| --- | ---: | ---: | ---: | ---: |
+| 1 / opted out | -5,455,872 | 1,097,728 | 114,688 | -3,145,728 |
+| 1 / enabled | 475,136 | -2,064,384 | 114,688 | -2,670,592 |
+| 2 / opted out | -1,392,640 | -376,832 | 131,072 | -2,523,136 |
+| 2 / enabled | 1,720,320 | -262,144 | 81,920 | 442,368 |
+
+The original artifact retains both absolute observations and the signed
+difference at every phase, including the first. Differences between launches
+do not establish a causal improvement. These checkpoints do not cover all
+startup activity, exited helpers or every process's full lifetime. Native
+process coverage remains partial, and the budget comparison remains false.
+The original workflow was dispatched once. A dropped GitHub read was recovered
+by reconnecting the observer to that run; the workload was not rerun.
 
 A scoped role comparison does not qualify whole-process lifetime accounting
 or whole-product CPU/RAM savings. The allowances remain 8,388,608 additional
