@@ -142,3 +142,5 @@ Continue the current telemetry milestone and its concrete fixes, including
 the [CPU admission follow-up](../validation/2026-10-30-telemetry-cpu-admission.md).
 Use this contract when reviewing the existing background scheduler and remaining
 F06/R04 acceptance, without starting parallel fragments of the roadmap.
+
+The [native memory diagnostic milestone](../validation/2026-10-31-native-memory-diagnostics.md) records the standalone Windows SDK layout pass and corrected macOS helper/Linux BPF build passes, preserving the initial compiler failures. No produced Mac or Linux binary ran; the Linux collector was skipped. Windows FFI comparison acceptance is withheld pending missing used SDK layouts and a stricter success criterion. Real signing, disposable-Keychain, upgrade and controlled runtime gates remain open, including issue 50; these developer prototypes do not qualify application resource budgets. All 66 requirement states are unchanged; V08 remains Building and collection OFF.
