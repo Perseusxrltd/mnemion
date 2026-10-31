@@ -69,18 +69,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 10,
-        "succeeded": 10,
+        "completed": 11,
+        "succeeded": 11,
         "active": [
-          {
-            "id": 124466118653,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
           {
             "id": 124466118711,
             "name": "service (3.12)",
@@ -100,73 +91,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.59",
       "source_commit": "c8ca44ba07ceb1d3bdf4b93efb0993478c0e909b",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-31T06:45:53Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41177894852",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 124469181904,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124469181933,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124469181944,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 124469181966,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 124469181978,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124469182027,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-31T06:57:26Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41177894852"
     },
     {
       "id": 41173884074,
@@ -213,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41177892994"
     }
   ],
-  "observed_at": "2026-10-31T06:46:10+00:00"
+  "observed_at": "2026-10-31T06:57:53+00:00"
 }

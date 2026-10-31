@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T06:46:10+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T06:57:53+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.59](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.59). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,7 +22,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128) |
-| public-updates\.yml | v4\.46\.59 | in\_progress | [Run 41177894852](https://github.com/Perseusxrltd/mnemion/actions/runs/41177894852) |
+| public-updates\.yml | v4\.46\.59 | success | [Run 41177894852](https://github.com/Perseusxrltd/mnemion/actions/runs/41177894852) |
 | release\.yml | release/4\.46\.59 | success | [Run 41173884074](https://github.com/Perseusxrltd/mnemion/actions/runs/41173884074) |
 | verify-artifacts\.yml | main | success | [Run 41177669828](https://github.com/Perseusxrltd/mnemion/actions/runs/41177669828) |
 | website-release\.yml | main | success | [Run 41172037480](https://github.com/Perseusxrltd/mnemion/actions/runs/41172037480) |
@@ -30,17 +30,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128): 10/12 jobs completed; 10 succeeded.
+[Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128): 11/12 jobs completed; 11 succeeded.
 
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 41177894852](https://github.com/Perseusxrltd/mnemion/actions/runs/41177894852): 1/7 jobs completed; 1 succeeded.
-
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
