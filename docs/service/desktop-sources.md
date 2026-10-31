@@ -160,7 +160,11 @@ with one scope per file. They require a server at least 4.17.0. Retained capture
 uses a separate approved inbox and custody protocol; producer disappearance
 does not remove already accepted evidence.
 
-Only one source scans at a time, with one pending request per source. The helper
+Only one source scans at a time, with one pending request per source. An
+enabled source wakes at its saved next scan time. An empty or fully paused
+list does not leave a timer running only to discover that nothing is due.
+Sources that are already due still run one at a time, with a two-second gap
+so a clock change cannot spin. The helper
 reports resident memory every two seconds and stops when it exceeds its RAM
 allowance. Committed progress is reconciled on the next scan. This is sampled
 enforcement, not protection against every brief allocation spike. Source RSS is

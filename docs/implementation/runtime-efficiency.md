@@ -43,6 +43,18 @@ cover those behaviors and their limits. The idle backoff is published in
 4.46.58; all six public auto-update checks and website synchronization passed.
 That release validation is separate from the counter checks below.
 
+Desktop sources follow the same rule. Each enabled source keeps its saved
+next scan time, and the app wakes for that deadline. An empty list or a list
+where every source is paused does not leave a timer running only to discover
+that nothing is due. Startup, save, resume and Sync still request a wake
+immediately. A source that is already due waits the existing two-second gap
+before the next automatic scan, including after a clock jump or an unusable
+next-scan time, so deadlines cannot spin. Update suspension clears the wake.
+Resume restores one pending pass. Close cancels it, and a late callback cannot
+start another scan. The helper's two-second memory sample during a scan is
+unchanged. The focused source checks use a controlled clock. They do not
+measure CPU or RAM savings and do not complete F06 or R04.
+
 The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
 improves Windows lifetime measurements and cleanup reporting. The Darwin
 adapter now retains live per-process kernel RSS peaks. The corrected C probe

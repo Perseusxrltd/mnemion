@@ -18,7 +18,7 @@ const definition = () => ({ id: randomUUID(), endpoint: 'https://memory.example.
   members: ['employee:alice'], publish_to_mapped_members: true, poll_seconds: 300, memory_limit_mib: 256,
   max_files: 10000, enabled: true })
 
-async function fixture(t) {
+async function fixture(t, mode = {}) {
   const f = await workspaceFixture(t)
   let document = { format: 1, revision: 'not-configured', sources: [] }, now = Date.now()
   const status = new Map()
@@ -125,12 +125,18 @@ async function fixture(t) {
       })
     } finally { state.running-- }
   }
-  const options = { call, cipher: f.cipher, now: () => now }
+  const wakes = []
+  const schedule = mode.nativeTimer ? undefined : (delay, wake) => {
+    const item = { delay, wake, cancelled: false }
+    wakes.push(item)
+    return { unref() {}, cancel() { item.cancelled = true } }
+  }
+  const options = { call, cipher: f.cipher, now: () => now, ...(schedule ? { schedule } : {}) }
   const manager = new DesktopSources(options)
   t.after(() => manager.close())
   const add = async (source = definition()) => manager.configure({ source, credential, expected_revision: (await manager.status()).revision })
   const flush = async () => { await setImmediate(); await setImmediate() }
-  return { ...f, manager, options, state, add, flush, document: () => document,
+  return { ...f, manager, options, state, add, flush, wakes, document: () => document,
     advance: seconds => { now += seconds * 1000 } }
 }
 
@@ -194,6 +200,7 @@ for (const phase of ['load', 'status']) test('closing drains startup ' + phase +
     throw new Error('Closing must not begin a new source operation')
   } })
   const interval = t.mock.method(globalThis, 'setInterval')
+  const timeout = t.mock.method(globalThis, 'setTimeout')
   const starting = manager.start()
   if (phase === 'status') loaded.resolve(document)
   await setImmediate()
@@ -207,6 +214,7 @@ for (const phase of ['load', 'status']) test('closing drains startup ' + phase +
     await starting; await closing
     assert.equal(manager.busy, false)
     assert.equal(interval.mock.callCount(), 0, 'A finished startup must not recreate its timer after close')
+    assert.equal(timeout.mock.callCount(), 0, 'A finished startup must not arm a deadline after close')
     assert.equal((await manager.status()).running, false)
     await manager.start()
     assert.deepEqual(requests, ['load', 'status'])
@@ -221,12 +229,14 @@ test('failed startup inspection drains on close without restarting capture', asy
   let calls = 0
   const manager = new DesktopSources({ cipher: f.cipher, call: () => { calls++; return loaded.promise } })
   const interval = t.mock.method(globalThis, 'setInterval')
+  const timeout = t.mock.method(globalThis, 'setTimeout')
   const starting = assert.rejects(manager.start(), /Saved settings unavailable/)
   const closing = manager.close()
   loaded.reject(new Error('Saved settings unavailable'))
   await starting; await closing
   assert.equal(manager.busy, false)
   assert.equal(interval.mock.callCount(), 0)
+  assert.equal(timeout.mock.callCount(), 0)
   await manager.start()
   await assert.rejects(manager.status(), /closing/)
   assert.equal(calls, 1)
@@ -1364,4 +1374,177 @@ test('policy handover protects the previous key and recovers an installed replac
   assert.deepEqual(readCaptureRestored(receipt), receipt)
   assert.throws(() => readCaptureRestored({ ...receipt, policy_change: false }))
   assert.throws(() => readCaptureRestored({ ...receipt, replaced_source_id: source.id }))
+})
+
+const pendingWake = wakes => wakes.filter(item => !item.cancelled).at(-1)
+
+test('idle and paused sources arm no wake; a future deadline wakes once', async t => {
+  const f = await fixture(t), paused = { ...definition(), enabled: false }, source = definition()
+  await f.manager.start()
+  assert.equal((await f.manager.status()).running, true)
+  assert.equal(f.wakes.length, 0)
+  await f.add(paused)
+  assert.equal((await f.manager.status()).running, true)
+  assert.equal(f.wakes.length, 0, 'A paused source must not leave an idle timer')
+  await f.add(source); await f.flush()
+  assert.equal(f.state.scans.length, 1)
+  f.state.scans[0].finish(); await f.flush()
+  const deadline = pendingWake(f.wakes)
+  assert.equal(deadline.delay, source.poll_seconds * 1000)
+  assert.equal(f.wakes.filter(item => !item.cancelled && item.delay === 2000).length, 0)
+  f.advance(source.poll_seconds - 1)
+  deadline.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 1, 'The armed deadline must follow the source clock')
+  const rest = pendingWake(f.wakes)
+  assert.equal(rest.delay, 1000)
+  f.advance(1)
+  rest.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  assert.equal(f.state.maximum, 1)
+})
+
+test('manual sync is prompt and a second due source keeps one two-second pace', async t => {
+  const f = await fixture(t), first = definition(), second = definition()
+  await f.add(first); await f.add(second)
+  await f.manager.start(); await f.flush()
+  assert.equal(f.state.scans.length, 1)
+  assert.equal(f.state.scans[0].id, first.id)
+  const revision = (await f.manager.status()).revision
+  await f.manager.control('sync', { id: first.id, expected_revision: revision })
+  await f.manager.control('sync', { id: first.id, expected_revision: revision })
+  assert.equal(f.state.scans.length, 1, 'Repeated sync coalesces behind the active scan')
+  assert.equal(f.state.maximum, 1)
+  f.state.scans[0].finish(); await f.flush()
+  const pace = pendingWake(f.wakes)
+  assert.equal(pace.delay, 2000)
+  assert.equal(f.state.scans.length, 1, 'Settlement must not drain every due source')
+  pace.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  assert.equal(f.state.scans[1].id, second.id, 'The older due source runs before the repeated request')
+  assert.equal(f.state.maximum, 1)
+  pace.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 2, 'A stale pace callback must not start a second worker')
+})
+
+test('a deadline wake during preview or reload starts one scan when that work settles', async t => {
+  const f = await fixture(t), source = definition()
+  await f.add(source); await f.manager.start(); await f.flush()
+  f.state.scans[0].finish(); await f.flush()
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  const original = f.options.call
+  f.options.call = (request, ...rest) => request.operation === 'preview' ? gate : original(request, ...rest)
+  const pending = f.manager.preview({})
+  await f.flush()
+  f.advance(source.poll_seconds)
+  const armed = pendingWake(f.wakes)
+  armed.wake(); armed.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 1, 'Preview must hold the deadline wake')
+  release({})
+  await assert.rejects(pending)
+  await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  assert.equal(f.state.maximum, 1)
+  f.state.scans[1].finish(); await f.flush()
+
+  const revision = (await f.manager.status()).revision
+  let load
+  f.options.call = (request, ...rest) => {
+    if (request.operation === 'load' && !load) {
+      load = Promise.withResolvers()
+      return load.promise.then(() => original(request, ...rest))
+    }
+    return original(request, ...rest)
+  }
+  f.state.loseSave = true
+  await assert.rejects(f.manager.configure({ source, expected_revision: revision }), /lost/)
+  const reading = f.manager.status()
+  const again = f.manager.start()
+  await f.flush()
+  assert.ok(load)
+  f.advance(source.poll_seconds)
+  const duringLoad = pendingWake(f.wakes)
+  if (duringLoad) { duringLoad.wake(); duringLoad.wake() }
+  await f.flush()
+  assert.equal(f.state.scans.length, 2, 'A reload must not start a scan before settings return')
+  load.resolve()
+  await reading; await again; await f.flush()
+  assert.equal(f.state.scans.length, 3)
+  assert.equal(f.state.maximum, 1, 'A second start during reload must not create another worker')
+})
+
+test('repair defers work, suspension clears the wake, and close ignores a late callback', async t => {
+  const f = await fixture(t), source = definition()
+  await f.add(source)
+  f.state.corruptStatus = true
+  await f.manager.start(); await f.flush()
+  assert.equal(f.state.scans.length, 0)
+  const view = await f.manager.status()
+  await f.manager.control('repair', { expected_revision: view.revision, id: source.id,
+    repair_token: view.sources[0].activity.repair_token, confirm: true })
+  assert.equal(f.state.scans.length, 0, 'Repair must not scan')
+  const deferred = pendingWake(f.wakes)
+  assert.equal(deferred.delay, source.poll_seconds * 1000)
+  assert.equal(f.manager.pauseForUpdate(), true)
+  assert.equal((await f.manager.status()).running, false)
+  assert.equal(deferred.cancelled, true)
+  deferred.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 0)
+  f.manager.resumeAfterUpdate(); await f.flush()
+  assert.equal((await f.manager.status()).running, true)
+  assert.equal(f.state.scans.length, 0, 'Resume must restore the future deadline once')
+  const restored = pendingWake(f.wakes)
+  assert.equal(restored.delay, source.poll_seconds * 1000)
+  restored.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 0)
+  const stillWaiting = pendingWake(f.wakes)
+  await f.manager.close()
+  assert.equal(stillWaiting.cancelled, true)
+  stillWaiting.wake(); restored.wake(); await f.flush()
+  await f.manager.start()
+  assert.equal(f.state.scans.length, 0)
+  assert.equal((await f.manager.status()).running, false)
+})
+
+test('a clock jump or invalid clock schedules the pace or the timer cap, never zero', async t => {
+  const f = await fixture(t), source = definition()
+  await f.add(source); await f.manager.start(); await f.flush()
+  f.state.scans[0].finish(); await f.flush()
+  const deadline = pendingWake(f.wakes)
+  f.advance(10_000_000)
+  deadline.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  assert.equal(f.state.maximum, 1)
+  f.state.scans[1].finish(); await f.flush()
+  const afterJump = pendingWake(f.wakes)
+  assert.equal(afterJump.delay, source.poll_seconds * 1000)
+  f.options.now = () => Number.NaN
+  afterJump.wake(); await f.flush()
+  assert.equal(f.state.scans.length, 2, 'An invalid clock must not start credential or network work')
+  assert.equal(pendingWake(f.wakes).delay, 2000)
+  f.options.now = () => 0
+  pendingWake(f.wakes).wake(); await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  assert.equal(pendingWake(f.wakes).delay, 2_147_483_647)
+})
+
+test('the production timeout is unrefd and idle does not schedule one', async t => {
+  const handles = []
+  t.mock.method(globalThis, 'setTimeout', (fn, delay) => {
+    const handle = { fn, delay, unrefCount: 0 }
+    handles.push(handle)
+    return { unref() { handle.unrefCount++ } }
+  })
+  t.mock.method(globalThis, 'clearTimeout', () => {})
+  const f = await fixture(t, { nativeTimer: true })
+  await f.manager.start()
+  assert.equal((await f.manager.status()).running, true)
+  assert.equal(handles.length, 0)
+  await f.add({ ...definition(), enabled: false })
+  assert.equal(handles.length, 0)
+  await f.add(definition()); await f.flush()
+  f.state.scans[0].finish(); await f.flush()
+  assert.equal(handles.length, 1)
+  assert.equal(handles[0].delay, 300_000)
+  assert.equal(handles[0].unrefCount, 1)
 })

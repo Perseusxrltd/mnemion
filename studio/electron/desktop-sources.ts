@@ -1,4 +1,9 @@
 /** One bounded source scan at a time, independent of the selected workspace. */
+const PACE_MS = 2_000
+// Node stores a timer delay as a signed 32-bit integer. Anything larger is
+// treated as 1ms and would spin after a backwards clock jump.
+const MAX_WAKE_MS = 2_147_483_647
+type SourceWake = { cancel: () => void; unref: () => void }
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
@@ -11,6 +16,8 @@ type Document = { format: 1; revision: string; sources: SavedSource[] }
 export type SourceCall = (request: Record<string, unknown>, signal?: AbortSignal,
   resources?: (bytes: number) => void) => Promise<Record<string, unknown>>
 type Options = { call: SourceCall; cipher: CredentialCipher; changed?: () => void; now?: () => number;
+  /** Test seam. Production arms one unref'd timeout and does not keep it only to see that no source is due. */
+  schedule?: (delayMs: number, wake: () => void) => SourceWake
   retirementCredential?: (source: DesktopSource, supplied: string) => Promise<string>; telemetry?: MaintenanceStore }
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/
 const messages: Partial<Record<SourceReason, string>> = { ...sourceMessages,
@@ -111,7 +118,11 @@ export class DesktopSources {
   private controlling = false
   private controlWork?: Promise<unknown>
   private recoveryReading?: Promise<CaptureRecoveries>
-  private timer?: ReturnType<typeof setInterval>
+  private started = false
+  private wake?: SourceWake
+  private wakeEpoch = 0
+  private armedFor?: number
+  private followUp = false
   private startRequested = false
   private suspended = false
   private closed = false
@@ -126,6 +137,97 @@ export class DesktopSources {
   get memoryBytes(): number { return this.rss }
   private now(): number { return this.options.now?.() ?? Date.now() }
   private changed() { this.options.changed?.() }
+
+  private disarm(): void {
+    this.wakeEpoch += 1
+    this.wake?.cancel()
+    this.wake = undefined
+    this.armedFor = undefined
+  }
+
+  private boundedDelay(delayMs: number): number {
+    if (!Number.isFinite(delayMs) || delayMs <= 0) return PACE_MS
+    return Math.min(Math.floor(delayMs), MAX_WAKE_MS)
+  }
+
+  private nativeWake(delay: number, fire: () => void): SourceWake {
+    const handle = setTimeout(fire, delay)
+    return { cancel: () => clearTimeout(handle), unref: () => { handle.unref() } }
+  }
+
+  private arm(delayMs: number): void {
+    if (!this.started || this.closed || this.suspended) { this.disarm(); return }
+    const delay = this.boundedDelay(delayMs)
+    const now = this.now()
+    const fireAt = now + delay
+    if (this.wake && this.armedFor !== undefined && Number.isFinite(now) && this.armedFor > now && this.armedFor <= fireAt) return
+    this.disarm()
+    const epoch = this.wakeEpoch
+    const fire = () => {
+      if (epoch !== this.wakeEpoch || !this.started || this.closed || this.suspended) return
+      this.wake = undefined
+      this.armedFor = undefined
+      void this.tick()
+    }
+    const handle = this.options.schedule ? this.options.schedule(delay, fire) : this.nativeWake(delay, fire)
+    handle.unref()
+    this.wake = handle
+    this.armedFor = Number.isFinite(fireAt) ? fireAt : undefined
+  }
+
+  private deadline(item: SavedSource): number {
+    const at = this.next.get(item.id)
+    if (at === undefined) return 0
+    return Number.isFinite(at) ? at : Number.POSITIVE_INFINITY
+  }
+
+  private pickDue(): SavedSource | undefined {
+    if (!this.document || !Number.isFinite(this.now())) return undefined
+    const now = this.now()
+    return this.document.sources.filter(item => item.enabled && (this.pending.has(item.id) || this.deadline(item) <= now))
+      .sort((a, b) => (this.next.get(a.id) ?? 0) - (this.next.get(b.id) ?? 0))[0]
+  }
+
+  private followDelay(): number | null {
+    if (!this.document) return null
+    const enabled = this.document.sources.filter(item => item.enabled)
+    if (!enabled.length) return null
+    const now = this.now()
+    let earliest = Infinity
+    let invalid = false
+    for (const item of enabled) {
+      if (this.pending.has(item.id) || !this.next.has(item.id)) {
+        if (!Number.isFinite(now)) return PACE_MS
+        earliest = Math.min(earliest, now)
+        continue
+      }
+      const at = this.next.get(item.id)
+      if (at === undefined || !Number.isFinite(at)) { invalid = true; continue }
+      if (at < earliest) earliest = at
+    }
+    if (!Number.isFinite(earliest)) {
+      if (!invalid) return null
+      const poll = enabled.find(item => Number.isFinite(item.poll_seconds) && item.poll_seconds >= 30)?.poll_seconds ?? 30
+      return poll * 1000
+    }
+    if (!Number.isFinite(now)) return PACE_MS
+    return earliest - now
+  }
+
+  private armIdle(): void {
+    if (!this.started || this.closed || this.suspended) { this.disarm(); return }
+    if (this.busy || !this.document) { this.followUp = true; return }
+    const delay = this.followDelay()
+    if (delay == null) this.disarm()
+    else this.arm(delay)
+  }
+
+  private afterBusy(prompt: boolean): void {
+    if (this.closed) { this.disarm(); return }
+    if (this.busy || this.suspended || !this.started) return
+    if (prompt || this.followUp) { this.followUp = false; void this.tick(); return }
+    this.armIdle()
+  }
 
   private unconfirmed(id: string, error: unknown, observed?: SourceActivity): void {
     const code = object(error) && error.code === 'source_status_invalid' ? 'source_status_invalid' : 'source_status_unavailable'
@@ -168,7 +270,7 @@ export class DesktopSources {
       // The native helper validates every field before returning its private file.
       await this.observations(result as Document)
       this.document = result as Document
-    })().finally(() => { this.loading = undefined })
+    })().finally(() => { this.loading = undefined; this.afterBusy(false) })
     return this.loading
   }
 
@@ -177,7 +279,7 @@ export class DesktopSources {
     if (!this.busy && this.document!.sources.some(source => this.activities.get(source.id)?.reason_code === 'source_status_invalid' &&
       !this.activities.get(source.id)?.repair_token)) await this.observations(this.document!)
     return { revision: this.document!.revision, secure_storage: await this.options.cipher.available(),
-      running: !!this.timer && !this.suspended && !this.closed, memory_bytes: this.rss,
+      running: this.started && !this.suspended && !this.closed, memory_bytes: this.rss,
       sources: this.document!.sources.map(source => ({ ...publicSource(source), activity: source.enabled ? {
         ...(this.activities.get(source.id) ?? { phase: 'waiting', durability: 'unknown' }),
         ...(this.next.has(source.id) ? { next_scan_at: new Date(this.next.get(source.id)!).toISOString() } : {}),
@@ -189,7 +291,7 @@ export class DesktopSources {
     if (this.closed) return
     await this.ensure()
     if (this.closed) return
-    if (!this.timer) { this.timer = setInterval(() => { void this.tick() }, 2000); this.timer.unref() }
+    this.started = true
     void this.tick()
   }
 
@@ -200,7 +302,9 @@ export class DesktopSources {
     this.controlling = true
     const pending = work()
     this.controlWork = pending
-    try { return await pending } finally { this.controlWork = undefined; this.controlling = false; this.changed(); if (schedule) void this.tick() }
+    try { return await pending } finally {
+      this.controlWork = undefined; this.controlling = false; this.changed(); this.afterBusy(schedule)
+    }
   }
 
   private async save(sources: SavedSource[]) {
@@ -227,7 +331,7 @@ export class DesktopSources {
     const work = Promise.resolve().then(() => this.options.call({ operation: 'preview', selection }, signal))
     this.controlWork = work
     try { return readCapturePreview(await work) }
-    finally { this.controlling = false; this.controlWork = undefined; this.changed() }
+    finally { this.controlling = false; this.controlWork = undefined; this.changed(); this.afterBusy(false) }
   }
 
   async backup(input: CaptureBackupInput, signal?: AbortSignal): Promise<CaptureArchiveInfo> {
@@ -254,7 +358,7 @@ export class DesktopSources {
     const work = Promise.resolve().then(() => this.options.call({ ...input, operation: 'capture_inspect' }, signal))
     this.controlWork = work
     try { return readCaptureArchive(await work) }
-    finally { this.controlling = false; this.controlWork = undefined; this.changed() }
+    finally { this.controlling = false; this.controlWork = undefined; this.changed(); this.afterBusy(false) }
   }
 
   async recoveries(signal?: AbortSignal): Promise<CaptureRecoveries> {
@@ -400,7 +504,7 @@ export class DesktopSources {
       this.activities.set(id, { phase: 'waiting', durability: 'unknown' })
       this.next.set(id, this.now())
     })
-    if (this.startRequested && !this.timer) await this.start()
+    if (this.startRequested && !this.started) await this.start()
     return this.status()
   }
 
@@ -478,12 +582,14 @@ export class DesktopSources {
   }
 
   async tick(): Promise<void> {
-    if (!this.document || this.busy || this.suspended || this.closed || !this.timer) return
+    if (!this.started || this.closed || this.suspended) return
+    if (!this.document || this.busy) { this.followUp = true; return }
     // Serve older due work first so repeated requests for one connector cannot
     // starve other workspaces' sources on this device.
-    const source = this.document.sources.filter(item => item.enabled && (this.pending.has(item.id) || (this.next.get(item.id) ?? 0) <= this.now()))
-      .sort((a, b) => (this.next.get(a.id) ?? 0) - (this.next.get(b.id) ?? 0))[0]
-    if (!source) return
+    const source = this.pickDue()
+    if (!source) { this.followUp = false; this.armIdle(); return }
+    this.followUp = false
+    this.disarm()
     // Explicit Sync requests already have an originating desktop/native owner.
     const automatic = !this.pending.has(source.id)
     this.pending.delete(source.id)
@@ -557,18 +663,25 @@ export class DesktopSources {
       }
     })()
     await activity.work
+    // One scan per wake. Another already-due source waits out the pace so a
+    // clock jump cannot drain every source immediately. armIdle keeps a wake
+    // that arrived while this scan was busy.
+    this.followUp = false
+    this.armIdle()
   }
 
   pauseForUpdate(): boolean {
     if (this.busy) return false
     this.suspended = true
+    this.followUp = false
+    this.disarm()
     return true
   }
   resumeAfterUpdate(): void { this.suspended = false; void this.tick() }
   async close(): Promise<void> {
     this.closed = true
-    if (this.timer) clearInterval(this.timer)
-    this.timer = undefined
+    this.followUp = false
+    this.disarm()
     this.active?.abort.abort()
     // App quit retries only after all work counted by busy has drained. A
     // startup read otherwise keeps busy true while repeated quit promises
