@@ -1,0 +1,71 @@
+Windows SDK ABI field inventory. Numbers are not stored here.
+The oracle program measures the installed SDK with sizeof and offsetof.
+
+Headers, read from the runner's Windows SDK, not copied into this tree:
+  shared/wmistr.h       WNODE_HEADER
+  shared/evntrace.h     EVENT_TRACE_PROPERTIES, EVENT_TRACE_HEADER, EVENT_TRACE,
+                        TRACE_LOGFILE_HEADER, EVENT_TRACE_LOGFILEW
+  shared/evntprov.h     EVENT_DESCRIPTOR
+  um/evntcons.h         EVENT_HEADER, EVENT_RECORD
+
+Architectures: x64 (abi.json arch 1) and ARM64 (abi.json arch 2).
+Any other architecture, including x86, ARM32, and ARM64EC, is refused.
+Both targets are LLP64: int and long are 4 bytes, pointers are 8 bytes.
+Nameless union and struct members are measured under default MSVC extensions.
+
+WNODE_HEADER
+  both unions: HistoricalContext, Version, Linkage,
+               CountLost, KernelHandle, TimeStamp
+  Guid, ClientContext, Flags
+  also BufferSize, ProviderId, sizeof
+
+EVENT_TRACE_PROPERTIES
+  Wnode
+  logger handle: LoggerThreadId (HANDLE)
+  name offsets: LogFileNameOffset, LoggerNameOffset
+  also the ULONG configuration and loss counters, AgeLimit, FlushThreshold, sizeof
+
+EVENT_DESCRIPTOR
+  Id, Version, Channel, Level, Opcode, Task, Keyword, sizeof
+
+EVENT_HEADER
+  Size, HeaderType, Flags, EventProperty, ThreadId, ProcessId, TimeStamp,
+  ProviderId, EventDescriptor, KernelTime, UserTime, ProcessorTime, ActivityId, sizeof
+
+EVENT_RECORD
+  pointer offsets: ExtendedData, UserData, UserContext
+  also EventHeader, BufferContext, ExtendedDataCount, UserDataLength, sizeof
+
+EVENT_TRACE_HEADER
+  FieldTypeFlags, HeaderType, MarkerFlags, Version,
+  Class, Class_Type, Class_Level, Class_Version,
+  Guid, GuidPtr, KernelTime, UserTime, ProcessorTime, ClientContext, Flags, sizeof
+
+EVENT_TRACE
+  Header, InstanceId, ParentInstanceId, ParentGuid, MofData, MofLength,
+  ClientContext, BufferContext, sizeof
+
+TRACE_LOGFILE_HEADER
+  TimeZone, BootTime, PerfFreq, StartTime
+  also BufferSize, Version, VersionDetail and its four UCHAR fields,
+  ProviderVersion, NumberOfProcessors, EndTime, TimerResolution, MaximumFileSize,
+  LogFileMode, BuffersWritten, LogInstanceGuid, StartBuffers, PointerSize,
+  EventsLost, CpuSpeedInMHz, LoggerName, LogFileName, ReservedFlags, BuffersLost, sizeof
+
+EVENT_TRACE_LOGFILEW
+  mode union: LogFileMode, ProcessTraceMode
+  callback union: EventCallback, EventRecordCallback
+  header: LogfileHeader
+  buffer callback: BufferCallback
+  event-record callback: EventRecordCallback
+  context: Context
+  also LogFileName, LoggerName, CurrentTime, BuffersRead, CurrentEvent,
+  BufferSize, Filled, EventsLost, IsKernelTrace, sizeof
+
+Primitive widths also printed: char, short, int, long, long long, pointer,
+wchar_t, size_t, ptrdiff_t, uintptr_t, int32_t, int64_t, UCHAR, USHORT, ULONG,
+BOOL, BOOLEAN, WCHAR, HANDLE, SIZE_T, ULONG_PTR, LONGLONG, ULONGLONG,
+LARGE_INTEGER, GUID, TIME_ZONE_INFORMATION, ETW_BUFFER_CONTEXT.
+
+abi.json values are numbers only. No function address, counter, process id,
+logger, or user profile is read.

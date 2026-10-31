@@ -1,0 +1,42 @@
+name: Windows SDK ABI oracle
+
+# Manual layout measurement only. No push, pull request, or schedule.
+# This does not start a trace and does not accept native resources.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-sdk-abi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  abi:
+    name: ABI / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-2022, arch: x64, host_arch: x64 }
+          - { os: windows-11-arm, arch: arm64, host_arch: arm64 }
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Compile and run the numeric SDK ABI oracle
+        shell: pwsh
+        run: |
+          ./deploy/windows_sdk_abi/build_sdk_abi.ps1 -Architecture ${{ matrix.arch }} -HostArchitecture ${{ matrix.host_arch }} -OutputDirectory deploy/windows_sdk_abi/out
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-sdk-abi-${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            deploy/windows_sdk_abi/out/abi.json
+            deploy/windows_sdk_abi/out/metadata.json
