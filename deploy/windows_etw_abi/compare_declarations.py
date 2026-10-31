@@ -160,7 +160,13 @@ STRUCTURES = (
                 None,
                 "union",
                 (
-                    ("HistoricalContext", "HistoricalContext", ("primitive", "ULONGLONG"), "scalar", None),
+                    (
+                        "HistoricalContext",
+                        "HistoricalContext",
+                        ("primitive", "ULONGLONG"),
+                        "scalar",
+                        None,
+                    ),
                     (
                         "VersionLinkage",
                         None,
@@ -244,7 +250,13 @@ STRUCTURES = (
             ("ProcessId", "ProcessId", ("primitive", "ULONG"), "scalar", None),
             ("TimeStamp", "TimeStamp", ("primitive", "LARGE_INTEGER"), "scalar", None),
             ("ProviderId", "ProviderId", ("primitive", "GUID"), "aggregate", GUID_FIELDS),
-            ("EventDescriptor", "EventDescriptor", ("structure", "EVENT_DESCRIPTOR"), "struct", None),
+            (
+                "EventDescriptor",
+                "EventDescriptor",
+                ("structure", "EVENT_DESCRIPTOR"),
+                "struct",
+                None,
+            ),
             ("ProcessorTime", "ProcessorTime", ("primitive", "ULONGLONG"), "scalar", None),
             ("ActivityId", "ActivityId", ("primitive", "GUID"), "aggregate", GUID_FIELDS),
         ),
@@ -254,7 +266,13 @@ STRUCTURES = (
         "_EVENT_RECORD",
         (
             ("EventHeader", "EventHeader", ("structure", "EVENT_HEADER"), "struct", None),
-            ("BufferContext", "BufferContext", ("primitive", "ETW_BUFFER_CONTEXT"), "aggregate", BUFFER_FIELDS),
+            (
+                "BufferContext",
+                "BufferContext",
+                ("primitive", "ETW_BUFFER_CONTEXT"),
+                "aggregate",
+                BUFFER_FIELDS,
+            ),
             ("ExtendedDataCount", "ExtendedDataCount", ("primitive", "USHORT"), "scalar", None),
             ("UserDataLength", "UserDataLength", ("primitive", "USHORT"), "scalar", None),
             ("ExtendedData", "ExtendedData", ("primitive", "pointer"), "scalar", None),
@@ -342,7 +360,13 @@ STRUCTURES = (
                         None,
                         "struct",
                         (
-                            ("ClientContext", "ClientContext", ("primitive", "ULONG"), "scalar", None),
+                            (
+                                "ClientContext",
+                                "ClientContext",
+                                ("primitive", "ULONG"),
+                                "scalar",
+                                None,
+                            ),
                             ("Flags", "Flags", ("primitive", "ULONG"), "scalar", None),
                         ),
                     ),
@@ -360,7 +384,13 @@ STRUCTURES = (
             ("ParentGuid", "ParentGuid", ("primitive", "GUID"), "aggregate", GUID_FIELDS),
             ("MofData", "MofData", ("primitive", "pointer"), "scalar", None),
             ("MofLength", "MofLength", ("primitive", "ULONG"), "scalar", None),
-            ("BufferContext", "BufferContext", ("primitive", "ETW_BUFFER_CONTEXT"), "aggregate", BUFFER_FIELDS),
+            (
+                "BufferContext",
+                "BufferContext",
+                ("primitive", "ETW_BUFFER_CONTEXT"),
+                "aggregate",
+                BUFFER_FIELDS,
+            ),
         ),
     ),
     (
@@ -379,7 +409,13 @@ STRUCTURES = (
             ("LogInstanceGuid", "LogInstanceGuid", ("primitive", "GUID"), "aggregate", GUID_FIELDS),
             ("LoggerName", "LoggerName", ("primitive", "pointer"), "scalar", None),
             ("LogFileName", "LogFileName", ("primitive", "pointer"), "scalar", None),
-            ("TimeZone", "TimeZone", ("primitive", "TIME_ZONE_INFORMATION"), "aggregate", TIME_ZONE_FIELDS),
+            (
+                "TimeZone",
+                "TimeZone",
+                ("primitive", "TIME_ZONE_INFORMATION"),
+                "aggregate",
+                TIME_ZONE_FIELDS,
+            ),
             ("BootTime", "BootTime", ("primitive", "LARGE_INTEGER"), "scalar", None),
             ("PerfFreq", "PerfFreq", ("primitive", "LARGE_INTEGER"), "scalar", None),
             ("StartTime", "StartTime", ("primitive", "LARGE_INTEGER"), "scalar", None),
@@ -397,12 +433,24 @@ STRUCTURES = (
             ("BuffersRead", "BuffersRead", ("primitive", "ULONG"), "scalar", None),
             ("ProcessTraceMode", "ProcessTraceMode", ("primitive", "ULONG"), "scalar", None),
             ("CurrentEvent", "CurrentEvent", ("structure", "EVENT_TRACE"), "struct", None),
-            ("LogfileHeader", "LogfileHeader", ("structure", "TRACE_LOGFILE_HEADER"), "struct", None),
+            (
+                "LogfileHeader",
+                "LogfileHeader",
+                ("structure", "TRACE_LOGFILE_HEADER"),
+                "struct",
+                None,
+            ),
             ("BufferCallback", "BufferCallback", ("primitive", "pointer"), "scalar", None),
             ("BufferSize", "BufferSize", ("primitive", "ULONG"), "scalar", None),
             ("Filled", "Filled", ("primitive", "ULONG"), "scalar", None),
             ("EventsLost", "EventsLost", ("primitive", "ULONG"), "scalar", None),
-            ("EventRecordCallback", "EventRecordCallback", ("primitive", "pointer"), "scalar", None),
+            (
+                "EventRecordCallback",
+                "EventRecordCallback",
+                ("primitive", "pointer"),
+                "scalar",
+                None,
+            ),
             ("IsKernelTrace", "IsKernelTrace", ("primitive", "ULONG"), "scalar", None),
             ("Context", "Context", ("primitive", "pointer"), "scalar", None),
         ),
@@ -552,6 +600,7 @@ def _load_json(path: Path, limit: int) -> dict:
         return obj
 
     try:
+
         def reject_constant(_name):
             raise LayoutMiss("json_constant", name=path.name)
 
@@ -679,8 +728,16 @@ def _classify_sdk_fields(abi, expected, ranges, mismatches):
                 continue
             covered = any(start <= offset < end for start, end, _sdk in ranges[struct_name])
             if not covered:
-                _add(mismatches, "alias_not_overlay", structure=struct_name, field=field, offset=offset)
-            aliases.append({"structure": struct_name, "field": field, "offset": offset, "represented": False})
+                _add(
+                    mismatches,
+                    "alias_not_overlay",
+                    structure=struct_name,
+                    field=field,
+                    offset=offset,
+                )
+            aliases.append(
+                {"structure": struct_name, "field": field, "offset": offset, "represented": False}
+            )
     return aliases
 
 
@@ -739,7 +796,23 @@ _NESTED_EXPANDED_FIELD = {
 }
 
 
-def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, visited, width_only, without_oracle, unmeasured, matched, compare_offsets, prefix):
+def _walk(
+    cls,
+    fields,
+    base,
+    struct_name,
+    abi,
+    expected,
+    module,
+    mismatches,
+    visited,
+    width_only,
+    without_oracle,
+    unmeasured,
+    matched,
+    compare_offsets,
+    prefix,
+):
     import ctypes
 
     visited.add(cls.__name__)
@@ -763,24 +836,48 @@ def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, vis
     for name, sdk, width, kind, children in fields:
         path = name if not prefix else prefix + "." + name
         if name not in actual:
-            _add(mismatches, "missing_provider_field", structure=struct_name, field=sdk or name, path=path)
+            _add(
+                mismatches,
+                "missing_provider_field",
+                structure=struct_name,
+                field=sdk or name,
+                path=path,
+            )
             continue
         declared_type = actual[name]
         descriptor = getattr(cls, name, None)
         rel = None if descriptor is None else _layout_int(_field_offset(descriptor))
         if rel is None:
-            _add(mismatches, "missing_offset", structure=struct_name, field=sdk or name, path=path, type=cls.__name__)
+            _add(
+                mismatches,
+                "missing_offset",
+                structure=struct_name,
+                field=sdk or name,
+                path=path,
+                type=cls.__name__,
+            )
             continue
         if is_union and rel != 0:
-            _add(mismatches, "union_member_offset", structure=struct_name, field=name, path=path, offset=rel)
+            _add(
+                mismatches,
+                "union_member_offset",
+                structure=struct_name,
+                field=name,
+                path=path,
+                offset=rel,
+            )
         absolute = base + rel
         try:
             actual_width = ctypes.sizeof(declared_type)
         except (TypeError, ValueError):
-            _add(mismatches, "width_unavailable", structure=struct_name, field=sdk or name, path=path)
+            _add(
+                mismatches, "width_unavailable", structure=struct_name, field=sdk or name, path=path
+            )
             continue
         if type(actual_width) is not int:
-            _add(mismatches, "width_unavailable", structure=struct_name, field=sdk or name, path=path)
+            _add(
+                mismatches, "width_unavailable", structure=struct_name, field=sdk or name, path=path
+            )
             continue
         reported = getattr(descriptor, "size", None)
         if reported is not None and _layout_int(reported) != actual_width:
@@ -789,16 +886,32 @@ def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, vis
             if not (isinstance(declared_type, type) and issubclass(declared_type, ctypes.Union)):
                 _add(mismatches, "not_union", structure=struct_name, field=name, path=path)
         elif kind in ("struct", "aggregate"):
-            if not (isinstance(declared_type, type) and issubclass(declared_type, ctypes.Structure)):
+            if not (
+                isinstance(declared_type, type) and issubclass(declared_type, ctypes.Structure)
+            ):
                 _add(mismatches, "not_structure", structure=struct_name, field=name, path=path)
         if width is not None and width[0] == "structure":
             wanted = getattr(module, CLASS_FOR_STRUCTURE.get(width[1], ""), None)
             if declared_type is not wanted:
-                _add(mismatches, "nested_type", structure=struct_name, field=name, path=path, provider_type=getattr(declared_type, "__name__", ""))
+                _add(
+                    mismatches,
+                    "nested_type",
+                    structure=struct_name,
+                    field=name,
+                    path=path,
+                    provider_type=getattr(declared_type, "__name__", ""),
+                )
         if width is not None and width[0] == "primitive" and width[1] in AGGREGATE_TYPE:
             wanted = getattr(module, AGGREGATE_TYPE[width[1]], None)
             if declared_type is not wanted:
-                _add(mismatches, "nested_type", structure=struct_name, field=name, path=path, provider_type=getattr(declared_type, "__name__", ""))
+                _add(
+                    mismatches,
+                    "nested_type",
+                    structure=struct_name,
+                    field=name,
+                    path=path,
+                    provider_type=getattr(declared_type, "__name__", ""),
+                )
         if kind == "aggregate" and width is None:
             wanted_name = UNSIZED_AGGREGATE.get(name)
             wanted = None if wanted_name is None else getattr(module, wanted_name, None)
@@ -819,13 +932,15 @@ def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, vis
                     sdk_width=sdk_width,
                 )
             else:
-                matched.append({
-                    "structure": struct_name,
-                    "field": sdk,
-                    "path": bound_path,
-                    "offset": sdk_offset,
-                    "width": sdk_width,
-                })
+                matched.append(
+                    {
+                        "structure": struct_name,
+                        "field": sdk,
+                        "path": bound_path,
+                        "offset": sdk_offset,
+                        "width": sdk_width,
+                    }
+                )
         elif width is not None:
             try:
                 sdk_width = _resolve_width(abi, width)
@@ -843,37 +958,49 @@ def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, vis
                     sdk_width=sdk_width,
                 )
             elif sdk_width is not None and not compare_offsets:
-                without_oracle.append({
-                    "path": path,
-                    "width": sdk_width,
-                    "offset_compared": False,
-                    "oracle_offset": None,
-                })
+                without_oracle.append(
+                    {
+                        "path": path,
+                        "width": sdk_width,
+                        "offset_compared": False,
+                        "oracle_offset": None,
+                    }
+                )
             elif sdk_width is not None:
-                width_only.append({
-                    "path": path,
-                    "width": sdk_width,
-                    "offset_compared": False,
-                    "oracle_offset": None,
-                })
+                width_only.append(
+                    {
+                        "path": path,
+                        "width": sdk_width,
+                        "offset_compared": False,
+                        "oracle_offset": None,
+                    }
+                )
         elif not compare_offsets:
-            without_oracle.append({
-                "path": path,
-                "width": actual_width,
-                "offset_compared": False,
-                "oracle": None,
-                "oracle_offset": None,
-            })
+            without_oracle.append(
+                {
+                    "path": path,
+                    "width": actual_width,
+                    "offset_compared": False,
+                    "oracle": None,
+                    "oracle_offset": None,
+                }
+            )
         elif kind == "aggregate":
-            unmeasured.append({
-                "path": path,
-                "offset_compared": False,
-                "width_compared": False,
-                "oracle": None,
-                "oracle_offset": None,
-                "provider_type": getattr(declared_type, "__name__", ""),
-            })
-        if children and isinstance(declared_type, type) and issubclass(declared_type, (ctypes.Structure, ctypes.Union)):
+            unmeasured.append(
+                {
+                    "path": path,
+                    "offset_compared": False,
+                    "width_compared": False,
+                    "oracle": None,
+                    "oracle_offset": None,
+                    "provider_type": getattr(declared_type, "__name__", ""),
+                }
+            )
+        if (
+            children
+            and isinstance(declared_type, type)
+            and issubclass(declared_type, (ctypes.Structure, ctypes.Union))
+        ):
             _walk(
                 declared_type,
                 children,
@@ -893,7 +1020,13 @@ def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, vis
             )
     for name in actual_names:
         if name not in spec_names:
-            _add(mismatches, "unexpected_provider_field", structure=struct_name, field=name, type=cls.__name__)
+            _add(
+                mismatches,
+                "unexpected_provider_field",
+                structure=struct_name,
+                field=name,
+                type=cls.__name__,
+            )
 
 
 def _compare_primitives(abi, module, ctypes_module, mismatches):
@@ -937,7 +1070,9 @@ def _compare_primitives(abi, module, ctypes_module, mismatches):
         if got != want:
             _add(mismatches, "llp64", key=key, sdk_width=got, required=want)
     if table.get("size_t") != table.get("SIZE_T"):
-        _add(mismatches, "size_t_case_width", size_t=table.get("size_t"), SIZE_T=table.get("SIZE_T"))
+        _add(
+            mismatches, "size_t_case_width", size_t=table.get("size_t"), SIZE_T=table.get("SIZE_T")
+        )
     return compared, recorded
 
 
@@ -954,7 +1089,9 @@ def _provider_types(module, ctypes_module):
 
 
 def _expanded_requirement_names(spec):
-    _record, _provider_type, _provider_fields, fields, sdk_only, _host, experiment, _primitive = spec
+    _record, _provider_type, _provider_fields, fields, sdk_only, _host, experiment, _primitive = (
+        spec
+    )
     names = [sdk for _provider, sdk, _width in fields]
     names.append("sizeof")
     names.extend(sdk_only)
@@ -980,7 +1117,10 @@ def _expanded_problem(item):
     kind = item.get("kind")
     if kind == "primitive_record_width":
         return True
-    if kind in ("missing_provider_type", "not_structure") and item.get("type") in EXPANDED_PROVIDER_TYPES:
+    if (
+        kind in ("missing_provider_type", "not_structure")
+        and item.get("type") in EXPANDED_PROVIDER_TYPES
+    ):
         return True
     return False
 
@@ -1028,7 +1168,9 @@ def _linkage_descriptor(cls, actual, ctypes_module, mismatches, record):
     return offset, width
 
 
-def _compare_linkage_span(record, parsed, cls, actual, ctypes_module, sdk_size, provider_ready, mismatches, experiments):
+def _compare_linkage_span(
+    record, parsed, cls, actual, ctypes_module, sdk_size, provider_ready, mismatches, experiments
+):
     """Compare the SDK container span with the opaque Linkage descriptor.
 
     Masks are recorded as SDK-only experiment values. They are not provider fields.
@@ -1037,18 +1179,26 @@ def _compare_linkage_span(record, parsed, cls, actual, ctypes_module, sdk_size, 
     nbytes = parsed["Linkage_Reserved2_bytes"]
     linkage_mask = parsed["Linkage_mask"]
     reserved_mask = parsed["Reserved2_mask"]
-    experiments.append({
-        "structure": record,
-        "Linkage_Reserved2_storage": storage,
-        "Linkage_Reserved2_bytes": nbytes,
-        "Linkage_mask": linkage_mask,
-        "Reserved2_mask": reserved_mask,
-        "provider_field": "Linkage",
-        "provider_bitfields": False,
-        "sdk_only": True,
-    })
+    experiments.append(
+        {
+            "structure": record,
+            "Linkage_Reserved2_storage": storage,
+            "Linkage_Reserved2_bytes": nbytes,
+            "Linkage_mask": linkage_mask,
+            "Reserved2_mask": reserved_mask,
+            "provider_field": "Linkage",
+            "provider_bitfields": False,
+            "sdk_only": True,
+        }
+    )
     if nbytes == 0:
-        _add(mismatches, "experiment_span", structure=record, field="Linkage_Reserved2_bytes", reason="empty")
+        _add(
+            mismatches,
+            "experiment_span",
+            structure=record,
+            field="Linkage_Reserved2_bytes",
+            reason="empty",
+        )
     limit = sdk_size
     if limit is None and provider_ready:
         try:
@@ -1056,12 +1206,25 @@ def _compare_linkage_span(record, parsed, cls, actual, ctypes_module, sdk_size, 
         except (TypeError, ValueError):
             limit = None
     if _span_outside_structure(storage, nbytes, limit):
-        _add(mismatches, "experiment_span", structure=record, field="Linkage_Reserved2_storage", reason="out_of_bounds")
+        _add(
+            mismatches,
+            "experiment_span",
+            structure=record,
+            field="Linkage_Reserved2_storage",
+            reason="out_of_bounds",
+        )
     if provider_ready:
-        provider_offset, provider_width = _linkage_descriptor(cls, actual, ctypes_module, mismatches, record)
+        provider_offset, provider_width = _linkage_descriptor(
+            cls, actual, ctypes_module, mismatches, record
+        )
     else:
         provider_offset, provider_width = None, None
-    if provider_offset is None or provider_width is None or provider_offset != storage or provider_width != nbytes:
+    if (
+        provider_offset is None
+        or provider_width is None
+        or provider_offset != storage
+        or provider_width != nbytes
+    ):
         _add(
             mismatches,
             "experiment_span",
@@ -1124,7 +1287,16 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
     compared_pairs = []
     experiments = []
     for spec in EXPANDED_RECORDS:
-        record, provider_type, provider_fields, fields, sdk_only, sdk_only_host, experiment, primitive_width = spec
+        (
+            record,
+            provider_type,
+            provider_fields,
+            fields,
+            sdk_only,
+            sdk_only_host,
+            experiment,
+            primitive_width,
+        ) = spec
         names = _expanded_requirement_names(spec)
         if record not in abi or type(abi.get(record)) is not dict:
             if record in abi:
@@ -1141,7 +1313,11 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
         for field in sorted(set(block) - {"sizeof"} - allowed):
             _add(mismatches, "unclassified_sdk_field", structure=record, field=field)
         cls = getattr(module, provider_type, None)
-        provider_ready = isinstance(cls, type) and issubclass(cls, ctypes_module.Structure) and not issubclass(cls, ctypes_module.Union)
+        provider_ready = (
+            isinstance(cls, type)
+            and issubclass(cls, ctypes_module.Structure)
+            and not issubclass(cls, ctypes_module.Union)
+        )
         declared = []
         if not provider_ready:
             kind = "not_structure" if isinstance(cls, type) else "missing_provider_type"
@@ -1190,16 +1366,33 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
             if sdk_name == sdk_only_host:
                 host_range = (offset, offset + sdk_width)
             if provider_name not in actual:
-                _add(mismatches, "missing_provider_field", structure=record, field=sdk_name, path=provider_name)
+                _add(
+                    mismatches,
+                    "missing_provider_field",
+                    structure=record,
+                    field=sdk_name,
+                    path=provider_name,
+                )
                 continue
             descriptor = getattr(cls, provider_name, None)
             rel = None if descriptor is None else _layout_int(_field_offset(descriptor))
             try:
                 actual_width = ctypes_module.sizeof(actual[provider_name])
             except (TypeError, ValueError):
-                _add(mismatches, "width_unavailable", structure=record, field=sdk_name, path=provider_name)
+                _add(
+                    mismatches,
+                    "width_unavailable",
+                    structure=record,
+                    field=sdk_name,
+                    path=provider_name,
+                )
                 continue
-            if type(actual_width) is not int or rel is None or rel != offset or actual_width != sdk_width:
+            if (
+                type(actual_width) is not int
+                or rel is None
+                or rel != offset
+                or actual_width != sdk_width
+            ):
                 _add(
                     mismatches,
                     "layout_mismatch",
@@ -1212,13 +1405,15 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                     sdk_width=sdk_width,
                 )
                 continue
-            matched.append({
-                "structure": record,
-                "field": sdk_name,
-                "path": provider_name,
-                "offset": offset,
-                "width": sdk_width,
-            })
+            matched.append(
+                {
+                    "structure": record,
+                    "field": sdk_name,
+                    "path": provider_name,
+                    "offset": offset,
+                    "width": sdk_width,
+                }
+            )
         if "sizeof" not in block:
             _note_missing(required_missing, record, "sizeof")
             sdk_size = None
@@ -1230,10 +1425,22 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                 try:
                     actual_size = ctypes_module.sizeof(cls)
                 except (TypeError, ValueError):
-                    _add(mismatches, "width_unavailable", structure=record, field="sizeof", type=provider_type)
+                    _add(
+                        mismatches,
+                        "width_unavailable",
+                        structure=record,
+                        field="sizeof",
+                        type=provider_type,
+                    )
                     actual_size = None
                 if actual_size is not None and actual_size != sdk_size:
-                    _add(mismatches, "structure_size", structure=record, ctypes_width=actual_size, sdk_width=sdk_size)
+                    _add(
+                        mismatches,
+                        "structure_size",
+                        structure=record,
+                        ctypes_width=actual_size,
+                        sdk_width=sdk_size,
+                    )
         for arm in sdk_only:
             if arm not in block:
                 _note_missing(required_missing, record, arm)
@@ -1243,14 +1450,18 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                 _add(mismatches, "bad_sdk_number", structure=record, field=arm)
                 continue
             if host_range is not None and not (host_range[0] <= arm_offset < host_range[1]):
-                _add(mismatches, "alias_not_overlay", structure=record, field=arm, offset=arm_offset)
+                _add(
+                    mismatches, "alias_not_overlay", structure=record, field=arm, offset=arm_offset
+                )
                 continue
-            aliases.append({
-                "structure": record,
-                "field": arm,
-                "offset": arm_offset,
-                "represented": False,
-            })
+            aliases.append(
+                {
+                    "structure": record,
+                    "field": arm,
+                    "offset": arm_offset,
+                    "represented": False,
+                }
+            )
         parsed_experiment = {}
         for key in experiment:
             if key not in block:
@@ -1273,7 +1484,12 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                 mismatches,
                 experiments,
             )
-        if primitive_width and type(abi.get("primitives")) is dict and record in abi["primitives"] and "sizeof" in block:
+        if (
+            primitive_width
+            and type(abi.get("primitives")) is dict
+            and record in abi["primitives"]
+            and "sizeof" in block
+        ):
             primitive = _layout_int(abi["primitives"].get(record))
             recorded = _layout_int(block.get("sizeof"))
             if primitive is None or recorded is None or primitive != recorded:
@@ -1369,7 +1585,13 @@ def compare_layouts(module, abi, ctypes_module):
                 actual_size = ctypes_module.sizeof(cls)
                 sdk_size = _layout_int(abi[struct_name].get("sizeof"))
                 if sdk_size is None or actual_size != sdk_size:
-                    _add(mismatches, "structure_size", structure=struct_name, ctypes_width=actual_size, sdk_width=sdk_size)
+                    _add(
+                        mismatches,
+                        "structure_size",
+                        structure=struct_name,
+                        ctypes_width=actual_size,
+                        sdk_width=sdk_size,
+                    )
             except LayoutMiss as exc:
                 _add(mismatches, exc.kind, **exc.detail)
         extended = getattr(module, "_EVENT_HEADER_EXTENDED_DATA_ITEM", None)
@@ -1377,7 +1599,9 @@ def compare_layouts(module, abi, ctypes_module):
         if not isinstance(extended, type):
             _add(mismatches, "missing_provider_type", type="_EVENT_HEADER_EXTENDED_DATA_ITEM")
         else:
-            if not issubclass(extended, ctypes_module.Structure) or issubclass(extended, ctypes_module.Union):
+            if not issubclass(extended, ctypes_module.Structure) or issubclass(
+                extended, ctypes_module.Union
+            ):
                 _add(mismatches, "not_structure", type="_EVENT_HEADER_EXTENDED_DATA_ITEM")
             try:
                 _walk(
@@ -1404,16 +1628,18 @@ def compare_layouts(module, abi, ctypes_module):
         if type(extended_record) is not dict and not any(
             item.get("path") == "_EVENT_HEADER_EXTENDED_DATA_ITEM" for item in without_oracle
         ):
-            without_oracle.append({
-                "path": "_EVENT_HEADER_EXTENDED_DATA_ITEM",
-                "width": extended_width,
-                "offset_compared": False,
-                "oracle": None,
-                "oracle_offset": None,
-                "sdk_sizeof": None,
-                "required_layout": True,
-                "provider_use": "array_stride",
-            })
+            without_oracle.append(
+                {
+                    "path": "_EVENT_HEADER_EXTENDED_DATA_ITEM",
+                    "width": extended_width,
+                    "offset_compared": False,
+                    "oracle": None,
+                    "oracle_offset": None,
+                    "sdk_sizeof": None,
+                    "required_layout": True,
+                    "provider_use": "array_stride",
+                }
+            )
         for item in without_oracle:
             use = EXTENDED_PROVIDER_USE.get(item.get("path"))
             if use is None:
@@ -1432,7 +1658,10 @@ def compare_layouts(module, abi, ctypes_module):
             for sdk in fields_map:
                 if (struct_name, sdk) in matched_ids:
                     continue
-                if any(item.get("structure") == struct_name and item.get("field") == sdk for item in mismatches):
+                if any(
+                    item.get("structure") == struct_name and item.get("field") == sdk
+                    for item in mismatches
+                ):
                     continue
                 _add(mismatches, "sdk_field_not_compared", structure=struct_name, field=sdk)
         provider_types = set(_provider_types(module, ctypes_module))
@@ -1441,8 +1670,8 @@ def compare_layouts(module, abi, ctypes_module):
         for name in sorted(visited - provider_types):
             _add(mismatches, "visited_unknown_type", type=name)
     primitives, recorded = _compare_primitives(abi, module, ctypes_module, mismatches)
-    required_missing, oracle_backed, bound_records, compared_pairs, experiments = _bind_expanded_records(
-        module, abi, ctypes_module, mismatches, matched, aliases
+    required_missing, oracle_backed, bound_records, compared_pairs, experiments = (
+        _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, aliases)
     )
     if oracle_backed:
         without_oracle = [item for item in without_oracle if item.get("path") not in oracle_backed]
@@ -1462,12 +1691,16 @@ def compare_layouts(module, abi, ctypes_module):
     structures.extend(bound_records)
     nine_compared = sum(len(expected.get(name, {})) for name in NINE) if expected else 0
     real, covered_field_match, complete_coverage = _coverage_flags(mismatches, required_missing)
-    omitted = next((int(item.get("count", 0)) for item in mismatches if item.get("kind") == "omitted"), 0)
+    omitted = next(
+        (int(item.get("count", 0)) for item in mismatches if item.get("kind") == "omitted"), 0
+    )
     return {
         "structure_sizes": {
             name: abi[name]["sizeof"]
             for name in structures
-            if name in abi and type(abi[name]) is dict and _layout_int(abi[name].get("sizeof")) is not None
+            if name in abi
+            and type(abi[name]) is dict
+            and _layout_int(abi[name].get("sizeof")) is not None
         },
         "fields": matched[:200],
         "sdk_only_aliases": aliases,
@@ -1527,12 +1760,22 @@ def _arch_gate(arch):
     except (OSError, LayoutMiss):
         problems.append({"kind": "python_pe"})
     if info["pe_machine"] != PE_MACHINE[arch]:
-        problems.append({"kind": "python_arch_mismatch", "pe_machine": info["pe_machine"], "required": PE_MACHINE[arch]})
+        problems.append(
+            {
+                "kind": "python_arch_mismatch",
+                "pe_machine": info["pe_machine"],
+                "required": PE_MACHINE[arch],
+            }
+        )
     if info["platform_machine"] != PLATFORM_MACHINE[arch]:
-        problems.append({"kind": "platform_machine_mismatch", "platform_machine": info["platform_machine"]})
+        problems.append(
+            {"kind": "platform_machine_mismatch", "platform_machine": info["platform_machine"]}
+        )
     runner = info["runner_arch"]
     if runner is not None and runner != RUNNER_ARCH[arch]:
-        problems.append({"kind": "runner_arch_mismatch", "runner_arch": runner, "required": RUNNER_ARCH[arch]})
+        problems.append(
+            {"kind": "runner_arch_mismatch", "runner_arch": runner, "required": RUNNER_ARCH[arch]}
+        )
     return info, problems
 
 
@@ -1713,7 +1956,9 @@ def _execute_provider_source(path: Path, source: bytes):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Compare ETW ctypes declarations to the frozen SDK oracle.")
+    parser = argparse.ArgumentParser(
+        description="Compare ETW ctypes declarations to the frozen SDK oracle."
+    )
     parser.add_argument("--arch", required=True, choices=ARCHES)
     parser.add_argument("--receipt", required=True)
     args = parser.parse_args(argv)
@@ -1735,7 +1980,9 @@ def main(argv=None):
         oracle_problem = {"kind": exc.kind, **exc.detail}
     if arch_problems or oracle_problem is not None:
         payload = _base_receipt(arch_info, binding, None, None, None, False)
-        payload["numeric"] = {"mismatches": arch_problems + ([oracle_problem] if oracle_problem else [])}
+        payload["numeric"] = {
+            "mismatches": arch_problems + ([oracle_problem] if oracle_problem else [])
+        }
         _receipt(receipt_path, payload)
         print("declaration_match=false", file=sys.stderr)
         return 1
@@ -1766,7 +2013,9 @@ def main(argv=None):
         return 1
     except OSError as exc:
         payload = _base_receipt(arch_info, binding, None, loads["count"], None, False)
-        payload["numeric"] = {"mismatches": [{"kind": "provider_import_failed", "error": type(exc).__name__}]}
+        payload["numeric"] = {
+            "mismatches": [{"kind": "provider_import_failed", "error": type(exc).__name__}]
+        }
         _receipt(receipt_path, payload)
         print("declaration_match=false", file=sys.stderr)
         return 1
@@ -1792,7 +2041,9 @@ def main(argv=None):
         import_problems.append({"kind": "native_api_loaded", "value": native_api_loaded is True})
     if import_problems:
         loaded_flag = native_api_loaded if type(native_api_loaded) is bool else None
-        payload = _base_receipt(arch_info, binding, provider_sha, loads["count"], loaded_flag, False)
+        payload = _base_receipt(
+            arch_info, binding, provider_sha, loads["count"], loaded_flag, False
+        )
         payload["numeric"] = {"mismatches": import_problems}
         _receipt(receipt_path, payload)
         print("declaration_match=false", file=sys.stderr)

@@ -180,7 +180,9 @@ class FakeEtwApi:
 
 
 class FakeJob:
-    def __init__(self, snapshot, *, pid=ROOT_PID, creation=ROOT_CREATION, api=None, fail_spawn=False):
+    def __init__(
+        self, snapshot, *, pid=ROOT_PID, creation=ROOT_CREATION, api=None, fail_spawn=False
+    ):
         self.root_pid = None
         self.root_creation = None
         self._pid = pid
@@ -301,7 +303,16 @@ def snapshot(total, active=0, *, cpu=424242, process_commit=111, job_commit=222)
     }
 
 
-def run(records, *, total, active=0, pid=ROOT_PID, creation=ROOT_CREATION, api_kwargs=None, **observe_kwargs):
+def run(
+    records,
+    *,
+    total,
+    active=0,
+    pid=ROOT_PID,
+    creation=ROOT_CREATION,
+    api_kwargs=None,
+    **observe_kwargs,
+):
     api = FakeEtwApi(records, **(api_kwargs or {}))
     job = FakeJob(snapshot(total, active), pid=pid, creation=creation, api=api)
     report = observe_owned_launch(job, api, **observe_kwargs)
@@ -345,7 +356,9 @@ def test_terminal_counter_beats_rundown_and_keeps_the_nested_tree():
     records = []
     records.extend(generation(12, 11, 0xB, 5_200, 5_300, 300_000))
     records.extend(generation(11, ROOT_PID, 0xA, 5_100, 5_400, 200_000))
-    records.extend(generation(ROOT_PID, 1, 0xC, ROOT_CREATION, 5_600, 100_000, start_key=True, header_pid=99))
+    records.extend(
+        generation(ROOT_PID, 1, 0xC, ROOT_CREATION, 5_600, 100_000, start_key=True, header_pid=99)
+    )
     records.append(counter(ROOT_PID, 9_999_999, 4_900, opcode=OPCODE_PERFCTR_RUNDOWN))
     records.append(record(10, SECRET, 50, provider="other-provider"))
     report, api, job = run(list(reversed(records)), total=3)
@@ -543,7 +556,14 @@ def test_malformed_payloads_and_pointer_widths_are_rejected():
     assert host_offset(60, 11, 8) == 104
     assert counter_payload_size(8) == 104
     assert counter_payload_size(4) == 60
-    good = counter_payload(10, 0x100000008, 8, virtual=0x0123456789ABCDEF, pagefile=0x200000002, quota_paged=0x4444444455555555)
+    good = counter_payload(
+        10,
+        0x100000008,
+        8,
+        virtual=0x0123456789ABCDEF,
+        pagefile=0x200000002,
+        quota_paged=0x4444444455555555,
+    )
     assert int.from_bytes(good[24:32], "little") == 0x100000008
     assert int.from_bytes(good[40:48], "little") == 0x4444444455555555
     decoded = decode_record(record(OPCODE_PERFCTR, good, 10))
@@ -563,9 +583,12 @@ def test_malformed_payloads_and_pointer_widths_are_rejected():
     assert decode_record(record(OPCODE_PERFCTR, good, 10, flags=0))["disposition"] == "malformed"
     assert decode_record(record(OPCODE_PERFCTR, good[:-1], 10))["disposition"] == "malformed"
     assert decode_record(record(OPCODE_PERFCTR, good, 10, version=1))["disposition"] == "malformed"
-    assert decode_record(record(OPCODE_START, lifecycle_payload(1, 0, 1, 0, 8)[:8], 10, version=1))[
-        "disposition"
-    ] == "malformed"
+    assert (
+        decode_record(record(OPCODE_START, lifecycle_payload(1, 0, 1, 0, 8)[:8], 10, version=1))[
+            "disposition"
+        ]
+        == "malformed"
+    )
     longer = decode_record(record(OPCODE_PERFCTR, good + SECRET, 10, version=3))
     assert longer["peak_working_set_bytes"] == 0x100000008
     assert "MNEMION_ETW_SECRET_PATH" not in json.dumps(longer)
@@ -576,7 +599,10 @@ def test_malformed_payloads_and_pointer_widths_are_rejected():
     assert lifecycle["process_start_key_used"] is False
     payload = lifecycle_payload(10, 4, 0x1122334455667788, 0, 8)
     assert int.from_bytes(payload[4:8], "little") != 10
-    assert decode_record(record(OPCODE_DCSTART, lifecycle_payload(10, 1, 1, 0, 8), 10))["opcode"] == OPCODE_DCSTART
+    assert (
+        decode_record(record(OPCODE_DCSTART, lifecycle_payload(10, 1, 1, 0, 8), 10))["opcode"]
+        == OPCODE_DCSTART
+    )
     assert decode_record(record(99, b"", 10))["disposition"] == "ignore"
 
 
@@ -653,7 +679,9 @@ def test_failure_paths_release_handles_and_do_not_stop_someone_else():
     assert opened.stops == [101]
     assert opened.closes_session == [101]
     assert "open_trace_failed" in opened_report["coverage"]["gaps"]
-    late_report, late_api, late_job = run([], total=0, api_kwargs={"delay_ready": True}, ready_seconds=0.2, drain_seconds=0.3)
+    late_report, late_api, late_job = run(
+        [], total=0, api_kwargs={"delay_ready": True}, ready_seconds=0.2, drain_seconds=0.3
+    )
     assert late_job.spawn_calls == 0
     assert "consumer_not_ready" in late_report["coverage"]["gaps"]
     assert late_api.stops

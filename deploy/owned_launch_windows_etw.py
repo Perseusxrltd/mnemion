@@ -361,8 +361,16 @@ def resolve_owned(events: list[dict], root_pid: int | None, root_creation: int |
     """
     gaps: list[str] = []
     ambiguities: list[dict] = []
-    births = [event for event in events if event.get("kind") == "lifecycle" and event["opcode"] == OPCODE_START]
-    ends = [event for event in events if event.get("kind") == "lifecycle" and event["opcode"] == OPCODE_END]
+    births = [
+        event
+        for event in events
+        if event.get("kind") == "lifecycle" and event["opcode"] == OPCODE_START
+    ]
+    ends = [
+        event
+        for event in events
+        if event.get("kind") == "lifecycle" and event["opcode"] == OPCODE_END
+    ]
     counters = [
         event
         for event in events
@@ -567,9 +575,7 @@ def _own_descendants(generations, root, gaps, ambiguities) -> list[dict]:
     root["role"] = "root"
     owned = [root]
     pending = [
-        item
-        for item in generations
-        if item is not root and item["birth_ambiguous"] is not True
+        item for item in generations if item is not root and item["birth_ambiguous"] is not True
     ]
     while True:
         added = False
@@ -652,11 +658,13 @@ def _assign_counters(owned, generations, counters, gaps, ambiguities) -> None:
             stamp = counter["timestamp"]
             if next_stamp is not None and stamp > next_stamp:
                 continue
-            at_boundary = stamp == start or stamp == end_stamp or (
-                next_stamp is not None and stamp == next_stamp
+            at_boundary = (
+                stamp == start
+                or stamp == end_stamp
+                or (next_stamp is not None and stamp == next_stamp)
             )
-            inside = stamp > start and stamp < end_stamp and (
-                next_stamp is None or stamp < next_stamp
+            inside = (
+                stamp > start and stamp < end_stamp and (next_stamp is None or stamp < next_stamp)
             )
             if at_boundary:
                 boundary.append(counter)
@@ -1312,7 +1320,12 @@ class EtwLifetimeObserver:
             return dict(cached)
         handle = current if current is not None else known
         if known is None or handle != known or self._api is None:
-            if known is None and handle is None and self._control_handle is None and self._thread is None:
+            if (
+                known is None
+                and handle is None
+                and self._control_handle is None
+                and self._thread is None
+            ):
                 result = {"ok": True, "code": "no_trace", "pending": False}
                 self._close_result = result
                 return dict(result)
@@ -1396,7 +1409,9 @@ class EtwLifetimeObserver:
         return True
 
 
-def observe_owned_launch(job, api, *, ready_seconds: float = 2.0, drain_seconds: float = 5.0) -> dict:
+def observe_owned_launch(
+    job, api, *, ready_seconds: float = 2.0, drain_seconds: float = 5.0
+) -> dict:
     """Start ETW, then spawn through the existing job object.
 
     `job` is a WindowsJobBackend, or a test double with the same spawn,
@@ -1753,7 +1768,9 @@ def abi_field_offsets() -> dict:
         "real_time_buffers_lost": _field_offset(_EVENT_TRACE_PROPERTIES, "RealTimeBuffersLost"),
         "event_record_user_context": _field_offset(_EVENT_RECORD, "UserContext"),
         "logfile_buffer_callback": _field_offset(_EVENT_TRACE_LOGFILEW, "BufferCallback"),
-        "logfile_event_record_callback": _field_offset(_EVENT_TRACE_LOGFILEW, "EventRecordCallback"),
+        "logfile_event_record_callback": _field_offset(
+            _EVENT_TRACE_LOGFILEW, "EventRecordCallback"
+        ),
         "logfile_context": _field_offset(_EVENT_TRACE_LOGFILEW, "Context"),
         "logfile_process_trace_mode": _field_offset(_EVENT_TRACE_LOGFILEW, "ProcessTraceMode"),
     }
@@ -1962,7 +1979,10 @@ class AdapterOwnership:
             return {"ok": False, "code": "invalid_session", "handle": None}
         if request.get("session_name") == KERNEL_LOGGER_NAME or request.get("etl_file") is True:
             return {"ok": False, "code": "invalid_session", "handle": None}
-        if request.get("stop_existing_session") is True or request.get("privilege_escalation") is True:
+        if (
+            request.get("stop_existing_session") is True
+            or request.get("privilege_escalation") is True
+        ):
             return {"ok": False, "code": "invalid_session", "handle": None}
         self._start_attempted = True
         global native_session_starts
@@ -2073,14 +2093,20 @@ class AdapterOwnership:
             }
         if self._library is None or self._properties_buffer is None:
             return {"ok": False, "code": "stop_failed", "loss": {}}
-        props = ctypes.cast(self._properties_buffer, ctypes.POINTER(_EVENT_TRACE_PROPERTIES)).contents
+        props = ctypes.cast(
+            self._properties_buffer, ctypes.POINTER(_EVENT_TRACE_PROPERTIES)
+        ).contents
         self._library.StopTraceW.argtypes = [
             ctypes.c_ulonglong,
             wintypes.LPCWSTR,
             ctypes.c_void_p,
         ]
         self._library.StopTraceW.restype = wintypes.ULONG
-        code = int(self._library.StopTraceW(ctypes.c_ulonglong(int(session_handle)), None, ctypes.byref(props)))
+        code = int(
+            self._library.StopTraceW(
+                ctypes.c_ulonglong(int(session_handle)), None, ctypes.byref(props)
+            )
+        )
         loss = {
             "events_lost": int(props.EventsLost),
             "log_buffers_lost": int(props.LogBuffersLost),
@@ -2343,5 +2369,3 @@ def _start_key_present(record) -> bool:
         if int(item.ExtType) == EVENT_HEADER_EXT_TYPE_PROCESS_START_KEY:
             return True
     return False
-
-
