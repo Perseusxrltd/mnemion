@@ -12,6 +12,8 @@ import sys
 import threading
 from pathlib import Path
 
+import pytest
+
 from deploy.owned_launch_accounting import start_owned_launch
 from deploy.owned_launch_windows_etw import (
     EVENT_HEADER_EXT_TYPE_PROCESS_START_KEY,
@@ -750,6 +752,9 @@ def test_session_request_is_a_private_realtime_system_logger():
     assert "StartTrace" not in source
 
 
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="Windows LLP64 requires a native Windows runtime"
+)
 def test_llp64_structure_offsets_match_the_sdk_field_list():
     sizes = consumer_layout_sizes()
     assert sizes["pointer"] == 8
