@@ -173,7 +173,9 @@ def test_corrected_source_keeps_the_six_fixes_and_the_existing_hooks():
         encoding="utf-8"
     )
 
-    assert bpf.index('#include "lifetime_bpf_prelude.h"') < bpf.index("#include <bpf/bpf_helpers.h>")
+    assert bpf.index('#include "lifetime_bpf_prelude.h"') < bpf.index(
+        "#include <bpf/bpf_helpers.h>"
+    )
     assert prelude.index("#include <linux/types.h>") < prelude.index("#include <linux/bpf.h>")
     assert "/usr/include/x86_64-linux-gnu" in makefile
     assert "/usr/include/aarch64-linux-gnu" in makefile

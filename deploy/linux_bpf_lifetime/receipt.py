@@ -176,7 +176,11 @@ def census_failure(receipt: Receipt) -> int:
         return CONST["LIFETIME_REASON_BYTES"]
     if receipt.active_tasks or receipt.active_groups:
         return CONST["LIFETIME_REASON_CENSUS"]
-    if not receipt.cpu_aggregate_ok or not receipt.page_size_ok or not page_size_ok(int(receipt.page_size)):
+    if (
+        not receipt.cpu_aggregate_ok
+        or not receipt.page_size_ok
+        or not page_size_ok(int(receipt.page_size))
+    ):
         return CONST["LIFETIME_REASON_CENSUS"]
     if (
         counters[CONST["LIFETIME_CTR_TASK_OVERFLOW"]]
@@ -369,16 +373,28 @@ def mode_exit_ok(receipt: Receipt) -> bool:
         return False
     mode = int(receipt.mode)
     if mode == CONST["LIFETIME_MODE_ADMIT"]:
-        return bool(receipt.support_admitted and not receipt.fixture_launched and not receipt.coverage_pass)
+        return bool(
+            receipt.support_admitted and not receipt.fixture_launched and not receipt.coverage_pass
+        )
     if mode == CONST["LIFETIME_MODE_CAPACITY"]:
         return bool(not receipt.coverage_pass and overflow and not receipt.collector_death)
     if mode == CONST["LIFETIME_MODE_RESET"]:
-        return bool(not receipt.coverage_pass and receipt.possible_peak_reset and not receipt.collector_death)
+        return bool(
+            not receipt.coverage_pass
+            and receipt.possible_peak_reset
+            and not receipt.collector_death
+        )
     if mode == CONST["LIFETIME_MODE_COLLECTOR_DEATH"]:
-        return bool(not receipt.coverage_pass and receipt.collector_death and receipt.observation_failed)
+        return bool(
+            not receipt.coverage_pass and receipt.collector_death and receipt.observation_failed
+        )
     if mode == CONST["LIFETIME_MODE_IO_URING"]:
         if receipt.path_unsupported:
-            return bool(receipt.fixture_launched and not receipt.coverage_pass and not receipt.scenario_qualified)
+            return bool(
+                receipt.fixture_launched
+                and not receipt.coverage_pass
+                and not receipt.scenario_qualified
+            )
         return bool(receipt.coverage_pass and receipt.io_thread_seen)
     if not cover_mode(mode):
         return False
