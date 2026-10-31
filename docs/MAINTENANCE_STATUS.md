@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T21:11:33+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T21:12:12+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.62](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.62). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -32,5 +32,5 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 41242364921](https://github.com/Perseusxrltd/mnemion/actions/runs/41242364921): 7/8 jobs completed; 2 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- studio: in\_progress — Verify wheel and source package include the matching web Studio.
 

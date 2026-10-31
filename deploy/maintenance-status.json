@@ -78,7 +78,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Verify wheel and source package include the matching web Studio"
             ]
           }
         ]
@@ -141,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T21:11:33+00:00"
+  "observed_at": "2026-10-31T21:12:12+00:00"
 }
