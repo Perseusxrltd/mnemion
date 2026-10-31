@@ -57,15 +57,33 @@
   ],
   "runs": [
     {
-      "id": 41184189927,
+      "id": 41186697634,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "160bfe59cea4ad63b37aa473135260e3bd0745e4",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-31T08:56:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41184189927"
+      "source_commit": "e42ff56c02b21cd9d8991871ffe1e4ef3b3ab632",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-31T08:57:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41186697634",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 124494964985,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/electron test"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 41183144331,
@@ -101,15 +119,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41182898435"
     },
     {
-      "id": 41184189934,
+      "id": 41186697613,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "160bfe59cea4ad63b37aa473135260e3bd0745e4",
+      "source_commit": "e42ff56c02b21cd9d8991871ffe1e4ef3b3ab632",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T08:20:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41184189934"
+      "updated_at": "2026-10-31T08:58:06Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41186697613"
     },
     {
       "id": 41183142220,
@@ -123,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41183142220"
     }
   ],
-  "observed_at": "2026-10-31T08:57:05+00:00"
+  "observed_at": "2026-10-31T08:58:42+00:00"
 }
