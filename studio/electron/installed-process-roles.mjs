@@ -2,7 +2,9 @@
 
 Samples come from app.getAppMetrics at the nine workload checkpoints.
 Electron creationTime is milliseconds since epoch and is not the operating-system
-birth counter used by the native owned-launch ledger. workingSetSize is kilobytes.
+birth counter used by the native owned-launch ledger. Zero and any non-canonical
+value stay unavailable. A later allowlist pass keeps an earlier rejection, overflow,
+truncation, cap, or duplicate identity. workingSetSize is kilobytes.
 */
 
 export const INSTALLED_PROCESS_CHECKPOINTS = Object.freeze([
@@ -57,7 +59,8 @@ const CONDITIONS = Object.freeze(['unavailable', 'opted_out', 'enabled'])
 const PROCESS_CAP = 32
 const READ_CAP = 64
 const MEMORY_CAP = 2 ** 62
-const CREATION_TEXT = /^[0-9]{1,15}(?:\.[0-9]{3})?$/
+const CREATION_LIMIT = 1e14
+const CREATION_CANONICAL = /^(?:[1-9]\d{0,14}(?:\.\d+)?|0\.\d+)$/
 
 const SCOPE = [
   'Per-role absolute resident set at the same named checkpoints.',
@@ -83,11 +86,19 @@ function boundedCount(value, limit) {
   return { value, capped: false, invalid: false }
 }
 
+function canonicalCreation(number) {
+  if (typeof number !== 'number' || !Number.isFinite(number) || Object.is(number, -0) || number <= 0 || number > CREATION_LIMIT) return null
+  if (Number.isSafeInteger(number)) return String(number)
+  const text = number.toString()
+  if (text.length > 24 || !CREATION_CANONICAL.test(text) || Number(text) !== number) return null
+  return text
+}
+
 function creationToken(value) {
-  if (typeof value === 'string') return CREATION_TEXT.test(value) ? value : null
-  if (typeof value !== 'number' || !Number.isFinite(value) || Object.is(value, -0) || value < 0 || value > 1e14) return null
-  const text = Number.isSafeInteger(value) ? String(value) : value.toFixed(3)
-  return CREATION_TEXT.test(text) ? text : null
+  if (typeof value === 'number') return canonicalCreation(value)
+  if (typeof value !== 'string' || value.length === 0 || value.length > 24) return null
+  const canonical = canonicalCreation(Number(value))
+  return canonical != null && canonical === value ? canonical : null
 }
 
 function rssBytes(value) {
@@ -145,9 +156,44 @@ function emptySample(phase, flags) {
     app_renderer_rows: 0,
     rejected_rows: 0,
     metrics_overflow: false,
+    duplicate_identity: false,
     truncated: false,
     processes: [],
   }
+}
+
+function hasDuplicateIdentity(processes) {
+  const seenPids = new Set()
+  const seenIdentities = new Set()
+  for (const row of processes) {
+    if (!plain(row) || !Number.isSafeInteger(row.pid)) continue
+    if (seenPids.has(row.pid)) return true
+    seenPids.add(row.pid)
+    if (typeof row.identity !== 'string' || row.identity.length === 0) continue
+    if (seenIdentities.has(row.identity)) return true
+    seenIdentities.add(row.identity)
+  }
+  return false
+}
+
+function carriedCount(value) {
+  if (value == null || value === 0) return 0
+  if (!Number.isSafeInteger(value) || value < 0 || value > READ_CAP) return READ_CAP
+  return value
+}
+
+function carrySampleFailures(sample, prior) {
+  if (!plain(prior)) return sample
+  sample.rejected_rows = Math.min(READ_CAP, Math.max(sample.rejected_rows, carriedCount(prior.rejected_rows)))
+  sample.metrics_overflow = sample.metrics_overflow === true || prior.metrics_overflow === true
+  sample.window_count_capped = sample.window_count_capped === true || prior.window_count_capped === true
+  sample.duplicate_identity = sample.duplicate_identity === true || prior.duplicate_identity === true
+  sample.truncated = sample.truncated === true
+    || prior.truncated === true
+    || sample.metrics_overflow
+    || sample.window_count_capped
+    || sample.rejected_rows >= READ_CAP
+  return sample
 }
 
 function classifyMetrics(metrics, mainPid, rendererPid) {
@@ -189,6 +235,7 @@ function classifyMetrics(metrics, mainPid, rendererPid) {
 }
 
 function finishSample(phase, body) {
+  const duplicateIdentity = hasDuplicateIdentity(body.processes)
   const rows = body.processes.slice(0, PROCESS_CAP)
   const truncated = body.processes.length > PROCESS_CAP || body.metrics_overflow === true || body.rejected_capped === true || body.window_count_capped === true
   const appMain = rows.filter(row => row.role === 'app_main').length
@@ -208,6 +255,7 @@ function finishSample(phase, body) {
     app_renderer_rows: appRenderer,
     rejected_rows: body.rejected,
     metrics_overflow: body.metrics_overflow === true,
+    duplicate_identity: duplicateIdentity,
     truncated,
     processes: rows,
   }
@@ -242,19 +290,19 @@ function resanitizeSample(value, expectedPhase) {
   // A second allowlist pass must keep an already rejected slot. Rewriting its
   // phase to the expected name would make the mismatch look aligned.
   if (value.phase_mismatch === true || value.missing === true || value.phase_rejected === true) {
-    return emptySample(expectedPhase, {
+    return carrySampleFailures(emptySample(expectedPhase, {
       missing: value.missing === true,
       phase_mismatch: value.phase_mismatch === true || value.phase_rejected === true,
       phase_rejected: value.phase_rejected === true,
       observation_failed: value.observation_failed === true,
-    })
+    }), value)
   }
   if (value.observation_failed === true) {
     const sample = emptySample(expectedPhase, { observation_failed: true })
     sample.phase_mismatch = knownPhase(value.phase) !== expectedPhase
-    return sample
+    return carrySampleFailures(sample, value)
   }
-  if (knownPhase(value.phase) !== expectedPhase) return emptySample(expectedPhase, { phase_mismatch: true })
+  if (knownPhase(value.phase) !== expectedPhase) return carrySampleFailures(emptySample(expectedPhase, { phase_mismatch: true }), value)
   const processes = []
   let rejected = 0
   const rawProcesses = Array.isArray(value.processes) ? value.processes.slice(0, READ_CAP) : []
@@ -280,7 +328,8 @@ function resanitizeSample(value, expectedPhase) {
     metrics_overflow: value.metrics_overflow === true || processOverflow,
   })
   if (value.phase_rejected === true) sample.phase_rejected = true
-  return sample
+  // Rows already removed by an earlier pass must not make the sample look qualified.
+  return carrySampleFailures(sample, value)
 }
 
 function readyAppRow(sample, role) {
@@ -290,10 +339,13 @@ function readyAppRow(sample, role) {
 
 function sampleOwnershipValid(sample) {
   if (!sample || sample.missing || sample.phase_mismatch || sample.observation_failed || sample.truncated) return false
-  if (sample.rejected_rows !== 0 || sample.metrics_overflow === true) return false
+  if (sample.rejected_rows !== 0 || sample.metrics_overflow === true || sample.duplicate_identity === true) return false
   if (sample.window_count !== 1 || sample.app_window_count !== 1 || sample.extra_windows !== false) return false
   if (sample.devtools_present !== false) return false
   if (!readyAppRow(sample, 'app_main') || !readyAppRow(sample, 'app_renderer')) return false
+  const mainRow = sample.processes.find(row => row.role === 'app_main')
+  const rendererRow = sample.processes.find(row => row.role === 'app_renderer')
+  if (mainRow.pid === rendererRow.pid || mainRow.identity === rendererRow.identity) return false
   return sample.processes.every(row => row.role !== 'unassigned_browser' && row.role !== 'unassigned_tab')
 }
 

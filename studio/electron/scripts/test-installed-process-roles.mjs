@@ -290,3 +290,187 @@ test('hostile strings are dropped and old runs are not rescored as zero', () => 
   assert.equal(owned.budget.compared, false)
   assert.equal(owned.ledger[0].identity, '4:10')
 })
+
+function publishTwice(samples) {
+  const once = publicProcessRoleRun(samples)
+  const twice = publicProcessRoleRun(once.checkpoints)
+  return { once, twice }
+}
+
+function assertUnqualified(published) {
+  const compared = compareInstalledProcessRoleRss([
+    resourceCase(1, 'unavailable', published),
+    resourceCase(1, 'opted_out', run(110)),
+    resourceCase(1, 'enabled', run(120)),
+  ])
+  assert.equal(compared.resource_acceptance, false)
+  assert.equal(compared.scoped_role_comparison_available, false)
+  assert.equal(compared.budget.status, 'UNACCEPTED')
+  assert.equal(compared.budget.compared, false)
+  assert.equal(compared.budget.additional_rss_bytes_per_process, 8_388_608)
+  assert.equal(compared.budget.cpu_one_core_fraction, 0.005)
+  const main = roleRow(compared.repeats[0].comparisons[0], 'app_main')
+  assert.equal(main.compared, false)
+  assert.equal(main.ownership_blocks_comparison, true)
+  return compared
+}
+
+test('repeated publication keeps rejection, truncation, and capping unqualified', () => {
+  const rejectedCanary = 'PRIVATE_REJECTED_ROW_CANARY'
+  const observed = PHASES.map((phase, index) => index === 0
+    ? sample(phase, 100, { extra: [{ pid: 50, type: 'Audio Service', creationTime: 1_700_000_000_500, workingSetKilobytes: 3, name: rejectedCanary, url: 'http://127.0.0.1/rejected-row' }] })
+    : sample(phase, 100))
+  assert.equal(observed[0].rejected_rows, 1)
+  assert.equal(observed[0].truncated, false)
+  const rejected = publishTwice(observed)
+  for (const published of [rejected.once, rejected.twice]) {
+    assert.equal(published.checkpoints[0].rejected_rows, 1)
+    assert.equal(published.checkpoints[0].truncated, false)
+    assert.equal(published.checkpoints[0].processes.length, 2)
+    assert.equal(published.ownership_valid, false)
+  }
+  const rejectedText = JSON.stringify(rejected.twice) + JSON.stringify(assertUnqualified(rejected.twice))
+  assert.equal(rejectedText.includes(rejectedCanary), false)
+  assert.equal(rejectedText.includes('http://127.0.0.1/rejected-row'), false)
+  assert.equal(rejectedText.includes('Audio Service'), false)
+
+  const wide = PHASES.map(phase => sample(phase, 100, {
+    extra: Array.from({ length: 33 }, (_, index) => metric(1_000 + index, 'Utility', 1_700_000_000_000 + index, 1)),
+  }))
+  assert.equal(wide[0].truncated, true)
+  assert.equal(wide[0].processes.length, 32)
+  assert.equal(wide[0].metrics_overflow, false)
+  const truncated = publishTwice(wide)
+  for (const published of [truncated.once, truncated.twice]) {
+    const checkpoint = published.checkpoints[0]
+    assert.equal(checkpoint.truncated, true)
+    assert.equal(checkpoint.rejected_rows, 0)
+    assert.equal(checkpoint.processes.length, 32)
+    assert.equal(checkpoint.processes.some(row => row.pid === 11 && row.role === 'app_main'), true)
+    assert.equal(checkpoint.processes.some(row => row.pid === 1_000), true)
+    assert.equal(checkpoint.processes.some(row => row.pid === 1_032), false)
+    assert.equal(published.ownership_valid, false)
+  }
+  assertUnqualified(truncated.twice)
+
+  const capped = publishTwice(PHASES.map(phase => sample(phase, 100, { windowCount: 65 })))
+  for (const published of [capped.once, capped.twice]) {
+    assert.equal(published.checkpoints[0].window_count, 64)
+    assert.equal(published.checkpoints[0].window_count_capped, true)
+    assert.equal(published.checkpoints[0].truncated, true)
+    assert.equal(published.ownership_valid, false)
+  }
+
+  const inflated = rejected.once.checkpoints.map(checkpoint => ({ ...checkpoint, rejected_rows: 1e20, private_note: rejectedCanary }))
+  const bounded = publicProcessRoleRun(inflated)
+  assert.equal(bounded.checkpoints[0].rejected_rows, 64)
+  assert.equal(bounded.checkpoints[0].truncated, true)
+  assert.equal(bounded.ownership_valid, false)
+  assert.equal(JSON.stringify(bounded).includes(rejectedCanary), false)
+  assert.equal(JSON.stringify(bounded).includes('1e+20'), false)
+})
+
+test('a zero or non-canonical birth never becomes an identity', () => {
+  const zero = publishTwice(PHASES.map(phase => sample(phase, 100, { creation: 0, rendererCreation: 0 })))
+  for (const published of [zero.once, zero.twice]) {
+    assert.equal(published.ownership_valid, false)
+    assert.equal(published.checkpoints.every(checkpoint => checkpoint.processes.every(row => row.identity == null && row.electron_creation_time_ms == null)), true)
+  }
+  const zeroCompared = compareInstalledProcessRoleRss([
+    resourceCase(1, 'unavailable', zero.twice),
+    resourceCase(1, 'opted_out', run(100, { creation: 0, rendererCreation: 0 })),
+    resourceCase(1, 'enabled', run(110, { creation: 0, rendererCreation: 0 })),
+  ])
+  assert.equal(zeroCompared.scoped_role_comparison_available, false)
+  assert.equal(zeroCompared.resource_acceptance, false)
+  assert.equal(roleRow(zeroCompared.repeats[0].comparisons[0], 'app_main').compared, false)
+  assert.equal(roleRow(zeroCompared.repeats[0].comparisons[1], 'app_main').compared, false)
+  assert.equal(JSON.stringify(zeroCompared).includes('11:0'), false)
+
+  const unavailableBirths = [-0, 1e15, Number.POSITIVE_INFINITY]
+  for (const birth of unavailableBirths) {
+    const checkpoint = sample(PHASES[0], 100, { creation: birth, rendererCreation: birth })
+    assert.equal(checkpoint.processes.every(row => row.identity == null), true)
+  }
+
+  const forged = run(100)
+  for (const token of ['0', '0001', '1.230', '1.000', '1e14', '100000000000001']) {
+    const rewritten = publicProcessRoleRun(forged.checkpoints.map(checkpoint => ({
+      ...checkpoint,
+      processes: checkpoint.processes.map(row => ({
+        ...row,
+        electron_creation_time_ms: token,
+        identity: `forged:${token}`,
+      })),
+    })))
+    const again = publicProcessRoleRun(rewritten.checkpoints)
+    for (const published of [rewritten, again]) {
+      assert.equal(published.ownership_valid, false)
+      assert.equal(published.checkpoints[0].processes.every(row => row.identity == null && row.electron_creation_time_ms == null), true)
+      const text = JSON.stringify(published)
+      assert.equal(text.includes(`forged:${token}`), false)
+      assert.equal(text.includes(`"${token}"`), false)
+    }
+  }
+
+  const exact = publicProcessRoleRun(forged.checkpoints.map(checkpoint => ({
+    ...checkpoint,
+    processes: checkpoint.processes.map(row => ({
+      ...row,
+      electron_creation_time_ms: '1700000000000',
+      identity: 'forged:1700000000000',
+    })),
+  })))
+  const exactAgain = publicProcessRoleRun(exact.checkpoints)
+  assert.equal(exact.ownership_valid, true)
+  assert.equal(exactAgain.ownership_valid, true)
+  assert.equal(exactAgain.checkpoints[0].processes.find(row => row.role === 'app_main').identity, '11:1700000000000')
+  assert.equal(exactAgain.checkpoints[0].processes.find(row => row.role === 'app_renderer').identity, '21:1700000000000')
+  assert.equal(JSON.stringify(exactAgain).includes('forged:'), false)
+
+  assert.equal((1.2341).toFixed(3), (1.2344).toFixed(3))
+  const shifted = publishTwice(PHASES.map((phase, index) => sample(phase, 100, {
+    creation: index < 4 ? 1.2341 : 1.2344,
+    rendererCreation: 1_700_000_000_100,
+  })))
+  assert.equal(shifted.twice.checkpoints[0].processes.find(row => row.role === 'app_main').identity, '11:1.2341')
+  assert.equal(shifted.twice.checkpoints[4].processes.find(row => row.role === 'app_main').identity, '11:1.2344')
+  const shiftCompared = compareInstalledProcessRoleRss([
+    resourceCase(1, 'unavailable', shifted.twice),
+    resourceCase(1, 'enabled', run(130, { mainPid: 15, rendererPid: 25, creation: 1_710_000_000_000, rendererCreation: 1_710_000_000_100 })),
+  ])
+  const shiftedMain = roleRow(shiftCompared.repeats[0].comparisons[1], 'app_main')
+  assert.equal(shiftedMain.identity_changed_within_run, true)
+  assert.equal(shiftedMain.compared, false)
+  assert.equal(shiftedMain.phases[0].signed_difference_bytes, null)
+  assert.equal(shiftedMain.phases[0].reasons.includes('identity_changed'), true)
+  assert.equal(shiftCompared.resource_acceptance, false)
+})
+
+test('a shared main and renderer PID stays explicit and unqualified', () => {
+  const shared = publishTwice(PHASES.map(phase => sample(phase, 100, {
+    mainPid: 11,
+    rendererPid: 11,
+    creation: 1_700_000_000_000,
+    rendererCreation: 1_700_000_000_100,
+  })))
+  for (const published of [shared.once, shared.twice]) {
+    const checkpoint = published.checkpoints[0]
+    assert.equal(checkpoint.duplicate_identity, true)
+    assert.equal(checkpoint.truncated, false)
+    assert.equal(checkpoint.rejected_rows, 0)
+    assert.equal(checkpoint.app_main_rows, 1)
+    assert.equal(checkpoint.app_renderer_rows, 1)
+    assert.equal(checkpoint.processes.filter(row => row.pid === 11).length, 2)
+    assert.equal(published.ownership_valid, false)
+  }
+  const compared = assertUnqualified(shared.twice)
+  assert.equal(JSON.stringify(compared).includes('11:1700000000000'), true)
+  const stripped = publicProcessRoleRun(shared.once.checkpoints.map(checkpoint => ({
+    ...checkpoint,
+    processes: checkpoint.processes.filter(row => row.role === 'app_main'),
+  })))
+  assert.equal(stripped.checkpoints[0].duplicate_identity, true)
+  assert.equal(stripped.checkpoints[0].processes.length, 1)
+  assert.equal(stripped.ownership_valid, false)
+})
