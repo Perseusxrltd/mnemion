@@ -12,6 +12,7 @@ copyFileSync(resolve(root, 'telemetry-observation-diagnostic.mjs'), resolve(root
 copyFileSync(resolve(root, 'canonical-memory-cycles.mjs'), resolve(root, 'dist/canonical-memory-cycles.mjs'))
 copyFileSync(resolve(root, 'admission-outcome.mjs'), resolve(root, 'dist/admission-outcome.mjs'))
 copyFileSync(resolve(root, 'startup-failure-category.mjs'), resolve(root, 'dist/startup-failure-category.mjs'))
+copyFileSync(resolve(root, 'installed-process-roles.mjs'), resolve(root, 'dist/installed-process-roles.mjs'))
 const probe = spawnSync(process.env.MNEMION_BUILD_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'),
   ['-m', 'deploy.build_telemetry_network', '--arch', process.arch, '--output', resolve(root, 'dist/telemetry-network.node')],
   { cwd: resolve(root, '../..'), stdio: 'inherit', windowsHide: true })

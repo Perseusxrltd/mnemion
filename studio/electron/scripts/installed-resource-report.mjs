@@ -1,6 +1,8 @@
 import { verifyNativeResources } from './native-resources.mjs'
 import { sanitizeAdmissionOutcome, unknownAdmissionOutcome } from '../admission-outcome.mjs'
 
+export { compareInstalledProcessRoleRss, observeInstalledProcessCheckpoint, publicProcessRoleRun } from '../installed-process-roles.mjs'
+
 /** Allowlisted owned-launch evidence and the single-product package order. */
 
 const TOKEN = /^[A-Za-z0-9_.:-]{1,80}$/

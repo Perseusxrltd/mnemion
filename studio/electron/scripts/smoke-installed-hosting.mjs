@@ -13,7 +13,7 @@ import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 import { modelSetupFailure } from '../dist/native-model-diagnostics.js'
 import { backupStateDiagnostic } from '../dist/backup-state-diagnostics.js'
 import { sanitizeObservation } from '../telemetry-observation-diagnostic.mjs'
-import { finishResourceCleanup, inspectedBodyHex, nsisSilentUninstallArgs, performOwnedInstall, publicAdmissionReceipt, publicOwnedReport, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage, waitForOwnedWindowsRemoval, windowsProductReadScript, windowsProductRefusalScript } from './installed-resource-report.mjs'
+import { compareInstalledProcessRoleRss, finishResourceCleanup, inspectedBodyHex, nsisSilentUninstallArgs, performOwnedInstall, publicAdmissionReceipt, publicOwnedReport, publicProcessRoleRun, resourceCaseStoreReady, resourceInstallSteps, resourceVerificationRoot, verifyPreparedPackage, waitForOwnedWindowsRemoval, windowsProductReadScript, windowsProductRefusalScript } from './installed-resource-report.mjs'
 import { publishResourceCase } from './resource-case-boundary.mjs'
 
 const artifacts = platformArtifacts()
@@ -407,6 +407,7 @@ function publicHosting(hosting) {
     packaged: hosting?.packaged === true,
     runtime,
     ...publicAdmissionReceipt(hosting?.admission_diagnostic === true, hosting?.admission_outcome) ?? {},
+    process_roles: publicProcessRoleRun(hosting?.process_role_checkpoints),
   }
 }
 
@@ -540,6 +541,7 @@ async function runInstalledTelemetryResources() {
       hosting_ready: typeof owned.hosting_ready === 'boolean' ? owned.hosting_ready : null,
       root_exit_code: owned.root_exit_code ?? null, failure_stage: owned.failure_stage ?? null,
       delivery_diagnostics_enabled: owned.delivery_diagnostics_enabled === true,
+      process_roles: hosting.process_roles,
       ...(admission ?? {}),
       workload_completed: resourceWorkloadCompleted(hosting, owned) && telemetryReady && result.status === 0 && !postgresLeft,
     }
@@ -561,6 +563,7 @@ async function runInstalledTelemetryResources() {
     architecture: process.arch,
     source: manifest.source,
     cases: resourceCases,
+    process_role_rss: compareInstalledProcessRoleRss(resourceCases),
     ...(resourceCases.some(row => row.admission_diagnostic === true) ? { admission_diagnostic: true, delivery_compared: false, resource_acceptance: false } : {}),
   }
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
@@ -741,7 +744,7 @@ try {
   try { backupState = backupStateDiagnostic(state?.backupStateDiagnostic) } catch { invalidBackupStateDiagnostic = true }
   const observation = sanitizeObservation(state?.observation)
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, qualification: telemetryResource ? 'installed resource workload' : telemetryDelivery ? 'installed fixture delivery' : undefined, platform: process.platform, architecture: process.arch,
-    ...(telemetryResource ? { resource_acceptance: false, delivery_compared: false, production_collection_available: false, workload_completed: false, cases: resourceCases, ...(resourceCases.some(row => row.admission_diagnostic === true) ? { admission_diagnostic: true } : {}) } : {}),
+    ...(telemetryResource ? { resource_acceptance: false, delivery_compared: false, production_collection_available: false, workload_completed: false, cases: resourceCases, process_role_rss: compareInstalledProcessRoleRss(resourceCases), ...(resourceCases.some(row => row.admission_diagnostic === true) ? { admission_diagnostic: true } : {}) } : {}),
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
     ...(workspaceOpen ? { workspaceOpen } : {}),

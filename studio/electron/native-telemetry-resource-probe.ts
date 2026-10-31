@@ -1,8 +1,8 @@
 /** Installed 128-cycle resource workload. Delivery stays a separate two-launch check. */
-import type { BrowserWindow } from 'electron'
-import { app } from 'electron'
+import { app, BrowserWindow, webContents } from 'electron'
 import { join } from 'node:path'
 import { canonicalLaunchPrefix, canonicalMemoryCycles, canonicalProgressWriter, canonicalRemainingBatches, canonicalTerminalMarker, resourceProgress } from './canonical-memory-cycles.mjs'
+import { observeInstalledProcessCheckpoint } from './installed-process-roles.mjs'
 import { installedAdmissionOutcome, settleInstalledTelemetryDelivery } from './service-bridge.js'
 
 const CHECKPOINTS = [
@@ -21,6 +21,44 @@ const PROBE_ENTRY = './assets/packaged-memory-probe.js'
 
 let persistedPhase: string | null = null
 let publishProgress: ((record: object) => void) | null = null
+
+function devtoolsPresent(window: BrowserWindow): boolean {
+  if (!window.isDestroyed() && window.webContents.isDevToolsOpened()) return true
+  return webContents.getAllWebContents().some(contents => {
+    if (contents.isDestroyed()) return false
+    if (contents.isDevToolsOpened()) return true
+    try {
+      const url = contents.getURL()
+      return url.startsWith('devtools:') || url.startsWith('chrome-devtools:')
+    } catch {
+      return false
+    }
+  })
+}
+
+function captureProcessRoles(window: BrowserWindow, phase: string, samples: Array<Record<string, unknown>>): void {
+  // One metrics read at this existing checkpoint. No added timer, and CPU from
+  // the metrics object is not retained.
+  try {
+    const open = BrowserWindow.getAllWindows().filter(item => !item.isDestroyed())
+    samples.push(observeInstalledProcessCheckpoint({
+      phase,
+      mainPid: process.pid,
+      rendererPid: window.isDestroyed() ? null : window.webContents.getOSProcessId(),
+      windowCount: open.length,
+      appWindowCount: open.filter(item => item === window).length,
+      devtoolsPresent: devtoolsPresent(window),
+      metrics: app.getAppMetrics().map(metric => ({
+        pid: metric.pid,
+        type: metric.type,
+        creationTime: metric.creationTime,
+        workingSetKilobytes: metric.memory?.workingSetSize,
+      })),
+    }))
+  } catch {
+    samples.push(observeInstalledProcessCheckpoint({ phase, observationFailed: true }))
+  }
+}
 
 function marker(phase: string, completed?: number, known = true): void {
   if (!publishProgress) throw new Error('Progress writer required')
@@ -152,6 +190,11 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
   if (!root) throw new Error('Disposable profile required')
   publishProgress = canonicalProgressWriter(join(root, 'owned-progress'))
   const launchPrefix = canonicalLaunchPrefix()
+  const processRoleCheckpoints: Array<Record<string, unknown>> = []
+  const checkpoint = (phase: string) => {
+    captureProcessRoles(window, phase, processRoleCheckpoints)
+    marker(phase)
+  }
   let progress: { verified?: number; progressKnown: boolean } = { progressKnown: false }
   const settleCount = (count: unknown) => {
     progress = resourceProgress(progress, { settled: typeof count === 'number' ? count : undefined })
@@ -165,21 +208,21 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
   try {
     marker('starting')
     marker('measuring')
-    marker('before_workspace_connect')
+    checkpoint('before_workspace_connect')
     const connected = await window.webContents.executeJavaScript(connectScript(fixture))
     if (connected?.native_handle_only !== true || connected.remembered !== false) throw new Error('Session-only native connection required')
-    marker('workspace_connected')
+    checkpoint('workspace_connected')
     const ready = await window.webContents.executeJavaScript(clientScript(launchPrefix))
     if (ready?.ready !== true) throw new Error('The packaged memory client did not start')
     markInflight()
     settleCount(await window.webContents.executeJavaScript(cyclesScript(1, fixture.spaceId)))
     await settleInstalledTelemetryDelivery()
-    marker('first_memory_cycle_and_delivery')
+    checkpoint('first_memory_cycle_and_delivery')
     for (const [number, completed] of canonicalRemainingBatches(true)) {
       markInflight()
       settleCount(await window.webContents.executeJavaScript(cyclesScript(number, fixture.spaceId)))
       await settleInstalledTelemetryDelivery()
-      marker(`${completed}_memory_cycles`)
+      checkpoint(`${completed}_memory_cycles`)
     }
     const result = await window.webContents.executeJavaScript(resultScript())
     settleCount(result?.memory_cycles)
@@ -190,6 +233,7 @@ export async function verifyInstalledTelemetryResource(window: BrowserWindow, co
     const evidence = {
       ...result,
       checkpoints: [...CHECKPOINTS],
+      process_role_checkpoints: processRoleCheckpoints,
       condition: fixture.condition,
       replicate: fixture.replicate,
       label: fixture.label,
