@@ -139,3 +139,71 @@ def test_allowlist_only_names_existing_isolated_components():
 
     root = Path(__file__).resolve().parents[1]
     assert TELEMETRY_PATHS and all((root / path).is_file() for path in TELEMETRY_PATHS)
+
+
+def test_reviewed_native_diagnostics_skip_the_product_matrix(tmp_path):
+    event = changed_repository(
+        tmp_path,
+        [
+            ".github/workflows/windows-sdk-abi.yml",
+            ".github/workflows/linux-bpf-lifetime-diagnostic.yml",
+            "tests/test_linux_bpf_lifetime_parse.py",
+            "deploy/linux_bpf_lifetime/.gitignore",
+            "deploy/linux_bpf_lifetime/BUILD.md",
+            "deploy/linux_bpf_lifetime/Makefile",
+            "deploy/linux_bpf_lifetime/lifetime.bpf.c",
+            "deploy/linux_bpf_lifetime/lifetime_abi.h",
+            "deploy/linux_bpf_lifetime/lifetime_bpf_prelude.h",
+            "deploy/linux_bpf_lifetime/lifetime_loader.c",
+            "deploy/linux_bpf_lifetime/lifetime_receipt.h",
+            "deploy/linux_bpf_lifetime/lifetime_sha256.h",
+            "deploy/linux_bpf_lifetime/receipt.py",
+            "deploy/linux_bpf_lifetime/sha256_selftest.c",
+            "deploy/windows_sdk_abi/README.md",
+            "deploy/windows_sdk_abi/REFERENCE_LAYOUTS.txt",
+            "deploy/windows_sdk_abi/build_sdk_abi.ps1",
+            "deploy/windows_sdk_abi/sdk_abi.c",
+        ],
+    )
+    assert scope(tmp_path, event, event_name="push") == {
+        "runtime": False,
+        "reason": "diagnostic_only",
+    }
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "mnemion/service/api.py",
+        "deploy/linux_bpf_lifetime/unreviewed.c",
+        "deploy/windows_sdk_abi/unreviewed.c",
+    ],
+)
+def test_native_diagnostic_with_runtime_or_unknown_sibling_keeps_all_checks(tmp_path, path):
+    event = changed_repository(
+        tmp_path,
+        [
+            "deploy/windows_sdk_abi/sdk_abi.c",
+            "deploy/linux_bpf_lifetime/lifetime.bpf.c",
+            path,
+        ],
+    )
+    selected = scope(tmp_path, event, event_name="push")
+    assert selected == {"runtime": True, "reason": "runtime_or_unknown_files"}
+
+
+def test_release_manual_and_pull_request_keep_native_diagnostic_checks(tmp_path):
+    event = changed_repository(
+        tmp_path,
+        [
+            ".github/workflows/windows-sdk-abi.yml",
+            "deploy/windows_sdk_abi/sdk_abi.c",
+            "deploy/linux_bpf_lifetime/Makefile",
+        ],
+    )
+    assert scope(tmp_path, event, event_name="push", release=True) == {
+        "runtime": True,
+        "reason": "release_or_non_push",
+    }
+    assert scope(tmp_path, event, event_name="workflow_dispatch")["runtime"] is True
+    assert scope(tmp_path, event, event_name="pull_request")["runtime"] is True

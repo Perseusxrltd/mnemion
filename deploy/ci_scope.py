@@ -21,7 +21,8 @@ METADATA = {
 
 # These files only prepare or run separately dispatched diagnostics. No
 # application/release builder imports them. Keep this explicit: runtime,
-# release workflows and unknown files still run all checks.
+# release workflows and unknown files still run all checks. Named paths
+# only, never a directory.
 RENDERER_DIAGNOSTICS = {
     ".github/workflows/telemetry-browser-journeys.yml",
     ".github/workflows/telemetry-owned-launch.yml",
@@ -37,6 +38,24 @@ RENDERER_DIAGNOSTICS = {
     "studio/frontend/scripts/build-telemetry-probe.mjs",
     "tests/test_telemetry_browser_journey.py",
     "tests/test_owned_launch_accounting.py",
+    ".github/workflows/windows-sdk-abi.yml",
+    ".github/workflows/linux-bpf-lifetime-diagnostic.yml",
+    "tests/test_linux_bpf_lifetime_parse.py",
+    "deploy/linux_bpf_lifetime/.gitignore",
+    "deploy/linux_bpf_lifetime/BUILD.md",
+    "deploy/linux_bpf_lifetime/Makefile",
+    "deploy/linux_bpf_lifetime/lifetime.bpf.c",
+    "deploy/linux_bpf_lifetime/lifetime_abi.h",
+    "deploy/linux_bpf_lifetime/lifetime_bpf_prelude.h",
+    "deploy/linux_bpf_lifetime/lifetime_loader.c",
+    "deploy/linux_bpf_lifetime/lifetime_receipt.h",
+    "deploy/linux_bpf_lifetime/lifetime_sha256.h",
+    "deploy/linux_bpf_lifetime/receipt.py",
+    "deploy/linux_bpf_lifetime/sha256_selftest.c",
+    "deploy/windows_sdk_abi/README.md",
+    "deploy/windows_sdk_abi/REFERENCE_LAYOUTS.txt",
+    "deploy/windows_sdk_abi/build_sdk_abi.ps1",
+    "deploy/windows_sdk_abi/sdk_abi.c",
 }
 
 # Only these existing component boundaries may use telemetry push checks.
