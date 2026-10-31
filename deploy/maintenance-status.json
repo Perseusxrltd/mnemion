@@ -57,15 +57,49 @@
   ],
   "runs": [
     {
-      "id": 41244593095,
+      "id": 41245512744,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "f49ab34923d018efb3d2d30beb3a954aa6b73a48",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-31T21:41:01Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41244593095"
+      "source_commit": "872afc69552052c3435c60d994ccda294e0f70a5",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-31T21:51:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41245512744",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 3,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 124667996696,
+            "name": "lint",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+            ]
+          },
+          {
+            "id": 124667996894,
+            "name": "Select checks",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 124667996910,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 41201338411,
@@ -101,15 +135,33 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019"
     },
     {
-      "id": 41242364962,
+      "id": 41245512708,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "89065fcecaf7275f1c416c6d8e41ce9d5294e986",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-31T21:11:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41242364962"
+      "source_commit": "872afc69552052c3435c60d994ccda294e0f70a5",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-31T21:51:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41245512708",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 124667996848,
+            "name": "synchronize",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify the latest published asset inventory"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 41201336239,
@@ -123,5 +175,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T21:41:34+00:00"
+  "observed_at": "2026-10-31T21:51:27+00:00"
 }
