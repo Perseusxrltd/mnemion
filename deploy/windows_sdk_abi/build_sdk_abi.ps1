@@ -195,6 +195,11 @@ try {
         EVENT_TRACE = @('sizeof', 'Header', 'MofData', 'ClientContext', 'BufferContext')
         TRACE_LOGFILE_HEADER = @('sizeof', 'TimeZone', 'BootTime', 'PerfFreq', 'StartTime')
         EVENT_TRACE_LOGFILEW = @('sizeof', 'LogFileMode', 'ProcessTraceMode', 'LogfileHeader', 'BufferCallback', 'EventCallback', 'EventRecordCallback', 'Context')
+        EVENT_HEADER_EXTENDED_DATA_ITEM = @('sizeof', 'Reserved1', 'ExtType', 'DataSize', 'DataPtr', 'Linkage_Reserved2_storage', 'Linkage_Reserved2_bytes', 'Linkage_mask', 'Reserved2_mask')
+        GUID = @('sizeof', 'Data1', 'Data2', 'Data3', 'Data4')
+        SYSTEMTIME = @('sizeof', 'wYear', 'wMonth', 'wDayOfWeek', 'wDay', 'wHour', 'wMinute', 'wSecond', 'wMilliseconds')
+        TIME_ZONE_INFORMATION = @('sizeof', 'Bias', 'StandardName', 'StandardDate', 'StandardBias', 'DaylightName', 'DaylightDate', 'DaylightBias')
+        ETW_BUFFER_CONTEXT = @('sizeof', 'ProcessorNumber', 'Alignment', 'ProcessorIndex', 'LoggerId')
     }
     foreach ($typeName in $required.Keys) {
         $block = Get-AbiField $parsed $typeName
@@ -218,6 +223,32 @@ try {
     }
     if ($null -eq (Get-AbiField $primitives 'size_t') -or $null -eq (Get-AbiField $primitives 'SIZE_T')) {
         throw 'ABI JSON merged or dropped case-distinct size_t and SIZE_T keys.'
+    }
+    foreach ($typeName in @('GUID', 'TIME_ZONE_INFORMATION', 'ETW_BUFFER_CONTEXT')) {
+        $width = Get-AbiField $primitives $typeName
+        $record = Get-AbiField $parsed $typeName
+        $recordSize = Get-AbiField $record 'sizeof'
+        if ($null -eq $width -or $null -eq $recordSize -or [uint64]$width -ne [uint64]$recordSize) {
+            throw "ABI sizeof for $typeName does not match its primitive width."
+        }
+    }
+    $extended = Get-AbiField $parsed 'EVENT_HEADER_EXTENDED_DATA_ITEM'
+    $extendedSize = [uint64](Get-AbiField $extended 'sizeof')
+    $storage = [uint64](Get-AbiField $extended 'Linkage_Reserved2_storage')
+    $span = [uint64](Get-AbiField $extended 'Linkage_Reserved2_bytes')
+    $linkageMask = [uint64](Get-AbiField $extended 'Linkage_mask')
+    $reservedMask = [uint64](Get-AbiField $extended 'Reserved2_mask')
+    if ($span -lt 1 -or $span -gt 8 -or $storage -gt $extendedSize -or $span -gt ($extendedSize - $storage)) {
+        throw 'EVENT_HEADER_EXTENDED_DATA_ITEM bitfield storage is outside the structure.'
+    }
+    if ($linkageMask -eq 0 -or $reservedMask -eq 0 -or ($linkageMask -band $reservedMask) -ne 0) {
+        throw 'EVENT_HEADER_EXTENDED_DATA_ITEM bitfield masks are empty or overlap.'
+    }
+    foreach ($field in @('Reserved1', 'ExtType', 'DataSize', 'DataPtr')) {
+        $at = [uint64](Get-AbiField $extended $field)
+        if ($at -eq $storage) {
+            throw "EVENT_HEADER_EXTENDED_DATA_ITEM bitfield storage reuses the offsetof of $field."
+        }
     }
     $utf8 = New-Object System.Text.UTF8Encoding $false
     [System.IO.File]::WriteAllText($abiPath, $text + "`n", $utf8)

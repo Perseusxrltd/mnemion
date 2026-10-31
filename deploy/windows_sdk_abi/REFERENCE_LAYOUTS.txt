@@ -3,10 +3,15 @@ The oracle program measures the installed SDK with sizeof and offsetof.
 
 Headers, read from the runner's Windows SDK, not copied into this tree:
   shared/wmistr.h       WNODE_HEADER
+  shared/guiddef.h      GUID
   shared/evntrace.h     EVENT_TRACE_PROPERTIES, EVENT_TRACE_HEADER, EVENT_TRACE,
-                        TRACE_LOGFILE_HEADER, EVENT_TRACE_LOGFILEW
+                        TRACE_LOGFILE_HEADER, EVENT_TRACE_LOGFILEW,
+                        ETW_BUFFER_CONTEXT
   shared/evntprov.h     EVENT_DESCRIPTOR
-  um/evntcons.h         EVENT_HEADER, EVENT_RECORD
+  um/minwinbase.h       SYSTEMTIME
+  um/timezoneapi.h      TIME_ZONE_INFORMATION
+  um/evntcons.h         EVENT_HEADER, EVENT_RECORD,
+                        EVENT_HEADER_EXTENDED_DATA_ITEM
 
 Architectures: x64 (abi.json arch 1) and ARM64 (abi.json arch 2).
 Any other architecture, including x86, ARM32, and ARM64EC, is refused.
@@ -66,6 +71,45 @@ Primitive widths also printed: char, short, int, long, long long, pointer,
 wchar_t, size_t, ptrdiff_t, uintptr_t, int32_t, int64_t, UCHAR, USHORT, ULONG,
 BOOL, BOOLEAN, WCHAR, HANDLE, SIZE_T, ULONG_PTR, LONGLONG, ULONGLONG,
 LARGE_INTEGER, GUID, TIME_ZONE_INFORMATION, ETW_BUFFER_CONTEXT.
+size_t and SIZE_T stay separate keys. The primitive widths of GUID,
+TIME_ZONE_INFORMATION, and ETW_BUFFER_CONTEXT must match those records' sizeof.
+
+EVENT_HEADER_EXTENDED_DATA_ITEM
+  addressable offsetof: Reserved1, ExtType, DataSize, DataPtr, sizeof
+  There is no JSON key named Linkage or Reserved2.
+  Those members are a nameless USHORT bit-field (Linkage is 1 bit,
+  Reserved2 is 15 bits in the SDK declaration). offsetof and the address-of
+  operator do not apply. The oracle does not invent an offset for them.
+  Linkage_Reserved2_storage, Linkage_Reserved2_bytes, Linkage_mask, and
+  Reserved2_mask are one bounded experiment: zero one object, store an
+  all-ones value in each bit-field, and record the shared changed bytes.
+  The first changed byte is the low 8 bits of each mask. Later bytes in
+  that span occupy the next 8 bits. A bit in Linkage_mask changed only
+  when Linkage was stored. A bit in Reserved2_mask changed only when
+  Reserved2 was stored. The program exits 3, and writes no ABI object, if
+  the span is empty, has a hole, is wider than 8 bytes, shares a bit, or
+  changes an addressable member. This is not a bit-offsetof. The bit-field
+  stays non-addressable. DataPtr is measured because the SDK member is
+  addressable; this oracle does not read a trace.
+
+GUID
+  Data1, Data2, Data3, Data4, sizeof
+  Data4 is the offset of the unsigned char[8] array.
+
+SYSTEMTIME
+  SDK names, with the w prefix: wYear, wMonth, wDayOfWeek, wDay, wHour,
+  wMinute, wSecond, wMilliseconds, sizeof
+
+TIME_ZONE_INFORMATION
+  Bias, StandardName, StandardDate, StandardBias, DaylightName,
+  DaylightDate, DaylightBias, sizeof
+  StandardName and DaylightName are the offsets of the WCHAR[32] arrays.
+  StandardDate and DaylightDate are the offsets of the SYSTEMTIME members.
+  The SYSTEMTIME record measures the fields inside that type.
+
+ETW_BUFFER_CONTEXT
+  both union arms: ProcessorNumber, Alignment, ProcessorIndex
+  also LoggerId, sizeof
 
 abi.json values are numbers only. No function address, counter, process id,
 logger, or user profile is read.
