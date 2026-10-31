@@ -65,6 +65,14 @@ work: capture and delivery continue on their existing schedules. The
 [source review and frontend typecheck](../validation/2026-10-31-capture-ui-and-service-bootstrap.md)
 cover this change; no whole-application CPU or RAM saving is claimed.
 
+The [desktop agent maintenance follow-up](../validation/2026-10-31-agent-idle-maintenance.md)
+keeps startup and five-minute runtime maintenance while skipping unused client
+configuration, profile, hash and version fields. The existing setup lock,
+runtime repair/publication and lease cleanup remain. Requested status stays
+fresh and complete; updates and close still account for active helper work.
+The focused source checks passed. Helper launches remain, and no CPU/RAM saving
+or installed resource acceptance is established. F06/R04 remains partial.
+
 The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
 improves Windows lifetime measurements and cleanup reporting. The Darwin
 adapter now retains live per-process kernel RSS peaks. The corrected C probe
