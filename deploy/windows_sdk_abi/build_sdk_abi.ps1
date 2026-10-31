@@ -58,10 +58,18 @@ function Get-CapturedLines([object]$Entry) {
     return $lines
 }
 
+function Get-AbiField($Node, [string]$Name) {
+    if ($Node -isnot [System.Collections.IDictionary]) { return $null }
+    foreach ($key in @($Node.Keys)) {
+        if ([string]$key -ceq $Name) { return $Node[$key] }
+    }
+    return $null
+}
+
 function Assert-NumericTree($Node, [string]$PathName) {
-    if ($Node -is [pscustomobject]) {
-        foreach ($property in $Node.PSObject.Properties) {
-            Assert-NumericTree $property.Value ($PathName + '.' + $property.Name)
+    if ($Node -is [System.Collections.IDictionary]) {
+        foreach ($key in @($Node.Keys)) {
+            Assert-NumericTree $Node[$key] ($PathName + '.' + [string]$key)
         }
         return
     }
@@ -175,7 +183,7 @@ try {
     if ($text.Length -gt 16384) {
         throw 'ABI JSON exceeded 16384 characters.'
     }
-    $parsed = $text | ConvertFrom-Json
+    $parsed = $text | ConvertFrom-Json -AsHashtable
     Assert-NumericTree $parsed 'abi'
     $required = @{
         WNODE_HEADER = @('sizeof', 'HistoricalContext', 'Version', 'Linkage', 'CountLost', 'KernelHandle', 'TimeStamp', 'Guid', 'ClientContext', 'Flags')
@@ -189,18 +197,27 @@ try {
         EVENT_TRACE_LOGFILEW = @('sizeof', 'LogFileMode', 'ProcessTraceMode', 'LogfileHeader', 'BufferCallback', 'EventCallback', 'EventRecordCallback', 'Context')
     }
     foreach ($typeName in $required.Keys) {
-        $block = $parsed.$typeName
+        $block = Get-AbiField $parsed $typeName
         if ($null -eq $block) { throw "ABI JSON is missing $typeName." }
         foreach ($field in $required[$typeName]) {
-            if ($null -eq $block.$field) { throw "ABI JSON is missing $typeName.$field." }
+            if ($null -eq (Get-AbiField $block $field)) { throw "ABI JSON is missing $typeName.$field." }
         }
     }
     $archCode = @{ x64 = 1; arm64 = 2 }[$Architecture]
-    if ([int]$parsed.schema -ne 1 -or [int]$parsed.arch -ne $archCode) {
+    $schema = Get-AbiField $parsed 'schema'
+    $archValue = Get-AbiField $parsed 'arch'
+    if ($null -eq $schema -or $null -eq $archValue -or [int]$schema -ne 1 -or [int]$archValue -ne $archCode) {
         throw "ABI schema/arch does not match target $Architecture."
     }
-    if ([int]$parsed.primitives.pointer -ne 8 -or [int]$parsed.primitives.long -ne 4 -or [int]$parsed.primitives.int -ne 4) {
+    $primitives = Get-AbiField $parsed 'primitives'
+    $pointerWidth = Get-AbiField $primitives 'pointer'
+    $longWidth = Get-AbiField $primitives 'long'
+    $intWidth = Get-AbiField $primitives 'int'
+    if ($null -eq $pointerWidth -or $null -eq $longWidth -or $null -eq $intWidth -or [int]$pointerWidth -ne 8 -or [int]$longWidth -ne 4 -or [int]$intWidth -ne 4) {
         throw 'ABI primitives are not LLP64.'
+    }
+    if ($null -eq (Get-AbiField $primitives 'size_t') -or $null -eq (Get-AbiField $primitives 'SIZE_T')) {
+        throw 'ABI JSON merged or dropped case-distinct size_t and SIZE_T keys.'
     }
     $utf8 = New-Object System.Text.UTF8Encoding $false
     [System.IO.File]::WriteAllText($abiPath, $text + "`n", $utf8)
