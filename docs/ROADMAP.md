@@ -8,6 +8,10 @@ Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 update automatically. This page sets delivery order; the [66 requirements](PRODUCT_REQUIREMENTS.md)
 preserve every requested outcome and its evidence.
 
+The [product goal](PRODUCT_GOAL.md) requires the complete requested product to
+be implemented, documented, released and verified for professional use. Its
+31 October wording clarification preserves the entire roadmap and all open work.
+
 Strict full-scope completion is **17/66 shipped (25.8%)**: 42 partial,
 1 building, 2 planned, 3 ongoing and 1 external. Requirements differ greatly in size.
 This measures complete requested capabilities, not time spent or the usability

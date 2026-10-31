@@ -1,8 +1,12 @@
 # Complete product requirements
 
-Updated **2026-10-30**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-31**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
+
+The [31 October product goal](PRODUCT_GOAL.md) clarifies the intended end state:
+100% complete, fully working and ready for professional use across all supported
+platforms. All 66 requirement texts and states remain unchanged.
 
 The [30 October runtime-efficiency clarification](implementation/runtime-efficiency.md)
 retains the requirement that the whole app stay light while idle or in the
