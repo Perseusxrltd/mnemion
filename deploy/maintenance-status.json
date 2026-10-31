@@ -73,73 +73,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.60",
       "source_commit": "6b6582e551397b600e5d40b9262bb62a8e657140",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-31T08:05:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41183144331",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 124484552292,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124484552307,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 124484552317,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124484552324,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124484552344,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 124484552355,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-31T08:17:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41183144331"
     },
     {
       "id": 41179260895,
@@ -186,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41183142220"
     }
   ],
-  "observed_at": "2026-10-31T08:05:53+00:00"
+  "observed_at": "2026-10-31T08:17:31+00:00"
 }

@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T08:05:53+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T08:17:31+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.60](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.60). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,20 +22,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128) |
-| public-updates\.yml | v4\.46\.60 | in\_progress | [Run 41183144331](https://github.com/Perseusxrltd/mnemion/actions/runs/41183144331) |
+| public-updates\.yml | v4\.46\.60 | success | [Run 41183144331](https://github.com/Perseusxrltd/mnemion/actions/runs/41183144331) |
 | release\.yml | release/4\.46\.60 | success | [Run 41179260895](https://github.com/Perseusxrltd/mnemion/actions/runs/41179260895) |
 | verify-artifacts\.yml | main | success | [Run 41182898435](https://github.com/Perseusxrltd/mnemion/actions/runs/41182898435) |
 | website-release\.yml | main | success | [Run 41176849151](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849151) |
 | website-release\.yml | v4\.46\.60 | success | [Run 41183142220](https://github.com/Perseusxrltd/mnemion/actions/runs/41183142220) |
-
-## Active jobs
-
-[Run 41183144331](https://github.com/Perseusxrltd/mnemion/actions/runs/41183144331): 1/7 jobs completed; 1 succeeded.
-
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-
