@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T06:30:50+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T06:42:37+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.58](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.58). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -24,27 +24,21 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | ci\.yml | main | in\_progress | [Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128) |
 | public-updates\.yml | v4\.46\.58 | success | [Run 41152435480](https://github.com/Perseusxrltd/mnemion/actions/runs/41152435480) |
 | release\.yml | release/4\.46\.58 | success | [Run 41146610806](https://github.com/Perseusxrltd/mnemion/actions/runs/41146610806) |
-| release\.yml | release/4\.46\.59 | in\_progress | [Run 41173884074](https://github.com/Perseusxrltd/mnemion/actions/runs/41173884074) |
-| verify-artifacts\.yml | main | success | [Run 41151967718](https://github.com/Perseusxrltd/mnemion/actions/runs/41151967718) |
+| release\.yml | release/4\.46\.59 | success | [Run 41173884074](https://github.com/Perseusxrltd/mnemion/actions/runs/41173884074) |
+| verify-artifacts\.yml | main | in\_progress | [Run 41177669828](https://github.com/Perseusxrltd/mnemion/actions/runs/41177669828) |
 | website-release\.yml | main | success | [Run 41176849151](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849151) |
 | website-release\.yml | v4\.46\.58 | success | [Run 41152433304](https://github.com/Perseusxrltd/mnemion/actions/runs/41152433304) |
 
 ## Active jobs
 
-[Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128): 3/12 jobs completed; 3 succeeded.
+[Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128): 8/12 jobs completed; 8 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-26\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 
-[Run 41173884074](https://github.com/Perseusxrltd/mnemion/actions/runs/41173884074): 19/21 jobs completed; 18 succeeded.
+[Run 41177669828](https://github.com/Perseusxrltd/mnemion/actions/runs/41177669828): 0/1 jobs completed; 0 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
