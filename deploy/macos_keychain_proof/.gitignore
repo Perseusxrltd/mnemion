@@ -1,0 +1,7 @@
+generated/
+work/
+build/
+*.pem
+*.der
+*.p12
+*.keychain

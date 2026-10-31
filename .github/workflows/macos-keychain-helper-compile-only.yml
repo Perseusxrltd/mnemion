@@ -1,0 +1,57 @@
+name: Keychain helper compile only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Manual compile only. Not native acceptance and not wired to push, pull request,
+# or workflow_call. The job does not run the linked binaries, codesign, security,
+# Keychain, or Electron. Astra dispatches the first compilation after source review.
+
+jobs:
+  compile:
+    name: compile only / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Write compile-only pins
+        shell: bash
+        run: |
+          mkdir -p deploy/macos_keychain_proof/generated
+          cat > deploy/macos_keychain_proof/generated/parent_pin.h << 'EOF'
+          #ifndef MNEMION_PARENT_PIN_H
+          #define MNEMION_PARENT_PIN_H
+          /* compile_only: not a certificate, not a frozen helper, not native acceptance. */
+          #define MNEMION_PIN_CLASS "compile_only"
+          #define MNEMION_PIN_METADATA "compile_only: not a certificate, not a frozen helper, not native acceptance"
+          #define MNEMION_FIXTURE_LEAF_SHA1 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          #define MNEMION_FIXTURE_LEAF_SHA256 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+          #define MNEMION_HELPER_CDHASH "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+          #define MNEMION_HELPER_MANIFEST_SHA256 "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          #define MNEMION_SEALED_HELPER_IDENTIFIER "com.perseusxr.mnemion-studio.credential-helper"
+          #define MNEMION_HELPER_DESIGNATED "identifier \"com.perseusxr.mnemion-studio.credential-helper\" and certificate leaf = H\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\""
+          #endif
+          EOF
+      - name: Compile helper, parent, and identity tool
+        shell: bash
+        run: bash deploy/macos_keychain_proof/compile_only.sh --compile-only ${{ matrix.arch }} ${{ runner.temp }}/keychain-compile-only
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: keychain-helper-compile-only-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 14
+          if-no-files-found: error
+          path: ${{ runner.temp }}/keychain-compile-only
