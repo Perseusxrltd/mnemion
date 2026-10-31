@@ -73,6 +73,15 @@ fresh and complete; updates and close still account for active helper work.
 The focused source checks passed. Helper launches remain, and no CPU/RAM saving
 or installed resource acceptance is established. F06/R04 remains partial.
 
+The [local-backup scheduling follow-up](../validation/2026-10-31-backup-idle-scheduling.md)
+stops after reading the policy when backups are unconfigured or disabled.
+Enabled schedules retain receipt, file-availability and retry checks while
+skipping secure-store availability and retention-display reads. Due backups
+still validate their protected key, and requested status remains fresh and
+complete. Strict compilation and 32 focused cases passed; two native Windows
+cases were not applicable to that Linux source run. The one-minute wake remains,
+and no whole-product CPU/RAM saving or installed acceptance is claimed.
+
 The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
 improves Windows lifetime measurements and cleanup reporting. The Darwin
 adapter now retains live per-process kernel RSS peaks. The corrected C probe
