@@ -11,8 +11,8 @@ growth from a later sample and summed CPU from processes still alive at a
 100 ms poll. Exited helpers were absent from that sum. The adapter below
 records owned lifetimes and keeps remaining coverage gaps explicit. See the
 [31 October counter and cleanup follow-up](../validation/2026-10-31-native-memory-counters.md)
-for current Windows behavior, the verified Mac live counters and the
-unaccepted original child-counter cross-check.
+for current Windows behavior, Mac live-counter and descendant checks, and
+the preserved original child-counter failure.
 
 ## API
 
@@ -49,6 +49,12 @@ does not invent a count. The existing installed results and the separate
 admission diagnostic are tracked in the
 [CPU admission follow-up](../validation/2026-10-30-telemetry-cpu-admission.md).
 Counter changes do not authorize repeating or rescoring those runs.
+
+The [installed process-role RSS note](../validation/2026-10-31-installed-process-roles.md)
+describes separate Electron checkpoint evidence retained in
+`build-notes/telemetry-installed-resources.json`. Its focused source checks
+passed; native installed verification remains pending. It does not replace
+this OS ledger or accept the resource budget.
 
 Windows reads the direct child with `GetExitCodeProcess` before finish closes
 the process handle. Microsoft documents `STILL_ACTIVE` as 259
@@ -130,8 +136,10 @@ is `pid_reused`. One signal is sent. If members are still present after it,
 the failure is `descendants_survived` and the signal is not repeated. If the
 group cannot be listed, the failure is `group_unverified`.
 
-Child listing still uses `proc_listchildpids` with a null size probe and a
-256-pid cap. That call was not part of this correction.
+Child listing uses one `proc_listchildpids` call with a fixed 64-PID buffer.
+Its return is a PID count; the buffer length remains bytes. There is no null
+size probe. A zero count with errno clear is empty; a full buffer, error,
+out-of-range count or malformed PID list stays unverified.
 
 Resident size is current RSS. Physical footprint is not read. `wait4`
 includes only descendants the direct child itself reaped. Reparented
@@ -148,8 +156,10 @@ A failed release remains a cleanup failure even after the owned group is
 empty; an earlier cleanup failure is preserved. Ports are not kept for
 later samples.
 
-Within the existing bounded traversal, memory sampling checks creation
-identity before and after the query and rechecks a descendant's parent.
+Within the existing bounded traversal, memory sampling checks each child's
+creation identity and parent relationship before and after the memory query.
+It also rechecks the parent's creation against the identity recorded earlier
+in that sample, so a reused parent PID cannot admit unrelated memory.
 A genuine live peak enters the identity ledger with
 `kernel_high_water_while_observed` true. A denied or partial query may keep
 validated current RSS; it does not create a peak or erase a previously
@@ -162,10 +172,17 @@ The corrected C probe and actual Python adapter passed the two Mac component
 jobs in run 41154499871 on source `5a5ee191e965903417fa161029c555544e5fff0c`.
 The workflow preserves separate `residency-counters-<os>-<arch>` and
 `owned-launch-adapter-<os>-<arch>` artifacts with source and cleanup evidence.
-Each adapter check observed one identity; descendant memory coverage remains
-unproven. These disposable-child checks do not qualify app overhead. The
-original run 41149389299's corrupt child cross-check remains unaccepted and
-unchanged.
+Each adapter check in that run observed one identity and did not prove
+descendant memory coverage. The cause of those observations remains unproven;
+those historical results are unchanged. The original run 41149389299's
+corrupt child cross-check also remains unaccepted and unchanged.
+
+The later run 41159112141 passed once on both Mac targets at source
+`300b5e7e362a46af93b53d5f15b2aae90b0b73a5`. Each deterministic fixture observed
+one held live descendant. The separate ordinary work ledger recorded three
+identities on Intel and two on ARM. Cleanup succeeded; lifetime CPU remains
+incomplete, coverage partial, and final-peak and unseen-exited-process coverage
+false. These component checks do not qualify app overhead.
 
 Native workflow run 41009326091 on source `23835d6f1a0f085f82ef9bf68ebfab263eee6f33`
 passed all six targets. Windows and Linux lifetime CPU were complete. macOS
@@ -220,6 +237,12 @@ cannot create a disposable cgroup returns honest unsupported and does not
 launch an unmeasured process. That receipt does not claim cleanup succeeded.
 The command does not install the app or run the 128-cycle workload.
 
+On Darwin, a separate FIFO handshake holds a root and child live until the
+sampler records both. It requires root exit code zero and successful owned
+cleanup. If the second FIFO descriptor cannot open, the first is closed;
+all held descriptors close on exit. Its descendant count is separate from
+the ordinary work ledger and does not establish whole-lifetime coverage.
+
 `.github/workflows/telemetry-owned-launch.yml` is manual
 (`workflow_dispatch` only). It runs that command once on the six runners
 already used for the native desktop builds: `windows-2022`, `windows-11-arm`,
@@ -259,7 +282,8 @@ pass.
   empty match returns 0 bytes. The walk stops when the buffer is full.
 - Apple libproc `libproc.c`: if `__proc_info` returns `-1`, `proc_listpids`
   returns `0` and errno is set. A successful call returns the byte count,
-  including `0`.
+  including `0`. Its `proc_listchildpids` wrapper returns a PID count while
+  the buffer length remains bytes.
 - Python `os.wait4` returns `(pid, status, rusage)`. `resource.getrusage`
   documents `ru_utime` and `ru_stime` as float seconds.
 - POSIX `kill`: a pid less than -1 signals the process group whose id is

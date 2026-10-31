@@ -57,6 +57,12 @@ both targets, each observing one deliberately held live descendant. That
 fixture is separate from the ordinary work ledger; coverage across the full process lifetime
 remains incomplete.
 
+The [installed process-role evidence](../validation/2026-10-31-installed-process-roles.md)
+adds absolute RSS observations at the existing workload checkpoints, with
+explicit ownership and missing-data checks. It adds no production polling.
+Focused source checks passed; native installed verification and the full
+CPU/RAM comparison remain open.
+
 ## Acceptance work
 
 Measure the complete owned process set, including the app, local engine,
