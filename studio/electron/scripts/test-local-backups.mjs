@@ -315,6 +315,40 @@ async function fixture(t) {
   return { root, host, manager, cipher, key, settings, calls, locked: value => { available = !value } }
 }
 
+function fileName(path) { return String(path).split(/[\\/]/).at(-1) }
+
+function countStorage(cipher) {
+  let calls = 0
+  const original = cipher.available
+  cipher.available = () => { calls += 1; return original() }
+  return { get calls() { return calls } }
+}
+
+async function withReads(t, body) {
+  const paths = []
+  const original = fs.lstat
+  const mock = t.mock.method(fs, 'lstat', async (path, ...args) => {
+    paths.push(String(path))
+    return original(path, ...args)
+  })
+  syncBuiltinESMExports()
+  try { return await body(paths) }
+  finally { mock.mock.restore(); syncBuiltinESMExports() }
+}
+
+function holdDueObservation(manager) {
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  let first = true
+  manager.scheduledAction = async () => {
+    if (!first) return undefined
+    first = false
+    await gate
+    return { snapshot: true }
+  }
+  return release
+}
+
 test('scheduled keys remain protected across reopen and never appear in status', async t => {
   const f = await fixture(t)
   const saved = await f.manager.configure(f.settings)
@@ -448,20 +482,145 @@ test('concurrent overdue scheduler observations coalesce into one snapshot and l
   assert.equal(f.calls.length, 1)
 })
 
+test('unconfigured scheduler ticks do not consult secure storage or backup display state', async t => {
+  const f = await fixture(t)
+  const storage = countStorage(f.cipher)
+  await withReads(t, async paths => {
+    await f.manager.tick(); await f.manager.tick(); await f.manager.tick()
+    assert.equal(storage.calls, 0)
+    assert.equal(f.calls.length, 0)
+    assert.deepEqual(paths.map(fileName), ['backup-policy.json', 'backup-policy.json', 'backup-policy.json'])
+  })
+  const view = await f.manager.status()
+  assert.equal(storage.calls, 1)
+  assert.equal(view.secure_storage, true)
+  assert.equal(view.configuration, undefined)
+  assert.equal(view.last_snapshot, undefined)
+  assert.equal(view.last_retention, undefined)
+})
+
+test('disabled scheduler ticks do not consult secure storage or backup display state', async t => {
+  const f = await fixture(t)
+  await f.manager.configure({ ...f.settings, enabled: false })
+  const storage = countStorage(f.cipher)
+  await withReads(t, async paths => {
+    await f.manager.tick(); await f.manager.tick(); await f.manager.tick()
+    assert.equal(storage.calls, 0)
+    assert.equal(f.calls.length, 0)
+    assert.deepEqual(paths.map(fileName), ['backup-policy.json', 'backup-policy.json', 'backup-policy.json'])
+  })
+})
+
+test('a stopped or busy workspace does not read backup state on a scheduler tick', async t => {
+  const f = await fixture(t)
+  const storage = countStorage(f.cipher)
+  await withReads(t, async paths => {
+    f.host.status.state = 'stopped'
+    await f.manager.tick()
+    f.host.status.state = 'running'
+    f.host.busy = true
+    await f.manager.tick()
+    assert.equal(storage.calls, 0)
+    assert.equal(paths.length, 0)
+  })
+})
+
+test('an enabled backup that is not due reads scheduling evidence without secure storage or retention display', async t => {
+  const f = await fixture(t)
+  await f.manager.configure(f.settings)
+  await f.manager.tick()
+  assert.deepEqual(f.calls.map(call => call.action), ['backup'])
+  const storage = countStorage(f.cipher)
+  await withReads(t, async paths => {
+    await f.manager.tick()
+    assert.equal(f.calls.length, 1)
+    assert.equal(storage.calls, 0)
+    const names = paths.map(fileName)
+    for (const name of ['backup-policy.json', 'last-backup.json', 'last-ledger.json', 'backup-failure.json']) assert.ok(names.includes(name), name)
+    assert.equal(names.includes('last-retention.json'), false)
+    assert.ok(names.some(name => name.endsWith('.mnemion.enc')))
+  })
+})
+
+test('requested backup status stays fresh, including secure storage, retention and availability', async t => {
+  const f = await fixture(t)
+  const saved = await f.manager.configure(f.settings)
+  const folder = join(saved.configuration.destination, 'Mnemion backups', saved.configuration.workspace_id)
+  const retention = { format: 1, workspace_id: saved.configuration.workspace_id, key_id: saved.configuration.key_id,
+    folder, policy: saved.configuration.retention, state: 'complete', message: 'Kept every copy.', completed_at: new Date().toISOString(),
+    deleted_files: 1, deleted_bytes: 10, skipped_files: 0, remaining_candidates: 0 }
+  const path = join(f.root, 'last-retention.json')
+  await writeFile(path, JSON.stringify(retention) + '\n', { mode: 0o600 })
+  let open = true, checks = 0
+  f.cipher.available = () => { checks += 1; return open }
+  const first = await f.manager.status()
+  open = false
+  retention.deleted_files = 4
+  await writeFile(path, JSON.stringify(retention) + '\n', { mode: 0o600 })
+  const second = await f.manager.status()
+  assert.equal(checks, 2)
+  assert.equal(first.secure_storage, true)
+  assert.equal(second.secure_storage, false)
+  assert.equal(first.last_retention.deleted_files, 1)
+  assert.equal(second.last_retention.deleted_files, 4)
+  assert.equal(second.snapshot_availability, undefined)
+  assert.equal(second.ledger_availability, undefined)
+  assert.equal(second.configuration.enabled, true)
+  assert.equal(second.configuration.protected_key, true)
+  assert.ok(second.next_snapshot_at)
+  assert.ok(second.next_ledger_at)
+  const disabled = await f.manager.configure({ ...f.settings, recovery_key: undefined, expected_revision: second.configuration.revision, enabled: false })
+  checks = 0
+  open = true
+  const again = await f.manager.status()
+  assert.equal(checks, 1)
+  assert.equal(again.secure_storage, true)
+  assert.equal(again.configuration.enabled, false)
+  assert.equal(again.configuration.revision, disabled.configuration.revision)
+  assert.equal(again.next_snapshot_at, undefined)
+  assert.equal(again.last_retention.deleted_files, 4)
+  assert.equal(again.snapshot_availability, undefined)
+})
+
 test('changing the schedule invalidates a pending scheduler observation', async t => {
   const f = await fixture(t)
   const configured = await f.manager.configure(f.settings)
-  const status = await f.manager.status()
-  let release
-  const waiting = new Promise(resolve => { release = resolve })
-  const original = f.manager.status.bind(f.manager)
-  let first = true
-  f.manager.status = async () => first ? (first = false, await waiting, status) : original()
+  const release = holdDueObservation(f.manager)
   const checking = f.manager.tick()
   await f.manager.configure({ ...f.settings, recovery_key: undefined, expected_revision: configured.configuration.revision, enabled: false })
   release()
   await checking
   assert.equal(f.calls.length, 0)
+})
+
+test('cancelling a pending scheduler observation does not start its backup', async t => {
+  const f = await fixture(t)
+  await f.manager.configure(f.settings)
+  let cancelled = 0
+  f.host.cancelBackup = () => { cancelled += 1 }
+  const release = holdDueObservation(f.manager)
+  const checking = f.manager.tick()
+  f.manager.cancel()
+  release()
+  await checking
+  assert.equal(f.calls.length, 0)
+  assert.equal(cancelled, 1)
+})
+
+test('an unreadable backup policy holds the scheduler without consulting secure storage', async t => {
+  const f = await fixture(t)
+  await f.manager.configure(f.settings)
+  await writeFile(join(f.root, 'backup-policy.json'), '{', { mode: 0o600 })
+  const storage = countStorage(f.cipher)
+  await withReads(t, async paths => {
+    await f.manager.tick()
+    assert.equal(storage.calls, 0)
+    assert.equal(f.calls.length, 0)
+    paths.length = 0
+    await f.manager.tick()
+    assert.equal(paths.length, 0)
+    assert.equal(storage.calls, 0)
+  })
 })
 
 test('a cancelled key-unlock operation cannot later start a backup', async t => {
@@ -500,8 +659,15 @@ test('failed automatic backups retain their notice and retry deadline across app
   const reopened = new LocalBackups(f.host, f.cipher)
   t.after(() => reopened.close())
   assert.match((await reopened.status()).last_error, /drive is unavailable/)
-  await reopened.tick()
-  assert.equal(failedCalls, 1)
+  const storage = countStorage(f.cipher)
+  await withReads(t, async paths => {
+    await reopened.tick()
+    assert.equal(failedCalls, 1)
+    assert.equal(storage.calls, 0)
+    const names = paths.map(fileName)
+    for (const name of ['backup-policy.json', 'last-backup.json', 'last-ledger.json', 'backup-failure.json']) assert.ok(names.includes(name), name)
+    assert.equal(names.includes('last-retention.json'), false)
+  })
   f.host.runBackup = original
   await reopened.run()
   assert.equal((await reopened.status()).last_error, undefined)
@@ -514,10 +680,15 @@ test('a deleted or resized backup remains visibly unavailable and becomes due ag
   assert.equal((await f.manager.status()).snapshot_availability, 'present')
   await rm(saved.snapshot.file)
   assert.equal((await f.manager.status()).snapshot_availability, 'missing')
+  const storage = countStorage(f.cipher)
   await f.manager.tick()
   assert.equal(f.calls.length, 2)
+  assert.equal(storage.calls, 1)
   const next = await f.manager.status()
   assert.equal(next.snapshot_availability, 'present')
   await writeFile(next.last_ledger.ledger.file, 'altered bytes')
   assert.equal((await f.manager.status()).ledger_availability, 'changed')
+  await f.manager.tick()
+  assert.equal(f.calls.length, 3)
+  assert.equal(f.calls[2].action, 'backup-ledger')
 })

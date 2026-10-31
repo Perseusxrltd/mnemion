@@ -11,6 +11,13 @@ import { replaceFile } from './atomic-file.js'
 import { BackupStateError, type BackupStateDiagnostic } from './backup-state-diagnostics.js'
 
 type Stored = Omit<BackupConfiguration, 'protected_key'> & { format: 1; sealed_key: string | null }
+type SchedulingRecords = {
+  last_snapshot?: BackupReceipt
+  last_ledger?: BackupReceipt
+  failure?: { message: string; retry_at: string }
+  snapshot_availability: BackupView['snapshot_availability']
+  ledger_availability: BackupView['ledger_availability']
+}
 
 export function recoveryKey(value: unknown): string {
   if (typeof value !== 'string' || !/^mnm_bk_[A-Za-z0-9_-]{43}$/.test(value) ||
@@ -173,23 +180,36 @@ export class LocalBackups {
     const now = Date.now(), previous = last ? Date.parse(last) : NaN
     return Number.isFinite(previous) && previous <= now + 300_000 ? previous + interval : now
   }
-  async status(): Promise<BackupView> {
-    const configuration = await this.configuration()
-    const [secure_storage, last_snapshot, last_ledger, failure, last_retention] = await Promise.all([
-      this.cipher.available(), this.receipt('last-backup.json', configuration), this.receipt('last-ledger.json', configuration),
-      this.previousFailure(configuration), this.lastRetention(configuration),
+  private async schedulingRecords(configuration?: Stored): Promise<SchedulingRecords> {
+    const [last_snapshot, last_ledger, failure] = await Promise.all([
+      this.receipt('last-backup.json', configuration), this.receipt('last-ledger.json', configuration), this.previousFailure(configuration),
     ])
     const [snapshot_availability, ledger_availability] = await Promise.all([
       this.availability(last_snapshot?.snapshot), this.availability(last_ledger?.ledger),
     ])
-    const result: BackupView = { secure_storage: secure_storage === true, last_snapshot, last_ledger, last_retention,
-      last_error: this.error ?? failure?.message, retry_at: failure?.retry_at, snapshot_availability, ledger_availability }
+    return { last_snapshot, last_ledger, failure, snapshot_availability, ledger_availability }
+  }
+  private scheduleTimes(configuration: Stored, records: SchedulingRecords): { snapshot: number; ledger: number } {
+    return {
+      snapshot: this.due(records.snapshot_availability === 'present' ? records.last_snapshot?.verified_at : undefined, configuration.snapshot_hours * 3600_000),
+      ledger: this.due(records.ledger_availability === 'present' ? records.last_ledger?.verified_at : undefined, configuration.ledger_minutes * 60_000),
+    }
+  }
+  async status(): Promise<BackupView> {
+    const configuration = await this.configuration()
+    const [secure_storage, records, last_retention] = await Promise.all([
+      this.cipher.available(), this.schedulingRecords(configuration), this.lastRetention(configuration),
+    ])
+    const result: BackupView = { secure_storage: secure_storage === true, last_snapshot: records.last_snapshot, last_ledger: records.last_ledger, last_retention,
+      last_error: this.error ?? records.failure?.message, retry_at: records.failure?.retry_at,
+      snapshot_availability: records.snapshot_availability, ledger_availability: records.ledger_availability }
     if (configuration) {
       const { sealed_key, format: _, ...publicConfiguration } = configuration
       result.configuration = { ...publicConfiguration, protected_key: sealed_key !== null }
       if (configuration.enabled) {
-        result.next_snapshot_at = new Date(this.due(snapshot_availability === 'present' ? last_snapshot?.verified_at : undefined, configuration.snapshot_hours * 3600_000)).toISOString()
-        result.next_ledger_at = new Date(this.due(ledger_availability === 'present' ? last_ledger?.verified_at : undefined, configuration.ledger_minutes * 60_000)).toISOString()
+        const times = this.scheduleTimes(configuration, records)
+        result.next_snapshot_at = new Date(times.snapshot).toISOString()
+        result.next_ledger_at = new Date(times.ledger).toISOString()
       }
     }
     return result
@@ -313,16 +333,26 @@ export class LocalBackups {
     this.timer.unref()
     void this.tick()
   }
+  // Idle ticks stop at the policy. Enabled ticks share the due calculation with status(),
+  // without asking whether the secure store is available or loading retention display.
+  private async scheduledAction(): Promise<{ snapshot: boolean } | undefined> {
+    const configuration = await this.configuration()
+    if (!configuration?.enabled) return undefined
+    const records = await this.schedulingRecords(configuration)
+    if (records.failure?.retry_at && Date.parse(records.failure.retry_at) > Date.now()) return undefined
+    const times = this.scheduleTimes(configuration, records), now = Date.now()
+    const snapshot = times.snapshot <= now
+    if (!snapshot && times.ledger > now) return undefined
+    return { snapshot }
+  }
   private async tick(): Promise<void> {
     if (this.closed || this.checking || this.busy || this.host.busy || this.host.status.state !== 'running' || Date.now() < this.retryAt) return
     this.checking = true
     const generation = this.generation
     try {
-      const status = await this.status(), configuration = status.configuration
-      if (!configuration?.enabled || this.closed || this.busy || this.host.busy || generation !== this.generation) return
-      if (status.retry_at && Date.parse(status.retry_at) > Date.now()) return
-      const snapshot = Date.parse(status.next_snapshot_at!) <= Date.now()
-      if (snapshot || Date.parse(status.next_ledger_at!) <= Date.now()) await this.run(!snapshot)
+      const action = await this.scheduledAction()
+      if (!action || this.closed || this.busy || this.host.busy || generation !== this.generation) return
+      await this.run(!action.snapshot)
     } catch (error) {
       this.error = error instanceof Error ? error.message : 'Scheduled backup needs attention.'
       this.retryAt = Date.now() + 15 * 60_000
