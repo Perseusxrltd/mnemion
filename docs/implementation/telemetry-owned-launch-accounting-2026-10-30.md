@@ -6,10 +6,12 @@ unproven and production collection stays off.** The allowance is still
 and 0.5% of one core, both **UNACCEPTED**. This note does not raise that
 allowance or rescore an old run.
 
-The compiled observer in `deploy/probe_telemetry_renderer.py` starts after the
-app is up, subtracts growth from a later sample, and sums CPU from processes
-that are still alive at a 100 ms poll. A helper that has already exited is
-absent from that sum. Missing polls were skipped rather than reported.
+The earlier sampled-only observer started after the app was up, subtracted
+growth from a later sample and summed CPU from processes still alive at a
+100 ms poll. Exited helpers were absent from that sum. The adapter below
+records owned lifetimes and keeps remaining coverage gaps explicit. See the
+[31 October counter and cleanup follow-up](../validation/2026-10-31-native-memory-counters.md)
+for current Windows behavior and the pending Mac capability check.
 
 ## API
 
@@ -42,9 +44,10 @@ group. `MNEMION_OWNED_LAUNCH_PYTHON` is the native client interpreter; on
 Windows ARM that is not `MNEMION_ENGINE_PYTHON`. Resource acceptance stays
 false and both budgets stay unaccepted. Terminal markers carry the verified
 cumulative count. Unknown crash progress sets `completed_known` false and
-does not invent a count. The next check is one manual dispatch with
-`resource_comparison` true. It must not repeat runs 41013901369 or
-41013868878.
+does not invent a count. The existing installed results and the separate
+admission diagnostic are tracked in the
+[CPU admission follow-up](../validation/2026-10-30-telemetry-cpu-admission.md).
+Counter changes do not authorize repeating or rescoring those runs.
 
 Windows reads the direct child with `GetExitCodeProcess` before finish closes
 the process handle. Microsoft documents `STILL_ACTIVE` as 259
@@ -59,16 +62,22 @@ unchanged. That remains a Linux source-app bridge.
 
 Windows creates an unnamed job, sets kill-on-close, and creates the child
 suspended inside that job with `PROC_THREAD_ATTRIBUTE_JOB_LIST`. The thread
-is resumed only after the PID is on the job list.
+is resumed only after membership and identity are verified on its process
+handle and a limited-query handle is retained.
 `JOBOBJECT_BASIC_ACCOUNTING_INFORMATION.TotalUserTime` and `TotalKernelTime`
 include processes that have already terminated (Microsoft, job accounting).
 `TotalTerminatedProcesses` counts limit violations only, so it is not used as
 the exited-process count. `PeakJobMemoryUsed` is the job commit counter, not
-working set. Per-process working set comes from `K32GetProcessMemoryInfo`
-while the process can still be opened. That peak is the kernel value at the
-last successful query, so working-set coverage stays partial even when the
-job's CPU total is complete. An exited process that was never opened has
-null RSS, and the identity gap is a count, not a zero.
+working set. Per-process working set comes from `K32GetProcessMemoryInfo`.
+The observer retains at most 512 verified query handles and reads their final
+peaks after the job reports zero active processes. A failed final read keeps
+the earlier bytes without labeling them final. The final flag survives both
+report normalizers; an absent flag remains unknown. Lifetime CPU is complete
+only after a drained-job accounting read. A failed bounded drain is a cleanup
+failure even when handles close successfully. Unavailable query observations
+do not imply process exit, and missing identities remain separate counts.
+Working-set coverage stays partial because a process can disappear before
+the observer obtains its handle. No missing value is replaced with zero.
 
 Linux, when the process may create one child of its own cgroup v2 directory,
 reads `cpu.stat` `usage_usec`. The kernel documents that counter as covering
@@ -131,10 +140,9 @@ passed all six targets. Windows and Linux lifetime CPU were complete. macOS
 descendant CPU stayed incomplete. Linux `memory.peak` was missing. Windows ARM
 had two sampled identities missing. None of those receipts accept app overhead.
 
-The next hosted run is one manual dispatch of
-`.github/workflows/telemetry-renderer.yml` with comparison and without
-attribution, phase-memory, or review. That job is Linux compiled source on
-`ubuntu-22.04` only. When that mode is selected, a short `id -u` child must
+The compiled-source comparison in `.github/workflows/telemetry-renderer.yml`
+runs without attribution, phase-memory, or review. That job is Linux compiled
+source on `ubuntu-22.04` only. When that mode is selected, a short `id -u` child must
 print the runner uid. The journey then runs as one transient service with
 `Delegate=yes`, `User=` and `Group=` set to that runner, `WorkingDirectory`
 set to the workspace, and only the tool/home environment (`PATH`, `HOME`,

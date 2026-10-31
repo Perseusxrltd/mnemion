@@ -41,6 +41,11 @@ cross-process submissions retain the bounded fallback.
 The [focused scheduler checks](../validation/2026-10-30-librarian-idle.md)
 cover those behaviors and their limits.
 
+The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
+improves Windows lifetime measurements and cleanup reporting, with a targeted
+Mac capability check pending. These diagnostic changes do not add a production
+background worker or establish whole-product resource acceptance.
+
 ## Acceptance work
 
 Measure the complete owned process set, including the app, local engine,
