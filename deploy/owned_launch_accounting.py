@@ -1818,6 +1818,7 @@ class DarwinBackend:
         self._waited = None
         self._reaped = False
         self._terminate_attempted = False
+        self._port_release_failure = None
         self._libproc = None
         self._libsystem = None
         self._timebase = None
@@ -1839,18 +1840,30 @@ class DarwinBackend:
         self.sample(self.ledger)
 
     def cpu_microseconds(self) -> int | None:
-        if self._waited is not None:
-            return self._waited
-        if self._reaped or self.process is None:
-            return None
-        usage = _darwin_rusage(self._library(), self.process.pid)
-        if usage is None:
-            return None
-        own = _mach_to_microseconds(usage["user"] + usage["system"], self._base())
-        children = _mach_to_microseconds(usage["child_user"] + usage["child_system"], self._base())
-        if own is None or children is None:
-            return None
-        return own + children
+        # Same lock as wait4. After that lock is held, a reaped root keeps the
+        # wait4 total (including a missing one). Live rusage is used only when
+        # its creation still is the frozen root. This does not freeze a new one.
+        with self._sample_lock:
+            if self._waited is not None:
+                return self._waited
+            if self._reaped or self.process is None:
+                return None
+            usage = _darwin_rusage(self._library(), self.process.pid)
+            if self._waited is not None or self._reaped:
+                return self._waited
+            if usage is None:
+                return None
+            if type(self.root_creation) is not int or usage.get("start") != self.root_creation:
+                return None
+            own = _mach_to_microseconds(usage["user"] + usage["system"], self._base())
+            children = _mach_to_microseconds(
+                usage["child_user"] + usage["child_system"], self._base()
+            )
+            if self._waited is not None or self._reaped:
+                return self._waited
+            if own is None or children is None:
+                return None
+            return own + children
 
     def still_active(self) -> bool | None:
         if self.process is None:
@@ -1997,27 +2010,45 @@ class DarwinBackend:
 
     def close(self) -> tuple[bool, str | None]:
         if self._closed:
-            return True, None
+            return self._close_result
         self._closed = True
+        self._close_result = self._close_group()
+        return self._close_result
+
+    def _close_group(self) -> tuple[bool, str | None]:
         if self.process is None:
-            return False, "process_missing"
+            return self._with_port_release(False, "process_missing")
         self._capture_wait4()
         if not self._terminate_attempted and self._group_state() != "empty":
             ok, failure = self.terminate()
             if not ok:
-                return False, failure
+                return self._with_port_release(False, failure)
         deadline = time.monotonic() + 2
         while time.monotonic() < deadline and self._group_state() == "occupied":
             self._capture_wait4()
             time.sleep(0.02)
         state = self._group_state()
         if state == "empty":
-            return True, None
+            return self._with_port_release(True, None)
         if state == "reused":
-            return False, "pid_reused"
+            return self._with_port_release(False, "pid_reused")
         if state == "occupied":
-            return False, "descendants_survived"
-        return False, "group_unverified"
+            return self._with_port_release(False, "descendants_survived")
+        return self._with_port_release(False, "group_unverified")
+
+    def _with_port_release(self, ok: bool, failure: str | None) -> tuple[bool, str | None]:
+        """An empty process group must not hide a name port that was not dropped."""
+        if ok and self._port_release_failure is not None:
+            return False, self._port_release_failure
+        return ok, failure
+
+    def _remember_port_release(self, basic) -> None:
+        if self._port_release_failure is not None or type(basic) is not dict:
+            return
+        error = basic.get("port_deallocate_error")
+        kr = basic.get("port_deallocate_kern_return")
+        if error is not None or (type(kr) is int and kr != 0):
+            self._port_release_failure = _PORT_RELEASE_FAILED
 
     def _group_state(self) -> str:
         """empty, occupied, reused, or unverified. Never a full pid scan."""
@@ -2073,6 +2104,7 @@ class DarwinBackend:
         elif type(parent) is not int or _darwin_ppid(library, pid) != parent:
             return None
         basic = _darwin_task_rss(self._task_system(), pid)
+        self._remember_port_release(basic)
         after = _darwin_rusage(library, pid)
         if after is None or after.get("start") != before["start"]:
             return None
@@ -2273,6 +2305,8 @@ def _mach_to_microseconds(ticks: int, timebase: tuple[int, int] | None) -> int |
 _MACH_TASK_BASIC_INFO = 20
 _MACH_TASK_BASIC_INFO_COUNT = 12
 _MACH_TASK_BASIC_BYTES = 48
+# Fixed cleanup token. The kern return stays on the task-query result.
+_PORT_RELEASE_FAILED = "port_release_failed"
 
 
 class _MachTaskBasicInfo(ctypes.Structure):
@@ -2312,18 +2346,35 @@ def _load_darwin_task_port():
     return system
 
 
-def _task_rss_result(*, accepted, kr, count, resident_size_max, released):
+def _task_rss_result(
+    *,
+    accepted,
+    kr,
+    count,
+    resident_size_max,
+    released,
+    port_deallocate_kern_return=None,
+    port_deallocate_error=None,
+):
     return {
         "accepted": accepted,
         "kr": kr,
         "count": count,
         "resident_size_max": resident_size_max,
         "released": list(released),
+        "port_deallocate_kern_return": port_deallocate_kern_return,
+        "port_deallocate_error": port_deallocate_error,
     }
 
 
 def _darwin_task_rss(system, pid: int) -> dict:
-    """One MACH_TASK_BASIC_INFO query. The name port is dropped on every path."""
+    """One MACH_TASK_BASIC_INFO query. Each acquired name port is deallocated once.
+
+    KERN_SUCCESS is 0. A nonzero return or a raised error is kept and is not
+    listed in ``released``. The task_info reading stays as it was: a failed
+    drop does not turn a valid peak into zero and does not invent one for a
+    denied query.
+    """
     released: list[int] = []
     if (
         system is None
@@ -2339,25 +2390,44 @@ def _darwin_task_rss(system, pid: int) -> dict:
             released=released,
         )
     port = ctypes.c_uint32(0)
+    drop = {"kr": None, "error": None}
 
     def release() -> None:
         name = int(port.value)
         if name == 0:
             return
         port.value = 0
-        system.mach_port_deallocate(system.mach_task_self(), name)
+        try:
+            returned = int(system.mach_port_deallocate(system.mach_task_self(), name))
+        except Exception:
+            drop["error"] = _PORT_RELEASE_FAILED
+            return
+        drop["kr"] = returned
+        if returned != 0:
+            drop["error"] = _PORT_RELEASE_FAILED
+            return
         released.append(name)
+
+    def pack(*, accepted, kr, count, resident_size_max):
+        return _task_rss_result(
+            accepted=accepted,
+            kr=kr,
+            count=count,
+            resident_size_max=resident_size_max,
+            released=released,
+            port_deallocate_kern_return=drop["kr"],
+            port_deallocate_error=drop["error"],
+        )
 
     try:
         kr = int(system.task_name_for_pid(system.mach_task_self(), pid, ctypes.byref(port)))
         if kr != 0 or int(port.value) == 0:
             release()
-            return _task_rss_result(
+            return pack(
                 accepted=False,
                 kr=kr,
                 count=None,
                 resident_size_max=None,
-                released=released,
             )
         info = _MachTaskBasicInfo()
         count = ctypes.c_uint32(_MACH_TASK_BASIC_INFO_COUNT)
@@ -2372,33 +2442,27 @@ def _darwin_task_rss(system, pid: int) -> dict:
         got = int(count.value)
         if kr != 0 or got != _MACH_TASK_BASIC_INFO_COUNT:
             release()
-            return _task_rss_result(
+            return pack(
                 accepted=False,
                 kr=kr,
                 count=got,
                 resident_size_max=None,
-                released=released,
             )
         peak = int(info.resident_size_max)
         release()
-        return _task_rss_result(
+        return pack(
             accepted=True,
             kr=0,
             count=got,
             resident_size_max=peak,
-            released=released,
         )
     except Exception:
-        try:
-            release()
-        except Exception:
-            port.value = 0
-        return _task_rss_result(
+        release()
+        return pack(
             accepted=False,
             kr=None,
             count=None,
             resident_size_max=None,
-            released=released,
         )
 
 

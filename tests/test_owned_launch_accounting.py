@@ -458,13 +458,26 @@ def test_darwin_reused_pid_does_not_replace_the_root_identity(monkeypatch):
 
 
 class _TaskPort:
-    def __init__(self, *, name_kr=0, port=77, info_kr=0, count=12, peak=9_371_648, boom=False):
+    def __init__(
+        self,
+        *,
+        name_kr=0,
+        port=77,
+        info_kr=0,
+        count=12,
+        peak=9_371_648,
+        boom=False,
+        dealloc_kr=0,
+        dealloc_error=None,
+    ):
         self.name_kr = name_kr
         self.port = port
         self.info_kr = info_kr
         self.count = count
         self.peak = peak
         self.boom = boom
+        self.dealloc_kr = dealloc_kr
+        self.dealloc_error = dealloc_error
         self.deallocated = []
         self.self_port = 42
 
@@ -491,7 +504,9 @@ class _TaskPort:
     def mach_port_deallocate(self, task, name):
         assert task == self.self_port
         self.deallocated.append(int(name))
-        return 0
+        if self.dealloc_error is not None:
+            raise OSError(self.dealloc_error)
+        return self.dealloc_kr
 
 
 def _resident(start, resident=40):
@@ -558,6 +573,212 @@ def test_darwin_task_port_release_covers_success_denial_partial_and_exceptions()
     assert exploded_result["accepted"] is False
     assert exploded_result["resident_size_max"] is None
     assert exploded.deallocated == [77]
+
+
+def test_darwin_failed_port_release_is_not_cleanup_success(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    reviewed = _TaskPort(port=65, peak=200, dealloc_kr=5)
+    reviewed.self_port = 99
+    reviewed_result = accounting._darwin_task_rss(reviewed, 4242)
+    assert reviewed.deallocated == [65]
+    assert reviewed_result["accepted"] is True
+    assert reviewed_result["kr"] == 0
+    assert reviewed_result["count"] == 12
+    assert reviewed_result["resident_size_max"] == 200
+    assert reviewed_result["released"] == []
+    assert reviewed_result["port_deallocate_kern_return"] == 5
+    assert reviewed_result["port_deallocate_error"] == "port_release_failed"
+
+    denied = _TaskPort(info_kr=5, port=65, peak=0, dealloc_kr=5)
+    denied_result = accounting._darwin_task_rss(denied, 4242)
+    assert denied_result["accepted"] is False
+    assert denied_result["resident_size_max"] is None
+    assert denied_result["released"] == []
+    assert denied_result["port_deallocate_kern_return"] == 5
+    assert denied.deallocated == [65]
+
+    partial = _TaskPort(info_kr=0, count=11, peak=0, dealloc_kr=5)
+    partial_result = accounting._darwin_task_rss(partial, 4242)
+    assert partial_result["accepted"] is False
+    assert partial_result["count"] == 11
+    assert partial_result["resident_size_max"] is None
+    assert partial_result["released"] == []
+    assert partial.deallocated == [77]
+
+    leaked = "mach_port_deallocate " + ("x" * 180)
+    raised = _TaskPort(port=65, peak=200, dealloc_error=leaked)
+    raised_result = accounting._darwin_task_rss(raised, 4242)
+    assert raised.deallocated == [65]
+    assert raised_result["accepted"] is True
+    assert raised_result["resident_size_max"] == 200
+    assert raised_result["released"] == []
+    assert raised_result["port_deallocate_kern_return"] is None
+    assert raised_result["port_deallocate_error"] == "port_release_failed"
+    assert leaked not in str(raised_result["port_deallocate_error"])
+
+    exploded = _TaskPort(boom=True, dealloc_error=leaked)
+    exploded_result = accounting._darwin_task_rss(exploded, 4242)
+    assert exploded.deallocated == [77]
+    assert exploded_result["accepted"] is False
+    assert exploded_result["resident_size_max"] is None
+    assert exploded_result["released"] == []
+    assert exploded_result["port_deallocate_error"] == "port_release_failed"
+
+    kills = []
+    monkeypatch.setattr(accounting.os, "kill", lambda pid, sig: kills.append((pid, sig)))
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: _resident(111, 40))
+    monkeypatch.setattr(accounting, "_darwin_children", lambda _library, _pid: [])
+    monkeypatch.setattr(accounting, "_darwin_group_pids", lambda _library, _pgid: [])
+
+    def backend_for(system):
+        backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+        backend.process = _RootProcess(4242)
+        backend.root_creation = 111
+        backend._libproc = object()
+        backend._libsystem = system
+        backend._timebase = (1, 1)
+        backend.sample(backend.ledger)
+        backend._reaped = True
+        backend._waited = 750_000
+        return backend
+
+    owned_port = _TaskPort(port=65, peak=200, dealloc_kr=5)
+    owned_port.self_port = 99
+    owned = backend_for(owned_port)
+    owned.sample = lambda _ledger: None
+    launch = accounting.OwnedLaunch(owned, bound_seconds=5, sample_seconds=0.02)
+    report = launch.finish(canonical_operations_completed=0)
+    row = report["ledger"][0]
+    assert row["identity"] == "4242:111"
+    assert row["last_working_set_bytes"] == 40
+    assert row["peak_working_set_bytes"] == 200
+    assert row["kernel_high_water_while_observed"] is True
+    assert row["peak_working_set_final"] is False
+    assert report["coverage"]["status"] == "partial"
+    assert report["coverage"]["rss_high_water"] == "live_kernel_high_water"
+    assert report["coverage"]["rss_high_water_covers_unseen_exited_processes"] is False
+    assert "darwin_final_lifetime_rss" in report["unavailable_counters"]
+    assert report["cleanup"]["ok"] is False
+    assert report["cleanup"]["failure"] == "port_release_failed"
+    assert report["cleanup"]["retried"] is False
+    assert report["resource_acceptance"] is False
+    assert report["lifetime_cpu_microseconds"] == 750_000
+    assert owned.close() == (False, "port_release_failed")
+    assert kills == []
+    assert owned_port.deallocated == [65]
+    assert leaked not in json.dumps(report)
+
+    denied_port = _TaskPort(info_kr=5, port=66, peak=0, dealloc_kr=5)
+    denied_backend = backend_for(denied_port)
+    denied_row = denied_backend.ledger.public()[0]
+    assert denied_row["last_working_set_bytes"] == 40
+    assert denied_row["peak_working_set_bytes"] is None
+    assert denied_row["kernel_high_water_while_observed"] is False
+    assert denied_row["peak_working_set_final"] is False
+    denied_coverage = denied_backend.coverage(
+        denied_backend.snapshot(), denied_backend.ledger.public()
+    )
+    assert denied_coverage["status"] == "partial"
+    assert denied_coverage["rss_high_water"] == "sampled_current"
+    assert denied_coverage["rss_high_water_covers_unseen_exited_processes"] is False
+    assert denied_backend.close() == (False, "port_release_failed")
+    assert denied_backend.close() == (False, "port_release_failed")
+    assert denied_port.deallocated == [66]
+    assert kills == []
+
+    raised_port = _TaskPort(port=67, peak=200, dealloc_error=leaked)
+    raised_backend = backend_for(raised_port)
+    raised_row = raised_backend.ledger.public()[0]
+    assert raised_row["peak_working_set_bytes"] == 200
+    assert raised_row["peak_working_set_final"] is False
+    assert raised_backend.close() == (False, "port_release_failed")
+    assert raised_backend.close() == (False, "port_release_failed")
+    assert raised_port.deallocated == [67]
+    assert kills == []
+
+
+def test_darwin_cpu_read_keeps_wait4_and_rejects_a_reaped_reused_pid(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    def make(creation=111):
+        backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+        backend.process = _RootProcess(4242)
+        backend.root_creation = creation
+        backend._libproc = object()
+        backend._timebase = (1, 1)
+        return backend
+
+    def counter(start):
+        return {
+            "user": 9_000_000,
+            "system": 0,
+            "child_user": 0,
+            "child_system": 0,
+            "resident": 1,
+            "start": start,
+        }
+
+    raced = make()
+    calls = []
+
+    def race_rusage(_library, pid):
+        assert raced._sample_lock.locked()
+        calls.append(pid)
+        raced._reaped = True
+        return counter(222)
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", race_rusage)
+    assert raced.cpu_microseconds() is None
+    assert raced.cpu_microseconds() is None
+    assert calls == [4242]
+    assert raced.root_creation == 111
+    assert raced._waited is None
+
+    preserved = make()
+
+    def preserve_rusage(_library, _pid):
+        assert preserved._sample_lock.locked()
+        preserved._reaped = True
+        preserved._waited = 750_000
+        return counter(222)
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", preserve_rusage)
+    assert preserved.cpu_microseconds() == 750_000
+    assert preserved.root_creation == 111
+
+    unfrozen = make(None)
+
+    def late_rusage(_library, _pid):
+        unfrozen._reaped = True
+        return counter(222)
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", late_rusage)
+    assert unfrozen.cpu_microseconds() is None
+    assert unfrozen.root_creation is None
+
+    mismatched = make()
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: counter(222))
+    assert mismatched.cpu_microseconds() is None
+    assert mismatched._reaped is False
+    assert mismatched.root_creation == 111
+
+    matched = make()
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: counter(111))
+    assert matched.cpu_microseconds() == 9_000
+    assert matched.root_creation == 111
+
+    reaped = make()
+    reaped._reaped = True
+    reaped._waited = None
+
+    def rusage_after_reap(*_args):
+        raise AssertionError("rusage after reap")
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", rusage_after_reap)
+    assert reaped.cpu_microseconds() is None
+    reaped._waited = 0
+    assert reaped.cpu_microseconds() == 0
 
 
 def test_darwin_reaped_root_without_creation_does_not_freeze_a_later_pid(monkeypatch):
