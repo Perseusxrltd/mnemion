@@ -1,0 +1,41 @@
+name: Windows ETW declaration comparison
+
+# Manual only. Compares ctypes declarations with the frozen SDK JSON.
+# No compiler, no ETW session, no production wiring.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: Declaration / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-2022, arch: x64 }
+          - { os: windows-11-arm, arch: arm64 }
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.arch }}
+      - name: Compare ctypes declarations with the frozen SDK JSON
+        shell: pwsh
+        run: python deploy/windows_etw_abi/compare_declarations.py --arch ${{ matrix.arch }} --receipt output/windows-etw-abi/declaration-receipt.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-etw-abi-declaration-${{ matrix.arch }}
+          path: output/windows-etw-abi/declaration-receipt.json
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0

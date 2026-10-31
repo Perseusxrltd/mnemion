@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-31T20:36:33.060066+00:00",
+  "source": "781bef2e83532342a3bbcad99810e12875b2e046",
+  "run": 41237380248,
+  "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41237380248",
+  "files": [
+    {
+      "path": "x64/abi.json",
+      "bytes": 2824,
+      "sha256": "9daf6c7b991f6c23182557da62a1be944e86c208419be3c8ba817a38969eced7"
+    },
+    {
+      "path": "x64/metadata.json",
+      "bytes": 354,
+      "sha256": "4942cc4eaf0561f792969fc8ee600b65b9cd8a1262e194eae2b60b3f6b4cd30a"
+    },
+    {
+      "path": "arm64/abi.json",
+      "bytes": 2824,
+      "sha256": "bc5d8732025bf69f522a2bccb401cd51603058984c405d07ef53b5338e8066d5"
+    },
+    {
+      "path": "arm64/metadata.json",
+      "bytes": 351,
+      "sha256": "f058ddaaafdbb3f17e682094533b2f8f1519e707d2aaaa57f6a7ad2c754cf34d"
+    }
+  ],
+  "trace_started": false
+}
