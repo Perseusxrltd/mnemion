@@ -43,17 +43,19 @@ cover those behaviors and their limits. The idle backoff is published in
 4.46.58; all six public auto-update checks and website synchronization passed.
 That release validation is separate from the counter checks below.
 
-Desktop sources follow the same rule. Each enabled source keeps its saved
-next scan time, and the app wakes for that deadline. An empty list or a list
-where every source is paused does not leave a timer running only to discover
-that nothing is due. Startup, save, resume and Sync still request a wake
-immediately. A source that is already due waits the existing two-second gap
-before the next automatic scan, including after a clock jump or an unusable
-next-scan time, so deadlines cannot spin. Update suspension clears the wake.
-Resume restores one pending pass. Close cancels it, and a late callback cannot
-start another scan. The helper's two-second memory sample during a scan is
-unchanged. The focused source checks use a controlled clock. They do not
-measure CPU or RAM savings and do not complete F06 or R04.
+The desktop source change removes idle timer wakeups. The earlier two-second
+tick already returned before file, native, credential or network work when
+nothing was due. Each enabled source keeps its saved next scan time; empty
+or fully paused lists leave no scheduler timer. Startup, save, resume and
+Sync still request prompt scheduling. Automatic follow-up work already due
+retains the two-second gap. When no usable stored deadline can be selected,
+unusable deadlines fall back to a bounded delay based on the source interval;
+invalid current-clock readings are handled separately. Update suspension
+clears the wake. Resume restores scheduling; close cancels wakes and drains
+owned work, and late callbacks cannot restart it. The helper's two-second
+memory sample during a scan is unchanged. The
+[reviewed lifecycle checks](../validation/2026-10-31-source-deadline-scheduling.md)
+use controlled time and do not measure CPU/RAM savings. F06/R04 remains partial.
 
 The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
 improves Windows lifetime measurements and cleanup reporting. The Darwin

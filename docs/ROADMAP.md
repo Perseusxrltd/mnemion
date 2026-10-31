@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.58**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-30**.
+Reviewed source distribution: **4.46.59**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-31**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -31,6 +31,22 @@ separate from telemetry's own overhead allowance.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**31 October 2026, background source scheduling:**
+The 4.46.59 source batch replaces the permanent desktop-source interval with
+deadline scheduling. Empty and fully paused lists leave no scheduler timer;
+manual Sync, serialized scans, repair deferral and update/shutdown handling
+retain their behavior. Strict TypeScript compilation and
+[110 source/capture checks](validation/2026-10-31-source-deadline-scheduling.md)
+passed. Packaging and publication follow the generated release status.
+F06/R04 remains partial; these checks do not measure whole-product savings.
+
+**31 October 2026, installed process resource observations:**
+The [original Mac ARM workload](validation/2026-10-31-installed-process-roles.md)
+completed six 128-cycle cases and 2,310 successful API requests. All cases
+retained nine checkpoints with stable observed app/renderer/helper roles.
+Scoped RSS comparisons are available; full lifetime coverage and the resource
+allowance remain unaccepted. Production telemetry stays off.
 
 **30 October 2026, browser telemetry admission:**
 The [implemented compatibility correction](implementation/telemetry-browser-admission-2026-10-30.md)
