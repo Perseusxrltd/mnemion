@@ -34,7 +34,7 @@ jobs:
         shell: python3 {0}
         env:
           REVIEWED_SOURCE: ${{ inputs.source }}
-          RUNNER_ARCH: ${{ matrix.arch }}
+          MNEMION_RESIDENCY_ARCH: ${{ matrix.arch }}
         run: |
           import os
           import sys

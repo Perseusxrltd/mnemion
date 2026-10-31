@@ -309,7 +309,7 @@ def run_probe(binary: Path, source: str):
 def main(argv=None):
     del argv
     source = os.environ.get("REVIEWED_SOURCE", "")
-    workflow_arch = os.environ.get("RUNNER_ARCH", "")
+    workflow_arch = os.environ.get("MNEMION_RESIDENCY_ARCH", "")
     head = None
     receipt_path = Path("output") / "darwin-residency" / "receipt.json"
     try:
