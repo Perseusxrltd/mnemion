@@ -57,23 +57,23 @@
   ],
   "runs": [
     {
-      "id": 41237203050,
+      "id": 41237650725,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "781bef2e83532342a3bbcad99810e12875b2e046",
+      "source_commit": "f4b5bf913368c7139d27d7b4545a54ac175bfc44",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-31T20:05:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41237203050",
+      "updated_at": "2026-10-31T20:11:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41237650725",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 2,
+        "completed": 3,
         "succeeded": 3,
         "active": [
           {
-            "id": 124643446466,
+            "id": 124644766551,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
@@ -82,41 +82,7 @@
             ]
           },
           {
-            "id": 124643446588,
-            "name": "Select checks",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 124643481250,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 124643481252,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 124643481264,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 124643481287,
+            "id": 124644804522,
             "name": "container (ubuntu-22.04-arm)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -125,16 +91,25 @@
             ]
           },
           {
-            "id": 124643481288,
-            "name": "container (ubuntu-22.04)",
+            "id": 124644804556,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the actual deployment image with its documentation"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
-            "id": 124643481302,
+            "id": 124644804571,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 124644804587,
             "name": "supervision (macos-26)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -143,8 +118,8 @@
             ]
           },
           {
-            "id": 124643481308,
-            "name": "service (3.14)",
+            "id": 124644804600,
+            "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -152,7 +127,25 @@
             ]
           },
           {
-            "id": 124643481312,
+            "id": 124644804615,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 124644804644,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 124644804684,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
@@ -220,5 +213,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T20:05:56+00:00"
+  "observed_at": "2026-10-31T20:11:23+00:00"
 }
