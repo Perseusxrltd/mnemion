@@ -12,6 +12,12 @@ start_owned_launch, and does not start a trace on import. Job CPU and the job
 census stay authoritative. PeakProcessMemoryUsed and pagefile figures stay
 commit charge. resource_acceptance and budget comparison stay false.
 
+The owned root binds only when one opcode-1 birth FILETIME equals the retained
+creation. A different FILETIME stays unproven. Unequal Start and End
+UniqueProcessKey values are not joined. A terminal counter counts only inside
+that paired lifetime. Callback storage stays alive until the consumer thread
+is confirmed finished. There is no separate cleanup process.
+
 Native ETW is not invoked by tests. WinEtwApi is constructed only by an
 explicit caller after review.
 """
@@ -69,6 +75,11 @@ MAXIMUM_BUFFERS = 16
 FLUSH_TIMER_SECONDS = 1
 MAX_RETAINED_EVENTS = 4096
 MAX_CALLBACKS = 16384
+_COUNT_SATURATION = 65535
+# winerror.h ERROR_CTX_CLOSE_PENDING. CloseTrace can return this while
+# ProcessTrace is still inside the callback.
+ERROR_CTX_CLOSE_PENDING = 7007
+BRIDGE_RECORD_CONVERSION = "record_conversion"
 _COUNTER_UINT32S = 4
 _COUNTER_SIZETS = 11
 _PEAK_WORKING_SET_INDEX = 1
@@ -76,6 +87,54 @@ _LIFE_UINT32S = 4
 
 _METHOD = "windows_etw_process_counter"
 _PRODUCTION_METHOD = "windows_job_before_resume"
+
+# Fixed diagnostic vocabulary. Unknown note_gap strings fold into external_gap.
+# The set is the memory bound; counts saturate instead of storing one string
+# per callback.
+_GAP_REASONS = frozenset(
+    {
+        "session_not_started",
+        "session_exists_not_stopped",
+        "access_denied",
+        "open_trace_failed",
+        "consumer_not_ready",
+        "launch_identity_missing",
+        "job_active_processes",
+        "retained_records_exceeded",
+        "callbacks_exceeded",
+        "callback_failed",
+        "parser_failed",
+        "deadline_exceeded",
+        "stop_failed",
+        "drain_failed",
+        "stop_or_drain_failed",
+        "equal_time",
+        "reused_pid",
+        "root_unobserved",
+        "root_ambiguous",
+        "ambiguous_parent",
+        "exit_missing",
+        "terminal_counter_missing",
+        "terminal_counter_unqualified",
+        "job_census_unavailable",
+        "census_births",
+        "census_exits",
+        "census_terminal_counters",
+        "events_lost",
+        "log_buffers_lost",
+        "real_time_buffers_lost",
+        "root_binding_unproven",
+        "exit_key_mismatch",
+        "terminal_counter_unproven",
+        "record_conversion_failed",
+        "close_failed",
+        "close_pending",
+        "consumer_still_live",
+        "session_still_owned",
+        "session_release_failed",
+        "external_gap",
+    }
+)
 
 native_session_starts = 0
 native_api_loaded = False
@@ -293,8 +352,10 @@ def _cross_cpu(left: int | None, right: int | None) -> bool | None:
 def resolve_owned(events: list[dict], root_pid: int | None, root_creation: int | None) -> dict:
     """Join lifecycle generations after the trace has drained.
 
-    Arrival order is not a key. Equal timestamps stay unresolved. A counter
-    PID binds only when one owned generation's open time window contains it.
+    Arrival order is not a key. Equal timestamps stay unresolved. The root
+    binds only to one birth whose FILETIME equals the retained creation.
+    An End joins a Start only when UniqueProcessKey matches. A terminal
+    counter counts only strictly inside that paired lifetime.
     """
     gaps: list[str] = []
     ambiguities: list[dict] = []
@@ -328,6 +389,12 @@ def resolve_owned(events: list[dict], root_pid: int | None, root_creation: int |
     }
 
 
+def _same_process_key(birth: dict, end: dict) -> bool:
+    # The key is a reusable kernel object address. It does not merge two
+    # generations. Unequal values do reject a Start/End join.
+    return birth.get("unique_process_key") == end.get("unique_process_key")
+
+
 def _pair_generations(births, ends, gaps, ambiguities) -> list[dict]:
     generations = []
     births_by_pid = _group(births, OPCODE_START)
@@ -355,11 +422,23 @@ def _pair_generations(births, ends, gaps, ambiguities) -> list[dict]:
             next_stamp = None if index + 1 == len(ordered) else ordered[index + 1]["timestamp"]
             window = []
             boundary = []
+            mismatched = []
             for end in pid_ends:
                 stamp = end["timestamp"]
-                if stamp == birth["timestamp"] or (next_stamp is not None and stamp == next_stamp):
+                on_boundary = stamp == birth["timestamp"] or (
+                    next_stamp is not None and stamp == next_stamp
+                )
+                in_window = stamp > birth["timestamp"] and (
+                    next_stamp is None or stamp < next_stamp
+                )
+                if not on_boundary and not in_window:
+                    continue
+                if not _same_process_key(birth, end):
+                    mismatched.append(end)
+                    continue
+                if on_boundary:
                     boundary.append(end)
-                elif stamp > birth["timestamp"] and (next_stamp is None or stamp < next_stamp):
+                else:
                     window.append(end)
             chosen = None
             exit_ambiguous = False
@@ -374,6 +453,16 @@ def _pair_generations(births, ends, gaps, ambiguities) -> list[dict]:
                         "pid": pid,
                         "timestamp": birth["timestamp"],
                         "candidates": len(window) + len(boundary),
+                    }
+                )
+            elif mismatched:
+                gaps.append("exit_key_mismatch")
+                ambiguities.append(
+                    {
+                        "kind": "exit_key_mismatch",
+                        "pid": pid,
+                        "timestamp": birth["timestamp"],
+                        "candidates": len(mismatched),
                     }
                 )
             generations.append(
@@ -411,11 +500,34 @@ def _select_root(generations, root_pid, root_creation, gaps, ambiguities):
         gaps.append("root_unobserved")
         return None, False
     clear = [item for item in candidates if item["birth_ambiguous"] is not True]
-    if len(clear) == 1 and len(candidates) == 1:
-        return clear[0], False
     exact = [item for item in clear if item["birth"]["timestamp"] == root_creation]
+    # Totals and time proximity are not a generation binding. One exact
+    # FILETIME match is the only retained-creation bind. Exact equality is
+    # still not proof that ETW's clock matches GetProcessTimes.
     if len(exact) == 1:
-        return exact[0], True
+        return exact[0], len(candidates) > 1
+    if len(exact) > 1:
+        gaps.append("root_ambiguous")
+        gaps.append("equal_time")
+        ambiguities.append(
+            {
+                "kind": "root_pid_reuse",
+                "pid": root_pid,
+                "candidates": len(candidates),
+                "exact_creation_matches": len(exact),
+            }
+        )
+        return None, False
+    if len(candidates) == 1:
+        gaps.append("root_binding_unproven")
+        ambiguities.append(
+            {
+                "kind": "root_binding_unproven",
+                "pid": root_pid,
+                "candidates": 1,
+            }
+        )
+        return None, False
     gaps.append("root_ambiguous")
     gaps.append("reused_pid")
     ambiguities.append(
@@ -510,6 +622,15 @@ def _assign_counters(owned, generations, counters, gaps, ambiguities) -> None:
     for generation in owned:
         pid = generation["birth"]["pid"]
         start = generation["birth"]["timestamp"]
+        end = generation["end"]
+        generation["counter"] = None
+        if end is None:
+            # A counter before the next observed Start is not a terminal join
+            # when this generation has no paired End.
+            generation["counter_state"] = "unproven"
+            gaps.append("terminal_counter_unproven")
+            continue
+        end_stamp = end["timestamp"]
         later = [
             item["birth"]["timestamp"]
             for item in generations
@@ -518,20 +639,31 @@ def _assign_counters(owned, generations, counters, gaps, ambiguities) -> None:
         next_stamp = min(later) if later else None
         window = []
         boundary = []
+        post_end = []
         for counter in counters:
             if counter["pid"] != pid:
                 continue
             stamp = counter["timestamp"]
-            if stamp == start or (next_stamp is not None and stamp == next_stamp):
+            if next_stamp is not None and stamp > next_stamp:
+                continue
+            at_boundary = stamp == start or stamp == end_stamp or (
+                next_stamp is not None and stamp == next_stamp
+            )
+            inside = stamp > start and stamp < end_stamp and (
+                next_stamp is None or stamp < next_stamp
+            )
+            if at_boundary:
                 boundary.append(counter)
-            elif stamp > start and (next_stamp is None or stamp < next_stamp):
+            elif inside:
                 window.append(counter)
+            elif stamp > end_stamp:
+                post_end.append(counter)
         if len(window) == 1 and not boundary:
             generation["counter"] = window[0]
             generation["counter_state"] = "opcode32"
             continue
-        generation["counter_state"] = "unqualified" if window or boundary else "missing"
         if window or boundary:
+            generation["counter_state"] = "unqualified"
             gaps.append("terminal_counter_unqualified")
             ambiguities.append(
                 {
@@ -542,15 +674,21 @@ def _assign_counters(owned, generations, counters, gaps, ambiguities) -> None:
                     "suppressed": True,
                 }
             )
-        else:
-            gaps.append("terminal_counter_missing")
+            continue
+        if post_end:
+            generation["counter_state"] = "unproven"
+            gaps.append("terminal_counter_unproven")
+            continue
+        generation["counter_state"] = "missing"
+        gaps.append("terminal_counter_missing")
 
 
 def _identity(generation: dict, root: dict | None, root_creation: int | None) -> str:
     pid = generation["birth"]["pid"]
-    if generation is root and type(root_creation) is int:
+    birth_stamp = generation["birth"]["timestamp"]
+    if generation is root and type(root_creation) is int and birth_stamp == root_creation:
         return f"{pid}:{root_creation}"
-    return f"{pid}:etw:{generation['birth']['timestamp']}"
+    return f"{pid}:etw:{birth_stamp}"
 
 
 def _public_row(generation: dict, root: dict | None, root_creation: int | None) -> dict:
@@ -696,23 +834,75 @@ def reconcile(resolved: dict, snapshot: dict | None, session: dict) -> dict:
             "etl_file": False,
             "stop_ok": session.get("stop_ok") is True,
             "drain_ok": session.get("drain_ok") is True,
+            "close_ok": session.get("close_ok") is True,
+            "consumer_finished": session.get("consumer_finished") is True,
+            "session_released": session.get("session_released") is True,
+            "callbacks_released": session.get("callbacks_released") is True,
             "stopped_existing_logger": False,
             "privilege_escalated": False,
+            # No helper process is started. This is an observation, not a boundary.
+            "isolated_cleanup_process": False,
         },
         "limits": {
-            "max_retained_events": MAX_RETAINED_EVENTS,
-            "max_callbacks": MAX_CALLBACKS,
+            "max_retained_events": session.get("retain_limit", MAX_RETAINED_EVENTS),
+            "max_callbacks": session.get("callback_limit", MAX_CALLBACKS),
             "max_owned": MAX_LEDGER,
             "retained_records": session.get("retained_records"),
             "callbacks": session.get("callbacks"),
+            "gap_counts": dict(session.get("gap_counts") or {}),
         },
     }
 
 
-class EtwLifetimeObserver:
-    """Collect numeric process events, then resolve them after a full drain."""
+def interpret_close_trace(code: int) -> dict:
+    """Map a CloseTrace ULONG to success, pending, or failure.
 
-    def __init__(self, api, *, ready_seconds: float = 2.0, drain_seconds: float = 5.0):
+    0 is success. ERROR_CTX_CLOSE_PENDING (7007) means the consumer can still
+    run the callback. Every other code is a failed close. The raw code is not
+    copied into the result.
+    """
+    if type(code) is not int:
+        return {"ok": False, "code": "close_failed", "pending": False}
+    if code == 0:
+        return {"ok": True, "code": "ok", "pending": False}
+    if code == ERROR_CTX_CLOSE_PENDING:
+        return {"ok": False, "code": "close_pending", "pending": True}
+    return {"ok": False, "code": "close_failed", "pending": False}
+
+
+def bridge_event(convert, deliver) -> None:
+    """Convert one record and hand it to the observer.
+
+    A conversion failure delivers only the fixed ``record_conversion``
+    diagnostic. The exception text and the payload are not copied. A failure
+    inside deliver is left for the caller so a ctypes callback can contain it.
+    """
+    try:
+        event = convert()
+    except Exception:
+        deliver({"bridge_diagnostic": BRIDGE_RECORD_CONVERSION})
+        return
+    deliver(event)
+
+
+class EtwLifetimeObserver:
+    """Collect numeric process events, then resolve them after cleanup.
+
+    Callback and logfile objects stay referenced until the consumer thread
+    is confirmed finished. Successful stop and close are not repeated.
+    A failed stop keeps the owned session. There is no helper process and
+    no name-based stop of an existing logger.
+    """
+
+    def __init__(
+        self,
+        api,
+        *,
+        ready_seconds: float = 2.0,
+        drain_seconds: float = 5.0,
+        callback_limit: int | None = None,
+        retain_limit: int | None = None,
+    ):
         if type(ready_seconds) not in (int, float) or type(drain_seconds) not in (int, float):
             raise OwnedLaunchError("invalid_bound")
         if ready_seconds <= 0 or drain_seconds <= 0:
@@ -720,11 +910,14 @@ class EtwLifetimeObserver:
         self._api = api
         self._ready_seconds = float(ready_seconds)
         self._drain_seconds = float(drain_seconds)
-        self._lock = threading.Lock()
+        self._callback_limit = self._bounded_cap(callback_limit, MAX_CALLBACKS)
+        self._retain_limit = self._bounded_cap(retain_limit, MAX_RETAINED_EVENTS)
+        self._lock = threading.RLock()
         self._events: list[dict] = []
-        self._gaps: list[str] = []
+        self._gap_counts: dict[str, int] = {}
         self._callbacks = 0
         self._callback_live = False
+        self._callbacks_released = False
         self._ready = threading.Event()
         self._thread: threading.Thread | None = None
         self._session = None
@@ -737,6 +930,17 @@ class EtwLifetimeObserver:
         self._closed = False
         self._report = None
         self._request = session_request()
+        self._stop_result = None
+        self._close_result = None
+        self._session_released = False
+
+    @staticmethod
+    def _bounded_cap(value: int | None, ceiling: int) -> int:
+        if value is None:
+            return ceiling
+        if type(value) is not int or not 1 <= value <= ceiling:
+            raise OwnedLaunchError("invalid_bound")
+        return value
 
     @property
     def callback_live(self) -> bool:
@@ -748,22 +952,22 @@ class EtwLifetimeObserver:
 
     def start_before_root(self) -> bool:
         if self._started or self._closed:
-            self._gaps.append("session_not_started")
+            self._note_gap("session_not_started")
             return False
         started = self._api.start_session(self._request)
         if type(started) is not dict or started.get("ok") is not True:
             code = None if type(started) is not dict else started.get("code")
             if code == "already_exists":
-                self._gaps.append("session_exists_not_stopped")
+                self._note_gap("session_exists_not_stopped")
             elif code == "access_denied":
-                self._gaps.append("access_denied")
+                self._note_gap("access_denied")
             else:
-                self._gaps.append("session_not_started")
+                self._note_gap("session_not_started")
             return False
         self._session = started.get("handle")
         opened = self._api.open_trace(self._request["session_name"], self._on_event)
         if type(opened) is not dict or opened.get("ok") is not True:
-            self._gaps.append("open_trace_failed")
+            self._note_gap("open_trace_failed")
             self._stop_owned_session()
             return False
         self._trace = opened.get("handle")
@@ -771,7 +975,7 @@ class EtwLifetimeObserver:
         self._thread = threading.Thread(target=self._consume, name="mnemion-etw-consume")
         self._thread.start()
         if not self._ready.wait(self._ready_seconds):
-            self._gaps.append("consumer_not_ready")
+            self._note_gap("consumer_not_ready")
             self._stop_owned_session()
             self._join_consumer(self._drain_seconds)
             return False
@@ -780,133 +984,207 @@ class EtwLifetimeObserver:
 
     def bind_root(self, pid: int, creation: int) -> None:
         if type(pid) is not int or type(creation) is not int or not 0 < pid < 2**32 or creation < 0:
-            self._gaps.append("launch_identity_missing")
+            self._note_gap("launch_identity_missing")
             return
         self._root_pid = pid
         self._root_creation = creation
 
     def note_gap(self, code: str) -> None:
-        self._gaps.append(code)
+        self._note_gap(code)
+
+    def _note_gap(self, code: str) -> None:
+        if type(code) is not str or code not in _GAP_REASONS:
+            code = "external_gap"
+        with self._lock:
+            count = self._gap_counts.get(code, 0)
+            if count < _COUNT_SATURATION:
+                self._gap_counts[code] = count + 1
+
+    def _gap_snapshot(self) -> tuple[list[str], dict[str, int]]:
+        with self._lock:
+            return sorted(self._gap_counts), dict(self._gap_counts)
 
     def finish(self, snapshot: dict | None) -> dict:
         if self._report is not None:
             return self._report
         self._finished = True
-        stop_ok, drain_ok, loss = self._drain()
-        retained = list(self._events)
+        cleanup = self._cleanup()
+        with self._lock:
+            retained = list(self._events)
+            callbacks = self._callbacks
         resolved = resolve_owned(retained, self._root_pid, self._root_creation)
+        for code in resolved["gaps"]:
+            self._note_gap(code)
         if len(resolved["rows"]) > MAX_LEDGER:
-            self._gaps.append("retained_records_exceeded")
+            self._note_gap("retained_records_exceeded")
             resolved = dict(resolved)
             resolved["rows"] = []
             resolved["births"] = 0
             resolved["exits"] = 0
             resolved["terminal_counters"] = 0
             resolved["gaps"] = list(resolved["gaps"]) + ["retained_records_exceeded"]
+        reasons, gap_counts = self._gap_snapshot()
         session = {
-            "gaps": list(self._gaps),
-            "loss": loss,
+            "gaps": reasons,
+            "gap_counts": gap_counts,
+            "loss": cleanup["loss"],
             "started": self._started,
-            "stop_ok": stop_ok,
-            "drain_ok": drain_ok,
+            "stop_ok": cleanup["stop_ok"],
+            "drain_ok": cleanup["drain_ok"],
+            "close_ok": cleanup["close_ok"],
+            "consumer_finished": cleanup["consumer_finished"],
+            "session_released": cleanup["session_released"],
+            "callbacks_released": cleanup["callbacks_released"],
             "retained_records": len(retained),
-            "callbacks": self._callbacks,
+            "callbacks": callbacks,
+            "callback_limit": self._callback_limit,
+            "retain_limit": self._retain_limit,
         }
         self._report = reconcile(resolved, snapshot, session)
-        self._release()
         self._closed = True
         return self._report
 
     def close(self) -> None:
-        if self._closed:
-            return
+        # A cached report is not rebuilt and a successful stop is not repeated.
+        # Callbacks drop only when the consumer thread is already finished.
         if self._report is None:
             self.finish(None)
-        self._release()
+            return
+        self._drop_callbacks_if_consumer_dead()
         self._closed = True
+
+    def release_finished_consumer(self) -> bool:
+        """Join the consumer, then drop callbacks only if it has stopped.
+
+        This does not start a helper process, does not stop a logger by name,
+        and does not rewrite a report that was already finalized.
+        """
+        self._join_consumer(self._drain_seconds)
+        if self._consumer_alive():
+            return False
+        return self._drop_callbacks_if_consumer_dead()
 
     def _consume(self) -> None:
         try:
             self._process_result = self._api.process_trace(self._trace, self._ready.set)
         except Exception:
-            with self._lock:
-                self._gaps.append("callback_failed")
+            self._note_gap("callback_failed")
             self._ready.set()
         finally:
             self._ready.set()
 
     def _on_event(self, record: dict) -> None:
+        if type(record) is dict and record.get("bridge_diagnostic") == BRIDGE_RECORD_CONVERSION:
+            with self._lock:
+                if self._callbacks < _COUNT_SATURATION:
+                    self._callbacks += 1
+            self._note_gap("record_conversion_failed")
+            return
         try:
             self._accept(record)
         except Exception:
-            with self._lock:
-                self._gaps.append("callback_failed")
+            self._note_gap("callback_failed")
 
     def _accept(self, record: dict) -> None:
         with self._lock:
-            self._callbacks += 1
-            if self._callbacks > MAX_CALLBACKS:
-                self._gaps.append("callbacks_exceeded")
+            if self._callbacks < _COUNT_SATURATION:
+                self._callbacks += 1
+            if self._callbacks > self._callback_limit:
+                self._note_gap("callbacks_exceeded")
                 return
-            if len(self._events) >= MAX_RETAINED_EVENTS:
-                self._gaps.append("retained_records_exceeded")
+            if len(self._events) >= self._retain_limit:
+                self._note_gap("retained_records_exceeded")
                 return
         decoded = decode_record(record)
         if decoded.get("disposition") == "ignore":
             return
         if decoded.get("disposition") != "event":
-            with self._lock:
-                self._gaps.append("parser_failed")
+            self._note_gap("parser_failed")
             return
         kept = dict(decoded)
         kept.pop("disposition", None)
         with self._lock:
-            if len(self._events) >= MAX_RETAINED_EVENTS:
-                self._gaps.append("retained_records_exceeded")
+            if len(self._events) >= self._retain_limit:
+                self._note_gap("retained_records_exceeded")
                 return
             self._events.append(kept)
 
-    def _drain(self) -> tuple[bool, bool, dict]:
-        if self._session is None and not self._started:
-            return False, False, {
-                "events_lost": None,
-                "log_buffers_lost": None,
-                "real_time_buffers_lost": None,
+    def _cleanup(self) -> dict:
+        empty_loss = {
+            "events_lost": None,
+            "log_buffers_lost": None,
+            "real_time_buffers_lost": None,
+        }
+        if self._session is None and not self._started and self._thread is None:
+            return {
+                "stop_ok": False,
+                "drain_ok": False,
+                "loss": empty_loss,
+                "close_ok": True,
+                "consumer_finished": True,
+                "session_released": False,
+                "callbacks_released": not self._callback_live,
             }
         stopped = self._stop_owned_session()
-        joined = self._join_consumer(self._drain_seconds)
-        if not joined:
-            self._gaps.append("deadline_exceeded")
-            self._close_trace()
-            joined = self._join_consumer(self._drain_seconds)
+        stop_ok = type(stopped) is dict and stopped.get("ok") is True
         loss = stopped.get("loss") if type(stopped) is dict else None
         if type(loss) is not dict:
-            loss = {
-                "events_lost": None,
-                "log_buffers_lost": None,
-                "real_time_buffers_lost": None,
-            }
-        stop_ok = type(stopped) is dict and stopped.get("ok") is True
-        process_ok = type(self._process_result) is dict and self._process_result.get("ok") is True
-        drain_ok = joined and process_ok and stop_ok
-        if not stop_ok:
-            self._gaps.append("stop_failed")
-        if not process_ok or not joined:
-            self._gaps.append("drain_failed")
-        return stop_ok, drain_ok, loss
+            loss = dict(empty_loss)
+        joined = self._join_consumer(self._drain_seconds)
+        if not joined:
+            self._note_gap("deadline_exceeded")
+        close_result = self._close_trace_once()
+        if not joined:
+            joined = self._join_consumer(self._drain_seconds)
+        close_ok = close_result.get("ok") is True
+        if close_result.get("pending") is True:
+            self._note_gap("close_pending")
+        elif not close_ok:
+            self._note_gap("close_failed")
+        consumer_finished = not self._consumer_alive()
+        if consumer_finished:
+            self._drop_callbacks_if_consumer_dead()
+        else:
+            self._note_gap("consumer_still_live")
+        if stop_ok:
+            session_released = self._release_session()
+        else:
+            self._note_gap("stop_failed")
+            self._note_gap("session_still_owned")
+            session_released = False
+        if self._thread is None:
+            process_ok = True
+        else:
+            process_ok = (
+                type(self._process_result) is dict and self._process_result.get("ok") is True
+            )
+        drain_ok = bool(joined and process_ok and stop_ok and close_ok and consumer_finished)
+        if not drain_ok and (self._started or self._thread is not None):
+            self._note_gap("drain_failed")
+        return {
+            "stop_ok": stop_ok,
+            "drain_ok": drain_ok,
+            "loss": loss,
+            "close_ok": close_ok,
+            "consumer_finished": consumer_finished,
+            "session_released": session_released,
+            "callbacks_released": self._callbacks_released,
+        }
 
     def _stop_owned_session(self) -> dict:
+        if self._stop_result is not None and self._stop_result.get("ok") is True:
+            return self._stop_result
         handle = self._session
-        if handle is None:
-            return {"ok": False, "loss": {}}
-        if self._api is None:
-            return {"ok": False, "loss": {}}
+        if handle is None or self._api is None:
+            return {"ok": False, "code": "stop_failed", "loss": {}}
         try:
             result = self._api.stop_session(handle)
         except Exception:
-            result = {"ok": False, "loss": {}}
+            result = {"ok": False, "code": "stop_failed", "loss": {}}
         if type(result) is not dict:
-            result = {"ok": False, "loss": {}}
+            result = {"ok": False, "code": "stop_failed", "loss": {}}
+        if result.get("ok") is True:
+            self._stop_result = result
         return result
 
     def _join_consumer(self, seconds: float) -> bool:
@@ -918,27 +1196,79 @@ class EtwLifetimeObserver:
         thread.join(seconds)
         return not thread.is_alive()
 
-    def _close_trace(self) -> None:
-        handle = self._trace
-        self._trace = None
-        if handle is None or self._api is None:
-            return
-        try:
-            self._api.close_trace(handle)
-        except Exception:
-            self._gaps.append("callback_failed")
+    def _consumer_alive(self) -> bool:
+        thread = self._thread
+        return thread is not None and thread.is_alive()
 
-    def _release(self) -> None:
-        self._close_trace()
+    def _close_trace_once(self) -> dict:
+        if self._close_result is not None:
+            return self._close_result
+        handle = self._trace
+        if handle is None or self._api is None:
+            result = {"ok": True, "code": "no_trace", "pending": False}
+            self._close_result = result
+            return result
+        try:
+            result = self._api.close_trace(handle)
+        except Exception:
+            result = {"ok": False, "code": "close_failed", "pending": False}
+        if type(result) is not dict:
+            result = {"ok": False, "code": "close_failed", "pending": False}
+        pending = result.get("pending") is True or result.get("code") == "close_pending"
+        ok = result.get("ok") is True and not pending
+        normalized = {
+            "ok": ok,
+            "code": "close_pending" if pending else ("ok" if ok else "close_failed"),
+            "pending": pending,
+        }
+        self._close_result = normalized
+        if ok:
+            self._trace = None
+        return normalized
+
+    def _release_session(self) -> bool:
+        if self._session_released:
+            return True
+        if self._stop_result is None or self._stop_result.get("ok") is not True:
+            self._note_gap("session_still_owned")
+            return False
         handle = self._session
+        if handle is None:
+            self._session_released = True
+            return True
+        if self._api is None:
+            self._note_gap("session_release_failed")
+            return False
+        try:
+            result = self._api.close_session(handle)
+        except Exception:
+            self._note_gap("session_release_failed")
+            return False
+        if type(result) is dict and result.get("ok") is not True:
+            if result.get("code") == "session_still_owned":
+                self._note_gap("session_still_owned")
+            else:
+                self._note_gap("session_release_failed")
+            return False
         self._session = None
-        if handle is not None and self._api is not None:
-            try:
-                self._api.close_session(handle)
-            except Exception:
-                self._gaps.append("stop_failed")
+        self._session_released = True
+        return True
+
+    def _drop_callbacks_if_consumer_dead(self) -> bool:
+        if self._consumer_alive():
+            return False
+        if self._callbacks_released:
+            return True
         self._callback_live = False
-        self._join_consumer(0.1)
+        release = getattr(self._api, "release_callbacks", None)
+        if release is not None:
+            try:
+                release()
+            except Exception:
+                self._note_gap("callback_failed")
+                return False
+        self._callbacks_released = True
+        return True
 
 
 def observe_owned_launch(job, api, *, ready_seconds: float = 2.0, drain_seconds: float = 5.0) -> dict:
@@ -1335,6 +1665,8 @@ class WinEtwApi:
         self._logger_name = None
         self._properties_buffer = None
         self._session_name = None
+        self._stop_result = None
+        self._close_result = None
 
     def start_session(self, request: dict) -> dict:
         global native_session_starts
@@ -1420,7 +1752,18 @@ class WinEtwApi:
         return {"ok": True, "code": "ok"}
 
     def stop_session(self, session_handle) -> dict:
-        """Stop the handle this object started. The session name is not used."""
+        """Stop the handle this object started. The session name is not used.
+
+        A successful stop is remembered. A later call does not call StopTraceW
+        again and does not stop some other logger by name. A failed stop keeps
+        the property buffer so the owned session is not abandoned.
+        """
+        if self._stop_result is not None and self._stop_result.get("ok") is True:
+            return {
+                "ok": True,
+                "code": "already_stopped",
+                "loss": dict(self._stop_result["loss"]),
+            }
         if self._library is None or self._properties_buffer is None or session_handle is None:
             return {"ok": False, "code": "stop_failed", "loss": {}}
         props = ctypes.cast(self._properties_buffer, ctypes.POINTER(_EVENT_TRACE_PROPERTIES)).contents
@@ -1438,23 +1781,52 @@ class WinEtwApi:
         }
         if code != 0:
             return {"ok": False, "code": f"stop_{code:x}", "loss": loss}
-        return {"ok": True, "code": "ok", "loss": loss}
+        self._stop_result = {"ok": True, "code": "ok", "loss": loss}
+        return {"ok": True, "code": "ok", "loss": dict(loss)}
 
-    def close_trace(self, trace_handle) -> None:
-        if self._library is None or trace_handle is None:
-            self._drop_callbacks()
-            return
+    def close_trace(self, trace_handle) -> dict:
+        """Close the consumer handle and return the CloseTrace result.
+
+        Callbacks are not dropped here. ERROR_CTX_CLOSE_PENDING means
+        ProcessTrace may still invoke them. release_callbacks is separate
+        and only safe after the consumer thread is confirmed finished.
+        Success and pending are not submitted again.
+        """
+        if self._close_result is not None and (
+            self._close_result.get("ok") is True or self._close_result.get("pending") is True
+        ):
+            return dict(self._close_result)
+        if trace_handle is None:
+            result = {"ok": True, "code": "no_trace", "pending": False}
+            self._close_result = result
+            return dict(result)
+        if self._library is None:
+            result = {"ok": False, "code": "close_failed", "pending": False}
+            self._close_result = result
+            return dict(result)
         self._library.CloseTrace.argtypes = [ctypes.c_ulonglong]
         self._library.CloseTrace.restype = wintypes.ULONG
-        self._library.CloseTrace(ctypes.c_ulonglong(int(trace_handle)))
+        code = int(self._library.CloseTrace(ctypes.c_ulonglong(int(trace_handle))))
+        result = interpret_close_trace(code)
+        self._close_result = dict(result)
+        return dict(result)
+
+    def release_callbacks(self) -> None:
+        """Drop FFI callbacks. The caller must know the consumer has finished."""
         self._drop_callbacks()
 
-    def close_session(self, session_handle) -> None:
-        # StopTraceW releases the logging session. CloseTrace is only for the
-        # consumer handle from OpenTrace. Drop the property buffer either way.
+    def close_session(self, session_handle) -> dict:
+        """Drop the owned property buffer only after this object's stop succeeded.
+
+        A failed stop keeps the buffer. This does not call StopTraceW and does
+        not address a logger by name.
+        """
+        if self._stop_result is None or self._stop_result.get("ok") is not True:
+            return {"ok": False, "code": "session_still_owned"}
         self._properties_buffer = None
         self._session_name = None
         del session_handle
+        return {"ok": True, "code": "ok"}
 
     def _new_logfile(self, on_event):
         # The consumer structure is built only after start_session. A failure
@@ -1463,8 +1835,14 @@ class WinEtwApi:
         buffer_callback = ctypes.WINFUNCTYPE(wintypes.ULONG, ctypes.c_void_p)
 
         def _record(pointer):
+            def convert():
+                return _record_to_dict(pointer.contents)
+
+            def deliver(event):
+                on_event(event)
+
             try:
-                on_event(_record_to_dict(pointer.contents))
+                bridge_event(convert, deliver)
             except Exception:
                 return
 

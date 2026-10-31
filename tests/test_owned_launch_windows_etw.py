@@ -30,11 +30,14 @@ from deploy.owned_launch_windows_etw import (
     _EVENT_HEADER_EXTENDED_DATA_ITEM,
     _EVENT_RECORD,
     _record_to_dict,
+    _COUNT_SATURATION,
     abi_field_offsets,
+    bridge_event,
     consumer_layout_sizes,
     counter_payload_size,
     decode_record,
     host_offset,
+    interpret_close_trace,
     native_api_loaded,
     native_session_starts,
     observe_owned_launch,
@@ -61,6 +64,12 @@ class FakeEtwApi:
         raise_in_process=False,
         delay_ready=False,
         loss=None,
+        stop_ok=True,
+        close_pending=False,
+        close_error=False,
+        finish_without_blocking=False,
+        bridge_failure=False,
+        bridge_secret=r"C:\Secret\should-not-leak",
     ):
         self.records = list(records or [])
         self.start_code = start_code
@@ -68,6 +77,13 @@ class FakeEtwApi:
         self.stop_unblocks = stop_unblocks
         self.raise_in_process = raise_in_process
         self.delay_ready = delay_ready
+        self.stop_ok = stop_ok
+        self.close_pending = close_pending
+        self.close_error = close_error
+        self.finish_without_blocking = finish_without_blocking
+        self.bridge_failure = bridge_failure
+        self.bridge_secret = bridge_secret
+        self.callbacks_released = False
         self.loss = loss or {
             "events_lost": 0,
             "log_buffers_lost": 0,
@@ -110,26 +126,50 @@ class FakeEtwApi:
             raise RuntimeError("consumer failed")
         for record in self.records:
             self.on_event(record)
-        if self.stop_unblocks:
-            self._stop.wait(5)
-        else:
+        if self.bridge_failure:
+            secret = self.bridge_secret
+
+            def convert():
+                raise RuntimeError(secret)
+
+            bridge_event(convert, self.on_event)
+        if self.finish_without_blocking:
+            return {"ok": True, "code": "ok"}
+        if self.close_pending or self.close_error or not self.stop_unblocks:
             self._closed.wait(5)
+        else:
+            self._stop.wait(5)
         return {"ok": True, "code": "ok"}
 
     def stop_session(self, session_handle):
         self.stops.append(session_handle)
+        if not self.stop_ok:
+            return {"ok": False, "code": "stop_failed", "loss": {}}
         if self.stop_unblocks:
             self._stop.set()
         return {"ok": True, "code": "ok", "loss": dict(self.loss)}
 
     def close_trace(self, trace_handle):
         self.closes_trace.append(trace_handle)
+        if self.close_pending:
+            return {"ok": False, "code": "close_pending", "pending": True}
+        if self.close_error:
+            return {"ok": False, "code": "close_failed", "pending": False}
         self._closed.set()
         self._stop.set()
+        return {"ok": True, "code": "ok", "pending": False}
 
     def close_session(self, session_handle):
         self.closes_session.append(session_handle)
         self.session = None
+        return {"ok": True, "code": "ok"}
+
+    def release_callbacks(self):
+        self.callbacks_released = True
+
+    def unblock(self):
+        self._closed.set()
+        self._stop.set()
 
 
 class FakeJob:
@@ -355,15 +395,16 @@ def test_child_born_after_the_parent_exit_is_not_owned():
     assert report["coverage"]["status"] == "missing"
 
 
-def test_single_root_binds_when_the_filetime_differs_from_job_creation():
+def test_single_root_with_a_different_filetime_stays_unproven():
     records = generation(ROOT_PID, 1, 0xC, 1_111, 3_000, 80, header_pid=0xFFFFFFFF)
     report, _api, _job = run(records, total=1, creation=2_222)
-    row = report["owned"][0]
-    assert row["identity"] == "10:2222"
-    assert row["etw_start_filetime"] == 1_111
-    assert row["job_creation"] == 2_222
+    assert report["owned"] == []
+    assert "root_binding_unproven" in report["coverage"]["gaps"]
+    assert "root_unobserved" not in report["coverage"]["gaps"]
     assert report["coverage"]["pid_reuse_resolved_by_exact_creation"] is False
-    assert report["coverage"]["status"] == "reconciled"
+    assert report["coverage"]["status"] == "missing"
+    assert "10:2222" not in json.dumps(report)
+    _assert_unaccepted(report)
 
 
 def test_reused_root_pid_binds_only_the_exact_creation():
@@ -602,7 +643,7 @@ def test_failure_paths_release_handles_and_do_not_stop_someone_else():
     assert observer.start_before_root() is False
     opened_report = observer.finish(None)
     assert observer.callback_live is False
-    assert opened.stops == [101, 101]
+    assert opened.stops == [101]
     assert opened.closes_session == [101]
     assert "open_trace_failed" in opened_report["coverage"]["gaps"]
     late_report, late_api, late_job = run([], total=0, api_kwargs={"delay_ready": True}, ready_seconds=0.2, drain_seconds=0.3)
@@ -730,3 +771,209 @@ def test_import_does_not_load_a_native_tracer(tmp_path):
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_old_ended_singleton_is_not_the_retained_root():
+    records = generation(ROOT_PID, 1, 0xC, 1_000, 1_200, 80)
+    report, _api, _job = run(records, total=1, active=0, creation=9_000_000_000)
+    assert report["owned"] == []
+    assert "root_binding_unproven" in report["coverage"]["gaps"]
+    assert "root_unobserved" not in report["coverage"]["gaps"]
+    assert report["coverage"]["status"] == "missing"
+    assert report["loss"] == {
+        "events_lost": 0,
+        "log_buffers_lost": 0,
+        "real_time_buffers_lost": 0,
+    }
+    assert "80" not in json.dumps(report["owned"])
+    _assert_unaccepted(report)
+
+
+def test_end_key_mismatch_is_not_joined():
+    records = [
+        life(OPCODE_START, ROOT_PID, 1, 0x111, ROOT_CREATION),
+        life(OPCODE_END, ROOT_PID, 1, 0x222, ROOT_CREATION + 50),
+        counter(ROOT_PID, 80, ROOT_CREATION + 1),
+    ]
+    report, _api, _job = run(records, total=1)
+    assert report["owned"][0]["exit_observed"] is False
+    assert report["owned"][0]["peak_working_set_bytes"] is None
+    assert "exit_key_mismatch" in report["coverage"]["gaps"]
+    assert "terminal_counter_unproven" in report["coverage"]["gaps"]
+    assert report["coverage"]["status"] == "missing"
+
+
+def test_counter_after_known_end_is_not_terminal():
+    records = [
+        life(OPCODE_START, ROOT_PID, 1, 0xC, ROOT_CREATION),
+        life(OPCODE_END, ROOT_PID, 1, 0xC, ROOT_CREATION + 20),
+        counter(ROOT_PID, 80, ROOT_CREATION + 1_000_000),
+    ]
+    report, _api, _job = run(records, total=1)
+    assert report["owned"][0]["exit_observed"] is True
+    assert report["owned"][0]["peak_working_set_bytes"] is None
+    assert "terminal_counter_unproven" in report["coverage"]["gaps"]
+    assert report["coverage"]["status"] == "missing"
+
+
+def test_in_window_counter_survives_a_later_counter():
+    records = [
+        life(OPCODE_START, ROOT_PID, 1, 0xC, ROOT_CREATION),
+        counter(ROOT_PID, 41, ROOT_CREATION + 1),
+        life(OPCODE_END, ROOT_PID, 1, 0xC, ROOT_CREATION + 30),
+        counter(ROOT_PID, 99, ROOT_CREATION + 10_000),
+    ]
+    report, _api, _job = run(records, total=1)
+    assert report["owned"][0]["peak_working_set_bytes"] == 41
+    assert report["coverage"]["status"] == "reconciled"
+    assert report["coverage"]["gaps"] == []
+
+
+def test_bridge_conversion_blocks_reconciliation():
+    secret = r"C:\Secret\should-not-leak"
+    seen = []
+
+    def convert():
+        raise RuntimeError(secret)
+
+    bridge_event(convert, seen.append)
+    assert seen == [{"bridge_diagnostic": "record_conversion"}]
+    assert secret not in json.dumps(seen)
+    records = generation(ROOT_PID, 1, 0xC, ROOT_CREATION, 5_600, 100)
+    report, _api, _job = run(
+        records,
+        total=1,
+        api_kwargs={"bridge_failure": True, "bridge_secret": secret},
+    )
+    assert "record_conversion_failed" in report["coverage"]["gaps"]
+    assert report["coverage"]["status"] == "missing"
+    text = json.dumps(report)
+    assert secret not in text
+    assert "should-not-leak" not in text
+    _assert_unaccepted(report)
+
+
+def test_post_cap_diagnostics_stay_bounded():
+    api = FakeEtwApi([])
+    observer = EtwLifetimeObserver(
+        api,
+        ready_seconds=0.2,
+        drain_seconds=0.2,
+        callback_limit=5,
+        retain_limit=2,
+    )
+    for index in range(10):
+        observer._on_event(life(OPCODE_START, index + 1, 0, index + 1, 1_000 + index))
+    for index in range(_COUNT_SATURATION + 20):
+        observer._on_event(record(99, b"", index))
+        observer.note_gap(f"external-category-{index}-{'x' * 32}")
+    report = observer.finish(None)
+    assert "callbacks_exceeded" in report["coverage"]["gaps"]
+    assert "retained_records_exceeded" in report["coverage"]["gaps"]
+    assert report["limits"]["retained_records"] <= 2
+    assert report["limits"]["callbacks"] == _COUNT_SATURATION
+    assert report["limits"]["gap_counts"]["callbacks_exceeded"] == _COUNT_SATURATION
+    assert report["limits"]["gap_counts"]["external_gap"] == _COUNT_SATURATION
+    assert "external-category" not in json.dumps(report)
+    assert len(report["limits"]["gap_counts"]) < 40
+    assert len(report["coverage"]["gaps"]) < 40
+    assert report["coverage"]["status"] == "missing"
+
+
+def test_pending_close_keeps_callbacks_until_the_consumer_finishes():
+    records = generation(ROOT_PID, 1, 0xC, ROOT_CREATION, ROOT_CREATION + 100, 80)
+    api = FakeEtwApi(records, close_pending=True)
+    observer = EtwLifetimeObserver(api, ready_seconds=1, drain_seconds=0.2)
+    try:
+        assert observer.start_before_root() is True
+        observer.bind_root(ROOT_PID, ROOT_CREATION)
+        report = observer.finish(snapshot(1))
+        assert observer.callback_live is True
+        assert api.callbacks_released is False
+        assert "close_pending" in report["coverage"]["gaps"]
+        assert "consumer_still_live" in report["coverage"]["gaps"]
+        assert report["coverage"]["status"] == "missing"
+        assert report["session"]["isolated_cleanup_process"] is False
+        before = observer._callbacks
+        api.on_event(counter(ROOT_PID, 5, ROOT_CREATION + 2))
+        assert observer.callback_live is True
+        assert api.callbacks_released is False
+        assert observer._callbacks == before + 1
+        api.unblock()
+        assert observer.release_finished_consumer() is True
+        assert observer.callback_live is False
+        assert api.callbacks_released is True
+        assert observer.finish(snapshot(1)) is report
+        assert report["coverage"]["status"] == "missing"
+        stops = list(api.stops)
+        observer.close()
+        assert api.stops == stops
+    finally:
+        api.unblock()
+        observer.release_finished_consumer()
+
+
+def test_failed_close_keeps_callbacks_while_the_consumer_is_live():
+    records = generation(ROOT_PID, 1, 0xC, ROOT_CREATION, ROOT_CREATION + 100, 80)
+    api = FakeEtwApi(records, close_error=True)
+    observer = EtwLifetimeObserver(api, ready_seconds=1, drain_seconds=0.2)
+    try:
+        assert observer.start_before_root() is True
+        observer.bind_root(ROOT_PID, ROOT_CREATION)
+        report = observer.finish(snapshot(1))
+        assert "close_failed" in report["coverage"]["gaps"]
+        assert "consumer_still_live" in report["coverage"]["gaps"]
+        assert "close_pending" not in report["coverage"]["gaps"]
+        assert observer.callback_live is True
+        assert api.callbacks_released is False
+        assert report["coverage"]["status"] == "missing"
+        api.on_event(counter(ROOT_PID, 5, ROOT_CREATION + 2))
+        assert api.callbacks_released is False
+    finally:
+        api.unblock()
+        observer.release_finished_consumer()
+
+
+def test_failed_stop_retains_session_ownership():
+    records = generation(ROOT_PID, 1, 0xC, ROOT_CREATION, 5_600, 100)
+    report, api, _job = run(
+        records,
+        total=1,
+        api_kwargs={"stop_ok": False, "finish_without_blocking": True},
+    )
+    assert api.stops == [101]
+    assert api.closes_session == []
+    assert api.session == 101
+    assert "stop_failed" in report["coverage"]["gaps"]
+    assert "session_still_owned" in report["coverage"]["gaps"]
+    assert report["session"]["session_released"] is False
+    assert report["session"]["stopped_existing_logger"] is False
+    assert report["coverage"]["status"] == "missing"
+
+
+def test_successful_stop_is_not_repeated():
+    records = generation(ROOT_PID, 1, 0xC, ROOT_CREATION, 5_600, 100)
+    api = FakeEtwApi(records)
+    observer = EtwLifetimeObserver(api, ready_seconds=1, drain_seconds=1)
+    assert observer.start_before_root() is True
+    observer.bind_root(ROOT_PID, ROOT_CREATION)
+    report = observer.finish(snapshot(1))
+    observer.close()
+    observer.close()
+    assert report["coverage"]["status"] == "reconciled"
+    assert report["coverage"]["gaps"] == []
+    assert api.stops == [101]
+    assert api.closes_trace == [202]
+    assert api.closes_session == [101]
+    assert observer.finish(snapshot(1)) is report
+    source = inspect.getsource(EtwLifetimeObserver)
+    assert "daemon" not in source
+
+
+def test_close_trace_results_stay_explicit():
+    assert interpret_close_trace(0) == {"ok": True, "code": "ok", "pending": False}
+    pending = interpret_close_trace(7007)
+    assert pending == {"ok": False, "code": "close_pending", "pending": True}
+    assert interpret_close_trace(6) == {"ok": False, "code": "close_failed", "pending": False}
+    assert "WinEtwApi(" not in inspect.getsource(interpret_close_trace)
+    assert "WinEtwApi(" not in inspect.getsource(bridge_event)
