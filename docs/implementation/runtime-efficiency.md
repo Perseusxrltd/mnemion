@@ -113,6 +113,12 @@ fixtures passed, with the original failures preserved. Neither change adds
 production polling or qualifies measured CPU/RAM savings. Low idle resource
 use across the whole product remains required and unaccepted.
 
+The [standalone Windows SDK layout measurement](../validation/2026-10-31-windows-sdk-abi.md)
+passed on native x64 and ARM64 with SDK 10.0.26100.0. Its retained numeric
+layouts match apart from the architecture identifier. This supplies reference
+structure sizes and offsets; ctypes/FFI comparison, ETW qualification and
+application CPU/RAM budget acceptance remain open. Production telemetry stays off.
+
 ## Acceptance work
 
 Measure the complete owned process set, including the app, local engine,

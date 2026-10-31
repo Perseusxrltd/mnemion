@@ -9,3 +9,5 @@ Supported targets are x64 (`arch` 1) and ARM64 (`arch` 2). x86, 32-bit ARM, ARM6
 The manual workflow `.github/workflows/windows-sdk-abi.yml` uses the free `windows-2022` runner as host x64 / target x64 and the free `windows-11-arm` runner as host ARM64 / target ARM64. It compiles with the MSVC and Windows SDK already on the runner, runs only this program, and uploads `abi.json` plus a separate short `metadata.json` (OS, host, target, PE machine, SDK version, compiler banner). It does not download a compiler.
 
 Dispatch that workflow by hand after review. Do not treat the artifact as proof that tracing or telemetry is accepted.
+
+The [31 October native SDK measurements](../../docs/validation/2026-10-31-windows-sdk-abi.md) passed on x64 and ARM64 with SDK 10.0.26100.0. The record retains all four original JSON artifacts and the earlier failed runs. FFI comparison, tracing and resource acceptance remain separate qualifications.
