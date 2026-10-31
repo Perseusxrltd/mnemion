@@ -33,8 +33,8 @@ from pathlib import Path
 
 
 CHECK = "windows_etw_declaration_comparison"
-ORACLE_SOURCE = "781bef2e83532342a3bbcad99810e12875b2e046"
-ORACLE_RUN = 41237380248
+ORACLE_SOURCE = "f49ab34923d018efb3d2d30beb3a954aa6b73a48"
+ORACLE_RUN = 41244785682
 SDK_VERSION = "10.0.26100.0"
 ARCHES = ("x64", "arm64")
 PE_MACHINE = {"x64": 0x8664, "arm64": 0xAA64}
@@ -415,9 +415,11 @@ EXTENDED_FIELDS = (
     ("DataSize", None, ("primitive", "USHORT"), "scalar", None),
     ("DataPtr", None, ("primitive", "ULONGLONG"), "scalar", None),
 )
-# SDK names for records the retained oracle does not measure yet.
 # Nested walks keep provider names unbound so they are not looked up on the parent.
 # Linkage and Reserved2 have no offsetof key. The four experiment keys are not offsets.
+# Linkage_Reserved2_storage/bytes is the measured container span. It is compared
+# with the provider's one opaque Linkage USHORT. The masks stay SDK-only.
+# The provider does not declare or read those two bit-fields.
 EXPANDED_RECORDS = (
     (
         "GUID",
@@ -711,6 +713,30 @@ AGGREGATE_TYPE = {
     "TIME_ZONE_INFORMATION": "_TIME_ZONE_INFORMATION",
 }
 UNSIZED_AGGREGATE = {"StandardDate": "_SYSTEMTIME", "DaylightDate": "_SYSTEMTIME"}
+# Nested walk leaves whose offsets are measured on an expanded record, not on the parent.
+_NESTED_EXPANDED_FIELD = {
+    "Data1": ("GUID", "Data1"),
+    "Data2": ("GUID", "Data2"),
+    "Data3": ("GUID", "Data3"),
+    "Data4": ("GUID", "Data4"),
+    "Year": ("SYSTEMTIME", "wYear"),
+    "Month": ("SYSTEMTIME", "wMonth"),
+    "DayOfWeek": ("SYSTEMTIME", "wDayOfWeek"),
+    "Day": ("SYSTEMTIME", "wDay"),
+    "Hour": ("SYSTEMTIME", "wHour"),
+    "Minute": ("SYSTEMTIME", "wMinute"),
+    "Second": ("SYSTEMTIME", "wSecond"),
+    "Milliseconds": ("SYSTEMTIME", "wMilliseconds"),
+    "Bias": ("TIME_ZONE_INFORMATION", "Bias"),
+    "StandardName": ("TIME_ZONE_INFORMATION", "StandardName"),
+    "StandardDate": ("TIME_ZONE_INFORMATION", "StandardDate"),
+    "StandardBias": ("TIME_ZONE_INFORMATION", "StandardBias"),
+    "DaylightName": ("TIME_ZONE_INFORMATION", "DaylightName"),
+    "DaylightDate": ("TIME_ZONE_INFORMATION", "DaylightDate"),
+    "DaylightBias": ("TIME_ZONE_INFORMATION", "DaylightBias"),
+    "ProcessorIndex": ("ETW_BUFFER_CONTEXT", "ProcessorIndex"),
+    "LoggerId": ("ETW_BUFFER_CONTEXT", "LoggerId"),
+}
 
 
 def _walk(cls, fields, base, struct_name, abi, expected, module, mismatches, visited, width_only, without_oracle, unmeasured, matched, compare_offsets, prefix):
@@ -959,6 +985,133 @@ def _expanded_problem(item):
     return False
 
 
+def _mask_beyond_span(mask, nbytes):
+    """True when mask bits sit outside the measured container width.
+
+    The SDK packs the experiment masks into the storage bytes, low byte first.
+    A mask wider than that span is not a provider bit-field value.
+    """
+    if nbytes <= 0:
+        return mask != 0
+    if nbytes >= 8:
+        return False
+    return mask >> (nbytes * 8) != 0
+
+
+def _span_outside_structure(storage, nbytes, limit):
+    if type(limit) is not int:
+        return True
+    if nbytes > limit or storage > limit - nbytes:
+        return True
+    return False
+
+
+def _linkage_descriptor(cls, actual, ctypes_module, mismatches, record):
+    """Offset and sizeof-width of the provider's one opaque Linkage field.
+
+    A descriptor size that disagrees with that width is its own mismatch.
+    This does not split Linkage into two bit-fields.
+    """
+    if "Linkage" not in actual:
+        return None, None
+    descriptor = getattr(cls, "Linkage", None)
+    offset = None if descriptor is None else _layout_int(_field_offset(descriptor))
+    try:
+        width = ctypes_module.sizeof(actual["Linkage"])
+    except (TypeError, ValueError):
+        width = None
+    if type(width) is not int:
+        width = None
+    reported = None if descriptor is None else getattr(descriptor, "size", None)
+    if reported is not None and _layout_int(reported) != width:
+        _add(mismatches, "descriptor_width", structure=record, field="Linkage", path="Linkage")
+    return offset, width
+
+
+def _compare_linkage_span(record, parsed, cls, actual, ctypes_module, sdk_size, provider_ready, mismatches, experiments):
+    """Compare the SDK container span with the opaque Linkage descriptor.
+
+    Masks are recorded as SDK-only experiment values. They are not provider fields.
+    """
+    storage = parsed["Linkage_Reserved2_storage"]
+    nbytes = parsed["Linkage_Reserved2_bytes"]
+    linkage_mask = parsed["Linkage_mask"]
+    reserved_mask = parsed["Reserved2_mask"]
+    experiments.append({
+        "structure": record,
+        "Linkage_Reserved2_storage": storage,
+        "Linkage_Reserved2_bytes": nbytes,
+        "Linkage_mask": linkage_mask,
+        "Reserved2_mask": reserved_mask,
+        "provider_field": "Linkage",
+        "provider_bitfields": False,
+        "sdk_only": True,
+    })
+    if nbytes == 0:
+        _add(mismatches, "experiment_span", structure=record, field="Linkage_Reserved2_bytes", reason="empty")
+    limit = sdk_size
+    if limit is None and provider_ready:
+        try:
+            limit = ctypes_module.sizeof(cls)
+        except (TypeError, ValueError):
+            limit = None
+    if _span_outside_structure(storage, nbytes, limit):
+        _add(mismatches, "experiment_span", structure=record, field="Linkage_Reserved2_storage", reason="out_of_bounds")
+    if provider_ready:
+        provider_offset, provider_width = _linkage_descriptor(cls, actual, ctypes_module, mismatches, record)
+    else:
+        provider_offset, provider_width = None, None
+    if provider_offset is None or provider_width is None or provider_offset != storage or provider_width != nbytes:
+        _add(
+            mismatches,
+            "experiment_span",
+            structure=record,
+            field="Linkage",
+            reason="wrong",
+            provider_offset=provider_offset,
+            provider_width=provider_width,
+        )
+    if linkage_mask == 0 or reserved_mask == 0:
+        _add(mismatches, "experiment_mask", structure=record, reason="zero")
+    if linkage_mask & reserved_mask:
+        _add(mismatches, "experiment_mask", structure=record, reason="overlap")
+    if _mask_beyond_span(linkage_mask, nbytes) or _mask_beyond_span(reserved_mask, nbytes):
+        _add(mismatches, "experiment_mask", structure=record, reason="beyond_span")
+
+
+def _label_nested_notes(width_only, unmeasured, compared_pairs):
+    """Move notes whose expanded record already compared the offset.
+
+    A parent walk can still lack an offsetof key after the expanded record
+    measured that field. Those notes must not stay in the unmeasured list.
+    """
+    nested = []
+    kept_width = []
+    kept_unmeasured = []
+    for item in width_only:
+        target = _NESTED_EXPANDED_FIELD.get(str(item.get("path", "")).rsplit(".", 1)[-1])
+        if target in compared_pairs:
+            item["offset_compared"] = True
+            item["expanded_structure"] = target[0]
+            item["expanded_field"] = target[1]
+            item["nested_walk"] = "compared_on_expanded_record"
+            nested.append(item)
+        else:
+            kept_width.append(item)
+    for item in unmeasured:
+        target = _NESTED_EXPANDED_FIELD.get(str(item.get("path", "")).rsplit(".", 1)[-1])
+        if target in compared_pairs:
+            item["offset_compared"] = True
+            item["width_compared"] = True
+            item["expanded_structure"] = target[0]
+            item["expanded_field"] = target[1]
+            item["nested_walk"] = "compared_on_expanded_record"
+            nested.append(item)
+        else:
+            kept_unmeasured.append(item)
+    return kept_width, kept_unmeasured, nested
+
+
 def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, aliases):
     """Bind provider fields to expanded SDK names. Absent records stay missing.
 
@@ -967,6 +1120,9 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
     """
     required_missing = []
     oracle_backed = set()
+    bound_records = []
+    compared_pairs = []
+    experiments = []
     for spec in EXPANDED_RECORDS:
         record, provider_type, provider_fields, fields, sdk_only, sdk_only_host, experiment, primitive_width = spec
         names = _expanded_requirement_names(spec)
@@ -977,6 +1133,7 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                 _note_missing(required_missing, record, field)
             continue
         block = abi[record]
+        bound_records.append(record)
         oracle_backed.add(provider_type)
         allowed = {sdk for _provider, sdk, _width in fields}
         allowed.update(sdk_only)
@@ -993,7 +1150,11 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
             try:
                 declared = _declared_fields(cls)
             except LayoutMiss as exc:
-                _add(mismatches, exc.kind, structure=record, type=provider_type, **exc.detail)
+                detail = {"structure": record}
+                detail.update(exc.detail)
+                if "type" not in detail:
+                    detail["type"] = provider_type
+                _add(mismatches, exc.kind, **detail)
                 declared = []
             actual_names = [name for name, _declared in declared]
             if actual_names != list(provider_fields):
@@ -1025,6 +1186,7 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
             if offset is None or sdk_width is None:
                 _add(mismatches, "bad_sdk_number", structure=record, field=sdk_name)
                 continue
+            compared_pairs.append((record, sdk_name))
             if sdk_name == sdk_only_host:
                 host_range = (offset, offset + sdk_width)
             if provider_name not in actual:
@@ -1089,12 +1251,28 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                 "offset": arm_offset,
                 "represented": False,
             })
+        parsed_experiment = {}
         for key in experiment:
             if key not in block:
                 _note_missing(required_missing, record, key)
                 continue
-            if _experiment_value(key, block[key]) is None:
+            value = _experiment_value(key, block[key])
+            if value is None:
                 _add(mismatches, "bad_sdk_number", structure=record, field=key)
+                continue
+            parsed_experiment[key] = value
+        if experiment and set(parsed_experiment) == set(experiment):
+            _compare_linkage_span(
+                record,
+                parsed_experiment,
+                cls,
+                actual,
+                ctypes_module,
+                sdk_size,
+                provider_ready,
+                mismatches,
+                experiments,
+            )
         if primitive_width and type(abi.get("primitives")) is dict and record in abi["primitives"] and "sizeof" in block:
             primitive = _layout_int(abi["primitives"].get(record))
             recorded = _layout_int(block.get("sizeof"))
@@ -1106,7 +1284,7 @@ def _bind_expanded_records(module, abi, ctypes_module, mismatches, matched, alia
                     primitive=primitive,
                     sizeof=recorded,
                 )
-    return required_missing, oracle_backed
+    return required_missing, oracle_backed, bound_records, compared_pairs, experiments
 
 
 def _coverage_flags(mismatches, required_missing):
@@ -1143,7 +1321,15 @@ def compare_layouts(module, abi, ctypes_module):
             "complete_coverage": False,
             "required_missing_layouts": required_missing,
             "unmeasured": [],
-            "coverage": {"complete": False, "sdk_fields_compared": 0, "sdk_fields_matched": 0},
+            "nested_walk": [],
+            "sdk_only_experiments": [],
+            "coverage": {
+                "complete": False,
+                "structures": [],
+                "sdk_fields_compared": 0,
+                "sdk_fields_matched": 0,
+                "sdk_only_experiments": 0,
+            },
         }
     try:
         expected, ranges = _expected_map(abi)
@@ -1255,34 +1441,52 @@ def compare_layouts(module, abi, ctypes_module):
         for name in sorted(visited - provider_types):
             _add(mismatches, "visited_unknown_type", type=name)
     primitives, recorded = _compare_primitives(abi, module, ctypes_module, mismatches)
-    required_missing, oracle_backed = _bind_expanded_records(
+    required_missing, oracle_backed, bound_records, compared_pairs, experiments = _bind_expanded_records(
         module, abi, ctypes_module, mismatches, matched, aliases
     )
     if oracle_backed:
         without_oracle = [item for item in without_oracle if item.get("path") not in oracle_backed]
+    if experiments:
+        for item in without_oracle:
+            if item.get("path") != "Linkage":
+                continue
+            # The container span was compared. There is still no offsetof(Linkage).
+            item["offset_compared"] = True
+            item["container"] = "Linkage_Reserved2_storage"
+            item["provider_bitfields"] = False
+            item["sdk_bitfields"] = "sdk_only_experiment"
+            item["sdk_offset"] = None
+    compared = set(compared_pairs)
+    width_only, unmeasured, nested_walk = _label_nested_notes(width_only, unmeasured, compared)
+    structures = list(NINE) if expected else []
+    structures.extend(bound_records)
+    nine_compared = sum(len(expected.get(name, {})) for name in NINE) if expected else 0
     real, covered_field_match, complete_coverage = _coverage_flags(mismatches, required_missing)
     omitted = next((int(item.get("count", 0)) for item in mismatches if item.get("kind") == "omitted"), 0)
     return {
         "structure_sizes": {
             name: abi[name]["sizeof"]
-            for name in NINE
+            for name in structures
             if name in abi and type(abi[name]) is dict and _layout_int(abi[name].get("sizeof")) is not None
         },
         "fields": matched[:200],
         "sdk_only_aliases": aliases,
+        "sdk_only_experiments": experiments,
         "primitives_compared": primitives,
         "primitives_not_used_by_provider": recorded,
         "width_only_no_oracle_offset": width_only[:64],
         "provider_fields_without_oracle_record": without_oracle[:64],
         "unmeasured": unmeasured,
+        "nested_walk": nested_walk[:64],
         "required_missing_layouts": required_missing,
         "covered_field_match": covered_field_match,
         "complete_coverage": complete_coverage,
         "coverage": {
-            "structures": list(NINE),
-            "sdk_fields_compared": sum(len(expected.get(name, {})) for name in NINE),
+            "structures": structures,
+            "sdk_fields_compared": nine_compared + len(compared_pairs),
             "sdk_fields_matched": len(matched),
             "sdk_only_aliases": len(aliases),
+            "sdk_only_experiments": len(experiments),
             "scalar_primitives_compared": len(primitives),
             "provider_types_visited": sorted(visited),
         },

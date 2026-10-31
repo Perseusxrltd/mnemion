@@ -2,12 +2,12 @@
 
 This directory checks the ctypes layouts declared in `deploy/owned_launch_windows_etw.py` against a frozen Windows SDK oracle. It does not start a session, load `advapi32` for the provider, or accept native resources. `declaration_match` is not production readiness and it is not CPU, RAM, or resource acceptance.
 
-## Original SDK evidence
+## SDK evidence
 
 The expected numbers are the MSVC `sizeof` / `offsetof` oracle. They are not derived from the ctypes declarations.
 
-- Source `781bef2e83532342a3bbcad99810e12875b2e046`
-- GitHub Actions run `41237380248`
+- Source `f49ab34923d018efb3d2d30beb3a954aa6b73a48`
+- GitHub Actions run `41244785682`
 - Windows SDK `10.0.26100.0`, LLP64, native x64 and ARM64
 - `oracle/manifest.json` is the provenance. It names the SHA-256 of `oracle/x64/abi.json`, `oracle/x64/metadata.json`, `oracle/arm64/abi.json`, and `oracle/arm64/metadata.json`
 - `abi.json` holds the numeric layout. `metadata.json` holds host, compiler, and SDK identity. The checker does not read metadata fields as structure offsets
@@ -15,7 +15,7 @@ The expected numbers are the MSVC `sizeof` / `offsetof` oracle. They are not der
 
 `size_t` and `SIZE_T` stay separate keys. The provider file was not edited for this check.
 
-The retained oracle has the nine structure records and the primitive widths. It does not have `GUID`, `SYSTEMTIME`, `TIME_ZONE_INFORMATION`, `ETW_BUFFER_CONTEXT`, or `EVENT_HEADER_EXTENDED_DATA_ITEM` field records. The checker recognizes those record names. It does not invent their offsets. Until a reviewed oracle supplies them and they match, complete coverage stays false.
+The retained oracle measures fourteen structure records: the original nine, plus `GUID`, `SYSTEMTIME`, `TIME_ZONE_INFORMATION`, `ETW_BUFFER_CONTEXT`, and `EVENT_HEADER_EXTENDED_DATA_ITEM`, and the primitive widths. Those sizes and addressable offsets are the MSVC measurements from run `41244785682`. They are not derived from the ctypes declarations.
 
 ## Command
 
@@ -47,4 +47,4 @@ A declaration comparison does not open these gates:
 - census
 - observer cost
 
-The retained oracle has no `EVENT_HEADER_EXTENDED_DATA_ITEM` size or addressable offsets (`Reserved1`, `ExtType`, `DataSize`, `DataPtr`). `Linkage` and `Reserved2` are SDK bit-fields. The checker does not treat them as `offsetof` keys. A later oracle records that storage as `Linkage_Reserved2_storage`, `Linkage_Reserved2_bytes`, `Linkage_mask`, and `Reserved2_mask`. `SYSTEMTIME` fields use the SDK `w` prefix (`wYear`, `wMonth`, `wDayOfWeek`, `wDay`, `wHour`, `wMinute`, `wSecond`, `wMilliseconds`); the ctypes names do not. `ETW_BUFFER_CONTEXT` keeps both union arms (`ProcessorNumber`, `Alignment`, `ProcessorIndex`) and `LoggerId`. The ctypes declaration names `ProcessorIndex` and `LoggerId`. Primitive total widths are not those field layouts. SDK union aliases the provider does not declare are enumerated. The four retained JSON files and the manifest are unchanged, so this check still exits nonzero.
+`EVENT_HEADER_EXTENDED_DATA_ITEM` is measured, including `Reserved1`, `ExtType`, `DataSize`, and `DataPtr`. `Linkage` and `Reserved2` remain SDK bit-fields. The checker does not treat them as `offsetof` keys and does not claim the provider declares those two bit-fields. The provider's opaque `Linkage` USHORT is the container compared with `Linkage_Reserved2_storage` and `Linkage_Reserved2_bytes`. `Linkage_mask` and `Reserved2_mask` stay SDK-only experiment values. `SYSTEMTIME` fields use the SDK `w` prefix (`wYear`, `wMonth`, `wDayOfWeek`, `wDay`, `wHour`, `wMinute`, `wSecond`, `wMilliseconds`); the ctypes names do not. `ETW_BUFFER_CONTEXT` compares `ProcessorIndex` and `LoggerId`. `ProcessorNumber` and `Alignment` stay SDK-only union arms. This note does not claim an executed declaration comparison, a trace, or CPU, RAM, or resource acceptance.
