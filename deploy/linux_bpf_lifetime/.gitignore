@@ -1,0 +1,4 @@
+lifetime_plain.bpf.o
+lifetime_bitfield.bpf.o
+lifetime_diag
+sha256_selftest
