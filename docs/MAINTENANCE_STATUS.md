@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T12:25:16+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T12:30:15+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.46.61](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.61). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.46.62](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.62). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -22,17 +22,20 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 41194270813](https://github.com/Perseusxrltd/mnemion/actions/runs/41194270813) |
-| database-cache\.yml | main | success | [Run 41192568791](https://github.com/Perseusxrltd/mnemion/actions/runs/41192568791) |
-| public-updates\.yml | v4\.46\.61 | success | [Run 41190846148](https://github.com/Perseusxrltd/mnemion/actions/runs/41190846148) |
-| release\.yml | release/4\.46\.61 | success | [Run 41186823219](https://github.com/Perseusxrltd/mnemion/actions/runs/41186823219) |
+| public-updates\.yml | v4\.46\.62 | in\_progress | [Run 41201338411](https://github.com/Perseusxrltd/mnemion/actions/runs/41201338411) |
 | release\.yml | release/4\.46\.62 | success | [Run 41196826469](https://github.com/Perseusxrltd/mnemion/actions/runs/41196826469) |
-| verify-artifacts\.yml | main | in\_progress | [Run 41200981019](https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019) |
+| verify-artifacts\.yml | main | success | [Run 41200981019](https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019) |
 | website-release\.yml | main | success | [Run 41194270819](https://github.com/Perseusxrltd/mnemion/actions/runs/41194270819) |
-| website-release\.yml | v4\.46\.61 | success | [Run 41190844256](https://github.com/Perseusxrltd/mnemion/actions/runs/41190844256) |
+| website-release\.yml | v4\.46\.62 | success | [Run 41201336239](https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239) |
 
 ## Active jobs
 
-[Run 41200981019](https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019): 0/1 jobs completed; 0 succeeded.
+[Run 41201338411](https://github.com/Perseusxrltd/mnemion/actions/runs/41201338411): 1/7 jobs completed; 1 succeeded.
 
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
 
