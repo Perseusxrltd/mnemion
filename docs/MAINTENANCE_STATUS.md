@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T09:54:14+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T09:57:20+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.60](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.60). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,17 +21,21 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 41186697634](https://github.com/Perseusxrltd/mnemion/actions/runs/41186697634) |
+| ci\.yml | main | in\_progress | [Run 41190703805](https://github.com/Perseusxrltd/mnemion/actions/runs/41190703805) |
 | public-updates\.yml | v4\.46\.60 | success | [Run 41183144331](https://github.com/Perseusxrltd/mnemion/actions/runs/41183144331) |
 | release\.yml | release/4\.46\.60 | success | [Run 41179260895](https://github.com/Perseusxrltd/mnemion/actions/runs/41179260895) |
 | release\.yml | release/4\.46\.61 | success | [Run 41186823219](https://github.com/Perseusxrltd/mnemion/actions/runs/41186823219) |
 | verify-artifacts\.yml | main | in\_progress | [Run 41190518626](https://github.com/Perseusxrltd/mnemion/actions/runs/41190518626) |
-| website-release\.yml | main | success | [Run 41186697613](https://github.com/Perseusxrltd/mnemion/actions/runs/41186697613) |
+| website-release\.yml | main | success | [Run 41190703996](https://github.com/Perseusxrltd/mnemion/actions/runs/41190703996) |
 | website-release\.yml | v4\.46\.60 | success | [Run 41183142220](https://github.com/Perseusxrltd/mnemion/actions/runs/41183142220) |
 
 ## Active jobs
 
+[Run 41190703805](https://github.com/Perseusxrltd/mnemion/actions/runs/41190703805): 7/8 jobs completed; 2 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/frontend run test:telemetry.
+
 [Run 41190518626](https://github.com/Perseusxrltd/mnemion/actions/runs/41190518626): 0/1 jobs completed; 0 succeeded.
 
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+- verify: in\_progress — Scan the exact downloaded distributions before publication.
 
