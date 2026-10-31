@@ -417,6 +417,242 @@ def test_darwin_group_list_reads_only_that_process_group():
     ctypes.set_errno(0)
 
 
+def _child_buffer_bytes() -> int:
+    return 64 * ctypes.sizeof(ctypes.c_int)
+
+
+def test_darwin_child_list_uses_the_pid_count_from_one_bounded_query():
+    import inspect
+
+    import deploy.owned_launch_accounting as accounting
+
+    source = inspect.getsource(accounting._darwin_children)
+    assert "proc_listchildpids(pid, None, 0)" not in source
+    assert "//" not in source
+    implementation = Path("deploy/owned_launch_accounting.py").read_text(encoding="utf-8")
+    assert "self._libproc.proc_listchildpids.restype = ctypes.c_int" in implementation
+    cap = _child_buffer_bytes()
+
+    for child_count in (1, 2, 3, 4):
+        calls = []
+
+        class Library:
+            def proc_listchildpids(self, pid, buf, size):
+                calls.append((pid, buf is None, 0 if buf is None else size))
+                if buf is None or size == 0:
+                    return 520
+                values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+                for index in range(child_count):
+                    values[index] = 6100 + index
+                return child_count
+
+        ctypes.set_errno(22)
+        expected = [6100 + index for index in range(child_count)]
+        assert accounting._darwin_children(Library(), 4242) == expected
+        assert calls == [(4242, False, cap)]
+    ctypes.set_errno(0)
+
+
+def test_darwin_child_list_separates_empty_errors_and_truncation():
+    import deploy.owned_launch_accounting as accounting
+
+    cap = _child_buffer_bytes()
+    calls = []
+
+    class Empty:
+        def proc_listchildpids(self, pid, buf, size):
+            calls.append((pid, buf is None, 0 if buf is None else size))
+            ctypes.set_errno(0)
+            return 0
+
+    assert accounting._darwin_children(Empty(), 4242) == []
+    assert calls == [(4242, False, cap)]
+
+    class ErrorZero:
+        def proc_listchildpids(self, pid, buf, size):
+            calls.append(("error", buf is None, 0 if buf is None else size))
+            ctypes.set_errno(22)
+            return 0
+
+    assert accounting._darwin_children(ErrorZero(), 4242) is None
+
+    class Negative:
+        def proc_listchildpids(self, pid, buf, size):
+            ctypes.set_errno(22)
+            return -1
+
+    assert accounting._darwin_children(Negative(), 4242) is None
+
+    class ErrnoWithPid:
+        def proc_listchildpids(self, pid, buf, size):
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 6100
+            ctypes.set_errno(22)
+            return 1
+
+    assert accounting._darwin_children(ErrnoWithPid(), 4242) is None
+
+    class Oversized:
+        def proc_listchildpids(self, pid, buf, size):
+            calls.append(("over", buf is None, 0 if buf is None else size))
+            if buf is None or size == 0:
+                return 520
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 6100
+            ctypes.set_errno(0)
+            return cap
+
+    assert accounting._darwin_children(Oversized(), 4242) is None
+    assert calls[-1] == ("over", False, cap)
+
+    class Full:
+        def proc_listchildpids(self, pid, buf, size):
+            calls.append(("full", buf is None, 0 if buf is None else size))
+            if buf is None or size == 0:
+                return 520
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            for index in range(64):
+                values[index] = 7000 + index
+            ctypes.set_errno(0)
+            return 64
+
+    assert accounting._darwin_children(Full(), 4242) is None
+    assert calls[-1] == ("full", False, cap)
+
+    class Hole:
+        def proc_listchildpids(self, pid, buf, size):
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 6100
+            values[1] = 0
+            values[2] = 6101
+            ctypes.set_errno(0)
+            return 3
+
+    assert accounting._darwin_children(Hole(), 4242) is None
+
+    class Text:
+        def proc_listchildpids(self, pid, buf, size):
+            return "4"
+
+    assert accounting._darwin_children(Text(), 4242) is None
+
+    class Broken:
+        def proc_listchildpids(self, pid, buf, size):
+            raise OSError("proc_listchildpids failed")
+
+    assert accounting._darwin_children(Broken(), 4242) is None
+    assert accounting._darwin_children(Empty(), 0) is None
+    assert accounting._darwin_children(Empty(), True) is None
+    assert accounting._darwin_children(Empty(), -1) is None
+    assert accounting._darwin_children(None, 4242) is None
+    assert ("error", True, 0) not in calls
+    assert ("full", True, 0) not in calls
+    ctypes.set_errno(0)
+
+
+def test_counted_child_stays_behind_the_parent_check(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    parents = {6100: 4242}
+    asked = []
+
+    def rusage(_library, pid):
+        if pid == 4242:
+            return _resident(111, 20)
+        if pid == 6100:
+            return _resident(222, 30)
+        return None
+
+    def ppid(_library, pid):
+        asked.append(pid)
+        return parents.get(pid)
+
+    class Counted:
+        def proc_listchildpids(self, pid, buf, size):
+            if buf is None or size != _child_buffer_bytes():
+                return 520
+            if pid != 4242:
+                ctypes.set_errno(0)
+                return 0
+            values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
+            values[0] = 6100
+            ctypes.set_errno(0)
+            return 1
+
+    class Failed:
+        def proc_listchildpids(self, pid, buf, size):
+            ctypes.set_errno(22)
+            return 0
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", rusage)
+    monkeypatch.setattr(accounting, "_darwin_ppid", ppid)
+
+    def backend(library):
+        value = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+        value.process = _RootProcess(4242)
+        value.root_creation = 111
+        value._libproc = library
+        value._libsystem = False
+        value._timebase = (1, 1)
+        return value
+
+    matched = backend(Counted())
+    matched.sample(matched.ledger)
+    assert [row["identity"] for row in matched.ledger.public()] == ["4242:111", "6100:222"]
+
+    parents[6100] = 1
+    rejected = backend(Counted())
+    rejected.sample(rejected.ledger)
+    assert [row["identity"] for row in rejected.ledger.public()] == ["4242:111"]
+
+    asked.clear()
+    unverified = backend(Failed())
+    unverified.sample(unverified.ledger)
+    assert [row["identity"] for row in unverified.ledger.public()] == ["4242:111"]
+    assert 6100 not in asked
+    ctypes.set_errno(0)
+
+
+def test_darwin_live_descendant_receipt_requires_root_and_a_positive_count():
+    from deploy.owned_launch_self_check import _WORKER, _darwin_live_descendant_receipt
+
+    compile(_WORKER, "<owned-worker>", "exec")
+    assert 'mode == "hold"' in _WORKER
+    assert 'mode == "wait"' in _WORKER
+    assert 'mode == "work"' in _WORKER
+    assert 'mode == "sleep"' in _WORKER
+    assert _darwin_live_descendant_receipt([{"pid": 10}, {"pid": 11}], 10) == (True, 1)
+    assert _darwin_live_descendant_receipt(
+        [{"pid": 10}, {"pid": 11}, {"pid": 12}],
+        10,
+    ) == (True, 2)
+    with pytest.raises(AssertionError, match="not observed"):
+        _darwin_live_descendant_receipt([{"pid": 10}], 10)
+    with pytest.raises(AssertionError, match="missing"):
+        _darwin_live_descendant_receipt([], 1)
+    with pytest.raises(AssertionError, match="malformed"):
+        _darwin_live_descendant_receipt([{"pid": 10}, {"pid": 0}], 10)
+    with pytest.raises(AssertionError, match="malformed"):
+        _darwin_live_descendant_receipt([{"pid": 10}, {"pid": 10}], 10)
+    with pytest.raises(AssertionError, match="malformed"):
+        _darwin_live_descendant_receipt([{"pid": True}], 10)
+
+
+def test_two_mac_workflow_fails_when_the_descendant_invariant_fails():
+    text = (
+        Path(__file__).resolve().parents[1] / ".github" / "workflows" / "native-residency-counters.yml"
+    ).read_text(encoding="utf-8")
+    assert text.count("os: macos-26") == 1
+    assert text.count("os: macos-15-intel") == 1
+    assert "source_not_exact" in text
+    assert "arch_mismatch" in text
+    assert "from deploy.darwin_residency_receipt import main" in text
+    assert "darwin_live_descendant_observed" in text
+    assert "darwin_live_descendant_count" in text
+    assert "descendant_not_observed" in text
+    assert "Not owned-launch" not in text
+
+
 def test_darwin_reused_pid_does_not_replace_the_root_identity(monkeypatch):
     import deploy.owned_launch_accounting as accounting
 

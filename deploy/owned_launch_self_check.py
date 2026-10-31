@@ -1,8 +1,9 @@
 """Bounded lifecycle check for the owned-launch accounting adapter.
 
 Launches short-lived CPU work and a descendant, then a sleeper that must be
-terminated with the owned group. This is not an application benchmark and it
-does not accept the resource budget.
+terminated with the owned group. On Darwin, a separate fixture holds one
+descendant until that descendant's identity is in the live ledger. This is
+not an application benchmark and it does not accept the resource budget.
 
 Run once on a hosted native target:
 
@@ -12,7 +13,9 @@ Run once on a hosted native target:
 from __future__ import annotations
 
 import json
+import os
 import platform
+import select
 import shutil
 import stat
 import subprocess
@@ -30,6 +33,7 @@ from deploy.owned_launch_accounting import (
 
 
 _WORKER = """
+import os
 import subprocess
 import sys
 import time
@@ -59,6 +63,20 @@ elif mode == "work":
     quick.wait(timeout=20)
 elif mode == "sleep":
     time.sleep(30)
+elif mode == "hold":
+    child = popen([sys.executable, __file__, "wait", sys.argv[2], sys.argv[3]])
+    code = child.wait(timeout=20)
+    if code != 0:
+        raise SystemExit(code or 1)
+elif mode == "wait":
+    ready = os.open(sys.argv[2], os.O_WRONLY)
+    os.write(ready, b"1")
+    os.close(ready)
+    ack = os.open(sys.argv[3], os.O_RDONLY)
+    token = os.read(ack, 1)
+    os.close(ack)
+    if token != b"1":
+        raise SystemExit(3)
 else:
     raise SystemExit(2)
 """
@@ -155,6 +173,92 @@ def _darwin_kernel_peak_receipt(report: dict) -> tuple:
     if kernel.get("rss_high_water_is_final_lifetime") is not False:
         _fail("live high water was marked final", report)
     return max(peaks), False, label, False
+
+
+def _darwin_live_descendant_receipt(rows: object, root_pid: object) -> tuple[bool, int]:
+    """Root plus at least one other live identity. The count is descendants."""
+    if type(rows) is not list or type(root_pid) is not int or root_pid <= 1:
+        raise AssertionError("darwin live ledger was missing")
+    root_seen = False
+    descendants = 0
+    seen: set[int] = set()
+    for row in rows:
+        if type(row) is not dict:
+            raise AssertionError("darwin live ledger was malformed")
+        pid = row.get("pid")
+        if type(pid) is not int or pid <= 0 or pid in seen:
+            raise AssertionError("darwin live ledger was malformed")
+        seen.add(pid)
+        if pid == root_pid:
+            root_seen = True
+            continue
+        descendants += 1
+    if not root_seen or descendants <= 0:
+        raise AssertionError("darwin live descendant was not observed")
+    return True, descendants
+
+
+def _close_fd(fd: int) -> None:
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+
+
+def _hold_fifo(path: Path) -> tuple[int, int]:
+    os.mkfifo(path, 0o600)
+    read_fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+    write_fd = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
+    return read_fd, write_fd
+
+
+def _observe_darwin_descendant(script: Path, ready: Path, ack: Path) -> tuple[bool, int]:
+    """Sample one child that cannot exit until the live ledger contains it.
+
+    The ready and ack fifos are the handshake. This launch is not the CPU
+    benchmark and it does not accept the resource budget.
+    """
+    fds: list[int] = []
+    try:
+        ready_read, ready_write = _hold_fifo(ready)
+        fds.extend((ready_read, ready_write))
+        ack_read, ack_write = _hold_fifo(ack)
+        fds.extend((ack_read, ack_write))
+        argv = [sys.executable, str(script), "hold", str(ready), str(ack)]
+        with start_owned_launch(argv, bound_seconds=20, sample_seconds=0.05) as launch:
+            launch.mark_phase(
+                "descendant-observation",
+                canonical_operations_completed=0,
+                active=False,
+            )
+            readable, _, _ = select.select([ready_read], [], [], 10)
+            if not readable:
+                raise AssertionError("darwin descendant was not ready")
+            if os.read(ready_read, 16) != b"1":
+                raise AssertionError("darwin descendant was not ready")
+            launch.backend.sample(launch.backend.ledger)
+            observed, count = _darwin_live_descendant_receipt(
+                launch.backend.ledger.public(),
+                launch.backend.process.pid,
+            )
+            if os.write(ack_write, b"1") != 1:
+                raise AssertionError("darwin descendant ack was not accepted")
+            if not launch.wait_root(10):
+                raise AssertionError("darwin observation root did not exit")
+            report = launch.finish(canonical_operations_completed=0)
+    finally:
+        for fd in fds:
+            _close_fd(fd)
+    _assert_common(report, str(ready))
+    _require_owned_cleanup(report)
+    coverage = report["coverage"]
+    if coverage["status"] != "partial" or coverage["cpu_lifetime_complete"] is not False:
+        raise AssertionError("darwin observation was reported as complete lifetime accounting")
+    if coverage["cpu_includes_exited_descendants"] is not False:
+        raise AssertionError("darwin observation descendant cpu was reported complete")
+    if report["resource_acceptance"] is not False or report["budget"]["compared"] is not False:
+        raise AssertionError("darwin observation accepted a budget")
+    return observed, count
 
 
 def _require_owned_cleanup(report: dict) -> None:
@@ -306,9 +410,14 @@ def run_self_check() -> dict:
         _require_owned_cleanup(stopped)
         if sys.platform == "darwin":
             kernel_peak, peak_final, rss_label, unseen_covered = _darwin_kernel_peak_receipt(work)
+            descendant_observed, descendant_count = _observe_darwin_descendant(
+                script,
+                root / "descendant-ready",
+                root / "descendant-ack",
+            )
     finally:
         shutil.rmtree(root, ignore_errors=True)
-    return {
+    result = {
         "self_check": "owned_launch_lifecycle",
         "held": True,
         "platform": sys.platform,
@@ -337,6 +446,10 @@ def run_self_check() -> dict:
         "rss_high_water": rss_label,
         "rss_high_water_covers_unseen_exited_processes": unseen_covered,
     }
+    if sys.platform == "darwin":
+        result["darwin_live_descendant_observed"] = descendant_observed
+        result["darwin_live_descendant_count"] = descendant_count
+    return result
 
 
 def _invalid_handle_exercise(cleanup: dict) -> dict:

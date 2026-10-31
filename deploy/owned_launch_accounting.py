@@ -1925,7 +1925,12 @@ class DarwinBackend:
                 if type(charged["resident"]) is int:
                     current_sum += charged["resident"]
                     saw += 1
-                for child in _darwin_children(self._library(), pid):
+                children = _darwin_children(self._library(), pid)
+                # None is unverified. It is not an empty child set, and none of
+                # its pids are added.
+                if children is None:
+                    continue
+                for child in children:
                     if _darwin_ppid(self._library(), child) == pid:
                         pending.append(child)
             if saw:
@@ -2156,6 +2161,7 @@ class DarwinBackend:
                 ctypes.c_int,
             ]
             self._libproc.proc_pidinfo.restype = ctypes.c_int
+            # pid, buffer, buffer size in bytes. The return is a pid count.
             self._libproc.proc_listchildpids.argtypes = [
                 ctypes.c_int,
                 ctypes.c_void_p,
@@ -2477,17 +2483,43 @@ def _darwin_ppid(library, pid: int) -> int | None:
     return int(values[4])
 
 
-def _darwin_children(library, pid: int) -> list[int]:
-    needed = library.proc_listchildpids(pid, None, 0)
-    if needed <= 0 or needed > 256 * 4:
+def _darwin_children(library, pid: int) -> list[int] | None:
+    """One bounded proc_listchildpids query. The return value is a pid count.
+
+    Apple libproc divides the kernel byte count by sizeof(int) before
+    returning (libproc.c). The buffer size argument stays in bytes. A null
+    buffer asks for every process plus margin, not this parent's children
+    (xnu proc_info.c), so this query never uses one. libproc reports both a
+    failed call and a real empty list as 0; errno separates them. A full
+    64-pid buffer can hide another child. An oversized, negative, or
+    malformed result is not a child list. Those results stay unverified
+    and are not returned as an empty list.
+    """
+    if library is None or type(pid) is not int or pid <= 0:
+        return None
+    cap_pids = 64
+    cap_bytes = cap_pids * ctypes.sizeof(ctypes.c_int)
+    buf = ctypes.create_string_buffer(cap_bytes)
+    ctypes.set_errno(0)
+    try:
+        returned = library.proc_listchildpids(pid, buf, cap_bytes)
+    except (AttributeError, OSError):
+        return None
+    errno = ctypes.get_errno()
+    if type(returned) is not int or returned < 0 or returned > cap_pids or errno != 0:
+        return None
+    if returned == cap_pids:
+        return None
+    if returned == 0:
         return []
-    buf = ctypes.create_string_buffer(needed)
-    written = library.proc_listchildpids(pid, buf, needed)
-    if written <= 0:
-        return []
-    count = min(written // ctypes.sizeof(ctypes.c_int), 64)
     values = ctypes.cast(buf, ctypes.POINTER(ctypes.c_int))
-    return [int(values[index]) for index in range(count) if int(values[index]) > 0]
+    pids = []
+    for index in range(returned):
+        child = int(values[index])
+        if child <= 0:
+            return None
+        pids.append(child)
+    return pids
 
 
 def exercise_cleanup_failure() -> dict:

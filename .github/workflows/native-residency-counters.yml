@@ -12,7 +12,8 @@ on:
 permissions:
   contents: read
 
-# Manual two-target counter check only. Not owned-launch, not a six-platform
+# Manual two-target check. Runs the residency probe once and the owned-launch
+# adapter once, including the live Darwin descendant. Not a six-platform
 # rerun, and not telemetry or resource-budget acceptance.
 jobs:
   counters:
@@ -99,6 +100,10 @@ jobs:
                   raise AssertionError(result.get("cleanup_failure") or "cleanup_missing")
               if result.get("rss_high_water_covers_unseen_exited_processes") is not False:
                   raise AssertionError("unseen_covered")
+              observed = result.get("darwin_live_descendant_observed")
+              descendant_count = result.get("darwin_live_descendant_count")
+              if observed is not True or type(descendant_count) is not int or descendant_count <= 0:
+                  raise AssertionError("descendant_not_observed")
               result["source"] = source
               result["head"] = head
               result["os"] = platform.system()
