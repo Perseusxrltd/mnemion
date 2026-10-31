@@ -4,6 +4,7 @@
 #include "v10_crypt.h"
 
 #include <CoreFoundation/CoreFoundation.h>
+#include <LocalAuthentication/LocalAuthentication.h>
 #include <Security/Security.h>
 
 #include <stddef.h>
@@ -74,6 +75,7 @@ enum key_result key_item_load(struct key_state *state, int allow_prompt) {
     CFTypeRef found = NULL;
     OSStatus status;
     enum key_result result;
+    LAContext *context = nil;
     service = service_name();
     account = account_name();
     query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -89,12 +91,25 @@ enum key_result key_item_load(struct key_state *state, int allow_prompt) {
     CFDictionarySetValue(query, kSecReturnData, kCFBooleanTrue);
     CFDictionarySetValue(query, kSecMatchLimit, kSecMatchLimitOne);
     if (!allow_prompt) {
-        /* Availability must not raise a prompt. Seal and open still can. */
-        CFDictionarySetValue(query, kSecUseAuthenticationUI, kSecUseAuthenticationUIFail);
+        /* Availability must fail closed instead of raising a prompt.
+           Seal and open pass allow_prompt and do not install this context,
+           so the system can still show the first-use prompt. */
+        context = [[LAContext alloc] init];
+        if (context == nil) {
+            CFRelease(query);
+            CFRelease(service);
+            CFRelease(account);
+            return KEY_UNAVAILABLE;
+        }
+        context.interactionNotAllowed = YES;
+        CFDictionarySetValue(query, kSecUseAuthenticationContext, context);
     }
     atomic_fetch_add_explicit(&state->keychain_calls, 1, memory_order_relaxed);
     status = SecItemCopyMatching(query, &found);
     CFRelease(query);
+    if (context != nil) {
+        [context release];
+    }
     CFRelease(service);
     CFRelease(account);
     if (status != errSecSuccess) {

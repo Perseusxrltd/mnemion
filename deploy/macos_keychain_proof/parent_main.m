@@ -1,6 +1,7 @@
 /* Compiled with -fno-objc-arc and -DOS_OBJECT_USE_OBJC=0. XPC retains stay manual.
-   Reply state is heap-owned. It stays allocated so a late callback sees the
-   closed flag and cannot write through the stack result. */
+   Reply state is heap-owned. It stays allocated until process exit so a late
+   callback, including one blocked in Security validation, sees the closed flag
+   and cannot write through the stack result. The waiter does not join that queue. */
 
 #include "auth.h"
 #include "bundle_manifest.h"
@@ -344,21 +345,23 @@ static int roundtrip(const char *requirement, xpc_object_t message, int timeout_
         parent_settle(owner, "timeout", -1, NULL, 0);
         xpc_connection_cancel(connection);
     }
-    dispatch_sync(callbacks, ^{
-        os_unfair_lock_lock(&owner->lock);
-        owner->closed = 1;
-        if (owner->result[0] == '\0') {
-            memcpy(owner->result, "unreachable", 12);
-            owner->calls = -1;
-        }
-        memcpy(box->result, owner->result, sizeof box->result);
-        box->calls = owner->calls;
-        box->value = owner->value;
-        box->value_len = owner->value_len;
-        owner->value = NULL;
-        owner->value_len = 0;
-        os_unfair_lock_unlock(&owner->lock);
-    });
+    /* The semaphore says the deadline expired or a reply won. It does not mean
+       the callback queue is idle. Joining it would wait behind Security
+       validation. Copy under the lock instead. owner, connection, and
+       callbacks stay allocated so that in-flight callback can still run. */
+    os_unfair_lock_lock(&owner->lock);
+    owner->closed = 1;
+    if (owner->result[0] == '\0') {
+        memcpy(owner->result, "unreachable", 12);
+        owner->calls = -1;
+    }
+    memcpy(box->result, owner->result, sizeof box->result);
+    box->calls = owner->calls;
+    box->value = owner->value;
+    box->value_len = owner->value_len;
+    owner->value = NULL;
+    owner->value_len = 0;
+    os_unfair_lock_unlock(&owner->lock);
     xpc_connection_cancel(connection);
     return strcmp(box->result, "ok") == 0 ? 0 : 1;
 }

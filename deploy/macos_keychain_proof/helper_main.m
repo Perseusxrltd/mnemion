@@ -22,6 +22,7 @@ static dispatch_queue_t g_work;
 static dispatch_queue_t g_deadline_queue;
 static dispatch_source_t g_idle;
 static dispatch_source_t g_deadline;
+static uint64_t g_timer_generation;
 static os_unfair_lock g_lock = OS_UNFAIR_LOCK_INIT;
 static int g_connections;
 static int g_admitted;
@@ -46,14 +47,57 @@ static void arm_idle(void) {
                               DISPATCH_TIME_FOREVER, NSEC_PER_SEC);
 }
 
-static void disarm_deadline(void) {
-    dispatch_source_set_timer(g_deadline, DISPATCH_TIME_FOREVER, DISPATCH_TIME_FOREVER, 0);
+static void cancel_owned_deadline(void) {
+    if (g_deadline != NULL) {
+        dispatch_source_cancel(g_deadline);
+        dispatch_release(g_deadline);
+        g_deadline = NULL;
+    }
+    g_timer_generation = 0;
 }
 
-static void arm_deadline(int timeout_ms) {
-    dispatch_source_set_timer(g_deadline,
-                              dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeout_ms * NSEC_PER_MSEC),
-                              DISPATCH_TIME_FOREVER, 50 * NSEC_PER_MSEC);
+static void on_deadline(uint64_t generation);
+
+static void install_deadline(uint64_t generation, dispatch_time_t when) {
+    dispatch_source_t source;
+    int live;
+    os_unfair_lock_lock(&g_lock);
+    live = g_admitted && !g_replied && g_generation == generation && g_deadline_generation == generation;
+    os_unfair_lock_unlock(&g_lock);
+    if (!live) {
+        return;
+    }
+    /* Replace whatever source is installed. Callers run this only for the
+       request that currently owns admission, and only on g_deadline_queue. */
+    cancel_owned_deadline();
+    source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, g_deadline_queue);
+    if (source == NULL) {
+        on_deadline(generation);
+        return;
+    }
+    g_deadline = source;
+    g_timer_generation = generation;
+    dispatch_source_set_event_handler(source, ^{
+        on_deadline(generation);
+    });
+    dispatch_source_set_timer(source, when, DISPATCH_TIME_FOREVER, 50 * NSEC_PER_MSEC);
+    dispatch_resume(source);
+}
+
+static void arm_deadline(uint64_t generation, int timeout_ms) {
+    dispatch_time_t when = dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeout_ms * NSEC_PER_MSEC);
+    dispatch_async(g_deadline_queue, ^{
+        install_deadline(generation, when);
+    });
+}
+
+static void disarm_deadline(uint64_t generation) {
+    dispatch_async(g_deadline_queue, ^{
+        if (g_timer_generation != generation) {
+            return;
+        }
+        cancel_owned_deadline();
+    });
 }
 
 static int64_t call_count(void) {
@@ -195,7 +239,7 @@ static void publish_reply(uint64_t generation, const char *result, const void *v
     if (reply == NULL) {
         return;
     }
-    disarm_deadline();
+    disarm_deadline(generation);
     xpc_dictionary_set_string(reply, "result", result);
     xpc_dictionary_set_int64(reply, "keychain_calls", call_count());
     if (strcmp(result, "ok") == 0 && value != NULL && value_len > 0) {
@@ -207,14 +251,14 @@ static void publish_reply(uint64_t generation, const char *result, const void *v
     arm_idle();
 }
 
-static void on_deadline(void) {
+static void on_deadline(uint64_t generation) {
     xpc_object_t reply = NULL;
     xpc_connection_t peer = NULL;
     int64_t calls;
     os_unfair_lock_lock(&g_lock);
     calls = call_count();
     if (g_admitted && !g_replied && g_reply != NULL && g_peer != NULL &&
-        g_generation == g_deadline_generation) {
+        g_generation == generation && g_deadline_generation == generation) {
         reply = g_reply;
         peer = g_peer;
         g_reply = NULL;
@@ -319,7 +363,7 @@ static int admit_job(xpc_connection_t peer, xpc_object_t reply, struct job *job,
     if (!admitted) {
         return -1;
     }
-    arm_deadline(timeout_ms);
+    arm_deadline(job->generation, timeout_ms);
     dispatch_async(g_work, ^{
         perform(job);
     });
@@ -430,8 +474,7 @@ int main(void) {
     g_work = dispatch_queue_create("com.perseusxr.mnemion-studio.credential-helper.work", DISPATCH_QUEUE_SERIAL);
     g_deadline_queue = dispatch_queue_create("com.perseusxr.mnemion-studio.credential-helper.deadline", DISPATCH_QUEUE_SERIAL);
     g_idle = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, g_control);
-    g_deadline = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, g_deadline_queue);
-    if (g_control == NULL || g_work == NULL || g_deadline_queue == NULL || g_idle == NULL || g_deadline == NULL) {
+    if (g_control == NULL || g_work == NULL || g_deadline_queue == NULL || g_idle == NULL) {
         return 1;
     }
     dispatch_source_set_event_handler(g_idle, ^{
@@ -445,13 +488,8 @@ int main(void) {
         key_state_zero(&g_key);
         _exit(0);
     });
-    dispatch_source_set_event_handler(g_deadline, ^{
-        on_deadline();
-    });
     arm_idle();
-    disarm_deadline();
     dispatch_resume(g_idle);
-    dispatch_resume(g_deadline);
     xpc_main(new_peer);
     return 0;
 }

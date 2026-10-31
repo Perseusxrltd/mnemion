@@ -8,8 +8,10 @@
 /* Login-item lookup for the fixed service and account only.
    No path, ACL, partition, access group, or raw-key return across XPC.
    keychain_calls counts SecItem entries and is not a credential.
-   allow_prompt 0 asks SecItem to fail instead of presenting UI. It does not
-   change the item, its ACL, or its partition. */
+   allow_prompt 0 installs an LAContext with interactionNotAllowed, so a
+   lookup that would show UI fails. It does not change the item, its ACL,
+   or its partition. allow_prompt nonzero omits that context: the system
+   creates one for a first-use prompt. */
 
 enum key_result {
     KEY_OK = 0,

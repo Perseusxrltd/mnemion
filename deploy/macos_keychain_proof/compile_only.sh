@@ -162,6 +162,7 @@ run_clang helper \
   "$root/key_item.m" \
   "$root/v10_crypt.c" \
   -framework Security \
+  -framework LocalAuthentication \
   -framework CoreFoundation
 
 run_clang parent \

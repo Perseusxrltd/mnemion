@@ -35,8 +35,17 @@
 #define MNEMION_HELPER_EPOCH_NAME "IdentityEpoch"
 
 static inline void mnemion_zero(void *pointer, size_t size) {
-    if (pointer != NULL && size > 0) {
-        explicit_bzero(pointer, size);
+    volatile unsigned char *bytes;
+    size_t index;
+    if (pointer == NULL || size == 0) {
+        return;
+    }
+    /* explicit_bzero is undeclared for this deployment target. Apple's
+       memset_s is only declared when Annex K is requested before string.h.
+       Volatile stores stay in the object code, so the secret is cleared. */
+    bytes = pointer;
+    for (index = 0; index < size; index++) {
+        bytes[index] = 0;
     }
 }
 
