@@ -249,3 +249,95 @@ def test_installed_standalone_command_discovers_scoped_tools_without_studio(env,
                 ] == [(str(env.space), "reader")]
 
         asyncio.run(discover())
+
+
+def test_private_maintenance_repairs_runtime_without_reading_external_configuration(
+    tmp_path, monkeypatch
+):
+    from service_tests.test_agent_runtime import bundle
+
+    root = agents.local_state.directory(tmp_path / "private")
+    first, second = bundle(tmp_path, "1.0.0"), bundle(tmp_path, "1.0.1")
+    with agents.local_state.lock(root):
+        agents.agent_runtime.prepare(root, first)
+    identifier = uuid4()
+    external = tmp_path / "agent.toml"
+    external.write_bytes(b"keep = true\n")
+    agents.local_state.write(
+        root / str(identifier) / "setup.json",
+        {
+            "id": str(identifier),
+            "client": "codex",
+            "server_name": "mnemion",
+            "config_path": str(external),
+            "endpoint": "http://127.0.0.1:9",
+            "tenant_id": str(uuid4()),
+            "principal_id": str(uuid4()),
+            "created_at": "2026-10-31T00:00:00+00:00",
+            "executable": str(first),
+            "launcher": True,
+        },
+    )
+    script = root / ("mnemion-agent.ps1" if os.name == "nt" else "mnemion-agent.sh")
+    script.unlink()
+    abandoned = root / ("runtime-stage-" + "a" * 32)
+    abandoned.mkdir()
+    (abandoned / "partial").write_bytes(b"partial")
+    current = (root / "runtime-current").read_text(encoding="ascii").strip()
+    kept = root / "runtimes" / ("r-" + "ab" * 16)
+    stale = root / "runtimes" / ("r-" + "cd" * 16)
+    assert {kept.name, stale.name}.isdisjoint({current})
+    kept.mkdir()
+    (kept / f".lease-{os.getpid()}").write_text("", encoding="ascii")
+    stale.mkdir()
+    (stale / "old").write_text("old", encoding="ascii")
+
+    def reject_configuration(path):
+        raise AssertionError(f"read external configuration {path}")
+
+    def reject_profiles(client):
+        raise AssertionError(f"enumerated client profile {client}")
+
+    def reject_version(_root):
+        raise AssertionError("read runtime version projection")
+
+    monkeypatch.setattr(agents.agent_setup, "configuration", reject_configuration)
+    monkeypatch.setattr(agents.agent_setup, "default_path", reject_profiles)
+    monkeypatch.setattr(agents.agent_runtime, "current_version", reject_version)
+    with pytest.raises(ValueError, match="supported private agent setup operation"):
+        agents.perform(root, {"operation": "maintain", "profiles": []}, second)
+    repaired = agents.perform(root, {"operation": "maintain"}, second)
+    assert repaired == {"runtime_attention": None}
+    assert external.read_bytes() == b"keep = true\n"
+    assert not abandoned.exists() and not stale.exists() and kept.is_dir()
+    launcher = (
+        agents.agent_runtime.WINDOWS_LAUNCHER
+        if os.name == "nt"
+        else agents.agent_runtime.POSIX_LAUNCHER
+    )
+    assert script.read_bytes() == launcher.encode("utf-8")
+    published = (root / "runtime-current").read_text(encoding="ascii").strip()
+    inventory = json.loads((root / "runtimes" / published / "mnemion-runtime.json").read_text())
+    assert inventory["version"] == "1.0.1"
+    assert (root / "runtimes" / current).is_dir()
+    pointer = (root / "runtime-current").read_bytes()
+    broken = bundle(tmp_path, "1.0.2")
+    broken.write_bytes(b"changed after packaging")
+    failed = agents.perform(root, {"operation": "maintain"}, broken)
+    assert failed == {
+        "runtime_attention": (
+            "The private agent runtime could not be refreshed. Existing files are retained; "
+            "check available disk space and reopen Studio to retry."
+        )
+    }
+    assert (root / "runtime-current").read_bytes() == pointer
+    assert not list(root.glob("runtime-stage-*")) and kept.is_dir()
+    assert external.read_bytes() == b"keep = true\n"
+    monkeypatch.undo()
+    view = agents.status(root, second)
+    assert view["runtime_version"] == "1.0.1" and view["runtime_attention"] is None
+    assert (
+        view["profiles"]
+        and view["installations"][0]["configuration_hash"]
+        == hashlib.sha256(external.read_bytes()).hexdigest()
+    )

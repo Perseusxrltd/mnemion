@@ -37,3 +37,52 @@ test('update suspension blocks new previews and mutations until cancellation res
     assert.throws(() => desktopAction(action, { shell_command: 'unreviewed' }), /unsupported input/)
   }
 })
+
+test('status overlapping maintenance receives a fresh complete projection', async () => {
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  const operations = []
+  const full = {
+    profiles: [{ client: 'codex', config_path: '/fixture.toml', exists: true, custom_path_required: false }],
+    installations: [{ id: 'fixture', state: 'installed', configuration_hash: 'abc', private_key_file_exists: true, agent_restart_required: true }],
+    credential_storage: 'private_os_account_file', max_installations: 64, runtime_version: '9.9.9', runtime_attention: null,
+  }
+  const manager = new DesktopAgents(async request => {
+    operations.push(request.operation)
+    if (request.operation === 'maintain') { await gate; return { runtime_attention: 'partial' } }
+    return full
+  })
+  try {
+    manager.start()
+    const pending = manager.status()
+    release()
+    assert.deepEqual(await pending, full)
+    assert.deepEqual(operations, ['maintain', 'status'])
+  } finally { await manager.close() }
+})
+
+test('active maintenance blocks updates and drains before any later call', async () => {
+  let active = 0, closed = false, calls = 0
+  const manager = new DesktopAgents(async (request, signal) => {
+    calls++
+    assert.equal(request.operation, 'maintain')
+    active++
+    try {
+      return await new Promise((resolve, reject) => signal.addEventListener('abort', () => setImmediate().then(() => { closed = true; reject(new Error('Cancelled')) }), { once: true }))
+    } finally { active-- }
+  })
+  manager.start()
+  assert.equal(manager.busy, true)
+  assert.equal(manager.pauseForUpdate(), false)
+  const pendingStatus = manager.status()
+  const removal = manager.remove({ id: 'fixture', configuration_hash: null, confirm: true })
+  const statusRejected = assert.rejects(pendingStatus, /updating or closing/)
+  const removalRejected = assert.rejects(removal, /updating or closing/)
+  await manager.close()
+  await statusRejected
+  await removalRejected
+  assert.equal(closed, true)
+  assert.equal(active, 0)
+  assert.equal(manager.busy, false)
+  assert.equal(calls, 1)
+})

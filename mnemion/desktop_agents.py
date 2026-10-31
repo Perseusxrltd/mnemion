@@ -127,7 +127,7 @@ def records(root: Path) -> list[Record]:
     return result
 
 
-def status(root: Path, executable: Path | None = None) -> dict:
+def maintained(root: Path, executable: Path | None = None) -> tuple[list[Record], str | None]:
     local_state.directory(root)
     attention = None
     with local_state.lock(root):
@@ -141,6 +141,16 @@ def status(root: Path, executable: Path | None = None) -> dict:
                 agent_runtime.prepare(root, executable)
             except (OSError, ValueError, local_state.LocalSetupError):
                 attention = "The private agent runtime could not be refreshed. Existing files are retained; check available disk space and reopen Studio to retry."
+    return saved, attention
+
+
+def maintain(root: Path, executable: Path | None = None) -> dict:
+    _, attention = maintained(root, executable)
+    return {"runtime_attention": attention}
+
+
+def status(root: Path, executable: Path | None = None) -> dict:
+    saved, attention = maintained(root, executable)
     profiles = []
     for client in agent_setup.CLIENTS:
         try:
@@ -346,6 +356,7 @@ def remove(root: Path, request: dict) -> dict:
 def perform(root: Path, request: dict, executable: Path) -> dict:
     fields = {
         "status": {"operation"},
+        "maintain": {"operation"},
         "preview": {"operation", "setup"},
         "install": {
             "operation",
@@ -362,6 +373,8 @@ def perform(root: Path, request: dict, executable: Path) -> dict:
         raise ValueError("Choose a supported private agent setup operation")
     if operation == "status":
         return status(root, executable)
+    if operation == "maintain":
+        return maintain(root, executable)
     if operation == "preview":
         return preview(root, request, executable)
     if operation == "install":

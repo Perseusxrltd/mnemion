@@ -5,6 +5,7 @@ import type { SourceCall } from './desktop-sources.js'
 export class DesktopAgents {
   private work?: Promise<Record<string, unknown>>
   private reading?: Promise<AgentSetupStatus>
+  private maintaining?: Promise<unknown>
   private suspended = false
   private closed = false
   private controllers = new Set<AbortController>()
@@ -13,10 +14,10 @@ export class DesktopAgents {
   constructor(private call: SourceCall) {}
   start() {
     if (this.timer || this.closed) return
-    const refresh = () => { if (!this.suspended && !this.busy) void this.status().catch(() => {}) }
+    const refresh = () => { if (!this.suspended && !this.busy) void this.maintain().catch(() => {}) }
     refresh(); this.timer = setInterval(refresh, 300000); this.timer.unref()
   }
-  get busy(): boolean { return !!this.work || !!this.reading || !!this.controllers.size }
+  get busy(): boolean { return !!this.work || !!this.reading || !!this.maintaining || !!this.controllers.size }
   private async invoke(request: Record<string, unknown>, signal?: AbortSignal) {
     if (this.suspended || this.closed) throw new Error('Wait for the app to finish updating or closing.')
     const abort = new AbortController(), cancel = () => abort.abort()
@@ -28,7 +29,15 @@ export class DesktopAgents {
     try { return await work }
     finally { this.calls.delete(work); this.controllers.delete(abort); signal?.removeEventListener('abort', cancel) }
   }
+  private maintain(): Promise<unknown> {
+    if (this.suspended || this.closed || this.work || this.reading || this.maintaining) return Promise.resolve<unknown>(undefined)
+    const run = this.invoke({ operation: 'maintain' }).finally(() => { if (this.maintaining === run) this.maintaining = undefined })
+    this.maintaining = run
+    return run
+  }
   async status(): Promise<AgentSetupStatus> {
+    if (this.work) await this.work.catch(() => {})
+    if (this.maintaining) await this.maintaining.catch(() => {})
     if (this.work) await this.work.catch(() => {})
     if (!this.reading) this.reading = this.invoke({ operation: 'status' }).then(value => value as AgentSetupStatus)
       .finally(() => { this.reading = undefined })
@@ -40,6 +49,8 @@ export class DesktopAgents {
   }
   private async mutate(operation: 'install' | 'remove', input: AgentInstall | AgentRemove, signal?: AbortSignal): Promise<AgentSetupResult> {
     if (this.work) throw new Error('Wait for the current agent setup operation.')
+    if (this.reading) await this.reading.catch(() => {})
+    if (this.maintaining) await this.maintaining.catch(() => {})
     if (this.reading) await this.reading.catch(() => {})
     if (this.work) throw new Error('Wait for the current agent setup operation.')
     this.work = this.invoke({ ...input, operation }, signal)
