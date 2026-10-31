@@ -22,10 +22,35 @@ export default function CaptureStatus({ report }: { report?: CaptureReport }) {
   const observed = !!report?.coverage;
   useEffect(() => {
     if (!observed) return;
-    const refresh = () => { if (!document.hidden) setNow(Date.now()); };
-    const timer = window.setInterval(refresh, 60_000);
-    document.addEventListener('visibilitychange', refresh);
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+    let timer: number | undefined;
+    let ignore = false;
+    const clearTimer = () => {
+      if (timer === undefined) return;
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+    const tick = () => {
+      if (ignore || document.hidden) return;
+      setNow(Date.now());
+    };
+    const arm = () => {
+      if (ignore || document.hidden || timer !== undefined) return;
+      timer = window.setInterval(tick, 60_000);
+    };
+    const onVisibility = () => {
+      if (ignore) return;
+      clearTimer();
+      if (document.hidden) return;
+      tick();
+      arm();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    arm();
+    return () => {
+      ignore = true;
+      clearTimer();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [observed]);
   if (!report) return <p className="ws-helper">Retained capture is selected. Local intake and delivery have not yet been observed.</p>;
   const coverage = report.coverage;
