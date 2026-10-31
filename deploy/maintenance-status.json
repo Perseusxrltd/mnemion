@@ -62,39 +62,23 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "872afc69552052c3435c60d994ccda294e0f70a5",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-31T21:51:19Z",
+      "updated_at": "2026-10-31T21:51:29Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41245512744",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 3,
-        "completed": 0,
-        "succeeded": 0,
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
         "active": [
-          {
-            "id": 124667996696,
-            "name": "lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
-            ]
-          },
-          {
-            "id": 124667996894,
-            "name": "Select checks",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
           {
             "id": 124667996910,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run npm --prefix studio/frontend run test:telemetry"
             ]
           }
         ]
@@ -140,28 +124,10 @@
       "workflow": "website-release.yml",
       "branch": "main",
       "source_commit": "872afc69552052c3435c60d994ccda294e0f70a5",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-31T21:51:23Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41245512708",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 124667996848,
-            "name": "synchronize",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the latest published asset inventory"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-31T21:51:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41245512708"
     },
     {
       "id": 41201336239,
@@ -175,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T21:51:27+00:00"
+  "observed_at": "2026-10-31T21:52:06+00:00"
 }
