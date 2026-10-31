@@ -352,7 +352,9 @@ def test_unequal_child_peak_between_baseline_and_live_is_ordered():
         live_resident_size=9_000_000,
         live_resident_size_max=9_371_648,
     )
-    assert obs["baseline_resident_size_max"] < obs["child_ru_maxrss"] < obs["live_resident_size_max"]
+    assert (
+        obs["baseline_resident_size_max"] < obs["child_ru_maxrss"] < obs["live_resident_size_max"]
+    )
     assert receipt.classify(obs) == "live_counter_ok"
 
 
@@ -368,7 +370,9 @@ def test_denied_or_unknown_child_counter_is_not_an_ordering_failure():
         outcome="name_port_denied",
     )
     assert receipt.classify(denied) == "name_port_denied"
-    unknown = observation(child_ru_maxrss=None, outcome="counter_missing", detail="handshake_failed")
+    unknown = observation(
+        child_ru_maxrss=None, outcome="counter_missing", detail="handshake_failed"
+    )
     assert receipt.classify(unknown) == "counter_missing"
 
 
