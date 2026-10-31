@@ -57,15 +57,15 @@
   ],
   "runs": [
     {
-      "id": 41168160626,
+      "id": 41172037482,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "d893d2bbd11c9c6d4ddb81f04170f04108f199bc",
+      "source_commit": "c8ca44ba07ceb1d3bdf4b93efb0993478c0e909b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T04:22:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41168160626"
+      "updated_at": "2026-10-31T05:42:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41172037482"
     },
     {
       "id": 41152435480,
@@ -90,6 +90,53 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41146610806"
     },
     {
+      "id": 41173884074,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.59",
+      "source_commit": "c8ca44ba07ceb1d3bdf4b93efb0993478c0e909b",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-31T05:54:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41173884074",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 21,
+        "completed": 18,
+        "succeeded": 17,
+        "active": [
+          {
+            "id": 124458923478,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 124458923503,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 124458923517,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Native Windows installation, authenticated upgrade and relaunch"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
       "id": 41151967718,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -101,15 +148,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41151967718"
     },
     {
-      "id": 41168160590,
+      "id": 41175860094,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "d893d2bbd11c9c6d4ddb81f04170f04108f199bc",
+      "source_commit": "0ef4796757dec0d9091d67d5661a3cb4a52ad125",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T04:20:43Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41168160590"
+      "updated_at": "2026-10-31T06:15:59Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41175860094"
     },
     {
       "id": 41152433304,
@@ -123,5 +170,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41152433304"
     }
   ],
-  "observed_at": "2026-10-31T04:22:45+00:00"
+  "observed_at": "2026-10-31T06:16:27+00:00"
 }
