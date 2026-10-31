@@ -149,6 +149,37 @@ component checks do not measure whole-app RAM, compare hardware speed or
 qualify the resource budget. Telemetry, workload and resource acceptance
 remain false.
 
+A later source review found a child-enumeration contract error. Apple's
+[`proc_listchildpids`](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/libsyscall/wrappers/libproc/libproc.c#L88)
+returns a PID count while its buffer size is bytes; the reader divided that
+count again. Pure contract doubles omitted every child in cases with one to
+three children and retained only the first of four. A
+[null-buffer query](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/kern/proc_info.c#L379)
+sizes from the whole-host process count plus 20.
+
+The reader now makes one query with a fixed 64-PID buffer, checking count,
+errno and bounds. Full or failed results stay distinct from an empty list.
+Parent creation identity is rechecked before and after child memory queries. The
+FIFO fixture requires a live root and child, closes the first descriptor if
+the second open fails, and accepts only root exit zero.
+
+Original worker checks recorded 5 passes in 0.28 seconds after a fixture
+`NameError` (1 failed, 4 passed in 0.47 seconds), and 4 passes in 0.33 seconds
+after a Windows `mkfifo` fixture correction (2 failed, 2 passed in 0.62 seconds).
+Review removed checks of source text and retained behavioral checks; the
+passing selections were not repeated.
+
+[Run 41159112141](https://github.com/Perseusxrltd/mnemion/actions/runs/41159112141)
+passed once on both Mac targets at source
+`300b5e7e362a46af93b53d5f15b2aae90b0b73a5`, with separate source-bound C and
+adapter receipts. Both adapters report `darwin_live_descendant_observed=true`
+and one descendant in the deterministic fixture. The separate ordinary work
+ledger recorded three identities on Intel and two on ARM. Cleanup succeeded;
+coverage remains partial and lifetime CPU incomplete. Final and unseen-exited
+memory coverage stay false, as do telemetry, workload and budget acceptance.
+The cause of run 41154499871's one-identity receipts remains unproven; those
+historical results are unchanged.
+
 The reviewed public XNU commit is
 [`f6217f8`](https://github.com/apple-oss-distributions/xnu/tree/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea),
 dated 16 October 2025. Its

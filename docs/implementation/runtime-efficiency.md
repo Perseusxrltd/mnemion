@@ -52,6 +52,11 @@ preserved. These diagnostics do not add a production background worker or
 establish whole-product CPU/RAM savings or resource acceptance. Production
 telemetry remains off.
 
+The corrected Mac child reader passed a further native component check on
+both targets, each observing one deliberately held live descendant. That
+fixture is separate from the ordinary work ledger; coverage across the full process lifetime
+remains incomplete.
+
 ## Acceptance work
 
 Measure the complete owned process set, including the app, local engine,
