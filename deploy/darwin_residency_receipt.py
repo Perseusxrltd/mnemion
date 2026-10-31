@@ -74,9 +74,7 @@ def _optional_int(value, *, minimum=None):
 
 def _text(value, limit):
     return (
-        isinstance(value, str)
-        and len(value) <= limit
-        and all(32 <= ord(ch) < 127 for ch in value)
+        isinstance(value, str) and len(value) <= limit and all(32 <= ord(ch) < 127 for ch in value)
     )
 
 

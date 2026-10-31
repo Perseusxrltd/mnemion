@@ -222,7 +222,10 @@ def test_stop_owned_probe_kills_only_its_verified_group():
     def kill(pid, sig):
         calls.append(("pid", pid, sig))
 
-    assert receipt.stop_owned_probe(Proc(), getpgid=getpgid, killpg=killpg, kill=kill) == "killed_group"
+    assert (
+        receipt.stop_owned_probe(Proc(), getpgid=getpgid, killpg=killpg, kill=kill)
+        == "killed_group"
+    )
     assert calls == [("group", 4321, receipt.SIGKILL)]
 
 
@@ -267,7 +270,9 @@ def test_stop_owned_probe_refuses_a_dead_or_privileged_pid():
     def boom(*_args):
         raise AssertionError("must not signal")
 
-    assert receipt.stop_owned_probe(Dead(), getpgid=boom, killpg=boom, kill=boom) == "already_exited"
+    assert (
+        receipt.stop_owned_probe(Dead(), getpgid=boom, killpg=boom, kill=boom) == "already_exited"
+    )
     assert receipt.stop_owned_probe(Init(), getpgid=boom, killpg=boom, kill=boom) == "refused"
 
 
@@ -290,9 +295,9 @@ def test_arch_and_source_binding():
 
 
 def test_probe_source_uses_the_name_port_and_not_a_stronger_port():
-    text = (
-        Path(__file__).resolve().parents[1] / "deploy" / "probe_darwin_residency.c"
-    ).read_text(encoding="utf-8")
+    text = (Path(__file__).resolve().parents[1] / "deploy" / "probe_darwin_residency.c").read_text(
+        encoding="utf-8"
+    )
     assert "task_name_for_pid" in text
     assert "task_for_pid(" not in text
     assert "mach_vm_read" not in text
@@ -301,7 +306,10 @@ def test_probe_source_uses_the_name_port_and_not_a_stronger_port():
 
 def test_workflow_is_manual_two_target_and_does_not_interpolate_source():
     text = (
-        Path(__file__).resolve().parents[1] / ".github" / "workflows" / "native-residency-counters.yml"
+        Path(__file__).resolve().parents[1]
+        / ".github"
+        / "workflows"
+        / "native-residency-counters.yml"
     ).read_text(encoding="utf-8")
     assert text.count("os: macos-26") == 1
     assert text.count("os: macos-15-intel") == 1

@@ -822,7 +822,11 @@ class _JobApi:
         if self.duplicate_fail:
             return None
         handle = self.query_for_root
-        copied = self.creation.get(process) if self.duplicate_creation is None else self.duplicate_creation
+        copied = (
+            self.creation.get(process)
+            if self.duplicate_creation is None
+            else self.duplicate_creation
+        )
         self.creation[handle] = copied
         self.live[handle] = True
         self.in_job.setdefault(handle, True)
@@ -942,7 +946,9 @@ def test_windows_query_handles_keep_limited_information_rights():
         def GetCurrentProcess(self):
             return -1
 
-        def DuplicateHandle(self, source_process, source, target_process, out, access, inherit, options):
+        def DuplicateHandle(
+            self, source_process, source, target_process, out, access, inherit, options
+        ):
             seen.append(("dup", access, inherit, options))
             out._obj.value = 12
             return 1

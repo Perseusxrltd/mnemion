@@ -1039,7 +1039,11 @@ class _WinApi:
         k.GetProcessTimes.restype = wintypes.BOOL
         k.K32GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD]
         k.K32GetProcessMemoryInfo.restype = wintypes.BOOL
-        k.IsProcessInJob.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(wintypes.BOOL)]
+        k.IsProcessInJob.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.POINTER(wintypes.BOOL),
+        ]
         k.IsProcessInJob.restype = wintypes.BOOL
         k.GetExitCodeProcess.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.DWORD)]
         k.GetExitCodeProcess.restype = wintypes.BOOL
