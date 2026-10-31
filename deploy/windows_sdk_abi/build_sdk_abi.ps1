@@ -39,6 +39,25 @@ function Limit-Text([object]$Value, [int]$Max) {
     return $text
 }
 
+function Get-CapturedLines([object]$Entry) {
+    if ($null -eq $Entry) { return @() }
+    $text = ''
+    if ($Entry -is [System.Management.Automation.ErrorRecord]) {
+        $text = [string]$Entry.Exception.Message
+        if (-not $text) { $text = [string]$Entry }
+    } else {
+        $text = [string]$Entry
+    }
+    $lines = @()
+    foreach ($line in @($text -split '\r?\n')) {
+        $clean = $line -replace '^.*?:\s+(?=Microsoft)', ''
+        $clean = Limit-Text $clean 160
+        if ($clean) { $lines += $clean }
+        if ($lines.Count -ge 8) { break }
+    }
+    return $lines
+}
+
 function Assert-NumericTree($Node, [string]$PathName) {
     if ($Node -is [pscustomobject]) {
         foreach ($property in $Node.PSObject.Properties) {
@@ -91,15 +110,28 @@ $exeReady = $false
 try {
     Import-Module "$installation/Common7/Tools/Microsoft.VisualStudio.DevShell.dll"
     Enter-VsDevShell -VsInstallPath $installation -SkipAutomaticLocation -DevCmdArguments "-arch=$Architecture -host_arch=$HostArchitecture"
-    $bannerLines = @(& cl.exe 2>&1)
-    $bannerFirst = $bannerLines | Select-Object -First 1
-    if ($bannerFirst -is [System.Management.Automation.ErrorRecord]) {
-        $bannerText = $bannerFirst.Exception.Message
-        if (-not $bannerText) { $bannerText = $bannerFirst.ToString() }
-    } else {
-        $bannerText = [string]$bannerFirst
+    $captured = @(& cl.exe 2>&1)
+    $normalized = @()
+    foreach ($entry in $captured) {
+        $normalized += @(Get-CapturedLines $entry)
+        if ($normalized.Count -ge 32) { break }
     }
-    $banner = Limit-Text ($bannerText -replace '^.*?:\s+(?=Microsoft)', '') 160
+    if ($normalized.Count -gt 32) { $normalized = @($normalized | Select-Object -First 32) }
+    $bannerPattern = 'Microsoft \(R\) C/C\+\+ Optimizing Compiler Version \d+(?:\.\d+)+ for [A-Za-z0-9]+'
+    $foundBanners = @()
+    foreach ($line in $normalized) {
+        foreach ($hit in @([regex]::Matches($line, $bannerPattern))) {
+            $foundBanners += $hit.Value
+        }
+    }
+    $distinctBanners = @($foundBanners | Select-Object -Unique)
+    if ($distinctBanners.Count -eq 0) {
+        throw 'No MSVC compiler version banner was found in the cl output. Refusing to treat usage text as the compiler target.'
+    }
+    if ($distinctBanners.Count -gt 1) {
+        throw "MSVC compiler banners conflict: $($distinctBanners -join ' | ')."
+    }
+    $banner = [string]$distinctBanners[0]
     if ($banner -match 'ARM64EC') {
         throw "The selected compiler is ARM64EC ($banner). This oracle accepts only x64 and ARM64."
     }
