@@ -31,6 +31,7 @@
 #pragma warning(pop)
 #endif
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -150,7 +151,7 @@ static void extended_bitfield(size_t *origin, size_t *width,
     unsigned char reserved_bytes[sizeof(EVENT_HEADER_EXTENDED_DATA_ITEM)];
     unsigned char linkage_diff[sizeof(EVENT_HEADER_EXTENDED_DATA_ITEM)];
     unsigned char reserved_diff[sizeof(EVENT_HEADER_EXTENDED_DATA_ITEM)];
-    volatile USHORT ones = (USHORT)~0u;
+    volatile USHORT ones = USHRT_MAX;
     size_t size = sizeof(EVENT_HEADER_EXTENDED_DATA_ITEM);
     size_t index;
     size_t first;
