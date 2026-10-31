@@ -915,7 +915,7 @@ def _windows(api):
     backend._retained = {}
     backend._live_pid = {}
     backend._gaps = {
-        "exited_before_query_handle": 0,
+        "query_handle_unavailable_observations": 0,
         "membership_rejected": 0,
         "identity_or_membership_unproven": 0,
         "final_query_failed": 0,
@@ -1136,7 +1136,7 @@ def test_windows_missed_final_read_keeps_the_sampled_peak_unlabeled():
     assert "final_working_set_peak" in snap["unavailable"]
 
 
-def test_windows_exited_before_open_does_not_invent_an_identity():
+def test_windows_unavailable_query_does_not_invent_an_identity():
     api = _JobApi()
     backend = _windows(api)
     backend.job = api.job
@@ -1148,8 +1148,10 @@ def test_windows_exited_before_open_does_not_invent_an_identity():
     snap = backend.snapshot()
     assert backend.ledger.public() == []
     assert snap["identities_missing"] == 2
-    assert snap["observation_gaps"]["exited_before_query_handle"] == 1
-    assert "process_exited_before_query_handle" in snap["unavailable"]
+    assert snap["observation_gaps"]["query_handle_unavailable_observations"] == 1
+    assert "query_handle_unavailable" in snap["unavailable"]
+    assert "exited_before_query_handle" not in snap["observation_gaps"]
+    assert "process_exited_before_query_handle" not in snap["unavailable"]
     assert snap["working_set_accounting"] == "unavailable"
 
 
@@ -1300,6 +1302,8 @@ def test_windows_finish_drains_once_and_does_not_add_a_root_wait(monkeypatch):
     launch = accounting.OwnedLaunch(backend, bound_seconds=30, sample_seconds=0.05)
     report = launch.finish()
     assert seen == [("drain", 5)]
+    assert report["cleanup"]["ok"] is True
+    assert report["cleanup"]["failure"] is None
     assert report["cleanup"]["terminated_owned_group"] is True
     assert report["kernel"]["active_processes"] == 0
     assert report["coverage"]["cpu_lifetime_complete"] is True
@@ -1317,8 +1321,50 @@ def test_windows_finish_drains_once_and_does_not_add_a_root_wait(monkeypatch):
     launch = accounting.OwnedLaunch(backend, bound_seconds=5, sample_seconds=0.05)
     report = launch.finish()
     assert seen == []
+    assert report["cleanup"]["ok"] is True
+    assert report["cleanup"]["failure"] is None
     assert report["cleanup"]["terminated_owned_group"] is False
     assert report["coverage"]["cpu_lifetime_complete"] is True
+
+    stuck = _JobApi()
+    stuck.members = [stuck.root_pid]
+    stuck.active = 1
+    backend = _windows(stuck)
+    backend.spawn()
+    seen.clear()
+
+    def stuck_drain(seconds):
+        seen.append(("drain", seconds))
+        return False
+
+    backend.wait_until_drained = stuck_drain
+    backend.wait_root = lambda seconds: seen.append(("root", seconds)) or True
+    launch = accounting.OwnedLaunch(backend, bound_seconds=30, sample_seconds=0.05)
+    report = launch.finish()
+    assert seen == [("drain", 5)]
+    assert report["cleanup"]["ok"] is False
+    assert report["cleanup"]["failure"] == "drain_timeout"
+    assert report["kernel"]["active_processes"] == 1
+    assert report["coverage"]["cpu_lifetime_complete"] is False
+    closed_once = [stuck.query_for_root, stuck.thread, stuck.process, stuck.job]
+    assert stuck.closed == closed_once
+    assert backend.close() == (True, None)
+    assert stuck.closed == closed_once
+
+    earlier = _JobApi()
+    earlier.members = [earlier.root_pid]
+    earlier.active = 1
+    backend = _windows(earlier)
+    backend.spawn()
+    backend.terminate = lambda: (False, "job_missing")
+    backend.wait_until_drained = lambda seconds: False
+    launch = accounting.OwnedLaunch(backend, bound_seconds=30, sample_seconds=0.05)
+    report = launch.finish()
+    assert report["cleanup"]["ok"] is False
+    assert report["cleanup"]["failure"] == "job_missing"
+    assert report["kernel"]["active_processes"] == 1
+    assert report["coverage"]["cpu_lifetime_complete"] is False
+    assert earlier.closed == [earlier.query_for_root, earlier.thread, earlier.process, earlier.job]
 
 
 def test_windows_sample_waits_for_close_instead_of_sharing_a_handle():

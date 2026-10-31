@@ -368,7 +368,8 @@ class OwnedLaunch:
                 # on another wait after the root handle is already signaled.
                 # Darwin still waits for the root handle only.
                 if isinstance(self.backend, WindowsJobBackend):
-                    self.backend.wait_until_drained(5)
+                    if self.backend.wait_until_drained(5) is not True and cleanup_failure is None:
+                        cleanup_failure = "drain_timeout"
                 elif not linux_group:
                     self.backend.wait_root(5)
             if not linux_group:
@@ -598,7 +599,7 @@ class WindowsJobBackend:
         self._retained: dict[str, _RetainedQuery] = {}
         self._live_pid: dict[int, str] = {}
         self._gaps = {
-            "exited_before_query_handle": 0,
+            "query_handle_unavailable_observations": 0,
             "membership_rejected": 0,
             "identity_or_membership_unproven": 0,
             "final_query_failed": 0,
@@ -746,8 +747,12 @@ class WindowsJobBackend:
             return None
         handle = self._api.open_query(pid)
         if not handle:
+            # Each failed OpenProcess is one observation. Access denial and
+            # any other error count the same way; exit is not proved. The
+            # total is failed observations, not unique missing processes.
+            # identities_missing reconciles TotalProcesses with ledger rows.
             if not any(item.pid == pid for item in self._retained.values()):
-                self._gaps["exited_before_query_handle"] += 1
+                self._gaps["query_handle_unavailable_observations"] += 1
             return None
         try:
             member = self._api.is_in_job(handle, self.job)
@@ -852,7 +857,9 @@ class WindowsJobBackend:
             "observer_in_measured_group": None if pids is None else os.getpid() in pids,
             "working_set_accounting": state,
             "observation_gaps": {
-                "exited_before_query_handle": self._gaps["exited_before_query_handle"],
+                "query_handle_unavailable_observations": self._gaps[
+                    "query_handle_unavailable_observations"
+                ],
                 "membership_rejected": self._gaps["membership_rejected"],
                 "identity_or_membership_unproven": self._gaps["identity_or_membership_unproven"],
                 "final_query_failed": self._gaps["final_query_failed"],
@@ -892,8 +899,8 @@ class WindowsJobBackend:
         return "unavailable"
 
     def _gap_tokens(self, unavailable: list[str]) -> None:
-        if self._gaps["exited_before_query_handle"]:
-            unavailable.append("process_exited_before_query_handle")
+        if self._gaps["query_handle_unavailable_observations"]:
+            unavailable.append("query_handle_unavailable")
         if self._gaps["membership_rejected"] or self._gaps["identity_or_membership_unproven"]:
             unavailable.append("process_identity_or_membership_unproven")
         if self._gaps["pid_list_unreadable"]:
@@ -910,7 +917,7 @@ class WindowsJobBackend:
             state = "unavailable"
         # A counter can exist before the job is empty. That reading is partial,
         # not a finished lifetime. Final peaks on handles we already hold do
-        # not cover helpers that exited before a handle existed, or processes
+        # not cover processes whose query handle was unavailable, or processes
         # past the ledger cap. Status stays partial even when every observed
         # row is final.
         return {
