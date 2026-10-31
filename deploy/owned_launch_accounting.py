@@ -1899,7 +1899,8 @@ class DarwinBackend:
             if self._reaped and self.root_creation is None:
                 return
             root = self.process.pid
-            seen = set()
+            # pid -> creation frozen when this sample accepted that pid.
+            seen: dict[int, int] = {}
             pending = [root]
             current_sum = 0
             saw = 0
@@ -1908,14 +1909,21 @@ class DarwinBackend:
                 if pid in seen or pid <= 0 or pid == os.getpid():
                     continue
                 parent = None
+                parent_creation = None
                 if pid != root:
                     parent = _darwin_ppid(self._library(), pid)
                     if parent not in seen:
                         continue
-                charged = self._charge_owned(pid, parent=parent, root=root)
+                    parent_creation = seen[parent]
+                charged = self._charge_owned(
+                    pid,
+                    parent=parent,
+                    parent_creation=parent_creation,
+                    root=root,
+                )
                 if charged is None:
                     continue
-                seen.add(pid)
+                seen[pid] = self.root_creation if pid == root else charged["start"]
                 ledger.observe(
                     pid,
                     charged["start"],
@@ -2093,8 +2101,26 @@ class DarwinBackend:
                 self.process.returncode = returncode
             self._waited = _rusage_microseconds(usage)
 
-    def _charge_owned(self, pid: int, *, parent: int | None, root: int) -> dict | None:
-        """Record one owned pid. Identity is checked before and after the port."""
+    def _parent_creation_still(self, library, parent: int, creation: int) -> bool:
+        """True when that parent pid still has the creation frozen in this sample."""
+        usage = _darwin_rusage(library, parent)
+        if usage is None or type(usage.get("start")) is not int:
+            return False
+        return usage["start"] == creation
+
+    def _charge_owned(
+        self,
+        pid: int,
+        *,
+        parent: int | None,
+        parent_creation: int | None,
+        root: int,
+    ) -> dict | None:
+        """Record one owned pid. Identity is checked before and after the port.
+
+        A child is charged only while its parent still has the creation frozen
+        when this sample accepted that parent. The parent pid alone is not enough.
+        """
         library = self._library()
         before = _darwin_rusage(library, pid)
         if before is None or type(before.get("start")) is not int:
@@ -2106,7 +2132,12 @@ class DarwinBackend:
                 self.root_creation = before["start"]
             if before["start"] != self.root_creation:
                 return None
-        elif type(parent) is not int or _darwin_ppid(library, pid) != parent:
+        elif (
+            type(parent) is not int
+            or type(parent_creation) is not int
+            or _darwin_ppid(library, pid) != parent
+            or not self._parent_creation_still(library, parent, parent_creation)
+        ):
             return None
         basic = _darwin_task_rss(self._task_system(), pid)
         self._remember_port_release(basic)
@@ -2116,7 +2147,9 @@ class DarwinBackend:
         if pid == root:
             if after["start"] != self.root_creation:
                 return None
-        elif _darwin_ppid(library, pid) != parent:
+        elif _darwin_ppid(library, pid) != parent or not self._parent_creation_still(
+            library, parent, parent_creation
+        ):
             return None
         resident = after.get("resident")
         if type(resident) is not int or resident < 0:

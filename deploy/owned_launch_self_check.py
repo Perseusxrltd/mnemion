@@ -208,7 +208,11 @@ def _close_fd(fd: int) -> None:
 def _hold_fifo(path: Path) -> tuple[int, int]:
     os.mkfifo(path, 0o600)
     read_fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
-    write_fd = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
+    try:
+        write_fd = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
+    except OSError:
+        _close_fd(read_fd)
+        raise
     return read_fd, write_fd
 
 
@@ -219,6 +223,10 @@ def _observe_darwin_descendant(script: Path, ready: Path, ack: Path) -> tuple[bo
     benchmark and it does not accept the resource budget.
     """
     fds: list[int] = []
+    report = None
+    observed = False
+    count = 0
+    root_code = None
     try:
         ready_read, ready_write = _hold_fifo(ready)
         fds.extend((ready_read, ready_write))
@@ -246,6 +254,7 @@ def _observe_darwin_descendant(script: Path, ready: Path, ack: Path) -> tuple[bo
             if not launch.wait_root(10):
                 raise AssertionError("darwin observation root did not exit")
             report = launch.finish(canonical_operations_completed=0)
+            root_code = launch.backend.process.returncode
     finally:
         for fd in fds:
             _close_fd(fd)
@@ -258,6 +267,8 @@ def _observe_darwin_descendant(script: Path, ready: Path, ack: Path) -> tuple[bo
         raise AssertionError("darwin observation descendant cpu was reported complete")
     if report["resource_acceptance"] is not False or report["budget"]["compared"] is not False:
         raise AssertionError("darwin observation accepted a budget")
+    if type(root_code) is not int or root_code != 0:
+        raise AssertionError("darwin observation root failed")
     return observed, count
 
 

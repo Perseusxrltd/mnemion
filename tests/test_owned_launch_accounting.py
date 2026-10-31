@@ -613,7 +613,220 @@ def test_counted_child_stays_behind_the_parent_check(monkeypatch):
     ctypes.set_errno(0)
 
 
-def test_darwin_live_descendant_receipt_requires_root_and_a_positive_count():
+def test_child_is_charged_only_while_the_parent_creation_holds(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    def run(*, reuse_before_charge=False, reuse_during_task=False, hide_parent=False):
+        state = {"parent_start": 111, "parent_visible": True}
+        child_tasks = []
+
+        def rusage(_library, pid):
+            if pid == 4242:
+                if not state["parent_visible"]:
+                    return None
+                return _resident(state["parent_start"], 20)
+            if pid == 5000:
+                return _resident(333, 30)
+            return None
+
+        def ppid(_library, pid):
+            return 4242 if pid == 5000 else None
+
+        def children(_library, pid):
+            if pid != 4242:
+                return []
+            if reuse_before_charge:
+                state["parent_start"] = 222
+            if hide_parent:
+                state["parent_visible"] = False
+            return [5000]
+
+        def task(_system, pid):
+            if pid == 5000:
+                child_tasks.append(state["parent_start"])
+                if reuse_during_task:
+                    state["parent_start"] = 222
+            return {
+                "accepted": True,
+                "kr": 0,
+                "count": 12,
+                "resident_size_max": 100,
+                "released": [pid],
+            }
+
+        monkeypatch.setattr(accounting, "_darwin_rusage", rusage)
+        monkeypatch.setattr(accounting, "_darwin_ppid", ppid)
+        monkeypatch.setattr(accounting, "_darwin_children", children)
+        monkeypatch.setattr(accounting, "_darwin_task_rss", task)
+        backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+        backend.process = _RootProcess(4242)
+        backend.root_creation = 111
+        backend._libproc = object()
+        backend._libsystem = object()
+        backend._timebase = (1, 1)
+        backend.sample(backend.ledger)
+        identities = [row["identity"] for row in backend.ledger.public()]
+        return identities, child_tasks, backend.root_creation
+
+    reused, reused_tasks, reused_creation = run(reuse_before_charge=True)
+    assert reused == ["4242:111"]
+    assert reused_tasks == []
+    assert reused_creation == 111
+
+    during, during_tasks, during_creation = run(reuse_during_task=True)
+    assert during == ["4242:111"]
+    assert during_tasks == [111]
+    assert during_creation == 111
+
+    missing, missing_tasks, missing_creation = run(hide_parent=True)
+    assert missing == ["4242:111"]
+    assert missing_tasks == []
+    assert missing_creation == 111
+
+    stable, stable_tasks, stable_creation = run()
+    assert stable == ["4242:111", "5000:333"]
+    assert stable_tasks == [111]
+    assert stable_creation == 111
+
+
+def _darwin_observation_report():
+    return {
+        "qualification": "unqualified",
+        "resource_acceptance": False,
+        "budget": {
+            "additional_rss_bytes_per_process": ADDITIONAL_RSS_BUDGET_BYTES,
+            "cpu_one_core_fraction": CPU_BUDGET_ONE_CORE_FRACTION,
+            "status": "UNACCEPTED",
+            "compared": False,
+        },
+        "missing_recorded_as_zero": False,
+        "coverage": {
+            "status": "partial",
+            "cpu_lifetime_complete": False,
+            "cpu_includes_exited_descendants": False,
+            "sampled_pid_cpu_is_complete": False,
+            "cgroup_memory_peak_is_per_process_rss": False,
+        },
+        "cold_start": {"subtracted": False, "processes": []},
+        "idle_or_settlement_included_in_active_cpu": False,
+        "phases": [{"name": "descendant-observation", "active": False}],
+        "cleanup": {"ok": True, "failure": None, "retried": False},
+        "ledger": [],
+    }
+
+
+def test_hold_fifo_closes_the_read_fd_when_the_write_open_raises(monkeypatch):
+    import deploy.owned_launch_self_check as self_check
+
+    closed = []
+    monkeypatch.setattr(self_check.os, "O_NONBLOCK", 0x800, raising=False)
+    monkeypatch.setattr(self_check.os, "mkfifo", lambda _path, _mode: None, raising=False)
+    monkeypatch.setattr(self_check.os, "close", lambda fd: closed.append(fd))
+
+    def fail_write(_path, flags):
+        if flags & self_check.os.O_WRONLY:
+            raise OSError("write open failed")
+        return 19
+
+    monkeypatch.setattr(self_check.os, "open", fail_write)
+    with pytest.raises(OSError, match="write open failed"):
+        self_check._hold_fifo(Path("descendant-ready"))
+    assert closed == [19]
+
+    closed.clear()
+
+    def both(_path, flags):
+        if flags & self_check.os.O_WRONLY:
+            return 23
+        return 19
+
+    monkeypatch.setattr(self_check.os, "open", both)
+    assert self_check._hold_fifo(Path("descendant-ready")) == (19, 23)
+    assert closed == []
+
+
+def test_observe_darwin_descendant_requires_a_zero_fixture_exit(monkeypatch):
+    import deploy.owned_launch_self_check as self_check
+
+    closed = []
+    finished = []
+
+    def run(returncode):
+        closed.clear()
+        finished.clear()
+        monkeypatch.setattr(self_check.os, "O_NONBLOCK", 0x800, raising=False)
+        monkeypatch.setattr(self_check.os, "mkfifo", lambda _path, _mode: None, raising=False)
+        monkeypatch.setattr(self_check.os, "close", lambda fd: closed.append(fd))
+        opened = iter((19, 23, 31, 37))
+        monkeypatch.setattr(self_check.os, "open", lambda _path, _flags: next(opened))
+        monkeypatch.setattr(
+            self_check.select,
+            "select",
+            lambda reads, _writes, _errors, _timeout: (list(reads), [], []),
+        )
+        monkeypatch.setattr(self_check.os, "read", lambda fd, _size: b"1" if fd == 19 else b"")
+        monkeypatch.setattr(
+            self_check.os,
+            "write",
+            lambda fd, data: 1 if fd == 37 and data == b"1" else 0,
+        )
+
+        class Process:
+            pid = 4242
+
+            def __init__(self):
+                self.returncode = returncode
+
+        class Ledger:
+            def public(self):
+                return [{"pid": 4242}, {"pid": 5000}]
+
+        class Backend:
+            def __init__(self):
+                self.process = Process()
+                self.ledger = Ledger()
+
+            def sample(self, ledger):
+                assert ledger is self.ledger
+
+        class Launch:
+            def __init__(self):
+                self.backend = Backend()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def mark_phase(self, name, *, canonical_operations_completed, active):
+                assert name == "descendant-observation"
+                assert canonical_operations_completed == 0
+                assert active is False
+
+            def wait_root(self, timeout):
+                assert timeout == 10
+                return True
+
+            def finish(self, *, canonical_operations_completed):
+                assert canonical_operations_completed == 0
+                finished.append(self.backend.process.returncode)
+                return _darwin_observation_report()
+
+        monkeypatch.setattr(self_check, "start_owned_launch", lambda *_args, **_kwargs: Launch())
+        return self_check._observe_darwin_descendant(
+            Path("worker.py"),
+            Path("descendant-ready"),
+            Path("descendant-ack"),
+        )
+
+    with pytest.raises(AssertionError, match="root failed"):
+        run(7)
+    assert finished == [7]
+    assert closed == [19, 23, 31, 37]
+    assert run(0) == (True, 1)
+    assert finished == [0]
+    assert closed == [19, 23, 31, 37]
     from deploy.owned_launch_self_check import _WORKER, _darwin_live_descendant_receipt
 
     compile(_WORKER, "<owned-worker>", "exec")
