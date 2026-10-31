@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T09:59:24+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T10:11:08+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.61](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.61). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,20 +22,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 41184189927](https://github.com/Perseusxrltd/mnemion/actions/runs/41184189927) |
-| public-updates\.yml | v4\.46\.61 | in\_progress | [Run 41190846148](https://github.com/Perseusxrltd/mnemion/actions/runs/41190846148) |
+| public-updates\.yml | v4\.46\.61 | success | [Run 41190846148](https://github.com/Perseusxrltd/mnemion/actions/runs/41190846148) |
 | release\.yml | release/4\.46\.61 | success | [Run 41186823219](https://github.com/Perseusxrltd/mnemion/actions/runs/41186823219) |
 | verify-artifacts\.yml | main | success | [Run 41190518626](https://github.com/Perseusxrltd/mnemion/actions/runs/41190518626) |
 | website-release\.yml | main | success | [Run 41184189934](https://github.com/Perseusxrltd/mnemion/actions/runs/41184189934) |
 | website-release\.yml | v4\.46\.61 | success | [Run 41190844256](https://github.com/Perseusxrltd/mnemion/actions/runs/41190844256) |
-
-## Active jobs
-
-[Run 41190846148](https://github.com/Perseusxrltd/mnemion/actions/runs/41190846148): 1/7 jobs completed; 1 succeeded.
-
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-
