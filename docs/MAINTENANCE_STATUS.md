@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-31T06:57:53+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-31T07:04:14+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.59](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.59). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,16 +21,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128) |
+| ci\.yml | main | success | [Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128) |
 | public-updates\.yml | v4\.46\.59 | success | [Run 41177894852](https://github.com/Perseusxrltd/mnemion/actions/runs/41177894852) |
 | release\.yml | release/4\.46\.59 | success | [Run 41173884074](https://github.com/Perseusxrltd/mnemion/actions/runs/41173884074) |
 | verify-artifacts\.yml | main | success | [Run 41177669828](https://github.com/Perseusxrltd/mnemion/actions/runs/41177669828) |
 | website-release\.yml | main | success | [Run 41172037480](https://github.com/Perseusxrltd/mnemion/actions/runs/41172037480) |
 | website-release\.yml | v4\.46\.59 | success | [Run 41177892994](https://github.com/Perseusxrltd/mnemion/actions/runs/41177892994) |
-
-## Active jobs
-
-[Run 41176849128](https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128): 11/12 jobs completed; 11 succeeded.
-
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-

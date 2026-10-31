@@ -62,28 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "6b6582e551397b600e5d40b9262bb62a8e657140",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-31T06:30:18Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 124466118711,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-31T07:03:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41176849128"
     },
     {
       "id": 41177894852,
@@ -141,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41177892994"
     }
   ],
-  "observed_at": "2026-10-31T06:57:53+00:00"
+  "observed_at": "2026-10-31T07:04:14+00:00"
 }
