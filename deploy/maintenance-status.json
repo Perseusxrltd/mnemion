@@ -62,37 +62,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "0387c1ee131d3c2da9f271783dd76f306b844819",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-31T20:44:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41240278649",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 6,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 124652626405,
-            "name": "lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync ruff format --check ."
-            ]
-          },
-          {
-            "id": 124652626407,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-31T20:46:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41240278649"
     },
     {
       "id": 41201338411,
@@ -150,5 +123,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T20:44:53+00:00"
+  "observed_at": "2026-10-31T20:46:35+00:00"
 }
