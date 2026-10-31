@@ -39,12 +39,18 @@ resource checks. This reduces the frequency of idle queue claims; it is not a
 measurement of CPU or RAM savings across the application. Scheduled and
 cross-process submissions retain the bounded fallback.
 The [focused scheduler checks](../validation/2026-10-30-librarian-idle.md)
-cover those behaviors and their limits.
+cover those behaviors and their limits. The idle backoff is published in
+4.46.58; all six public auto-update checks and website synchronization passed.
+That release validation is separate from the counter checks below.
 
 The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
-improves Windows lifetime measurements and cleanup reporting, with a targeted
-Mac capability check pending. These diagnostic changes do not add a production
-background worker or establish whole-product resource acceptance.
+improves Windows lifetime measurements and cleanup reporting. The Darwin
+adapter now retains live per-process kernel RSS peaks. The corrected C probe
+and actual Python adapter passed component checks on both Mac targets, with
+partial coverage and successful cleanup. The original decoder failure remains
+preserved. These diagnostics do not add a production background worker or
+establish whole-product CPU/RAM savings or resource acceptance. Production
+telemetry remains off.
 
 ## Acceptance work
 

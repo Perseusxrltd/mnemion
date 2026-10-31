@@ -11,7 +11,8 @@ growth from a later sample and summed CPU from processes still alive at a
 100 ms poll. Exited helpers were absent from that sum. The adapter below
 records owned lifetimes and keeps remaining coverage gaps explicit. See the
 [31 October counter and cleanup follow-up](../validation/2026-10-31-native-memory-counters.md)
-for current Windows behavior and the pending Mac capability check.
+for current Windows behavior, the verified Mac live counters and the
+unaccepted original child-counter cross-check.
 
 ## API
 
@@ -97,7 +98,9 @@ with no rusage. Python's `rusage.ru_utime` and `ru_stime` are float seconds,
 the same fields as `resource.getrusage`. After the root has exited, lifetime
 CPU is that waited sum in microseconds. A missing or non-float result stays
 null. It is not replaced from a live `proc_pid_rusage` reading and it is not
-reported as zero.
+reported as zero. Memory sampling, live CPU reads and `wait4` share one
+lock. A live CPU reading must match the frozen root creation identity;
+unknown or reused identities stay unmeasured.
 
 `setpgrp` puts the child in its own process group. The group remains while
 any member is alive, including after the root exits. Activity and cleanup
@@ -116,8 +119,10 @@ it is not zero processes.
 
 The root identity is the `proc_pid_rusage` start from the first sample that
 reads the launched root. `spawn` takes that sample immediately. If that read
-fails, the next successful read of the same pid freezes the identity. A
-later sample whose start differs is dropped. It is not stored, and it does
+fails, the next successful read while the root is unreaped freezes the
+identity. A reaped root with no frozen identity cannot adopt a later
+process with the same pid.
+A later sample whose start differs is dropped. It is not stored, and it does
 not replace the identity used for cleanup. Before `kill(-pgid, SIGKILL)`, a
 live process whose pid equals the group id must still have that frozen
 start. A different start is pid reuse: nothing is signaled, and the failure
@@ -130,10 +135,37 @@ Child listing still uses `proc_listchildpids` with a null size probe and a
 
 Resident size is current RSS. Physical footprint is not read. `wait4`
 includes only descendants the direct child itself reaped. Reparented
-descendants stay outside that CPU total, and this adapter has no kernel RSS
-high-water for the tree. Coverage stays `partial`. `cpu_lifetime_complete`
+descendants stay outside that CPU total. Live per-process kernel peaks do
+not cover the full tree lifetime. Coverage stays `partial`. `cpu_lifetime_complete`
 and `cpu_includes_exited_descendants` stay false. Partial coverage is the
 limit of this counter. It is not a zero CPU result.
+
+The adapter lazily reads `MACH_TASK_BASIC_INFO.resident_size_max` through
+`task_name_for_pid` and `task_info`, checking the kernel return and SDK count
+12 (48 bytes). It requests a task-name right only, with no VM-read right or
+broader fallback. Each obtained right receives one deallocation attempt.
+A failed release remains a cleanup failure even after the owned group is
+empty; an earlier cleanup failure is preserved. Ports are not kept for
+later samples.
+
+Within the existing bounded traversal, memory sampling checks creation
+identity before and after the query and rechecks a descendant's parent.
+A genuine live peak enters the identity ledger with
+`kernel_high_water_while_observed` true. A denied or partial query may keep
+validated current RSS; it does not create a peak or erase a previously
+observed one. `peak_working_set_final` stays false, coverage stays partial
+and unseen exited processes stay uncovered. Mixed current/kernel observations
+report `live_kernel_high_water_partial`; that review check passed. The Mach CPU
+timebase conversion and `wait4` limits are unchanged.
+
+The corrected C probe and actual Python adapter passed the two Mac component
+jobs in run 41154499871 on source `5a5ee191e965903417fa161029c555544e5fff0c`.
+The workflow preserves separate `residency-counters-<os>-<arch>` and
+`owned-launch-adapter-<os>-<arch>` artifacts with source and cleanup evidence.
+Each adapter check observed one identity; descendant memory coverage remains
+unproven. These disposable-child checks do not qualify app overhead. The
+original run 41149389299's corrupt child cross-check remains unaccepted and
+unchanged.
 
 Native workflow run 41009326091 on source `23835d6f1a0f085f82ef9bf68ebfab263eee6f33`
 passed all six targets. Windows and Linux lifetime CPU were complete. macOS
