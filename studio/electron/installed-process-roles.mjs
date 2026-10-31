@@ -157,6 +157,7 @@ function emptySample(phase, flags) {
     rejected_rows: 0,
     metrics_overflow: false,
     duplicate_identity: false,
+    checkpoint_overflow: false,
     truncated: false,
     processes: [],
   }
@@ -188,6 +189,7 @@ function carrySampleFailures(sample, prior) {
   sample.metrics_overflow = sample.metrics_overflow === true || prior.metrics_overflow === true
   sample.window_count_capped = sample.window_count_capped === true || prior.window_count_capped === true
   sample.duplicate_identity = sample.duplicate_identity === true || prior.duplicate_identity === true
+  sample.checkpoint_overflow = sample.checkpoint_overflow === true || prior.checkpoint_overflow === true
   sample.truncated = sample.truncated === true
     || prior.truncated === true
     || sample.metrics_overflow
@@ -256,6 +258,7 @@ function finishSample(phase, body) {
     rejected_rows: body.rejected,
     metrics_overflow: body.metrics_overflow === true,
     duplicate_identity: duplicateIdentity,
+    checkpoint_overflow: false,
     truncated,
     processes: rows,
   }
@@ -349,25 +352,39 @@ function sampleOwnershipValid(sample) {
   return sample.processes.every(row => row.role !== 'unassigned_browser' && row.role !== 'unassigned_tab')
 }
 
+function listedSamples(samples) {
+  if (Array.isArray(samples)) return { list: samples, priorOverflow: false }
+  if (plain(samples) && Array.isArray(samples.checkpoints)) {
+    return { list: samples.checkpoints, priorOverflow: samples.checkpoint_overflow === true }
+  }
+  return { list: [], priorOverflow: false }
+}
+
 export function publicProcessRoleRun(samples) {
-  const list = Array.isArray(samples) ? samples : []
+  const { list, priorOverflow } = listedSamples(samples)
   const checkpoints = INSTALLED_PROCESS_CHECKPOINTS.map((phase, index) => {
     if (index >= list.length) return emptySample(phase, { missing: true })
     return resanitizeSample(list[index], phase)
   })
+  // Nine retained checkpoints are not a complete run when another checkpoint was already dropped.
+  const overflow = priorOverflow || list.length > INSTALLED_PROCESS_CHECKPOINTS.length || checkpoints.some(sample => sample.checkpoint_overflow === true)
+  if (overflow) {
+    for (const sample of checkpoints) sample.checkpoint_overflow = true
+  }
   const present = list.length > 0
+  const aligned = checkpoints.every(sample => sample.missing !== true && sample.phase_mismatch !== true && sample.phase_rejected !== true)
   return {
     schema_version: 1,
     present,
-    samples_present: present && list.length === INSTALLED_PROCESS_CHECKPOINTS.length && checkpoints.every(sample => sample.missing !== true && sample.phase_mismatch !== true && sample.phase_rejected !== true),
+    samples_present: !overflow && present && list.length === INSTALLED_PROCESS_CHECKPOINTS.length && aligned,
     source: 'electron_app_metrics',
     separate_from_native_ledger: true,
     electron_creation_time_is_os_birth: false,
     covers_exited_or_unseen_helpers: false,
     first_checkpoint_covers_startup: false,
-    checkpoint_overflow: list.length > INSTALLED_PROCESS_CHECKPOINTS.length,
+    checkpoint_overflow: overflow,
     phases_aligned: present && checkpoints.every(sample => sample.phase_mismatch !== true && sample.missing !== true),
-    ownership_valid: checkpoints.every(sampleOwnershipValid),
+    ownership_valid: !overflow && checkpoints.every(sampleOwnershipValid),
     checkpoints,
   }
 }
@@ -501,7 +518,7 @@ function runFromCase(row) {
   if (!plain(row) || !Object.hasOwn(row, 'process_roles')) return publicProcessRoleRun(undefined)
   const value = row.process_roles
   if (Array.isArray(value)) return publicProcessRoleRun(value)
-  if (plain(value) && Array.isArray(value.checkpoints)) return publicProcessRoleRun(value.checkpoints)
+  if (plain(value) && Array.isArray(value.checkpoints)) return publicProcessRoleRun(value)
   return publicProcessRoleRun(undefined)
 }
 
@@ -543,6 +560,7 @@ export function compareInstalledProcessRoleRss(cases) {
           case_present: rows.length === 1,
           case_ambiguous: rows.length > 1,
           samples_present: baseline.samples_present === true && current.samples_present === true,
+          checkpoint_overflow: baseline.checkpoint_overflow === true || current.checkpoint_overflow === true,
           rescored: false,
           phases_aligned: baseline.phases_aligned === true && current.phases_aligned === true && unmatchedPhases.length === 0,
           unmatched_phases: unmatchedPhases,
@@ -555,7 +573,7 @@ export function compareInstalledProcessRoleRss(cases) {
     }
   })
   const scoped = repeats.every(repeat => repeat.baseline_present && !repeat.baseline_ambiguous && repeat.comparisons.every(comparison => {
-    if (!comparison.case_present || comparison.case_ambiguous || !comparison.samples_present) return false
+    if (!comparison.case_present || comparison.case_ambiguous || !comparison.samples_present || comparison.checkpoint_overflow === true) return false
     const main = comparison.roles.find(role => role.role === 'app_main')
     const renderer = comparison.roles.find(role => role.role === 'app_renderer')
     return main?.compared === true && renderer?.compared === true

@@ -27,12 +27,9 @@ function devtoolsPresent(window: BrowserWindow): boolean {
   return webContents.getAllWebContents().some(contents => {
     if (contents.isDestroyed()) return false
     if (contents.isDevToolsOpened()) return true
-    try {
-      const url = contents.getURL()
-      return url.startsWith('devtools:') || url.startsWith('chrome-devtools:')
-    } catch {
-      return false
-    }
+    // A URL read failure must reach captureProcessRoles and stay an observation failure.
+    const url = contents.getURL()
+    return url.startsWith('devtools:') || url.startsWith('chrome-devtools:')
   })
 }
 

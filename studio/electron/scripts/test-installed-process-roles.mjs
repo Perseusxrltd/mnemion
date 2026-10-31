@@ -474,3 +474,34 @@ test('a shared main and renderer PID stays explicit and unqualified', () => {
   assert.equal(stripped.checkpoints[0].processes.length, 1)
   assert.equal(stripped.ownership_valid, false)
 })
+
+test('a tenth checkpoint stays overflowed through comparison and republication', () => {
+  const extra = sample(PHASES[0], 100)
+  extra.private_note = 'PRIVATE_CHECKPOINT_OVERFLOW_CANARY'
+  const published = publicProcessRoleRun([...PHASES.map(phase => sample(phase, 100)), extra])
+  assert.equal(published.checkpoint_overflow, true)
+  assert.equal(published.samples_present, false)
+  assert.equal(published.ownership_valid, false)
+  assert.equal(published.checkpoints.length, 9)
+  assert.equal(published.checkpoints[0].checkpoint_overflow, true)
+  assert.equal(published.checkpoints[0].processes.find(row => row.role === 'app_main').working_set_bytes, 100 * 1024)
+  for (const republished of [publicProcessRoleRun(published), publicProcessRoleRun(published.checkpoints)]) {
+    assert.equal(republished.checkpoint_overflow, true)
+    assert.equal(republished.samples_present, false)
+    assert.equal(republished.ownership_valid, false)
+    assert.equal(republished.checkpoints.length, 9)
+    assert.equal(republished.checkpoints[8].processes.find(row => row.role === 'app_main').working_set_bytes, 100 * 1024)
+  }
+  const compared = compareInstalledProcessRoleRss([1, 2].flatMap(replicate =>
+    ['unavailable', 'opted_out', 'enabled'].map(condition => resourceCase(replicate, condition, published)),
+  ))
+  assert.equal(compared.scoped_role_comparison_available, false)
+  assert.equal(compared.resource_acceptance, false)
+  assert.equal(compared.budget.status, 'UNACCEPTED')
+  assert.equal(compared.budget.compared, false)
+  assert.equal(compared.budget.additional_rss_bytes_per_process, 8_388_608)
+  assert.equal(compared.budget.cpu_one_core_fraction, 0.005)
+  assert.equal(compared.repeats.every(repeat => repeat.comparisons.every(row => row.samples_present === false && row.checkpoint_overflow === true && row.roles.every(role => role.compared === false))), true)
+  const text = JSON.stringify(published) + JSON.stringify(compared)
+  assert.equal(text.includes('PRIVATE_CHECKPOINT_OVERFLOW_CANARY'), false)
+})
