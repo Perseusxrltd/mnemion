@@ -9,6 +9,9 @@ permissions:
 # Manual compile only. Not native acceptance and not wired to push, pull request,
 # or workflow_call. The job does not run the linked binaries, codesign, security,
 # Keychain, or Electron. Astra dispatches the first compilation after source review.
+# The upload names logs, the receipt, and the two plists. It does not upload the
+# output directory or any binary name. The script deletes the three linked
+# binaries on EXIT, and on INT or TERM, even when clang stops early.
 
 jobs:
   compile:
@@ -54,4 +57,10 @@ jobs:
           name: keychain-helper-compile-only-${{ matrix.os }}-${{ matrix.arch }}
           retention-days: 14
           if-no-files-found: error
-          path: ${{ runner.temp }}/keychain-compile-only
+          path: |
+            ${{ runner.temp }}/keychain-compile-only/helper.txt
+            ${{ runner.temp }}/keychain-compile-only/parent.txt
+            ${{ runner.temp }}/keychain-compile-only/identity.txt
+            ${{ runner.temp }}/keychain-compile-only/receipt.txt
+            ${{ runner.temp }}/keychain-compile-only/HelperInfo.plist
+            ${{ runner.temp }}/keychain-compile-only/ParentInfo.plist

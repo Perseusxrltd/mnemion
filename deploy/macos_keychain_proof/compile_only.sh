@@ -2,6 +2,9 @@
 # Compile-only lane for the disposable Keychain helper proof.
 # It does not execute the binaries it links, and it does not call codesign,
 # security, or anything that reads or writes a Keychain. It is not native acceptance.
+# The three linked binaries live under "$out/bin". EXIT removes those three
+# paths, including after a compiler error. INT and TERM remove the same three
+# paths and exit 1, so a cancel does not resume the script. Logs stay.
 
 set -eu
 
@@ -108,6 +111,21 @@ fi
 cp "$root/HelperInfo.plist" "$out/HelperInfo.plist"
 cp "$root/ParentInfo.plist" "$out/ParentInfo.plist"
 mkdir -p "$out/bin"
+helper_bin="$out/bin/MnemionCredentialHelper"
+parent_bin="$out/bin/MnemionCredentialParent"
+identity_bin="$out/bin/MnemionIdentityDump"
+remove_linked_bins() {
+  rm -f "$helper_bin" "$parent_bin" "$identity_bin" || true
+  rmdir "$out/bin" 2>/dev/null || true
+}
+stop_after_signal() {
+  echo "compile_result=interrupted" >> "$receipt" || true
+  remove_linked_bins
+  trap - EXIT INT TERM
+  exit 1
+}
+trap remove_linked_bins EXIT
+trap stop_after_signal INT TERM
 
 failed=0
 
@@ -138,7 +156,7 @@ run_clang helper \
   -Werror=implicit-function-declaration \
   -I "$root" \
   -I "$root/generated" \
-  -o "$out/bin/MnemionCredentialHelper" \
+  -o "$helper_bin" \
   "$root/helper_main.m" \
   "$root/auth.m" \
   "$root/key_item.m" \
@@ -159,7 +177,7 @@ run_clang parent \
   -Werror=implicit-function-declaration \
   -I "$root" \
   -I "$root/generated" \
-  -o "$out/bin/MnemionCredentialParent" \
+  -o "$parent_bin" \
   "$root/parent_main.m" \
   "$root/auth.m" \
   "$root/bundle_manifest.c" \
@@ -179,19 +197,17 @@ run_clang identity \
   -Wextra \
   -Werror=implicit-function-declaration \
   -I "$root" \
-  -o "$out/bin/MnemionIdentityDump" \
+  -o "$identity_bin" \
   "$root/identity_dump.m" \
   "$root/signing.m" \
   -framework Security \
   -framework CoreFoundation
 
 set +e
-wc -c "$out/bin/MnemionCredentialHelper" >> "$out/sizes.txt"
-wc -c "$out/bin/MnemionCredentialParent" >> "$out/sizes.txt"
-wc -c "$out/bin/MnemionIdentityDump" >> "$out/sizes.txt"
+wc -c "$helper_bin" >> "$receipt"
+wc -c "$parent_bin" >> "$receipt"
+wc -c "$identity_bin" >> "$receipt"
 set -e
-rm -f "$out/bin/MnemionCredentialHelper" "$out/bin/MnemionCredentialParent" "$out/bin/MnemionIdentityDump"
-rmdir "$out/bin" || true
 
 if [ "$failed" -ne 0 ]; then
   echo "compile_result=failed" >> "$receipt"
