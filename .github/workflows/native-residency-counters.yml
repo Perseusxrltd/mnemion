@@ -48,3 +48,95 @@ jobs:
           retention-days: 14
           if-no-files-found: error
           path: output/darwin-residency/*
+      - name: Check the owned-launch adapter once
+        if: always()
+        shell: python3 {0}
+        env:
+          REVIEWED_SOURCE: ${{ inputs.source }}
+          MNEMION_RESIDENCY_ARCH: ${{ matrix.arch }}
+        run: |
+          import json
+          import os
+          import platform
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, os.getcwd())
+          from deploy.owned_launch_self_check import run_self_check
+
+          out = Path("output") / "darwin-owned-launch"
+          out.mkdir(parents=True, exist_ok=True)
+          receipt = out / "self-check.json"
+          source = os.environ.get("REVIEWED_SOURCE", "")
+          workflow_arch = os.environ.get("MNEMION_RESIDENCY_ARCH", "")
+          head = None
+          try:
+              head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          except (OSError, subprocess.SubprocessError):
+              head = None
+          machines = {"arm64": "arm64", "x64": "x86_64"}
+
+          def write(payload):
+              receipt.write_text(json.dumps(payload, sort_keys=True) + "\n", encoding="utf-8")
+
+          try:
+              if len(source) != 40 or head != source:
+                  raise AssertionError("source_not_exact")
+              if platform.system() != "Darwin":
+                  raise AssertionError("not_darwin")
+              if machines.get(workflow_arch) != platform.machine():
+                  raise AssertionError("arch_mismatch")
+              result = run_self_check()
+              if result.get("resource_acceptance") is not False:
+                  raise AssertionError("acceptance")
+              if result.get("peak_working_set_final") is not False:
+                  raise AssertionError("final_coverage")
+              peak = result.get("kernel_rss_high_water_bytes")
+              if type(peak) is not int or peak <= 0:
+                  raise AssertionError("kernel_peak_missing")
+              if result.get("cleanup_ok") is not True or result.get("cleanup_failure") is not None:
+                  raise AssertionError(result.get("cleanup_failure") or "cleanup_missing")
+              if result.get("rss_high_water_covers_unseen_exited_processes") is not False:
+                  raise AssertionError("unseen_covered")
+              result["source"] = source
+              result["head"] = head
+              result["os"] = platform.system()
+              result["arch"] = platform.machine()
+              result["workflow_arch"] = workflow_arch
+              result["telemetry_acceptance"] = False
+              result["workload_acceptance"] = False
+              result["resource_budget_acceptance"] = False
+              write(result)
+          except Exception as exc:
+              report = getattr(exc, "report", None)
+              cleanup = report.get("cleanup") if type(report) is dict else None
+              write(
+                  {
+                      "self_check": "owned_launch_lifecycle",
+                      "held": False,
+                      "source": source if len(source) == 40 else None,
+                      "head": head,
+                      "os": platform.system(),
+                      "arch": platform.machine(),
+                      "workflow_arch": workflow_arch or None,
+                      "resource_acceptance": False,
+                      "telemetry_acceptance": False,
+                      "workload_acceptance": False,
+                      "resource_budget_acceptance": False,
+                      "cleanup_ok": None if type(cleanup) is not dict else cleanup.get("ok"),
+                      "cleanup_failure": None
+                      if type(cleanup) is not dict
+                      else cleanup.get("failure"),
+                      "failure": type(exc).__name__,
+                      "detail": str(exc)[:120],
+                  }
+              )
+              raise SystemExit(1) from None
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: owned-launch-adapter-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 14
+          if-no-files-found: error
+          path: output/darwin-owned-launch/*

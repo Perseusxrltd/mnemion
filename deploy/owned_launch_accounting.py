@@ -1793,13 +1793,15 @@ def _signal_pinned(pid: int, ticks: int) -> bool:
 
 
 class DarwinBackend:
-    """wait4 plus proc_pid_rusage resident size.
+    """wait4, proc_pid_rusage current resident size, and a live task-name peak.
 
     Darwin has no job-wide lifetime counter. wait4 reports the direct child
-    and descendants that child reaped. Orphans are outside that total, so
-    coverage stays partial. Physical footprint is not read. Cleanup follows
-    the owned process group after the root exits; that does not make the
-    CPU total complete.
+    and descendants that child reaped. Orphans are outside that total.
+    MACH_TASK_BASIC_INFO.resident_size_max is the live kernel high water of a
+    process that is still queried through a task-name port. It is not a final
+    lifetime peak and it does not cover processes that have already exited.
+    Physical footprint is not read. Cleanup follows the owned process group
+    after the root exits; that does not make the CPU total complete.
     """
 
     def __init__(self, argv, *, cwd, env):
@@ -1817,7 +1819,9 @@ class DarwinBackend:
         self._reaped = False
         self._terminate_attempted = False
         self._libproc = None
+        self._libsystem = None
         self._timebase = None
+        self._sample_lock = threading.Lock()
 
     def spawn(self) -> None:
         def own_group():
@@ -1874,41 +1878,49 @@ class DarwinBackend:
             time.sleep(0.02)
 
     def sample(self, ledger: _Ledger) -> None:
-        if self.process is None:
-            return
-        root = self.process.pid
-        seen = set()
-        pending = [root]
-        current_sum = 0
-        saw = 0
-        while pending and len(seen) < 64:
-            pid = pending.pop()
-            if pid in seen or pid <= 0 or pid == os.getpid():
-                continue
-            if pid != root and _darwin_ppid(self._library(), pid) not in seen:
-                continue
-            usage = _darwin_rusage(self._library(), pid)
-            if usage is None:
-                continue
-            if pid == root:
-                if self.root_creation is None:
-                    self.root_creation = usage["start"]
-                elif usage["start"] != self.root_creation:
+        with self._sample_lock:
+            if self.process is None:
+                return
+            # A reaped root whose creation was never frozen must not adopt the
+            # next process that reuses the pid.
+            if self._reaped and self.root_creation is None:
+                return
+            root = self.process.pid
+            seen = set()
+            pending = [root]
+            current_sum = 0
+            saw = 0
+            while pending and len(seen) < 64:
+                pid = pending.pop()
+                if pid in seen or pid <= 0 or pid == os.getpid():
                     continue
-            seen.add(pid)
-            ledger.observe(pid, usage["start"], current=usage["resident"], high_water=None)
-            if type(usage["resident"]) is int:
-                current_sum += usage["resident"]
-                saw += 1
-            for child in _darwin_children(self._library(), pid):
-                if _darwin_ppid(self._library(), child) == pid:
-                    pending.append(child)
-        if saw:
-            self._sampled_sum_peak = (
-                current_sum
-                if self._sampled_sum_peak is None
-                else max(self._sampled_sum_peak, current_sum)
-            )
+                parent = None
+                if pid != root:
+                    parent = _darwin_ppid(self._library(), pid)
+                    if parent not in seen:
+                        continue
+                charged = self._charge_owned(pid, parent=parent, root=root)
+                if charged is None:
+                    continue
+                seen.add(pid)
+                ledger.observe(
+                    pid,
+                    charged["start"],
+                    current=charged["resident"],
+                    high_water=charged["high_water"],
+                )
+                if type(charged["resident"]) is int:
+                    current_sum += charged["resident"]
+                    saw += 1
+                for child in _darwin_children(self._library(), pid):
+                    if _darwin_ppid(self._library(), child) == pid:
+                        pending.append(child)
+            if saw:
+                self._sampled_sum_peak = (
+                    current_sum
+                    if self._sampled_sum_peak is None
+                    else max(self._sampled_sum_peak, current_sum)
+                )
 
     def terminate(self) -> tuple[bool, str | None]:
         if self.process is None:
@@ -1947,25 +1959,38 @@ class DarwinBackend:
             "kernel": {
                 "wait4_direct_child_cpu_microseconds": self._waited,
                 "includes_only_reaped_descendants": True,
+                "orphans_outside_wait4": True,
                 "footprint_used_as_rss": False,
+                "rss_high_water_is_final_lifetime": False,
             },
             "cpu_complete": False,
             "unavailable": [
                 "darwin_unreaped_descendant_cpu",
-                "darwin_rss_high_water",
+                "darwin_orphan_cpu",
+                "darwin_final_lifetime_rss",
             ],
         }
 
     def coverage(self, snapshot: dict, ledger: list[dict]) -> dict:
+        del snapshot
+        observed_kernel = any(row.get("kernel_high_water_while_observed") is True for row in ledger)
+        observed_current = any(row.get("first_working_set_bytes") is not None for row in ledger)
+        missing_peak = any(row.get("peak_working_set_bytes") is None for row in ledger)
+        if observed_kernel and missing_peak:
+            rss = "live_kernel_high_water_partial"
+        elif observed_kernel:
+            rss = "live_kernel_high_water"
+        elif observed_current:
+            rss = "sampled_current"
+        else:
+            rss = "unavailable"
         return {
             "platform": "darwin",
             "status": "partial",
             "cpu_lifetime_complete": False,
             "cpu_includes_exited_descendants": False,
             "sampled_pid_cpu_is_complete": False,
-            "rss_high_water": "sampled_current"
-            if any(row["first_working_set_bytes"] is not None for row in ledger)
-            else "unavailable",
+            "rss_high_water": rss,
             "rss_high_water_covers_unseen_exited_processes": False,
             "cgroup_memory_peak_is_per_process_rss": False,
         }
@@ -2012,24 +2037,79 @@ class DarwinBackend:
         return "empty"
 
     def _capture_wait4(self) -> None:
-        if self.process is None or self._reaped:
-            return
-        try:
-            waited_pid, status, usage = os.wait4(self.process.pid, os.WNOHANG)
-        except ChildProcessError:
+        with self._sample_lock:
+            if self.process is None or self._reaped:
+                return
+            try:
+                waited_pid, status, usage = os.wait4(self.process.pid, os.WNOHANG)
+            except ChildProcessError:
+                self._reaped = True
+                return
+            except (AttributeError, OSError):
+                return
+            if waited_pid != self.process.pid:
+                return
+            returncode = _wait_status_returncode(status)
+            if returncode is None:
+                return
             self._reaped = True
-            return
+            if self.process.returncode is None:
+                self.process.returncode = returncode
+            self._waited = _rusage_microseconds(usage)
+
+    def _charge_owned(self, pid: int, *, parent: int | None, root: int) -> dict | None:
+        """Record one owned pid. Identity is checked before and after the port."""
+        library = self._library()
+        before = _darwin_rusage(library, pid)
+        if before is None or type(before.get("start")) is not int:
+            return None
+        if pid == root:
+            if self.root_creation is None:
+                if self._reaped:
+                    return None
+                self.root_creation = before["start"]
+            if before["start"] != self.root_creation:
+                return None
+        elif type(parent) is not int or _darwin_ppid(library, pid) != parent:
+            return None
+        basic = _darwin_task_rss(self._task_system(), pid)
+        after = _darwin_rusage(library, pid)
+        if after is None or after.get("start") != before["start"]:
+            return None
+        if pid == root:
+            if after["start"] != self.root_creation:
+                return None
+        elif _darwin_ppid(library, pid) != parent:
+            return None
+        resident = after.get("resident")
+        if type(resident) is not int or resident < 0:
+            resident = None
+        high = None
+        if (
+            type(basic) is dict
+            and basic.get("accepted") is True
+            and basic.get("kr") == 0
+            and basic.get("count") == _MACH_TASK_BASIC_INFO_COUNT
+            and type(basic.get("resident_size_max")) is int
+            and basic["resident_size_max"] >= 0
+        ):
+            high = basic["resident_size_max"]
+        return {"start": before["start"], "resident": resident, "high_water": high}
+
+    def _task_system(self):
+        if self._libsystem is False:
+            return None
+        if self._libsystem is not None:
+            return self._libsystem
+        if sys.platform != "darwin":
+            self._libsystem = False
+            return None
+        try:
+            self._libsystem = _load_darwin_task_port()
         except (AttributeError, OSError):
-            return
-        if waited_pid != self.process.pid:
-            return
-        returncode = _wait_status_returncode(status)
-        if returncode is None:
-            return
-        self._reaped = True
-        if self.process.returncode is None:
-            self.process.returncode = returncode
-        self._waited = _rusage_microseconds(usage)
+            self._libsystem = False
+            return None
+        return self._libsystem
 
     def _library(self):
         if self._libproc is None:
@@ -2186,6 +2266,140 @@ def _mach_to_microseconds(ticks: int, timebase: tuple[int, int] | None) -> int |
         return None
     numer, denom = timebase
     return ticks * numer // denom // 1000
+
+
+# mach_task_basic_info in xnu osfmk/mach/task_info.h. natural_t is 4 bytes,
+# so 48 bytes is MACH_TASK_BASIC_INFO_COUNT 12. Flavor 20 accepts a task-name port.
+_MACH_TASK_BASIC_INFO = 20
+_MACH_TASK_BASIC_INFO_COUNT = 12
+_MACH_TASK_BASIC_BYTES = 48
+
+
+class _MachTaskBasicInfo(ctypes.Structure):
+    _fields_ = [
+        ("virtual_size", ctypes.c_uint64),
+        ("resident_size", ctypes.c_uint64),
+        ("resident_size_max", ctypes.c_uint64),
+        ("user_seconds", ctypes.c_int32),
+        ("user_microseconds", ctypes.c_int32),
+        ("system_seconds", ctypes.c_int32),
+        ("system_microseconds", ctypes.c_int32),
+        ("policy", ctypes.c_int32),
+        ("suspend_count", ctypes.c_int32),
+    ]
+
+
+def _load_darwin_task_port():
+    """libSystem task-name queries. No task_for_pid and no VM read."""
+    system = ctypes.CDLL("/usr/lib/libSystem.B.dylib", use_errno=True)
+    system.mach_task_self.argtypes = []
+    system.mach_task_self.restype = ctypes.c_uint32
+    system.task_name_for_pid.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
+    system.task_name_for_pid.restype = ctypes.c_int
+    system.task_info.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
+    system.task_info.restype = ctypes.c_int
+    system.mach_port_deallocate.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
+    system.mach_port_deallocate.restype = ctypes.c_int
+    return system
+
+
+def _task_rss_result(*, accepted, kr, count, resident_size_max, released):
+    return {
+        "accepted": accepted,
+        "kr": kr,
+        "count": count,
+        "resident_size_max": resident_size_max,
+        "released": list(released),
+    }
+
+
+def _darwin_task_rss(system, pid: int) -> dict:
+    """One MACH_TASK_BASIC_INFO query. The name port is dropped on every path."""
+    released: list[int] = []
+    if (
+        system is None
+        or type(pid) is not int
+        or pid <= 0
+        or ctypes.sizeof(_MachTaskBasicInfo) != _MACH_TASK_BASIC_BYTES
+    ):
+        return _task_rss_result(
+            accepted=False,
+            kr=None,
+            count=None,
+            resident_size_max=None,
+            released=released,
+        )
+    port = ctypes.c_uint32(0)
+
+    def release() -> None:
+        name = int(port.value)
+        if name == 0:
+            return
+        port.value = 0
+        system.mach_port_deallocate(system.mach_task_self(), name)
+        released.append(name)
+
+    try:
+        kr = int(system.task_name_for_pid(system.mach_task_self(), pid, ctypes.byref(port)))
+        if kr != 0 or int(port.value) == 0:
+            release()
+            return _task_rss_result(
+                accepted=False,
+                kr=kr,
+                count=None,
+                resident_size_max=None,
+                released=released,
+            )
+        info = _MachTaskBasicInfo()
+        count = ctypes.c_uint32(_MACH_TASK_BASIC_INFO_COUNT)
+        kr = int(
+            system.task_info(
+                int(port.value),
+                _MACH_TASK_BASIC_INFO,
+                ctypes.byref(info),
+                ctypes.byref(count),
+            )
+        )
+        got = int(count.value)
+        if kr != 0 or got != _MACH_TASK_BASIC_INFO_COUNT:
+            release()
+            return _task_rss_result(
+                accepted=False,
+                kr=kr,
+                count=got,
+                resident_size_max=None,
+                released=released,
+            )
+        peak = int(info.resident_size_max)
+        release()
+        return _task_rss_result(
+            accepted=True,
+            kr=0,
+            count=got,
+            resident_size_max=peak,
+            released=released,
+        )
+    except Exception:
+        try:
+            release()
+        except Exception:
+            port.value = 0
+        return _task_rss_result(
+            accepted=False,
+            kr=None,
+            count=None,
+            resident_size_max=None,
+            released=released,
+        )
 
 
 def _darwin_ppid(library, pid: int) -> int | None:

@@ -4,7 +4,9 @@
  * Uses task_name_for_pid and task_info only. A name-port failure is recorded
  * and is not replaced with task_for_pid, a read port, or a zero size.
  * resident_size and resident_size_max are bytes (mach_task_basic_info).
- * On Darwin, getrusage ru_maxrss is that same peak in bytes.
+ * On Darwin, getrusage ru_maxrss is bytes. The child samples it after the
+ * baseline task_info and before the live task_info, so the accepted order is
+ * baseline peak <= child peak <= live peak. Equality is not required.
  *
  * The child stays an unreaped child of this process until the live sample
  * has been taken. Pipes carry the handshake. There is no sleep-based sync.
@@ -130,7 +132,8 @@ static int read_frame(int fd, uint32_t *op, uint64_t *value, int64_t deadline) {
         return rc;
     }
     *op = load_u32(buf);
-    *value = load_u64(buf);
+    /* The uint64 starts after the uint32 opcode. buf[0] aliases that opcode. */
+    *value = load_u64(buf + 4);
     return 0;
 }
 
@@ -359,6 +362,10 @@ static const char *decide(const struct run *r) {
         r->live.resident_size <= r->baseline.resident_size) {
         return "peak_or_allocation_check_failed";
     }
+    if ((unsigned long long)r->child_rss < (unsigned long long)r->baseline.resident_size_max ||
+        (unsigned long long)r->child_rss > (unsigned long long)r->live.resident_size_max) {
+        return "child_peak_out_of_order";
+    }
     return "live_counter_ok";
 }
 
@@ -374,6 +381,9 @@ static int exit_for(const char *outcome) {
     }
     if (strcmp(outcome, "child_or_cleanup_failure") == 0) {
         return 4;
+    }
+    if (strcmp(outcome, "child_peak_out_of_order") == 0) {
+        return 5;
     }
     return 5;
 }
@@ -618,6 +628,11 @@ static int parent_main(struct run *r) {
                         r->detail = "peak_decreased";
                     } else if (r->live.resident_size <= r->baseline.resident_size) {
                         r->detail = "allocation_not_observed";
+                    } else if ((unsigned long long)r->child_rss <
+                                   (unsigned long long)r->baseline.resident_size_max ||
+                               (unsigned long long)r->child_rss >
+                                   (unsigned long long)r->live.resident_size_max) {
+                        r->detail = "child_peak_out_of_order";
                     } else {
                         r->detail = "ok";
                     }

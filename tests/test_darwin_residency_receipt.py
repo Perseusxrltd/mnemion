@@ -302,6 +302,74 @@ def test_probe_source_uses_the_name_port_and_not_a_stronger_port():
     assert "task_for_pid(" not in text
     assert "mach_vm_read" not in text
     assert "sleep(" not in text
+    assert "load_u64(buf + 4)" in text
+    assert "*value = load_u64(buf);" not in text
+    assert "child_peak_out_of_order" in text
+
+
+def test_observed_shifted_child_counter_is_rejected_unrepaired():
+    cases = (
+        (950_272, 9_371_648, 40_250_921_669_623_811),
+        (405_504, 8_798_208, 37_788_015_623_405_571),
+    )
+    for baseline, live, corrupt in cases:
+        assert corrupt == (live << 32) | 3
+        hidden = observation(
+            baseline_resident_size=baseline,
+            baseline_resident_size_max=baseline,
+            live_resident_size=live,
+            live_resident_size_max=live,
+            child_ru_maxrss=corrupt,
+            outcome="live_counter_ok",
+        )
+        assert receipt.recompute(hidden) == "child_peak_out_of_order"
+        assert receipt.classify(hidden) == "malformed_observation"
+        assert not receipt.demonstrated(
+            hidden,
+            source=SOURCE,
+            workflow_arch="arm64",
+            probe_returncode=0,
+            outer_timeout=False,
+        )
+        rejected = observation(
+            baseline_resident_size=baseline,
+            baseline_resident_size_max=baseline,
+            live_resident_size=live,
+            live_resident_size_max=live,
+            child_ru_maxrss=corrupt,
+            outcome="child_peak_out_of_order",
+            detail="child_peak_out_of_order",
+        )
+        assert receipt.classify(rejected) == "child_peak_out_of_order"
+        assert corrupt >> 32 == live
+
+
+def test_unequal_child_peak_between_baseline_and_live_is_ordered():
+    obs = observation(
+        baseline_resident_size=950_272,
+        baseline_resident_size_max=950_272,
+        child_ru_maxrss=4_500_000,
+        live_resident_size=9_000_000,
+        live_resident_size_max=9_371_648,
+    )
+    assert obs["baseline_resident_size_max"] < obs["child_ru_maxrss"] < obs["live_resident_size_max"]
+    assert receipt.classify(obs) == "live_counter_ok"
+
+
+def test_child_peak_below_baseline_is_out_of_order():
+    obs = observation(child_ru_maxrss=100, outcome="child_peak_out_of_order")
+    assert receipt.classify(obs) == "child_peak_out_of_order"
+
+
+def test_denied_or_unknown_child_counter_is_not_an_ordering_failure():
+    denied = observation(
+        name_port_kern_return=5,
+        child_ru_maxrss=40_250_921_669_623_811,
+        outcome="name_port_denied",
+    )
+    assert receipt.classify(denied) == "name_port_denied"
+    unknown = observation(child_ru_maxrss=None, outcome="counter_missing", detail="handshake_failed")
+    assert receipt.classify(unknown) == "counter_missing"
 
 
 def test_workflow_is_manual_two_target_and_does_not_interpolate_source():
@@ -327,4 +395,9 @@ def test_workflow_is_manual_two_target_and_does_not_interpolate_source():
     run = text.split("        run: |\n", 1)[1].split("      - uses: actions/upload-artifact", 1)[0]
     assert "${{" not in run
     assert "REVIEWED_SOURCE" in text
+    assert "run_self_check" in text
+    assert 'Path("output") / "darwin-owned-launch"' in text or "darwin-owned-launch" in text
+    assert "telemetry_acceptance" in text
+    assert "resource_budget_acceptance" in text
+    assert text.count("if: always()") >= 2
     assert receipt.extract_observation(json.dumps(observation()))[1] is None

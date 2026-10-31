@@ -457,6 +457,378 @@ def test_darwin_reused_pid_does_not_replace_the_root_identity(monkeypatch):
     assert kills == []
 
 
+class _TaskPort:
+    def __init__(self, *, name_kr=0, port=77, info_kr=0, count=12, peak=9_371_648, boom=False):
+        self.name_kr = name_kr
+        self.port = port
+        self.info_kr = info_kr
+        self.count = count
+        self.peak = peak
+        self.boom = boom
+        self.deallocated = []
+        self.self_port = 42
+
+    def mach_task_self(self):
+        return self.self_port
+
+    def task_name_for_pid(self, task, pid, port):
+        assert task == self.self_port
+        assert pid > 0
+        port._obj.value = self.port
+        return self.name_kr
+
+    def task_info(self, task, flavor, info, count):
+        assert task == self.port
+        assert flavor == 20
+        if self.boom:
+            raise OSError("task_info failed")
+        count._obj.value = self.count
+        if self.info_kr == 0 and self.count == 12:
+            info._obj.resident_size = 1_000
+            info._obj.resident_size_max = self.peak
+        return self.info_kr
+
+    def mach_port_deallocate(self, task, name):
+        assert task == self.self_port
+        self.deallocated.append(int(name))
+        return 0
+
+
+def _resident(start, resident=40):
+    return {
+        "user": 1,
+        "system": 1,
+        "child_user": 0,
+        "child_system": 0,
+        "resident": resident,
+        "start": start,
+    }
+
+
+def test_darwin_task_port_release_covers_success_denial_partial_and_exceptions():
+    import deploy.owned_launch_accounting as accounting
+
+    assert ctypes.sizeof(accounting._MachTaskBasicInfo) == 48
+    text = Path("deploy/owned_launch_accounting.py").read_text(encoding="utf-8")
+    assert "task_name_for_pid" in text
+    assert "task_for_pid(" not in text
+    assert "mach_vm_read" not in text
+
+    success = _TaskPort()
+    result = accounting._darwin_task_rss(success, 4242)
+    assert result["accepted"] is True
+    assert result["kr"] == 0
+    assert result["count"] == 12
+    assert result["resident_size_max"] == 9_371_648
+    assert result["released"] == [77]
+    assert success.deallocated == [77]
+
+    denied = _TaskPort(name_kr=5, port=0)
+    denied_result = accounting._darwin_task_rss(denied, 4242)
+    assert denied_result["accepted"] is False
+    assert denied_result["kr"] == 5
+    assert denied_result["resident_size_max"] is None
+    assert denied_result["released"] == []
+    assert denied.deallocated == []
+
+    stray = _TaskPort(name_kr=5, port=55)
+    stray_result = accounting._darwin_task_rss(stray, 4242)
+    assert stray_result["accepted"] is False
+    assert stray_result["resident_size_max"] is None
+    assert stray_result["released"] == [55]
+    assert stray.deallocated == [55]
+
+    dead = _TaskPort(info_kr=268435459, count=12)
+    dead_result = accounting._darwin_task_rss(dead, 4242)
+    assert dead_result["accepted"] is False
+    assert dead_result["kr"] == 268435459
+    assert dead_result["count"] == 12
+    assert dead_result["resident_size_max"] is None
+    assert dead.deallocated == [77]
+
+    partial = _TaskPort(info_kr=0, count=11, peak=5)
+    partial_result = accounting._darwin_task_rss(partial, 4242)
+    assert partial_result["accepted"] is False
+    assert partial_result["count"] == 11
+    assert partial_result["resident_size_max"] is None
+    assert partial.deallocated == [77]
+
+    exploded = _TaskPort(boom=True)
+    exploded_result = accounting._darwin_task_rss(exploded, 4242)
+    assert exploded_result["accepted"] is False
+    assert exploded_result["resident_size_max"] is None
+    assert exploded.deallocated == [77]
+
+
+def test_darwin_reaped_root_without_creation_does_not_freeze_a_later_pid(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    def refuse(*_args):
+        raise AssertionError("must not query a later pid")
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", refuse)
+    monkeypatch.setattr(accounting, "_darwin_task_rss", refuse)
+    monkeypatch.setattr(accounting, "_darwin_children", refuse)
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend._reaped = True
+    backend.root_creation = None
+    backend._libproc = object()
+    backend.sample(backend.ledger)
+    assert backend.root_creation is None
+    assert backend.ledger.public() == []
+
+
+def test_darwin_pid_reuse_between_checks_adds_no_memory(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    phase = {"start": 111}
+
+    monkeypatch.setattr(
+        accounting,
+        "_darwin_rusage",
+        lambda _library, _pid: _resident(phase["start"], 40),
+    )
+    monkeypatch.setattr(accounting, "_darwin_children", lambda _library, _pid: [])
+
+    def task(_system, _pid):
+        phase["start"] = 999
+        return {
+            "accepted": True,
+            "kr": 0,
+            "count": 12,
+            "resident_size_max": 12_345,
+            "released": [7],
+        }
+
+    monkeypatch.setattr(accounting, "_darwin_task_rss", task)
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._libsystem = False
+    backend.sample(backend.ledger)
+    assert backend.root_creation == 111
+    assert backend.ledger.public() == []
+
+
+def test_darwin_denied_and_partial_task_info_keep_current_without_a_zero_peak(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    real_task_rss = accounting._darwin_task_rss
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: _resident(111, 40))
+    monkeypatch.setattr(accounting, "_darwin_children", lambda _library, _pid: [])
+    monkeypatch.setattr(
+        accounting,
+        "_darwin_task_rss",
+        lambda _system, _pid: {
+            "accepted": False,
+            "kr": 5,
+            "count": None,
+            "resident_size_max": 0,
+            "released": [],
+        },
+    )
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._libsystem = False
+    backend._timebase = (1, 1)
+    backend.sample(backend.ledger)
+    row = backend.ledger.public()[0]
+    assert row["identity"] == "4242:111"
+    assert row["last_working_set_bytes"] == 40
+    assert row["peak_working_set_bytes"] is None
+    assert row["kernel_high_water_while_observed"] is False
+    assert row["peak_working_set_final"] is False
+    coverage = backend.coverage(backend.snapshot(), backend.ledger.public())
+    assert coverage["status"] == "partial"
+    assert coverage["rss_high_water"] == "sampled_current"
+    assert coverage["rss_high_water_covers_unseen_exited_processes"] is False
+
+    calls = []
+
+    def partial(_system, pid):
+        calls.append(pid)
+        return real_task_rss(_TaskPort(info_kr=0, count=11, peak=0), pid)
+
+    monkeypatch.setattr(accounting, "_darwin_task_rss", partial)
+    other = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    other.process = _RootProcess(4242)
+    other.root_creation = 111
+    other._libproc = object()
+    other._libsystem = False
+    other.sample(other.ledger)
+    assert calls == [4242]
+    partial_row = other.ledger.public()[0]
+    assert partial_row["last_working_set_bytes"] == 40
+    assert partial_row["peak_working_set_bytes"] is None
+    assert partial_row["peak_working_set_final"] is False
+
+
+def test_darwin_live_kernel_peak_stays_current_rss_and_not_final(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", lambda _library, _pid: _resident(111, 100))
+    monkeypatch.setattr(accounting, "_darwin_children", lambda _library, _pid: [])
+    monkeypatch.setattr(
+        accounting,
+        "_darwin_task_rss",
+        lambda _system, _pid: {
+            "accepted": True,
+            "kr": 0,
+            "count": 12,
+            "resident_size_max": 9_371_648,
+            "released": [77],
+        },
+    )
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._libsystem = False
+    backend._timebase = (1, 1)
+    backend.sample(backend.ledger)
+    row = backend.ledger.public()[0]
+    assert row["last_working_set_bytes"] == 100
+    assert row["peak_working_set_bytes"] == 9_371_648
+    assert row["kernel_high_water_while_observed"] is True
+    assert row["peak_working_set_final"] is False
+    snapshot = backend.snapshot()
+    assert snapshot["kernel"]["footprint_used_as_rss"] is False
+    assert snapshot["kernel"]["rss_high_water_is_final_lifetime"] is False
+    assert snapshot["kernel"]["orphans_outside_wait4"] is True
+    assert "darwin_rss_high_water" not in snapshot["unavailable"]
+    assert "darwin_unreaped_descendant_cpu" in snapshot["unavailable"]
+    assert "darwin_orphan_cpu" in snapshot["unavailable"]
+    assert "darwin_final_lifetime_rss" in snapshot["unavailable"]
+    coverage = backend.coverage(snapshot, backend.ledger.public())
+    assert coverage["status"] == "partial"
+    assert coverage["rss_high_water"] == "live_kernel_high_water"
+    assert coverage["rss_high_water_covers_unseen_exited_processes"] is False
+    assert coverage["cpu_lifetime_complete"] is False
+    partial_rows = backend.ledger.public() + [
+        {
+            "first_working_set_bytes": 10,
+            "peak_working_set_bytes": None,
+            "kernel_high_water_while_observed": False,
+            "peak_working_set_final": False,
+        }
+    ]
+    partial = backend.coverage(snapshot, partial_rows)
+    assert partial["status"] == "partial"
+    assert partial["rss_high_water"] == "live_kernel_high_water_partial"
+    assert partial["rss_high_water_covers_unseen_exited_processes"] is False
+
+
+def test_darwin_reparented_descendant_does_not_contribute_memory(monkeypatch):
+    import deploy.owned_launch_accounting as accounting
+
+    parent_of = {5555: 4242}
+
+    def rusage(_library, pid):
+        if pid == 4242:
+            return _resident(111, 20)
+        if pid == 5555:
+            return _resident(222, 30)
+        return None
+
+    def ppid(_library, pid):
+        return parent_of.get(pid)
+
+    def children(_library, pid):
+        return [5555] if pid == 4242 else []
+
+    def task(_system, pid):
+        if pid == 5555:
+            parent_of[5555] = 1
+        return {
+            "accepted": True,
+            "kr": 0,
+            "count": 12,
+            "resident_size_max": 8_000,
+            "released": [pid],
+        }
+
+    monkeypatch.setattr(accounting, "_darwin_rusage", rusage)
+    monkeypatch.setattr(accounting, "_darwin_ppid", ppid)
+    monkeypatch.setattr(accounting, "_darwin_children", children)
+    monkeypatch.setattr(accounting, "_darwin_task_rss", task)
+    backend = accounting.DarwinBackend(["worker"], cwd=None, env=None)
+    backend.process = _RootProcess(4242)
+    backend.root_creation = 111
+    backend._libproc = object()
+    backend._libsystem = False
+    backend._timebase = (1, 1)
+    backend.sample(backend.ledger)
+    rows = backend.ledger.public()
+    assert [row["identity"] for row in rows] == ["4242:111"]
+    assert rows[0]["peak_working_set_bytes"] == 8_000
+    assert rows[0]["last_working_set_bytes"] == 20
+    assert rows[0]["peak_working_set_final"] is False
+    coverage = backend.coverage(backend.snapshot(), rows)
+    assert coverage["rss_high_water"] == "live_kernel_high_water"
+    assert coverage["rss_high_water_covers_unseen_exited_processes"] is False
+
+
+def test_darwin_self_check_requires_a_positive_live_peak_and_not_final_coverage():
+    from deploy.owned_launch_self_check import _darwin_kernel_peak_receipt
+
+    report = {
+        "coverage": {
+            "status": "partial",
+            "rss_high_water": "live_kernel_high_water",
+            "rss_high_water_covers_unseen_exited_processes": False,
+        },
+        "ledger": [
+            {
+                "peak_working_set_bytes": 9_371_648,
+                "kernel_high_water_while_observed": True,
+                "peak_working_set_final": False,
+            }
+        ],
+        "unavailable_counters": [
+            "darwin_unreaped_descendant_cpu",
+            "darwin_orphan_cpu",
+            "darwin_final_lifetime_rss",
+        ],
+        "kernel": {
+            "footprint_used_as_rss": False,
+            "rss_high_water_is_final_lifetime": False,
+        },
+        "cleanup": {"ok": True, "failure": None},
+    }
+    assert _darwin_kernel_peak_receipt(report) == (
+        9_371_648,
+        False,
+        "live_kernel_high_water",
+        False,
+    )
+    final = {
+        "coverage": report["coverage"],
+        "ledger": [dict(report["ledger"][0], peak_working_set_final=True)],
+        "unavailable_counters": report["unavailable_counters"],
+        "kernel": report["kernel"],
+    }
+    with pytest.raises(AssertionError, match="marked final"):
+        _darwin_kernel_peak_receipt(final)
+    missing = {
+        "coverage": dict(report["coverage"], rss_high_water="sampled_current"),
+        "ledger": [
+            {
+                "peak_working_set_bytes": None,
+                "kernel_high_water_while_observed": False,
+                "peak_working_set_final": False,
+            }
+        ],
+        "unavailable_counters": report["unavailable_counters"],
+        "kernel": report["kernel"],
+    }
+    with pytest.raises(AssertionError, match="not retained"):
+        _darwin_kernel_peak_receipt(missing)
+
+
 def test_failed_owned_cleanup_does_not_qualify():
     with pytest.raises(AssertionError, match="^descendants_survived$"):
         _require_owned_cleanup(

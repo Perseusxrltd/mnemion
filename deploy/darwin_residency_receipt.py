@@ -30,6 +30,7 @@ OUTCOMES = {
     "counter_missing",
     "child_or_cleanup_failure",
     "peak_or_allocation_check_failed",
+    "child_peak_out_of_order",
 }
 ACCEPTANCE = (
     "telemetry_acceptance",
@@ -182,6 +183,11 @@ def recompute(obs):
     alloc_ok = obs["live_resident_size"] > obs["baseline_resident_size"]
     if not peaks_ok or not alloc_ok:
         return "peak_or_allocation_check_failed"
+    # The child calls getrusage after the baseline query and before the live
+    # query. This is an order check. It does not repair a shifted frame.
+    child = obs["child_ru_maxrss"]
+    if child < obs["baseline_resident_size_max"] or child > obs["live_resident_size_max"]:
+        return "child_peak_out_of_order"
     if obs.get("peaks_nondecreasing") is not True or obs.get("allocation_observed") is not True:
         return "peak_or_allocation_check_failed"
     return "live_counter_ok"

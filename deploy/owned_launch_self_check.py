@@ -109,6 +109,54 @@ def _assert_common(report: dict, private: str) -> None:
         raise AssertionError("footprint was labeled rss")
 
 
+def _fail(message: str, report: dict | None = None) -> None:
+    error = AssertionError(message)
+    if report is not None:
+        error.report = report
+    raise error
+
+
+def _darwin_kernel_peak_receipt(report: dict) -> tuple:
+    """Positive live kernel peak, still not a final lifetime total."""
+    coverage = report.get("coverage") if type(report) is dict else None
+    if type(coverage) is not dict:
+        _fail("darwin coverage missing", report if type(report) is dict else None)
+    label = coverage.get("rss_high_water")
+    if label not in ("live_kernel_high_water", "live_kernel_high_water_partial"):
+        _fail("darwin live kernel high water was not retained", report)
+    if coverage.get("rss_high_water_covers_unseen_exited_processes") is not False:
+        _fail("darwin unseen exited memory was reported covered", report)
+    if coverage.get("status") != "partial":
+        _fail("darwin coverage was not partial", report)
+    peaks = []
+    for row in report.get("ledger") or []:
+        if row.get("peak_working_set_final") is not False:
+            _fail("darwin peak was marked final", report)
+        if row.get("kernel_high_water_while_observed") is True:
+            peak = row.get("peak_working_set_bytes")
+            if type(peak) is not int or peak <= 0:
+                _fail("darwin kernel peak was not positive", report)
+            peaks.append(peak)
+    if not peaks:
+        _fail("darwin kernel peak was not retained", report)
+    unavailable = report.get("unavailable_counters") or []
+    for name in (
+        "darwin_unreaped_descendant_cpu",
+        "darwin_orphan_cpu",
+        "darwin_final_lifetime_rss",
+    ):
+        if name not in unavailable:
+            _fail("darwin limit was hidden: " + name, report)
+    if "darwin_rss_high_water" in unavailable:
+        _fail("stale darwin rss label remained", report)
+    kernel = report.get("kernel") or {}
+    if kernel.get("footprint_used_as_rss") is not False:
+        _fail("footprint was labeled rss", report)
+    if kernel.get("rss_high_water_is_final_lifetime") is not False:
+        _fail("live high water was marked final", report)
+    return max(peaks), False, label, False
+
+
 def _require_owned_cleanup(report: dict) -> None:
     """The launch's own cleanup. Not the invalid-handle exercise."""
     cleanup = report.get("cleanup") if type(report) is dict else None
@@ -198,6 +246,10 @@ def _terminate(script: Path, marker: Path) -> dict:
 def run_self_check() -> dict:
     """Return a JSON-ready result. Raise AssertionError when an invariant fails."""
     cleanup = exercise_cleanup_failure()
+    kernel_peak = None
+    peak_final = None
+    rss_label = None
+    unseen_covered = None
     signaled, signal_failure = _signal_cgroup(None)
     if signaled or signal_failure != "cgroup_missing":
         raise AssertionError("empty cleanup signaled a process")
@@ -252,6 +304,8 @@ def run_self_check() -> dict:
             raise AssertionError("terminated job still had active processes")
         _require_owned_cleanup(work)
         _require_owned_cleanup(stopped)
+        if sys.platform == "darwin":
+            kernel_peak, peak_final, rss_label, unseen_covered = _darwin_kernel_peak_receipt(work)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     return {
@@ -278,6 +332,10 @@ def run_self_check() -> dict:
         "termination_exercised": stopped["cleanup"]["terminated_owned_group"],
         "invalid_handle_exercise": _invalid_handle_exercise(cleanup),
         "unavailable_counters": work["unavailable_counters"],
+        "kernel_rss_high_water_bytes": kernel_peak,
+        "peak_working_set_final": peak_final,
+        "rss_high_water": rss_label,
+        "rss_high_water_covers_unseen_exited_processes": unseen_covered,
     }
 
 
