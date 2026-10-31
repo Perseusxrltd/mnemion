@@ -57,15 +57,33 @@
   ],
   "runs": [
     {
-      "id": 41248761281,
+      "id": 41251394672,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "7a7ee629e9be09f91aad79b311c885372a6993fb",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-31T22:59:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41248761281"
+      "source_commit": "9e1cebba25881c5beb25c095943ac84386bff712",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-31T23:10:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41251394672",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 124685477787,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend run test:telemetry"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 41201338411,
@@ -101,15 +119,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019"
     },
     {
-      "id": 41245512708,
+      "id": 41251394674,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "872afc69552052c3435c60d994ccda294e0f70a5",
+      "source_commit": "9e1cebba25881c5beb25c095943ac84386bff712",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T21:51:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41245512708"
+      "updated_at": "2026-10-31T23:10:43Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41251394674"
     },
     {
       "id": 41201336239,
@@ -123,5 +141,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T23:00:08+00:00"
+  "observed_at": "2026-10-31T23:11:12+00:00"
 }
