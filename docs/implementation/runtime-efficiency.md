@@ -79,6 +79,15 @@ retained the nine expected checkpoints and completed 128 memory cycles each,
 with 2,310 successful API requests overall. The role comparisons are available;
 whole-process lifetime coverage and the full CPU/RAM comparison remain open.
 
+The [Python permission-read and Linux residency follow-up](../validation/2026-10-31-telemetry-permission-and-residency.md)
+removes full-status reads from Python observation startup while retaining
+fresh consent checks at persistence and delivery. Linux diagnostic snapshots
+keep current RSS and its components from the same observation, separate from
+kernel high-water marks. Three corrected producer cases and Linux source
+fixtures passed, with the original failures preserved. Neither change adds
+production polling or qualifies measured CPU/RAM savings. Low idle resource
+use across the whole product remains required and unaccepted.
+
 ## Acceptance work
 
 Measure the complete owned process set, including the app, local engine,

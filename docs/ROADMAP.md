@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.59**.
+Reviewed source distribution: **4.46.60**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-31**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -31,6 +31,16 @@ separate from telemetry's own overhead allowance.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**31 October 2026, Python permission reads and Linux residency:**
+The [source follow-up](validation/2026-10-31-telemetry-permission-and-residency.md)
+narrows Python observation startup reads and retains Linux RSS components
+with their sampled total. The original producer run retains 177 passes and
+two failures; its three corrected cases passed in a targeted retest. Linux
+checks passed after their original fixture correction. This supports the
+standing whole-product efficiency requirement without claiming measured
+savings or installed resource acceptance. V08 stays Building, collection
+stays off, and all 66 requirement states are unchanged.
 
 **31 October 2026, background source scheduling:**
 The 4.46.59 source batch replaces the permanent desktop-source interval with

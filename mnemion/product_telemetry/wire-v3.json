@@ -79,6 +79,13 @@
                            "minor": 46,
                            "patch": 59,
                            "id": "4.46.59"
+                         },
+                         {
+                           "slot": 7,
+                           "major": 4,
+                           "minor": 46,
+                           "patch": 60,
+                           "id": "4.46.60"
                          }
                        ],
   "allowlist_maximum_slots": 32,

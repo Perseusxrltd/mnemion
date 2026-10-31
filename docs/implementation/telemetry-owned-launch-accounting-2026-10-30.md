@@ -94,22 +94,27 @@ or any host cgroup outside that disposable directory. `memory.peak` is cgroup
 memory (anonymous, cache, and kernel) and is never copied into an RSS field.
 Per-process `VmHWM` is kept per identity. The same status read already
 supplies `VmRSS`, `RssAnon`, `RssFile`, and `RssShmem`. The ledger keeps
-three bounded snapshots of those together-observed values: the first sample,
-the latest sample, and the sample whose `VmRSS` was greatest.
-`sampled_rss_peak_residency` is that third snapshot. It is not `VmHWM`, and
-it is not the sum of each component's own maximum. `VmHWM` can predate the
-sampled breakdown, so a higher kernel mark does not replace the snapshot.
+three bounded snapshots of those together-observed values:
+`first_linux_residency`, `last_linux_residency`, and
+`sampled_rss_peak_residency`. They retain the first usable sample, latest
+usable sample, and sample whose `VmRSS` was greatest; an equal total keeps
+the earlier peak sample. That sampled peak is not `VmHWM` or the sum of each
+component's own maximum. `VmHWM` can predate the sampled breakdown, so a
+higher kernel mark does not replace the snapshot.
 [proc_pid_status(5)](https://man7.org/linux/man-pages/man5/proc_pid_status.5.html)
 defines current `VmRSS` as `RssAnon + RssFile + RssShmem`, says that sum
 is inaccurate, and keeps the high-water mark as a separate peak. The ledger
-stores the observed total rather than adding the components back together. A missing or malformed status field still drops
-that whole read. Windows and macOS leave the snapshots null. A real zero
-stays zero. The snapshots do not cover unseen or exited processes, do not
+stores the observed total rather than adding the components back together.
+A missing or malformed status field still drops that whole read. Windows
+and macOS leave the snapshots null. A real zero stays zero. The snapshots do not cover unseen or exited processes, do not
 complete the process-lifetime count, and do not compare the budget. Linux
 does not expose a lifetime process count, so overall coverage stays partial
 even when CPU is complete.
 Cleanup signals only pidfds whose start ticks still match, then removes the
-directory. A removal failure is recorded and not retried.
+directory. A removal failure is recorded and not retried. The
+[31 October snapshot checks](../validation/2026-10-31-telemetry-permission-and-residency.md)
+retain the original fixture failure and passing source checks. They add no
+native Linux or installed resource qualification and no production sampler.
 
 macOS uses `proc_pid_rusage` resident size and `wait4` on the direct child.
 `os.wait4` is the only call that reaps that child. `Popen.poll` is not used

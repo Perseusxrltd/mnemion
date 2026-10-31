@@ -714,9 +714,9 @@ serialize the disclosure. Company denial is applied after that fresh preference
 read, so an opt-out still takes priority and can arm the existing negative hint.
 An allowed company never skips the read. The read never creates, migrates or
 repairs a store, and it keeps no connection or statement after it returns.
-The caller receives only the scalar revision, generation and reason. `status()`,
+The caller receives only admission, reason, revision and generation. `status()`,
 configure and preview are unchanged, including their pending count, disclosure
-document and delivery budget. A stamp cannot authorize persistence or delivery.
+document and delivery budget. A stamp alone cannot authorize persistence or delivery.
 The write path and the delivery path re-check revision, generation, disclosure,
 user and company policy in their own transactions. The write transaction applies
 normal expiry and retained-queue checks; expired rows may be removed before a
@@ -725,8 +725,10 @@ only the delivery ledger is damaged, a bounded local aggregate may still be
 saved. Full status reports storage unavailable and preview returns no aggregates;
 delivery remains blocked by ledger validation. This status is not an opt-out or
 proof that the local queue is empty. These two reads are not equivalent.
-Resource acceptance is unchanged and open. The October checks above do not cover
-this read.
+The [31 October validation record](../validation/2026-10-31-telemetry-permission-and-residency.md)
+preserves the original 177 passes and two failures, followed by three passing
+corrected cases. This was a targeted retest. Resource acceptance remains open,
+with production collection off.
 
 The managed updater can also offer an existing bounded queue or still-valid
 approved held report during its already scheduled five- or ten-second waits.

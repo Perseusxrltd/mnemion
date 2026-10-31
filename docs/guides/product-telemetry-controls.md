@@ -210,7 +210,10 @@ before a new aggregate is recorded. If preferences and company policy remain
 valid but only the delivery ledger is damaged, a bounded local aggregate may
 still be saved. Full status reports storage unavailable and preview returns no
 aggregates; delivery remains blocked by ledger validation. This status is not
-an opt-out or proof that the local queue is empty. Collection remains off.
+an opt-out or proof that the local queue is empty. The
+[source validation record](../validation/2026-10-31-telemetry-permission-and-residency.md)
+retains the initial failures and the three passing corrected cases.
+Collection remains off.
 
 The subsequent [real-memory diagnostic](../validation/2026-10-25-telemetry-memory-profile.md)
 completed fixed save/fetch/search transactions in all three variants. Its
