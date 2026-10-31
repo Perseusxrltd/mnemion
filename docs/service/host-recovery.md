@@ -39,22 +39,19 @@ delivery and exercise restoration from an independently retrieved copy.
 
 ## Prepare the installed tools
 
-Use Python 3.12–3.14, or 3.12/3.13 on Intel Macs, under an unprivileged service
-account. The official release wheel includes web Studio; installing that wheel
-does not require Node. The separate Node build is for source checkouts.
+Use an unprivileged service account and a checked release checkout. Follow the
+[locked uv service setup](../../README.md#run-the-service) and its
+[supervised-host installation steps](managed-updates.md#initial-installation),
+which select the `supervision` extra, prepare Studio and cover the Intel-Mac
+cryptography wheel. The lock retains the reviewed FastEmbed/Pillow override.
+Python 3.12–3.14 is supported; Intel Macs require 3.12 or 3.13.
 
-```sh
-python3.13 -m venv "$HOME/.local/share/mnemion/runtime"
-"$HOME/.local/share/mnemion/runtime/bin/python" -m pip install \
-  './mnemion-4.13.0-py3-none-any.whl[supervision]'
-```
+The examples below assume the checkout's `.venv/bin` is on `PATH`. From that
+checkout, you can instead use `uv run --no-sync mnemion-service` in place of
+`mnemion-service`.
 
-Download the wheel from the [official release](https://github.com/Perseusxrltd/mnemion/releases).
-The examples below assume this environment's `mnemion-service` command is on
-`PATH`. You can also invoke its Python with `-m mnemion.service.cli`.
-
-For managed automatic updates, install the currently pinned free **uv 0.12.24**
-package manager and supply its executable with `--uv` when it is not on `PATH`.
+Managed automatic updates require the pinned free **uv 0.12.24** package
+manager; supply its executable with `--uv` when it is not on `PATH`.
 The managed setup retains its own reviewed copy. Supply `--pg-bin` if PostgreSQL
 client tools are not on `PATH`. PostgreSQL must be the same major version as the
 backup or newer; use client tools suitable for the source and destination server.

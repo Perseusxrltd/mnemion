@@ -61,33 +61,48 @@ lifecycle. Desktop automatic updates remain separate.
   signed lockfile. Package staging installs wheels without source builds or
   automatic Python downloads. Approved proxy and certificate settings remain usable.
 
-Install the official 4.0.8 wheel with its extra, or use a checked release checkout:
+### Initial installation
+
+Use a checked [official release](https://github.com/Perseusxrltd/mnemion/releases)
+checkout and follow the [locked uv service setup](../../README.md#run-the-service).
+For a supervised host, select the `supervision` extra and omit development
+packages in that same checkout:
 
 ```sh
 uv sync --locked --no-dev --extra supervision --python 3.13
-uv run --no-sync mnemion-service studio build
 ```
 
 On Intel Macs, upstream no longer provides a binary for the current
 `cryptography` release. The official Mnemion release includes a native wheel
 built with pinned static OpenSSL; no compiler or Homebrew runtime is needed.
-For the initial checkout installation, replace the `uv sync` command above with:
+Download that wheel and `SHA256SUMS.txt` from the same release as the checkout,
+and verify its checksum before installation. With the wheel in the checkout
+directory, replace the `uv sync` command above with:
 
 ```sh
 uv sync --locked --no-dev --extra supervision --python 3.13 --no-install-package cryptography
 uv pip install --python .venv/bin/python --no-deps \
-  https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.8/cryptography-50.0.2-cp312-abi3-macosx_11_0_x86_64.whl
+  ./cryptography-50.0.2-cp312-abi3-macosx_11_0_x86_64.whl
 ```
 
-The wheel's checksum is included in the same release's `SHA256SUMS.txt`. It
-contains upstream licenses and source/build provenance. Future managed patches
-select, authenticate and install the matching dependency automatically; other
-platforms do not download it. The source lock still controls its exact version.
+This installs only the verified native dependency after locked dependency setup.
+The wheel contains upstream licenses and source/build provenance. Future managed
+patches select, authenticate and install the matching dependency automatically;
+other platforms do not download it. The source lock still controls its exact version.
 
-An official wheel already contains Studio, the fonts, guides and notices. Node.js
-is only required to build Studio from Git. Keep the original virtual environment
-and checkout at their original paths: they launch Supervisor and remain the
-bootstrap fallback. Future application runtimes are isolated under managed state.
+After dependency setup, prepare Studio as described in the
+[service setup](../../README.md#run-the-service):
+
+```sh
+uv run --no-sync mnemion-service studio build
+```
+
+This checkout build requires Node.js 22 or newer. Later managed staging installs
+the verified application wheel after preparing its locked dependencies; that
+wheel already contains Studio, fonts, guides and notices. Keep the original
+virtual environment and checkout at their original paths: they launch Supervisor
+and remain the bootstrap fallback. Future application runtimes are isolated
+under managed state.
 
 ## Adopt a host
 

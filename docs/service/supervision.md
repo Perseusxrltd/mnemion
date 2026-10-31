@@ -18,20 +18,18 @@ and its source settings after losing the original host.
 ## Prepare a private instance
 
 Complete the [database and restricted-login setup](README.md#run-the-service)
-first. Prepare the model cache and, for a Git checkout, build Studio. Install the
-extra in the same environment that runs the service:
+first. Follow the [locked uv service setup](../../README.md#run-the-service)
+from a checked release checkout, with the
+[supervised-host installation steps](managed-updates.md#initial-installation).
+Those steps install the `supervision` extra in the service environment, prepare
+Studio and cover the Intel-Mac cryptography wheel. Then prepare the model cache
+from the same checkout:
 
 ```sh
-uv sync --locked --no-dev --extra supervision --python 3.13
 uv run --no-sync mnemion-service prepare-model
-uv run --no-sync mnemion-service studio build
 ```
 
-An official Python release wheel already includes Studio. When installing that
-wheel, select its `supervision` extra, for example
-`python -m pip install './mnemion-4.0.8-py3-none-any.whl[supervision]'`.
-Use the [official downloads](https://github.com/Perseusxrltd/mnemion/releases).
-The extra is optional and adds no model or paid service.
+The supervision extra adds no model or paid service.
 From 4.2.5, the worker owns the local model cache for both managed processes.
 API semantic requests use authenticated, pinned TLS over loopback; the model
 generation and database are unchanged. Worker RSS and cache state are visible

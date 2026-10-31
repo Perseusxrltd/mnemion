@@ -57,6 +57,14 @@ memory sample during a scan is unchanged. The
 [reviewed lifecycle checks](../validation/2026-10-31-source-deadline-scheduling.md)
 use controlled time and do not measure CPU/RAM savings. F06/R04 remains partial.
 
+The capture status display now disarms its age-refresh interval while the page
+is hidden. Returning to the page refreshes the age immediately and resumes the
+existing one-minute cadence. Removing coverage or closing the view clears the
+timer and listener; late callbacks cannot restart them. This is display-only
+work: capture and delivery continue on their existing schedules. The
+[source review and frontend typecheck](../validation/2026-10-31-capture-ui-and-service-bootstrap.md)
+cover this change; no whole-application CPU or RAM saving is claimed.
+
 The [native counter follow-up](../validation/2026-10-31-native-memory-counters.md)
 improves Windows lifetime measurements and cleanup reporting. The Darwin
 adapter now retains live per-process kernel RSS peaks. The corrected C probe
