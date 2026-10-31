@@ -57,91 +57,37 @@
   ],
   "runs": [
     {
-      "id": 41239426144,
+      "id": 41240278649,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "df524c9f004b98e61695162fb3bf912a86c4730d",
+      "source_commit": "0387c1ee131d3c2da9f271783dd76f306b844819",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-31T20:33:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41239426144",
+      "updated_at": "2026-10-31T20:44:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41240278649",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "total": 8,
+        "completed": 6,
+        "succeeded": 1,
         "active": [
           {
-            "id": 124650066909,
+            "id": 124652626405,
+            "name": "lint",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync ruff format --check ."
+            ]
+          },
+          {
+            "id": 124652626407,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 124650108557,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 124650108561,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124650108581,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 124650108608,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124650108628,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 124650108639,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124650108684,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Run python deploy/bundle_studio.py"
             ]
           }
         ]
@@ -204,5 +150,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-10-31T20:34:26+00:00"
+  "observed_at": "2026-10-31T20:44:53+00:00"
 }
