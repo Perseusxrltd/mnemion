@@ -28,7 +28,13 @@ LIBBPF_LIBS := $(shell $(PKG_CONFIG) --libs libbpf 2>/dev/null)
 ifeq ($(LIBBPF_LIBS),)
 LIBBPF_LIBS := -lbpf -lelf -lz
 endif
-BPF_CFLAGS := -O2 -g -Wall -Werror -target bpf -D__TARGET_ARCH_$(TARGET_ARCH) \
+# Clang 14 smallest explicit CPU is v1. 64-bit atomic_fetch_add (XFADDD) is
+# not predicated on HasAlu32, so alloc_cookie's used return is BPF_FETCH here.
+# The pre-emit check rejects a live def only for non-fetch XADDW/XADDD/XADDW32.
+# The live counter's unused add of -1 stays that non-fetch XADD. v3 is not
+# required and would enable alu32 and jmp32 for the whole object.
+# Loading stays a later gate: BPF_FETCH needs Linux 5.12.
+BPF_CFLAGS := -O2 -g -Wall -Werror -target bpf -mcpu=v1 -D__TARGET_ARCH_$(TARGET_ARCH) \
 	$(LIBBPF_CFLAGS) -I$(MULTIARCH_INC) -I/usr/include
 
 .PHONY: all clean test-sha256

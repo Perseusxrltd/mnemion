@@ -172,6 +172,7 @@ static __always_inline int read_io_thread(struct kernel_clone_args *args, __u32 
 
 static __always_inline __u64 alloc_cookie(__u64 *slot)
 {
+	/* Old value is the cookie. LLVM 14's 64-bit fetch-add returns it at -mcpu=v1. */
 	__u64 prev = __sync_fetch_and_add(slot, 1);
 
 	if (prev == 0 || prev >= LIFETIME_COOKIE_LIMIT)
@@ -378,8 +379,9 @@ static __always_inline void on_birth(struct kernel_clone_args *args, struct task
 		} else {
 			struct lifetime_group_rec *group = bpf_map_lookup_elem(&lifetime_groups, &signal_key);
 
+			/* BPF has no atomic subtract. Add of -1 stays seq_cst; result unused. */
 			if (group)
-				__sync_fetch_and_sub(&group->live, 1);
+				__sync_fetch_and_add(&group->live, (__u32)-1);
 		}
 		return;
 	}

@@ -17,6 +17,14 @@ sudo apt-get install -y clang llvm gcc libc6-dev make pkg-config libbpf-dev libe
 
 `clang` must accept `-target bpf`. `libbpf` must provide `bpf_object__open_file`, `bpf_program__attach`, and `libbpf_get_error`. The kernel UAPI header must define `struct bpf_prog_info.recursion_misses`. `bpftool` is not required to compile. Runtime admission still needs `/sys/kernel/btf/vmlinux`, fentry/fexit, and the privileges below.
 
+## Compiler compatibility
+
+The Makefile pins Clang 14 to `-mcpu=v1` for both objects. That is the smallest explicit BPF CPU. In LLVM 14, 64-bit `atomic_fetch_add` (`XFADDD`) is not gated on `HasAlu32`. It encodes `BPF_ADD | BPF_FETCH` and returns the old value. `alloc_cookie` keeps that return, so two births do not receive the same cookie. The pre-emit checker rejects a live result only for the non-fetch opcodes `XADDW`, `XADDD`, and `XADDW32`.
+
+The group `live` counter stays an unused sequentially consistent add, including an add of `(__u32)-1`. A 32-bit `__sync_fetch_and_sub` was the operation Clang 14 could not select (`AtomicLoadSub` i32). The unused add stays a non-fetch XADD. `-mcpu=v3` is not required for the cookie return. It would also enable alu32 and jmp32 for the whole translation unit. v1 leaves those off.
+
+The cookie instruction is still `BPF_FETCH` on this v1 object. Linux added that immediate in commit `5ca419f2864a` (2021-01-14), and it shipped in Linux 5.12. The loader still admits the running kernel. A finished compile is not permission to load. This repository has not compiled these objects and has not loaded them.
+
 Windows and a WSL userland without those packages can review and run the offline receipt tests. They cannot produce `lifetime.bpf.o`.
 
 ## Build
