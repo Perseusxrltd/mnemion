@@ -2,13 +2,14 @@
 
 import json
 from pathlib import Path
+import sqlite3
 from uuid import uuid4
 
 import httpx
 import pytest
 
 from mnemion import agent_control, control_cli, control_measurement
-from mnemion.product_telemetry import aggregate, catalog, policy, workflow
+from mnemion.product_telemetry import aggregate, catalog, delivery, policy, workflow
 from mnemion.sdk import Client
 
 
@@ -39,8 +40,12 @@ def cells(root):
 def test_action_latency_includes_optional_authority_reads(installation, monkeypatch, selected):
     now = [10.0]
     monkeypatch.setattr(workflow.time, "monotonic", lambda: now[0])
-    status = policy.status
+    permission = policy._measurement_permission
+    full_status = policy.status
+    disclosed = policy.disclosure
+    budget = delivery.budget_status
     exhausted = aggregate.workflow_exhausted
+    avoided = {"status": 0, "disclosure": 0, "budget": 0}
 
     def contribution_read(*args, **kwargs):
         now[0] += 0.400
@@ -48,10 +53,25 @@ def test_action_latency_includes_optional_authority_reads(installation, monkeypa
 
     def authority_read(*args, **kwargs):
         now[0] += 0.250
-        return status(*args, **kwargs)
+        return permission(*args, **kwargs)
+
+    def count_status(*args, **kwargs):
+        avoided["status"] += 1
+        return full_status(*args, **kwargs)
+
+    def count_disclosure():
+        avoided["disclosure"] += 1
+        return disclosed()
+
+    def count_budget(*args, **kwargs):
+        avoided["budget"] += 1
+        return budget(*args, **kwargs)
 
     monkeypatch.setattr(aggregate, "workflow_exhausted", contribution_read)
-    monkeypatch.setattr(policy, "status", authority_read)
+    monkeypatch.setattr(policy, "_measurement_permission", authority_read)
+    monkeypatch.setattr(policy, "status", count_status)
+    monkeypatch.setattr(policy, "disclosure", count_disclosure)
+    monkeypatch.setattr(delivery, "budget_status", count_budget)
     active = (
         workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
         if selected
@@ -63,6 +83,7 @@ def test_action_latency_includes_optional_authority_reads(installation, monkeypa
         active.finish_choice("capture.deliver", "success")
     else:
         active.finish("success")
+    assert avoided == {"status": 0, "disclosure": 0, "budget": 0}
     rows = cells(installation)
     assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
     # The user waited 660 ms. Reporting only the final 10 ms conceals the
@@ -89,20 +110,28 @@ def test_fixed_choices_keep_one_original_clock_and_complete_at_most_once(install
     now = [10.0]
     monkeypatch.setattr(workflow.time, "monotonic", lambda: now[0])
     reads = []
-    status = policy.status
+    status_reads = []
+    permission = policy._measurement_permission
+    full_status = policy.status
 
     def observed(*args, **kwargs):
         reads.append(True)
-        return status(*args, **kwargs)
+        return permission(*args, **kwargs)
 
-    monkeypatch.setattr(policy, "status", observed)
+    def counted_status(*args, **kwargs):
+        status_reads.append(True)
+        return full_status(*args, **kwargs)
+
+    monkeypatch.setattr(policy, "_measurement_permission", observed)
+    monkeypatch.setattr(policy, "status", counted_status)
     active = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
-    assert active is not None and len(reads) == 1
+    assert active is not None and len(reads) == 1 and status_reads == []
     now[0] += 0.250
     active.finish_choice("capture.deliver", "success", work_items=0, result_items=3)
     active.finish_choice("capture.collect", "failed")
     active.finish("failed")
     assert len(reads) == 1, "Finishing cannot acquire a new policy snapshot"
+    assert status_reads == []
     rows = cells(installation)
     assert {row["workflow"] for row in rows} == {"capture.deliver"}
     assert sum(row["count"] for row in rows if row["metric"] == "submissions") == 1
@@ -114,6 +143,11 @@ def test_choice_validation_rejects_unknown_or_unbounded_input_before_privacy_io(
 ):
     monkeypatch.setattr(
         policy, "status", lambda *_a, **_k: pytest.fail("Invalid choice read policy")
+    )
+    monkeypatch.setattr(
+        policy,
+        "_measurement_permission",
+        lambda *_a, **_k: pytest.fail("Invalid choice read policy"),
     )
     for choices in (
         (),
@@ -456,6 +490,286 @@ def test_workflow_discards_invalid_primitives_and_finishes_at_most_once(installa
 def test_unavailable_build_does_not_read_policy(monkeypatch):
     assert not policy.COLLECTION_AVAILABLE
     monkeypatch.setattr(policy, "status", lambda *_: pytest.fail("unexpected policy read"))
+    monkeypatch.setattr(
+        policy, "_measurement_permission", lambda *_: pytest.fail("unexpected policy read")
+    )
     monkeypatch.setattr(workflow.time, "monotonic", lambda: pytest.fail("unexpected clock read"))
     assert control_measurement.begin("retrieval.search", {}) is None
+    assert workflow.begin("memory.recall", "headless") is None
     assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+
+
+def _avoided_reads(monkeypatch):
+    avoided = {"status": 0, "disclosure": 0, "budget": 0}
+    full_status = policy.status
+    disclosed = policy.disclosure
+    budget = delivery.budget_status
+
+    def count_status(*args, **kwargs):
+        avoided["status"] += 1
+        return full_status(*args, **kwargs)
+
+    def count_disclosure():
+        avoided["disclosure"] += 1
+        return disclosed()
+
+    def count_budget(*args, **kwargs):
+        avoided["budget"] += 1
+        return budget(*args, **kwargs)
+
+    monkeypatch.setattr(policy, "status", count_status)
+    monkeypatch.setattr(policy, "disclosure", count_disclosure)
+    monkeypatch.setattr(delivery, "budget_status", count_budget)
+    return avoided
+
+
+def _pending(root):
+    with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
+        return connection.execute("SELECT count(*) FROM pending").fetchone()[0]
+
+
+def test_begin_and_begin_choice_skip_queue_ledger_and_disclosure(installation, monkeypatch):
+    statements = []
+    original = policy._connect
+
+    def connected(*args, **kwargs):
+        connection = original(*args, **kwargs)
+        connection.set_trace_callback(statements.append)
+        return connection
+
+    monkeypatch.setattr(policy, "_connect", connected)
+    avoided = _avoided_reads(monkeypatch)
+    starters = (
+        lambda: workflow.begin("memory.recall", "headless"),
+        lambda: workflow.begin_choices(("capture.collect", "capture.deliver"), "headless"),
+    )
+    for starter in starters:
+        statements.clear()
+        avoided["status"] = avoided["disclosure"] = avoided["budget"] = 0
+        active = starter()
+        assert active is not None
+        text = "\n".join(statements)
+        assert "preferences" in text
+        assert "pending" not in text
+        assert "delivery_" not in text
+        assert avoided == {"status": 0, "disclosure": 0, "budget": 0}
+        before = len(statements)
+        again = starter()
+        assert again is not None and len(statements) > before
+        assert "pending" not in "\n".join(statements)
+        active.discard()
+        again.discard()
+
+
+def test_opt_out_reenable_and_replaced_generation_fence_old_writes(installation, monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: now[0])
+    avoided = _avoided_reads(monkeypatch)
+    started = workflow.begin("memory.recall", "headless")
+    chosen = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    assert started is not None and chosen is not None and avoided["status"] == 0
+    off = policy.configure(installation, {"enabled": False, "expected_revision": 0})
+    started.finish("success")
+    chosen.finish_choice("capture.deliver", "success")
+    assert _pending(installation) == 0
+    avoided["status"] = 0
+    assert workflow.begin("memory.recall", "headless") is None
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert avoided["status"] == 0
+    opened = {"count": 0}
+    original = policy._connect
+
+    def connected(*args, **kwargs):
+        opened["count"] += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(policy, "_connect", connected)
+    assert workflow.begin("memory.recall", "headless") is None
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert opened["count"] == 0
+    policy.configure(
+        installation,
+        {
+            "enabled": True,
+            "expected_revision": off["revision"],
+            "expected_generation": off["store_generation"],
+            "disclosure_version": policy.DISCLOSURE_VERSION,
+        },
+    )
+    opened["count"] = 0
+    assert workflow.begin("memory.recall", "headless") is None
+    assert opened["count"] == 0
+    now[0] = 0.25
+    fresh = workflow.begin("memory.recall", "headless")
+    fresh_choice = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    assert fresh is not None and fresh_choice is not None and opened["count"] > 0
+    started.finish("success")
+    chosen.finish_choice("capture.deliver", "success")
+    fresh.discard()
+    fresh_choice.discard()
+    assert _pending(installation) == 0
+    held = workflow.begin("memory.recall", "headless")
+    held_choice = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    with sqlite3.connect(installation / policy.DATABASE_NAME) as connection:
+        connection.execute(
+            "UPDATE preferences SET store_generation=? WHERE singleton=1", ("cd" * 16,)
+        )
+    held.finish("success")
+    held_choice.finish_choice("capture.collect", "success")
+    assert _pending(installation) == 0
+    replaced = workflow.begin("memory.recall", "headless")
+    assert replaced is not None
+    replaced.finish("success")
+    assert sum(row["count"] for row in cells(installation) if row["metric"] == "submissions") == 1
+
+
+def test_company_denial_observes_opt_out_and_lifts_without_a_cached_grant(
+    installation, monkeypatch
+):
+    company = installation.parent / "company.json"
+    restricted = {
+        "schema_version": policy.SCHEMA_VERSION,
+        "enabled": False,
+        "metric_groups": ["usage"],
+    }
+    company.write_text(json.dumps(restricted))
+    opened = {"count": 0}
+    original = policy._connect
+
+    def connected(*args, **kwargs):
+        opened["count"] += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(policy, "_connect", connected)
+    assert workflow.begin("memory.recall", "headless") is None
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert opened["count"] == 2
+    company.write_text(json.dumps({**restricted, "enabled": True, "metric_groups": []}))
+    assert workflow.begin("memory.recall", "headless") is None
+    company.write_text("{")
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert _pending(installation) == 0
+    company.unlink()
+    restored = workflow.begin("memory.recall", "headless")
+    assert restored is not None
+    restored.finish("success")
+    assert sum(row["count"] for row in cells(installation) if row["metric"] == "submissions") == 1
+    monkeypatch.setattr(aggregate.time, "monotonic", lambda: 0.0)
+    monkeypatch.setattr(aggregate, "_exhaustion", None)
+    policy.configure(installation, {"enabled": False, "expected_revision": 0})
+    company.write_text(json.dumps(restricted))
+    opened["count"] = 0
+    assert workflow.begin("memory.recall", "headless") is None
+    assert opened["count"] == 1
+    opened["count"] = 0
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert opened["count"] == 0
+    assert policy.status(installation)["reason"] == "user_disabled"
+
+
+def test_missing_corrupt_and_legacy_stores_suppress_without_repair(
+    installation, tmp_path, monkeypatch
+):
+    absent = tmp_path / "no-store"
+    monkeypatch.setattr(policy, "default_directory", lambda: absent)
+    assert workflow.begin("memory.recall", "headless") is None
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert not absent.exists()
+    monkeypatch.setattr(policy, "default_directory", lambda: installation)
+    path = installation / policy.DATABASE_NAME
+    original = path.read_bytes()
+    path.write_bytes(b"corrupt-telemetry-store")
+    assert workflow.begin("memory.recall", "headless") is None
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    assert path.read_bytes() == b"corrupt-telemetry-store"
+    assert policy.status(installation)["reason"] == "storage_unavailable"
+    path.write_bytes(original)
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA user_version=2")
+    assert policy._measurement_permission(installation)["reason"] == "disclosure_required"
+    assert workflow.begin("memory.recall", "headless") is None
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        connection.execute("PRAGMA user_version=6")
+        connection.execute("UPDATE preferences SET disclosure_version=1000000")
+    assert policy._measurement_permission(installation)["reason"] == "storage_unavailable"
+    assert workflow.begin_choices(("capture.collect", "capture.deliver"), "headless") is None
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 6
+        assert (
+            connection.execute("SELECT disclosure_version FROM preferences").fetchone()[0]
+            == 1000000
+        )
+
+
+def _usage_cells(count):
+    cells = []
+    for name in catalog.WORKFLOWS:
+        for surface in catalog.SURFACES:
+            for outcome in catalog.OUTCOMES:
+                _, encoded = catalog.observation(
+                    {
+                        "kind": "outcome",
+                        "workflow": name,
+                        "surface": surface,
+                        "outcome": outcome,
+                    }
+                )
+                cells.append(encoded[0])
+                if len(cells) == count:
+                    return cells
+    raise AssertionError("catalog does not contain enough surviving cells")
+
+
+def test_oversized_surviving_pending_rows_prevent_a_new_write(installation, monkeypatch):
+    path = installation / policy.DATABASE_NAME
+    day = aggregate._day()
+    with sqlite3.connect(path) as connection:
+        connection.execute("DROP TRIGGER pending_bound")
+        connection.executemany(
+            "INSERT INTO pending VALUES (?, 1, ?)",
+            [(cell, day) for cell in _usage_cells(513)],
+        )
+    assert policy.status(installation)["reason"] == "storage_unavailable"
+    assert policy.status(installation)["pending_records"] is None
+    avoided = _avoided_reads(monkeypatch)
+    assert policy._measurement_permission(installation)["admitted"] is True
+    assert avoided == {"status": 0, "disclosure": 0, "budget": 0}
+    active = workflow.begin("memory.recall", "headless")
+    assert active is not None
+    active.finish("success")
+    assert avoided == {"status": 0, "disclosure": 0, "budget": 0}
+    # Expiry keeps today's usage cells. The surviving bound then rejects the write.
+    assert _pending(installation) == 513
+
+
+def test_damaged_delivery_ledger_saves_a_local_aggregate_and_refuses_delivery(
+    installation, monkeypatch
+):
+    path = installation / policy.DATABASE_NAME
+    with sqlite3.connect(path) as connection:
+        connection.execute("UPDATE delivery_state SET clock_ms=5, next_ms=1 WHERE singleton=1")
+    assert policy.status(installation)["reason"] == "storage_unavailable"
+    assert policy.status(installation)["effective_enabled"] is False
+    avoided = _avoided_reads(monkeypatch)
+    stamp = policy._measurement_permission(installation)
+    assert stamp["admitted"] is True
+    assert avoided == {"status": 0, "disclosure": 0, "budget": 0}
+    chosen = workflow.begin_choices(("capture.collect", "capture.deliver"), "headless")
+    assert chosen is not None
+    chosen.finish_choice("capture.deliver", "success")
+    assert avoided == {"status": 0, "disclosure": 0, "budget": 0}
+    assert _pending(installation) >= 1
+    # Full status hides the queue from preview. That is not an empty database.
+    assert aggregate.preview(installation) == []
+    with sqlite3.connect(path) as connection:
+        with pytest.raises(delivery.WireError):
+            delivery.budget_status(connection)
+    assert (
+        delivery.DeliveryBudget(installation).eligible(
+            expected_revision=stamp["revision"],
+            expected_generation=stamp["store_generation"],
+        )
+        is False
+    )
+    assert policy.status(installation)["effective_enabled"] is False

@@ -199,6 +199,19 @@ reduces repeated local database work when optional measurement is already denied
 or capped. It does not cache permission to collect or change your saved choice.
 Its desktop/TLS diagnostic still exceeded the 2 MiB full-feature RSS target when
 opted out and when enabled; collection remains unavailable.
+
+Starting a Python measurement reads the saved choice, disclosure acknowledgement,
+store generation and company policy. It does not count the local queue or the
+send ledger, and it does not rebuild this page's disclosure. Privacy settings
+and preview still do. Permission to start is not permission to keep or send a
+measurement: saving and sending read the choice again. The write transaction
+applies normal expiry and retained-queue checks; expired rows may be removed
+before a new aggregate is recorded. If preferences and company policy remain
+valid but only the delivery ledger is damaged, a bounded local aggregate may
+still be saved. Full status reports storage unavailable and preview returns no
+aggregates; delivery remains blocked by ledger validation. This status is not
+an opt-out or proof that the local queue is empty. Collection remains off.
+
 The subsequent [real-memory diagnostic](../validation/2026-10-25-telemetry-memory-profile.md)
 completed fixed save/fetch/search transactions in all three variants. Its
 resource measurements and the repeated synthetic diagnostic do not qualify the

@@ -705,6 +705,29 @@ Qualified source checks are 137 distinct Python and 96 browser-source cases,
 with SDK/frontend builds passing. Browser fetch/locks/admission are mocked;
 the earlier app comparison does not include these changes or qualify them.
 
+Python workflow start uses a narrow measurement-permission read rather than the
+full settings status. It reuses the private read-only SQLite path, including
+zero lock waiting and the existing application, journal and preference checks.
+The result is only whether collection may start, why not, and the revision and
+store generation. It does not count pending rows, read delivery counters, or
+serialize the disclosure. Company denial is applied after that fresh preference
+read, so an opt-out still takes priority and can arm the existing negative hint.
+An allowed company never skips the read. The read never creates, migrates or
+repairs a store, and it keeps no connection or statement after it returns.
+The caller receives only the scalar revision, generation and reason. `status()`,
+configure and preview are unchanged, including their pending count, disclosure
+document and delivery budget. A stamp cannot authorize persistence or delivery.
+The write path and the delivery path re-check revision, generation, disclosure,
+user and company policy in their own transactions. The write transaction applies
+normal expiry and retained-queue checks; expired rows may be removed before a
+new aggregate is recorded. If preferences and company policy remain valid but
+only the delivery ledger is damaged, a bounded local aggregate may still be
+saved. Full status reports storage unavailable and preview returns no aggregates;
+delivery remains blocked by ledger validation. This status is not an opt-out or
+proof that the local queue is empty. These two reads are not equivalent.
+Resource acceptance is unchanged and open. The October checks above do not cover
+this read.
+
 The managed updater can also offer an existing bounded queue or still-valid
 approved held report during its already scheduled five- or ten-second waits.
 Fresh eligibility checks occur at most once per minute in that watcher lifetime;

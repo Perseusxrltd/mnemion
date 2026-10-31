@@ -14,7 +14,7 @@ const reasons: Record<TelemetryStatus['reason'], string> = {
   user_disabled: 'Product telemetry is off by your choice.',
   browser_privacy: 'Your browser’s Global Privacy Control keeps product telemetry off.',
   company_policy: 'Your organization’s policy keeps product telemetry off.',
-  storage_unavailable: 'Privacy settings could not be read. Product telemetry stays off.',
+  storage_unavailable: 'Privacy and delivery state could not be confirmed. Refresh privacy status. This is not a saved opt-out and does not show the local queue.',
   coordination_unavailable: 'This browser cannot coordinate privacy settings between tabs. Product telemetry stays off.',
   disclosure_required: 'No product telemetry is collected until you have reviewed the current disclosure.',
   collection_unavailable: 'Product telemetry is not available in this build.',

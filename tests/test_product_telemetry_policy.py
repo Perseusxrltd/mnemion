@@ -11,7 +11,7 @@ import sys
 
 import pytest
 
-from mnemion.product_telemetry import policy
+from mnemion.product_telemetry import delivery, policy
 
 
 @pytest.fixture
@@ -296,3 +296,68 @@ def test_other_user_readable_store_and_symlink_are_not_adopted(installation, tmp
     linked.symlink_to(root, target_is_directory=True)
     assert policy.status(linked)["reason"] == "storage_unavailable"
     assert policy.status(root)["reason"] == "user_disabled"
+
+
+def test_status_schema_stays_complete_while_measurement_permission_stays_narrow(
+    installation, monkeypatch
+):
+    root, _company = installation
+    monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", True)
+    monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/telemetry")
+    saved = choice(root, True, disclosure=policy.DISCLOSURE_VERSION)
+    calls = {"budget": 0, "disclosure": 0}
+    real_budget = delivery.budget_status
+    real_disclosure = policy.disclosure
+
+    def budget(*args, **kwargs):
+        calls["budget"] += 1
+        return real_budget(*args, **kwargs)
+
+    def disclosed():
+        calls["disclosure"] += 1
+        return real_disclosure()
+
+    monkeypatch.setattr(delivery, "budget_status", budget)
+    monkeypatch.setattr(policy, "disclosure", disclosed)
+    first = policy._measurement_permission(root)
+    second = policy._measurement_permission(root)
+    assert calls == {"budget": 0, "disclosure": 0}
+    assert first is not second and first == second
+    assert set(first) == {"admitted", "reason", "revision", "store_generation"}
+    assert first == {
+        "admitted": True,
+        "reason": "enabled",
+        "revision": saved["revision"],
+        "store_generation": saved["store_generation"],
+    }
+    with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
+        connection.execute("INSERT INTO pending VALUES (7, 1, 20000)")
+    current = policy.status(root)
+    assert calls["budget"] >= 1 and calls["disclosure"] == 1
+    assert set(current) == {
+        "schema_version",
+        "revision",
+        "store_generation",
+        "default_enabled",
+        "user_enabled",
+        "connection_mode",
+        "effective_enabled",
+        "reason",
+        "storage",
+        "disclosure_version",
+        "required_disclosure_version",
+        "company_policy",
+        "pending_records",
+        "collection_available",
+        "disclosure",
+        "delivery_budget",
+    }
+    assert current["effective_enabled"] is True
+    assert current["reason"] == "enabled"
+    assert current["pending_records"] == 1
+    assert current["user_enabled"] is True
+    assert current["delivery_budget"]["attempts_in_rolling_week"] == 0
+    assert current["disclosure"]["collection_available"] is True
+    calls["budget"] = calls["disclosure"] = 0
+    assert policy._measurement_permission(root)["admitted"] is True
+    assert calls == {"budget": 0, "disclosure": 0}

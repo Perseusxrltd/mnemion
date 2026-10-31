@@ -138,10 +138,16 @@ def test_cli_cannot_infer_permission_and_never_repeats_the_command(
             )
         if condition == "unreadable":
 
-            def unreadable(*_a, **_k):
+            def unreadable(*_args, **_kwargs):
                 raise OSError("PRIVATE_PATH")
 
-            scope.setattr(policy, "status", unreadable)
+            # Both the producer stamp and full status open the store here.
+            scope.setattr(policy, "_connect", unreadable)
+            assert policy.status(installation)["reason"] == "storage_unavailable"
+            assert policy.status(installation)["effective_enabled"] is False
+            stamp = policy._measurement_permission(installation)
+            assert stamp["admitted"] is False
+            assert stamp["reason"] == "storage_unavailable"
         assert cli.main(telemetry_owner=condition != "nested") is None
     assert calls == ["PRIVATE_QUERY"]
     assert cells(installation) == []
@@ -302,6 +308,11 @@ def test_command_suppression_does_not_read_or_change_saved_permission(installati
     monkeypatch.setattr("sys.argv", ["mnemion", "--no-telemetry", "search", "PRIVATE_QUERY"])
     with monkeypatch.context() as inner:
         inner.setattr(policy, "status", lambda *_a, **_k: pytest.fail("Suppression read policy"))
+        inner.setattr(
+            policy,
+            "_measurement_permission",
+            lambda *_a, **_k: pytest.fail("Suppression read policy"),
+        )
         inner.setattr(cli_measurement, "_origins", lambda: pytest.fail("Suppression read origins"))
         cli.main()
     assert calls == ["PRIVATE_QUERY"]
@@ -331,6 +342,11 @@ def test_automatic_hook_ingestion_has_no_inferred_owner(installation, tmp_path, 
         with monkeypatch.context() as inner:
             inner.setattr("sys.argv", command[2:])
             inner.setattr(policy, "status", lambda *_a, **_k: pytest.fail("Hook read policy"))
+            inner.setattr(
+                policy,
+                "_measurement_permission",
+                lambda *_a, **_k: pytest.fail("Hook read policy"),
+            )
             cli.main()
 
     monkeypatch.setattr(hooks_cli.subprocess, "Popen", child)

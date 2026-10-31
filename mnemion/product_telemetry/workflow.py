@@ -142,6 +142,16 @@ class WorkflowChoice(Workflow):
         self.finish(outcome, reason, **measurements)
 
 
+def _current_permission(root: Path | None) -> dict | None:
+    """One fresh measurement stamp, or suppression. The dict is not retained."""
+    current = policy._measurement_permission(root)
+    if not current["admitted"]:
+        if current["reason"] == "user_disabled":
+            aggregate.remember_disabled(root)
+        return None
+    return current
+
+
 def begin_choices(
     choices: tuple[str, ...], surface: str, *, root: Path | None = None
 ) -> WorkflowChoice | None:
@@ -167,10 +177,9 @@ def begin_choices(
         if all(aggregate.workflow_exhausted(root, name, surface) for name in choices):
             _awake_delivery(root)
             return None
-        current = policy.status(root)
-        if not current["effective_enabled"]:
-            if current["reason"] == "user_disabled":
-                aggregate.remember_disabled(root)
+        # Narrow stamp only. Queue, ledger and disclosure stay on the full status read.
+        current = _current_permission(root)
+        if current is None:
             return None
         return WorkflowChoice(choices, surface, root, current, started=started)
     except Exception:
@@ -190,10 +199,9 @@ def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow 
         if aggregate.workflow_exhausted(root, workflow, surface):
             _awake_delivery(root)
             return None
-        current = policy.status(root)
-        if not current["effective_enabled"]:
-            if current["reason"] == "user_disabled":
-                aggregate.remember_disabled(root)
+        # Narrow stamp only. Queue, ledger and disclosure stay on the full status read.
+        current = _current_permission(root)
+        if current is None:
             return None
         return Workflow(workflow, surface, root, current, started=started)
     except Exception:

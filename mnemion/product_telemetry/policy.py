@@ -2,8 +2,11 @@
 
 There are no analytics identifiers or network operations here. SQLite serializes
 choices across processes; every producer must consult this same policy inside
-its write transaction. Missing disclosure, damaged state and restrictive company
-policy suppress collection. A saved opt-out always survives a new disclosure.
+its write transaction. Starting an observation reads that policy without the
+settings page's queue, delivery ledger or disclosure document. That stamp cannot
+persist or send by itself. Missing disclosure, damaged or unreadable permission
+state, and restrictive company policy suppress collection. A saved opt-out
+always survives a new disclosure.
 """
 
 from __future__ import annotations
@@ -391,18 +394,85 @@ def transport_available() -> bool:
     return release_endpoint() is not None
 
 
-def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
-    from .delivery import budget_status
-
-    root = root if root is not None else default_directory()
-    company = company_policy(policy_path)
-    preference = {
+def _uninitialized_preference() -> dict:
+    return {
         "revision": 0,
         "enabled": True,
         "disclosure_version": 0,
         "store_generation": None,
         "connection_mode": "auto",
     }
+
+
+def _admission_reason(storage: str, preference: dict, company: dict) -> str:
+    """Admission order shared by settings and the producer stamp.
+
+    An unreadable store wins, then an explicit opt-out, then company policy,
+    then disclosure or a missing generation, then an unavailable build.
+    """
+    if storage == "unreadable":
+        return "storage_unavailable"
+    if not preference["enabled"]:
+        return "user_disabled"
+    if not company["enabled"] or not company["metric_groups"]:
+        return "company_policy"
+    if (
+        preference["disclosure_version"] != DISCLOSURE_VERSION
+        or preference["store_generation"] is None
+    ):
+        return "disclosure_required"
+    if not COLLECTION_AVAILABLE or COLLECTOR_URL is None:
+        return "collection_unavailable"
+    return "enabled"
+
+
+def _measurement_permission(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
+    """Fresh stamp for starting one optional observation.
+
+    This is not ``status()``. It does not count pending rows, read the delivery
+    ledger, or build the disclosure document. Company denial is applied only
+    after this fresh preference read, so an opt-out still wins and can arm the
+    negative hint; an allowed company never skips that read. Nothing here is
+    cached. The read-only connection and its statements close before this
+    function returns the scalar revision, generation and reason.
+
+    Those scalars are not permission to persist or deliver. The write and
+    delivery owners re-read revision, generation, disclosure, user and company
+    policy in their own transactions. The write applies normal expiry and then
+    checks the rows that remain; expired rows can be removed before that check.
+    Only delivery validates its ledger. Ledger damage still makes ``status()``
+    report storage unavailable, and a valid local aggregate can still be saved.
+    This read never creates, migrates, writes or repairs a store.
+    """
+    root = root if root is not None else default_directory()
+    company = company_policy(policy_path)
+    preference = _uninitialized_preference()
+    storage = "new"
+    try:
+        _root_safe(root)
+        if _file_safe(root / DATABASE_NAME):
+            with closing(_connect(root / DATABASE_NAME, readonly=True)) as connection:
+                connection.execute("BEGIN")
+                preference = _preferences(connection)
+                connection.rollback()
+            storage = "ready"
+    except (OSError, sqlite3.Error, ValueError):
+        storage = "unreadable"
+    reason = _admission_reason(storage, preference, company)
+    return {
+        "admitted": reason == "enabled",
+        "reason": reason,
+        "revision": preference["revision"],
+        "store_generation": preference["store_generation"],
+    }
+
+
+def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
+    from .delivery import budget_status
+
+    root = root if root is not None else default_directory()
+    company = company_policy(policy_path)
+    preference = _uninitialized_preference()
     storage, pending = "new", 0
     delivery_budget = budget_status()
     try:
@@ -424,21 +494,7 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
             attempts_in_rolling_week=None,
             reserved_wire_bytes_in_rolling_day=None,
         )
-    if storage == "unreadable":
-        reason = "storage_unavailable"
-    elif not preference["enabled"]:
-        reason = "user_disabled"
-    elif not company["enabled"] or not company["metric_groups"]:
-        reason = "company_policy"
-    elif (
-        preference["disclosure_version"] != DISCLOSURE_VERSION
-        or preference["store_generation"] is None
-    ):
-        reason = "disclosure_required"
-    elif not COLLECTION_AVAILABLE or COLLECTOR_URL is None:
-        reason = "collection_unavailable"
-    else:
-        reason = "enabled"
+    reason = _admission_reason(storage, preference, company)
     return {
         "schema_version": SCHEMA_VERSION,
         "revision": preference["revision"],

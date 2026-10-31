@@ -144,7 +144,12 @@ def clock():
 def test_unavailable_or_unowned_waits_do_no_telemetry_io(tmp_path, monkeypatch, owned):
     monkeypatch.setattr(policy, "COLLECTION_AVAILABLE", not owned)
     monkeypatch.setattr(policy, "COLLECTOR_URL", "https://example.invalid/v1/report")
-    monkeypatch.setattr(policy, "status", lambda: pytest.fail("No policy I/O permitted"))
+    monkeypatch.setattr(policy, "status", lambda *_a, **_k: pytest.fail("No policy I/O permitted"))
+    monkeypatch.setattr(
+        policy,
+        "_measurement_permission",
+        lambda *_a, **_k: pytest.fail("No policy I/O permitted"),
+    )
     timer = clock()
     with measured.automatic_watcher() if owned else nullcontext():
         with measured.operation("stage") as attempt:
