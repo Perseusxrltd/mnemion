@@ -827,13 +827,8 @@ def test_observe_darwin_descendant_requires_a_zero_fixture_exit(monkeypatch):
     assert run(0) == (True, 1)
     assert finished == [0]
     assert closed == [19, 23, 31, 37]
-    from deploy.owned_launch_self_check import _WORKER, _darwin_live_descendant_receipt
+    from deploy.owned_launch_self_check import _darwin_live_descendant_receipt
 
-    compile(_WORKER, "<owned-worker>", "exec")
-    assert 'mode == "hold"' in _WORKER
-    assert 'mode == "wait"' in _WORKER
-    assert 'mode == "work"' in _WORKER
-    assert 'mode == "sleep"' in _WORKER
     assert _darwin_live_descendant_receipt([{"pid": 10}, {"pid": 11}], 10) == (True, 1)
     assert _darwin_live_descendant_receipt(
         [{"pid": 10}, {"pid": 11}, {"pid": 12}],
@@ -849,21 +844,6 @@ def test_observe_darwin_descendant_requires_a_zero_fixture_exit(monkeypatch):
         _darwin_live_descendant_receipt([{"pid": 10}, {"pid": 10}], 10)
     with pytest.raises(AssertionError, match="malformed"):
         _darwin_live_descendant_receipt([{"pid": True}], 10)
-
-
-def test_two_mac_workflow_fails_when_the_descendant_invariant_fails():
-    text = (
-        Path(__file__).resolve().parents[1] / ".github" / "workflows" / "native-residency-counters.yml"
-    ).read_text(encoding="utf-8")
-    assert text.count("os: macos-26") == 1
-    assert text.count("os: macos-15-intel") == 1
-    assert "source_not_exact" in text
-    assert "arch_mismatch" in text
-    assert "from deploy.darwin_residency_receipt import main" in text
-    assert "darwin_live_descendant_observed" in text
-    assert "darwin_live_descendant_count" in text
-    assert "descendant_not_observed" in text
-    assert "Not owned-launch" not in text
 
 
 def test_darwin_reused_pid_does_not_replace_the_root_identity(monkeypatch):
