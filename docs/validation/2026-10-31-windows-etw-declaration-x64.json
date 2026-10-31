@@ -1,0 +1,1843 @@
+{
+  "check": "windows_etw_declaration_comparison",
+  "comparison_ran": true,
+  "cpu_acceptance": false,
+  "declaration_match": true,
+  "metadata": {
+    "host": {
+      "intended_arch": "x64",
+      "pe_machine": 34404,
+      "platform_machine": "AMD64",
+      "python_version": "3.13.17",
+      "runner_arch": "X64"
+    },
+    "interpreter_note": "CPython ctypes binds kernel32.GetLastError during ctypes import. This check refuses later native library construction and does not call ETW.",
+    "native_api_loaded": false,
+    "oracle": {
+      "compared_arch": "x64",
+      "compared_metadata": {
+        "abi_bytes": 3466,
+        "compiler_banner": "Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35229 for x64",
+        "host_arch": "x64",
+        "os_build": "20348",
+        "os_display_version": "21H2",
+        "os_product": "Windows Server 2022 Datacenter",
+        "os_ubr": "5761",
+        "pe_machine": 34404,
+        "processor_architecture": "AMD64",
+        "schema": 1,
+        "target_arch": "x64",
+        "windows_sdk_version": "10.0.26100.0"
+      },
+      "files": {
+        "arm64": {
+          "abi_sha256": "fa1c67197808959b25da2da6017a841719ba23b3f015fa9274b7ca9016b1d95c",
+          "metadata_sha256": "6e08dd3fefc5700884557b95768d1d159cad4d55d761a70ed8f146ec6d848a94"
+        },
+        "x64": {
+          "abi_sha256": "308fa695d92613b963fbb1a4bcf0e8823fbe5e21317505c425abb67a50bd15a1",
+          "metadata_sha256": "31e57d899c7673ccafc2a09254ce1a0ec53903600bff91390e0cb4a68212823b"
+        }
+      },
+      "hash_only_arch": "arm64",
+      "hash_only_metadata": {
+        "abi_bytes": 3466,
+        "compiler_banner": "Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for ARM64",
+        "host_arch": "arm64",
+        "os_build": "26200",
+        "os_display_version": "25H2",
+        "os_product": "Windows 10 Enterprise",
+        "os_ubr": "9711",
+        "pe_machine": 43620,
+        "processor_architecture": "ARM64",
+        "schema": 1,
+        "target_arch": "arm64",
+        "windows_sdk_version": "10.0.26100.0"
+      },
+      "manifest_sha256": "8b1518cad5fff4ba57496d85bb9751e28427678ad509cd539d8addedcfe19062",
+      "run": 41244785682,
+      "sdk_version": "10.0.26100.0",
+      "source": "f49ab34923d018efb3d2d30beb3a954aa6b73a48",
+      "trace_started": false
+    },
+    "provider_import_library_loads": 0,
+    "provider_sha256": "7bf10ca9ec44b3f121e5dbc7fc9e403f240dbb010a166004fdbeb9b5fe2c6b32"
+  },
+  "native_emission": false,
+  "native_tracing": false,
+  "numeric": {
+    "complete_coverage": true,
+    "coverage": {
+      "provider_types_visited": [
+        "_ETW_BUFFER_CONTEXT",
+        "_EVENT_DESCRIPTOR",
+        "_EVENT_HEADER",
+        "_EVENT_HEADER_EXTENDED_DATA_ITEM",
+        "_EVENT_RECORD",
+        "_EVENT_TRACE",
+        "_EVENT_TRACE_HEADER",
+        "_EVENT_TRACE_LOGFILEW",
+        "_EVENT_TRACE_PROPERTIES",
+        "_GUID",
+        "_SYSTEMTIME",
+        "_TIME_ZONE_INFORMATION",
+        "_TRACE_LOGFILE_HEADER",
+        "_TraceClass",
+        "_TraceClientFlags",
+        "_TraceFieldType",
+        "_TraceGuid",
+        "_TraceHeaderType",
+        "_TraceKernelUser",
+        "_TraceTimes",
+        "_TraceVersion",
+        "_WNODE_HEADER",
+        "_WnodeCountLost",
+        "_WnodeHistorical",
+        "_WnodeTimestamp",
+        "_WnodeVersionLinkage"
+      ],
+      "scalar_primitives_compared": 18,
+      "sdk_fields_compared": 137,
+      "sdk_fields_matched": 137,
+      "sdk_only_aliases": 17,
+      "sdk_only_experiments": 1,
+      "structures": [
+        "WNODE_HEADER",
+        "EVENT_TRACE_PROPERTIES",
+        "EVENT_DESCRIPTOR",
+        "EVENT_HEADER",
+        "EVENT_RECORD",
+        "EVENT_TRACE_HEADER",
+        "EVENT_TRACE",
+        "TRACE_LOGFILE_HEADER",
+        "EVENT_TRACE_LOGFILEW",
+        "GUID",
+        "SYSTEMTIME",
+        "TIME_ZONE_INFORMATION",
+        "ETW_BUFFER_CONTEXT",
+        "EVENT_HEADER_EXTENDED_DATA_ITEM"
+      ]
+    },
+    "covered_field_match": true,
+    "fields": [
+      {
+        "field": "BufferSize",
+        "offset": 0,
+        "path": "BufferSize",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "ProviderId",
+        "offset": 4,
+        "path": "ProviderId",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "HistoricalContext",
+        "offset": 8,
+        "path": "Historical.HistoricalContext",
+        "structure": "WNODE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "Version",
+        "offset": 8,
+        "path": "Historical.VersionLinkage.Version",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Linkage",
+        "offset": 12,
+        "path": "Historical.VersionLinkage.Linkage",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "CountLost",
+        "offset": 16,
+        "path": "Timestamp.CountLost.CountLost",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "KernelHandle",
+        "offset": 16,
+        "path": "Timestamp.KernelHandle",
+        "structure": "WNODE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "TimeStamp",
+        "offset": 16,
+        "path": "Timestamp.TimeStamp",
+        "structure": "WNODE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "Guid",
+        "offset": 24,
+        "path": "Guid",
+        "structure": "WNODE_HEADER",
+        "width": 16
+      },
+      {
+        "field": "ClientContext",
+        "offset": 40,
+        "path": "ClientContext",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Flags",
+        "offset": 44,
+        "path": "Flags",
+        "structure": "WNODE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Wnode",
+        "offset": 0,
+        "path": "Wnode",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 48
+      },
+      {
+        "field": "BufferSize",
+        "offset": 48,
+        "path": "BufferSize",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "MinimumBuffers",
+        "offset": 52,
+        "path": "MinimumBuffers",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "MaximumBuffers",
+        "offset": 56,
+        "path": "MaximumBuffers",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "MaximumFileSize",
+        "offset": 60,
+        "path": "MaximumFileSize",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "LogFileMode",
+        "offset": 64,
+        "path": "LogFileMode",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "FlushTimer",
+        "offset": 68,
+        "path": "FlushTimer",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "EnableFlags",
+        "offset": 72,
+        "path": "EnableFlags",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "AgeLimit",
+        "offset": 76,
+        "path": "AgeLimit",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "NumberOfBuffers",
+        "offset": 80,
+        "path": "NumberOfBuffers",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "FreeBuffers",
+        "offset": 84,
+        "path": "FreeBuffers",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "EventsLost",
+        "offset": 88,
+        "path": "EventsLost",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "BuffersWritten",
+        "offset": 92,
+        "path": "BuffersWritten",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "LogBuffersLost",
+        "offset": 96,
+        "path": "LogBuffersLost",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "RealTimeBuffersLost",
+        "offset": 100,
+        "path": "RealTimeBuffersLost",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "LoggerThreadId",
+        "offset": 104,
+        "path": "LoggerThreadId",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 8
+      },
+      {
+        "field": "LogFileNameOffset",
+        "offset": 112,
+        "path": "LogFileNameOffset",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "LoggerNameOffset",
+        "offset": 116,
+        "path": "LoggerNameOffset",
+        "structure": "EVENT_TRACE_PROPERTIES",
+        "width": 4
+      },
+      {
+        "field": "Id",
+        "offset": 0,
+        "path": "Id",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 2
+      },
+      {
+        "field": "Version",
+        "offset": 2,
+        "path": "Version",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 1
+      },
+      {
+        "field": "Channel",
+        "offset": 3,
+        "path": "Channel",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 1
+      },
+      {
+        "field": "Level",
+        "offset": 4,
+        "path": "Level",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 1
+      },
+      {
+        "field": "Opcode",
+        "offset": 5,
+        "path": "Opcode",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 1
+      },
+      {
+        "field": "Task",
+        "offset": 6,
+        "path": "Task",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 2
+      },
+      {
+        "field": "Keyword",
+        "offset": 8,
+        "path": "Keyword",
+        "structure": "EVENT_DESCRIPTOR",
+        "width": 8
+      },
+      {
+        "field": "Size",
+        "offset": 0,
+        "path": "Size",
+        "structure": "EVENT_HEADER",
+        "width": 2
+      },
+      {
+        "field": "HeaderType",
+        "offset": 2,
+        "path": "HeaderType",
+        "structure": "EVENT_HEADER",
+        "width": 2
+      },
+      {
+        "field": "Flags",
+        "offset": 4,
+        "path": "Flags",
+        "structure": "EVENT_HEADER",
+        "width": 2
+      },
+      {
+        "field": "EventProperty",
+        "offset": 6,
+        "path": "EventProperty",
+        "structure": "EVENT_HEADER",
+        "width": 2
+      },
+      {
+        "field": "ThreadId",
+        "offset": 8,
+        "path": "ThreadId",
+        "structure": "EVENT_HEADER",
+        "width": 4
+      },
+      {
+        "field": "ProcessId",
+        "offset": 12,
+        "path": "ProcessId",
+        "structure": "EVENT_HEADER",
+        "width": 4
+      },
+      {
+        "field": "TimeStamp",
+        "offset": 16,
+        "path": "TimeStamp",
+        "structure": "EVENT_HEADER",
+        "width": 8
+      },
+      {
+        "field": "ProviderId",
+        "offset": 24,
+        "path": "ProviderId",
+        "structure": "EVENT_HEADER",
+        "width": 16
+      },
+      {
+        "field": "EventDescriptor",
+        "offset": 40,
+        "path": "EventDescriptor",
+        "structure": "EVENT_HEADER",
+        "width": 16
+      },
+      {
+        "field": "ProcessorTime",
+        "offset": 56,
+        "path": "ProcessorTime",
+        "structure": "EVENT_HEADER",
+        "width": 8
+      },
+      {
+        "field": "ActivityId",
+        "offset": 64,
+        "path": "ActivityId",
+        "structure": "EVENT_HEADER",
+        "width": 16
+      },
+      {
+        "field": "EventHeader",
+        "offset": 0,
+        "path": "EventHeader",
+        "structure": "EVENT_RECORD",
+        "width": 80
+      },
+      {
+        "field": "BufferContext",
+        "offset": 80,
+        "path": "BufferContext",
+        "structure": "EVENT_RECORD",
+        "width": 4
+      },
+      {
+        "field": "ExtendedDataCount",
+        "offset": 84,
+        "path": "ExtendedDataCount",
+        "structure": "EVENT_RECORD",
+        "width": 2
+      },
+      {
+        "field": "UserDataLength",
+        "offset": 86,
+        "path": "UserDataLength",
+        "structure": "EVENT_RECORD",
+        "width": 2
+      },
+      {
+        "field": "ExtendedData",
+        "offset": 88,
+        "path": "ExtendedData",
+        "structure": "EVENT_RECORD",
+        "width": 8
+      },
+      {
+        "field": "UserData",
+        "offset": 96,
+        "path": "UserData",
+        "structure": "EVENT_RECORD",
+        "width": 8
+      },
+      {
+        "field": "UserContext",
+        "offset": 104,
+        "path": "UserContext",
+        "structure": "EVENT_RECORD",
+        "width": 8
+      },
+      {
+        "field": "Size",
+        "offset": 0,
+        "path": "Size",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 2
+      },
+      {
+        "field": "FieldTypeFlags",
+        "offset": 2,
+        "path": "FieldType.FieldTypeFlags",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 2
+      },
+      {
+        "field": "HeaderType",
+        "offset": 2,
+        "path": "FieldType.HeaderBytes.HeaderType",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 1
+      },
+      {
+        "field": "MarkerFlags",
+        "offset": 3,
+        "path": "FieldType.HeaderBytes.MarkerFlags",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 1
+      },
+      {
+        "field": "Version",
+        "offset": 4,
+        "path": "Version.Version",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Class",
+        "offset": 4,
+        "path": "Version.Class",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Class_Type",
+        "offset": 4,
+        "path": "Version.Class.Type",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 1
+      },
+      {
+        "field": "Class_Level",
+        "offset": 5,
+        "path": "Version.Class.Level",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 1
+      },
+      {
+        "field": "Class_Version",
+        "offset": 6,
+        "path": "Version.Class.Version",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 2
+      },
+      {
+        "field": "ThreadId",
+        "offset": 8,
+        "path": "ThreadId",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "ProcessId",
+        "offset": 12,
+        "path": "ProcessId",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "TimeStamp",
+        "offset": 16,
+        "path": "TimeStamp",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "Guid",
+        "offset": 24,
+        "path": "Guid.Guid",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 16
+      },
+      {
+        "field": "GuidPtr",
+        "offset": 24,
+        "path": "Guid.GuidPtr",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "KernelTime",
+        "offset": 40,
+        "path": "Times.KernelUser.KernelTime",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "UserTime",
+        "offset": 44,
+        "path": "Times.KernelUser.UserTime",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "ProcessorTime",
+        "offset": 40,
+        "path": "Times.ProcessorTime",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "ClientContext",
+        "offset": 40,
+        "path": "Times.ClientFlags.ClientContext",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Flags",
+        "offset": 44,
+        "path": "Times.ClientFlags.Flags",
+        "structure": "EVENT_TRACE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Header",
+        "offset": 0,
+        "path": "Header",
+        "structure": "EVENT_TRACE",
+        "width": 48
+      },
+      {
+        "field": "InstanceId",
+        "offset": 48,
+        "path": "InstanceId",
+        "structure": "EVENT_TRACE",
+        "width": 4
+      },
+      {
+        "field": "ParentInstanceId",
+        "offset": 52,
+        "path": "ParentInstanceId",
+        "structure": "EVENT_TRACE",
+        "width": 4
+      },
+      {
+        "field": "ParentGuid",
+        "offset": 56,
+        "path": "ParentGuid",
+        "structure": "EVENT_TRACE",
+        "width": 16
+      },
+      {
+        "field": "MofData",
+        "offset": 72,
+        "path": "MofData",
+        "structure": "EVENT_TRACE",
+        "width": 8
+      },
+      {
+        "field": "MofLength",
+        "offset": 80,
+        "path": "MofLength",
+        "structure": "EVENT_TRACE",
+        "width": 4
+      },
+      {
+        "field": "BufferContext",
+        "offset": 84,
+        "path": "BufferContext",
+        "structure": "EVENT_TRACE",
+        "width": 4
+      },
+      {
+        "field": "BufferSize",
+        "offset": 0,
+        "path": "BufferSize",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "Version",
+        "offset": 4,
+        "path": "Version",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "ProviderVersion",
+        "offset": 8,
+        "path": "ProviderVersion",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "NumberOfProcessors",
+        "offset": 12,
+        "path": "NumberOfProcessors",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "EndTime",
+        "offset": 16,
+        "path": "EndTime",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "TimerResolution",
+        "offset": 24,
+        "path": "TimerResolution",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "MaximumFileSize",
+        "offset": 28,
+        "path": "MaximumFileSize",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "LogFileMode",
+        "offset": 32,
+        "path": "LogFileMode",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "BuffersWritten",
+        "offset": 36,
+        "path": "BuffersWritten",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "LogInstanceGuid",
+        "offset": 40,
+        "path": "LogInstanceGuid",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 16
+      },
+      {
+        "field": "LoggerName",
+        "offset": 56,
+        "path": "LoggerName",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "LogFileName",
+        "offset": 64,
+        "path": "LogFileName",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "TimeZone",
+        "offset": 72,
+        "path": "TimeZone",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 172
+      },
+      {
+        "field": "BootTime",
+        "offset": 248,
+        "path": "BootTime",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "PerfFreq",
+        "offset": 256,
+        "path": "PerfFreq",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "StartTime",
+        "offset": 264,
+        "path": "StartTime",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 8
+      },
+      {
+        "field": "ReservedFlags",
+        "offset": 272,
+        "path": "ReservedFlags",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "BuffersLost",
+        "offset": 276,
+        "path": "BuffersLost",
+        "structure": "TRACE_LOGFILE_HEADER",
+        "width": 4
+      },
+      {
+        "field": "LogFileName",
+        "offset": 0,
+        "path": "LogFileName",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 8
+      },
+      {
+        "field": "LoggerName",
+        "offset": 8,
+        "path": "LoggerName",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 8
+      },
+      {
+        "field": "CurrentTime",
+        "offset": 16,
+        "path": "CurrentTime",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 8
+      },
+      {
+        "field": "BuffersRead",
+        "offset": 24,
+        "path": "BuffersRead",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 4
+      },
+      {
+        "field": "ProcessTraceMode",
+        "offset": 28,
+        "path": "ProcessTraceMode",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 4
+      },
+      {
+        "field": "CurrentEvent",
+        "offset": 32,
+        "path": "CurrentEvent",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 88
+      },
+      {
+        "field": "LogfileHeader",
+        "offset": 120,
+        "path": "LogfileHeader",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 280
+      },
+      {
+        "field": "BufferCallback",
+        "offset": 400,
+        "path": "BufferCallback",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 8
+      },
+      {
+        "field": "BufferSize",
+        "offset": 408,
+        "path": "BufferSize",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 4
+      },
+      {
+        "field": "Filled",
+        "offset": 412,
+        "path": "Filled",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 4
+      },
+      {
+        "field": "EventsLost",
+        "offset": 416,
+        "path": "EventsLost",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 4
+      },
+      {
+        "field": "EventRecordCallback",
+        "offset": 424,
+        "path": "EventRecordCallback",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 8
+      },
+      {
+        "field": "IsKernelTrace",
+        "offset": 432,
+        "path": "IsKernelTrace",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 4
+      },
+      {
+        "field": "Context",
+        "offset": 440,
+        "path": "Context",
+        "structure": "EVENT_TRACE_LOGFILEW",
+        "width": 8
+      },
+      {
+        "field": "Data1",
+        "offset": 0,
+        "path": "Data1",
+        "structure": "GUID",
+        "width": 4
+      },
+      {
+        "field": "Data2",
+        "offset": 4,
+        "path": "Data2",
+        "structure": "GUID",
+        "width": 2
+      },
+      {
+        "field": "Data3",
+        "offset": 6,
+        "path": "Data3",
+        "structure": "GUID",
+        "width": 2
+      },
+      {
+        "field": "Data4",
+        "offset": 8,
+        "path": "Data4",
+        "structure": "GUID",
+        "width": 8
+      },
+      {
+        "field": "wYear",
+        "offset": 0,
+        "path": "Year",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wMonth",
+        "offset": 2,
+        "path": "Month",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wDayOfWeek",
+        "offset": 4,
+        "path": "DayOfWeek",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wDay",
+        "offset": 6,
+        "path": "Day",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wHour",
+        "offset": 8,
+        "path": "Hour",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wMinute",
+        "offset": 10,
+        "path": "Minute",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wSecond",
+        "offset": 12,
+        "path": "Second",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "wMilliseconds",
+        "offset": 14,
+        "path": "Milliseconds",
+        "structure": "SYSTEMTIME",
+        "width": 2
+      },
+      {
+        "field": "Bias",
+        "offset": 0,
+        "path": "Bias",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 4
+      },
+      {
+        "field": "StandardName",
+        "offset": 4,
+        "path": "StandardName",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 64
+      },
+      {
+        "field": "StandardDate",
+        "offset": 68,
+        "path": "StandardDate",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 16
+      },
+      {
+        "field": "StandardBias",
+        "offset": 84,
+        "path": "StandardBias",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 4
+      },
+      {
+        "field": "DaylightName",
+        "offset": 88,
+        "path": "DaylightName",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 64
+      },
+      {
+        "field": "DaylightDate",
+        "offset": 152,
+        "path": "DaylightDate",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 16
+      },
+      {
+        "field": "DaylightBias",
+        "offset": 168,
+        "path": "DaylightBias",
+        "structure": "TIME_ZONE_INFORMATION",
+        "width": 4
+      },
+      {
+        "field": "ProcessorIndex",
+        "offset": 0,
+        "path": "ProcessorIndex",
+        "structure": "ETW_BUFFER_CONTEXT",
+        "width": 2
+      },
+      {
+        "field": "LoggerId",
+        "offset": 2,
+        "path": "LoggerId",
+        "structure": "ETW_BUFFER_CONTEXT",
+        "width": 2
+      },
+      {
+        "field": "Reserved1",
+        "offset": 0,
+        "path": "Reserved1",
+        "structure": "EVENT_HEADER_EXTENDED_DATA_ITEM",
+        "width": 2
+      },
+      {
+        "field": "ExtType",
+        "offset": 2,
+        "path": "ExtType",
+        "structure": "EVENT_HEADER_EXTENDED_DATA_ITEM",
+        "width": 2
+      },
+      {
+        "field": "DataSize",
+        "offset": 6,
+        "path": "DataSize",
+        "structure": "EVENT_HEADER_EXTENDED_DATA_ITEM",
+        "width": 2
+      },
+      {
+        "field": "DataPtr",
+        "offset": 8,
+        "path": "DataPtr",
+        "structure": "EVENT_HEADER_EXTENDED_DATA_ITEM",
+        "width": 8
+      }
+    ],
+    "mismatches": [],
+    "mismatches_omitted": 0,
+    "nested_walk": [
+      {
+        "expanded_field": "Data1",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Data1",
+        "width": 4
+      },
+      {
+        "expanded_field": "Data2",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Data2",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data3",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Data3",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data4",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Data4",
+        "width": 8
+      },
+      {
+        "expanded_field": "Data1",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ProviderId.Data1",
+        "width": 4
+      },
+      {
+        "expanded_field": "Data2",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ProviderId.Data2",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data3",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ProviderId.Data3",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data4",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ProviderId.Data4",
+        "width": 8
+      },
+      {
+        "expanded_field": "Data1",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ActivityId.Data1",
+        "width": 4
+      },
+      {
+        "expanded_field": "Data2",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ActivityId.Data2",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data3",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ActivityId.Data3",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data4",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ActivityId.Data4",
+        "width": 8
+      },
+      {
+        "expanded_field": "ProcessorIndex",
+        "expanded_structure": "ETW_BUFFER_CONTEXT",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "BufferContext.ProcessorIndex",
+        "width": 2
+      },
+      {
+        "expanded_field": "LoggerId",
+        "expanded_structure": "ETW_BUFFER_CONTEXT",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "BufferContext.LoggerId",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data1",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Guid.Data1",
+        "width": 4
+      },
+      {
+        "expanded_field": "Data2",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Guid.Data2",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data3",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Guid.Data3",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data4",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Guid.Guid.Data4",
+        "width": 8
+      },
+      {
+        "expanded_field": "Data1",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ParentGuid.Data1",
+        "width": 4
+      },
+      {
+        "expanded_field": "Data2",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ParentGuid.Data2",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data3",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ParentGuid.Data3",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data4",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "ParentGuid.Data4",
+        "width": 8
+      },
+      {
+        "expanded_field": "ProcessorIndex",
+        "expanded_structure": "ETW_BUFFER_CONTEXT",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "BufferContext.ProcessorIndex",
+        "width": 2
+      },
+      {
+        "expanded_field": "LoggerId",
+        "expanded_structure": "ETW_BUFFER_CONTEXT",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "BufferContext.LoggerId",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data1",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "LogInstanceGuid.Data1",
+        "width": 4
+      },
+      {
+        "expanded_field": "Data2",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "LogInstanceGuid.Data2",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data3",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "LogInstanceGuid.Data3",
+        "width": 2
+      },
+      {
+        "expanded_field": "Data4",
+        "expanded_structure": "GUID",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "LogInstanceGuid.Data4",
+        "width": 8
+      },
+      {
+        "expanded_field": "Bias",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.Bias",
+        "width": 4
+      },
+      {
+        "expanded_field": "StandardName",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardName",
+        "width": 64
+      },
+      {
+        "expanded_field": "wYear",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Year",
+        "width": 2
+      },
+      {
+        "expanded_field": "wMonth",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Month",
+        "width": 2
+      },
+      {
+        "expanded_field": "wDayOfWeek",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.DayOfWeek",
+        "width": 2
+      },
+      {
+        "expanded_field": "wDay",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Day",
+        "width": 2
+      },
+      {
+        "expanded_field": "wHour",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Hour",
+        "width": 2
+      },
+      {
+        "expanded_field": "wMinute",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Minute",
+        "width": 2
+      },
+      {
+        "expanded_field": "wSecond",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Second",
+        "width": 2
+      },
+      {
+        "expanded_field": "wMilliseconds",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate.Milliseconds",
+        "width": 2
+      },
+      {
+        "expanded_field": "StandardBias",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardBias",
+        "width": 4
+      },
+      {
+        "expanded_field": "DaylightName",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightName",
+        "width": 64
+      },
+      {
+        "expanded_field": "wYear",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Year",
+        "width": 2
+      },
+      {
+        "expanded_field": "wMonth",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Month",
+        "width": 2
+      },
+      {
+        "expanded_field": "wDayOfWeek",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.DayOfWeek",
+        "width": 2
+      },
+      {
+        "expanded_field": "wDay",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Day",
+        "width": 2
+      },
+      {
+        "expanded_field": "wHour",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Hour",
+        "width": 2
+      },
+      {
+        "expanded_field": "wMinute",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Minute",
+        "width": 2
+      },
+      {
+        "expanded_field": "wSecond",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Second",
+        "width": 2
+      },
+      {
+        "expanded_field": "wMilliseconds",
+        "expanded_structure": "SYSTEMTIME",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate.Milliseconds",
+        "width": 2
+      },
+      {
+        "expanded_field": "DaylightBias",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightBias",
+        "width": 4
+      },
+      {
+        "expanded_field": "StandardDate",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle": null,
+        "oracle_offset": null,
+        "path": "TimeZone.StandardDate",
+        "provider_type": "_SYSTEMTIME",
+        "width_compared": true
+      },
+      {
+        "expanded_field": "DaylightDate",
+        "expanded_structure": "TIME_ZONE_INFORMATION",
+        "nested_walk": "compared_on_expanded_record",
+        "offset_compared": true,
+        "oracle": null,
+        "oracle_offset": null,
+        "path": "TimeZone.DaylightDate",
+        "provider_type": "_SYSTEMTIME",
+        "width_compared": true
+      }
+    ],
+    "primitives_compared": [
+      {
+        "ctypes": "c_int",
+        "key": "int",
+        "width": 4
+      },
+      {
+        "ctypes": "c_long",
+        "key": "long",
+        "width": 4
+      },
+      {
+        "ctypes": "c_longlong",
+        "key": "long_long",
+        "width": 8
+      },
+      {
+        "ctypes": "c_void_p",
+        "key": "pointer",
+        "width": 8
+      },
+      {
+        "ctypes": "c_wchar",
+        "key": "wchar_t",
+        "width": 2
+      },
+      {
+        "ctypes": "c_size_t",
+        "key": "size_t",
+        "width": 8
+      },
+      {
+        "ctypes": "c_size_t",
+        "key": "SIZE_T",
+        "width": 8
+      },
+      {
+        "ctypes": "c_ubyte",
+        "key": "UCHAR",
+        "width": 1
+      },
+      {
+        "ctypes": "c_ushort",
+        "key": "USHORT",
+        "width": 2
+      },
+      {
+        "ctypes": "c_ulong",
+        "key": "ULONG",
+        "width": 4
+      },
+      {
+        "ctypes": "c_wchar",
+        "key": "WCHAR",
+        "width": 2
+      },
+      {
+        "ctypes": "c_void_p",
+        "key": "HANDLE",
+        "width": 8
+      },
+      {
+        "ctypes": "c_longlong",
+        "key": "LONGLONG",
+        "width": 8
+      },
+      {
+        "ctypes": "c_ulonglong",
+        "key": "ULONGLONG",
+        "width": 8
+      },
+      {
+        "ctypes": "c_longlong",
+        "key": "LARGE_INTEGER",
+        "width": 8
+      },
+      {
+        "key": "GUID",
+        "provider_type": "_GUID",
+        "width": 16
+      },
+      {
+        "key": "TIME_ZONE_INFORMATION",
+        "provider_type": "_TIME_ZONE_INFORMATION",
+        "width": 172
+      },
+      {
+        "key": "ETW_BUFFER_CONTEXT",
+        "provider_type": "_ETW_BUFFER_CONTEXT",
+        "width": 4
+      }
+    ],
+    "primitives_not_used_by_provider": [
+      {
+        "key": "char",
+        "used_by_provider_field": false,
+        "width": 1
+      },
+      {
+        "key": "short",
+        "used_by_provider_field": false,
+        "width": 2
+      },
+      {
+        "key": "ptrdiff_t",
+        "used_by_provider_field": false,
+        "width": 8
+      },
+      {
+        "key": "uintptr_t",
+        "used_by_provider_field": false,
+        "width": 8
+      },
+      {
+        "key": "int32_t",
+        "used_by_provider_field": false,
+        "width": 4
+      },
+      {
+        "key": "int64_t",
+        "used_by_provider_field": false,
+        "width": 8
+      },
+      {
+        "key": "BOOL",
+        "used_by_provider_field": false,
+        "width": 4
+      },
+      {
+        "key": "BOOLEAN",
+        "used_by_provider_field": false,
+        "width": 1
+      },
+      {
+        "key": "ULONG_PTR",
+        "used_by_provider_field": false,
+        "width": 8
+      }
+    ],
+    "provider_fields_without_oracle_record": [
+      {
+        "container": "Linkage_Reserved2_storage",
+        "offset_compared": true,
+        "oracle_offset": null,
+        "path": "Linkage",
+        "provider_bitfields": false,
+        "provider_use": "declared_not_read",
+        "required_layout": false,
+        "sdk_bitfields": "sdk_only_experiment",
+        "sdk_offset": null,
+        "width": 2
+      }
+    ],
+    "required_missing_layouts": [],
+    "sdk_only_aliases": [
+      {
+        "field": "FlushThreshold",
+        "offset": 76,
+        "represented": false,
+        "structure": "EVENT_TRACE_PROPERTIES"
+      },
+      {
+        "field": "KernelTime",
+        "offset": 56,
+        "represented": false,
+        "structure": "EVENT_HEADER"
+      },
+      {
+        "field": "UserTime",
+        "offset": 60,
+        "represented": false,
+        "structure": "EVENT_HEADER"
+      },
+      {
+        "field": "ClientContext",
+        "offset": 84,
+        "represented": false,
+        "structure": "EVENT_TRACE"
+      },
+      {
+        "field": "CpuSpeedInMHz",
+        "offset": 52,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "EventsLost",
+        "offset": 48,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "PointerSize",
+        "offset": 44,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "StartBuffers",
+        "offset": 40,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "VersionDetail",
+        "offset": 4,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "VersionDetail_MajorVersion",
+        "offset": 4,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "VersionDetail_MinorVersion",
+        "offset": 5,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "VersionDetail_SubMinorVersion",
+        "offset": 7,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "VersionDetail_SubVersion",
+        "offset": 6,
+        "represented": false,
+        "structure": "TRACE_LOGFILE_HEADER"
+      },
+      {
+        "field": "EventCallback",
+        "offset": 424,
+        "represented": false,
+        "structure": "EVENT_TRACE_LOGFILEW"
+      },
+      {
+        "field": "LogFileMode",
+        "offset": 28,
+        "represented": false,
+        "structure": "EVENT_TRACE_LOGFILEW"
+      },
+      {
+        "field": "ProcessorNumber",
+        "offset": 0,
+        "represented": false,
+        "structure": "ETW_BUFFER_CONTEXT"
+      },
+      {
+        "field": "Alignment",
+        "offset": 1,
+        "represented": false,
+        "structure": "ETW_BUFFER_CONTEXT"
+      }
+    ],
+    "sdk_only_experiments": [
+      {
+        "Linkage_Reserved2_bytes": 2,
+        "Linkage_Reserved2_storage": 4,
+        "Linkage_mask": 1,
+        "Reserved2_mask": 65534,
+        "provider_bitfields": false,
+        "provider_field": "Linkage",
+        "sdk_only": true,
+        "structure": "EVENT_HEADER_EXTENDED_DATA_ITEM"
+      }
+    ],
+    "structure_sizes": {
+      "ETW_BUFFER_CONTEXT": 4,
+      "EVENT_DESCRIPTOR": 16,
+      "EVENT_HEADER": 80,
+      "EVENT_HEADER_EXTENDED_DATA_ITEM": 16,
+      "EVENT_RECORD": 112,
+      "EVENT_TRACE": 88,
+      "EVENT_TRACE_HEADER": 48,
+      "EVENT_TRACE_LOGFILEW": 448,
+      "EVENT_TRACE_PROPERTIES": 120,
+      "GUID": 16,
+      "SYSTEMTIME": 16,
+      "TIME_ZONE_INFORMATION": 172,
+      "TRACE_LOGFILE_HEADER": 280,
+      "WNODE_HEADER": 48
+    },
+    "unmeasured": [],
+    "width_only_no_oracle_offset": []
+  },
+  "production_ready": false,
+  "ram_acceptance": false,
+  "resource_acceptance": false,
+  "schema": 1
+}

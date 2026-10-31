@@ -113,12 +113,15 @@ fixtures passed, with the original failures preserved. Neither change adds
 production polling or qualifies measured CPU/RAM savings. Low idle resource
 use across the whole product remains required and unaccepted.
 
-The [standalone Windows SDK layout measurements](../validation/2026-10-31-windows-sdk-abi.md)
-passed on native x64 and ARM64 with SDK 10.0.26100.0. The expanded run preserves
+The [Windows SDK layout measurements and native ctypes declaration comparison](../validation/2026-10-31-windows-sdk-abi.md)
+passed on x64 and ARM64 with SDK 10.0.26100.0. The expanded SDK run preserves
 the original nine records and adds five matching layouts, including the extended
-item's storage and SDK bitfield experiment. Original evidence and compiler
-failures remain recorded. The ctypes/FFI comparison is still unrun while its
-reviewed corrections and new oracle binding are completed. ETW qualification
+item's storage and SDK bitfield experiment. The first declaration comparison
+matched all 14 structure sizes and 137 addressable fields on each target, with
+no missing layouts or mismatches and no additional provider library loads.
+SDK masks and unrepresented union aliases remain separate from declared-field
+matches. Original evidence and compiler failures remain recorded. These results
+qualify declarations; ETW emission, owned cleanup, lifetime/counter correctness
 and application CPU/RAM budget acceptance remain open. Production telemetry stays off.
 
 ## Acceptance work
@@ -145,4 +148,4 @@ the [CPU admission follow-up](../validation/2026-10-30-telemetry-cpu-admission.m
 Use this contract when reviewing the existing background scheduler and remaining
 F06/R04 acceptance, without starting parallel fragments of the roadmap.
 
-The [native memory diagnostic milestone](../validation/2026-10-31-native-memory-diagnostics.md) records the original and expanded Windows SDK layout passes and corrected macOS helper/Linux BPF build passes, preserving the initial compiler failures. No produced Mac or Linux binary ran; the Linux collector was skipped. Windows FFI comparison remains unrun pending its reviewed corrections and new oracle binding. Real signing, disposable-Keychain, upgrade and controlled runtime gates remain open, including issue 50; these developer prototypes do not qualify application resource budgets. All 66 requirement states are unchanged; V08 remains Building and collection OFF.
+The [native memory diagnostic milestone](../validation/2026-10-31-native-memory-diagnostics.md) records the original and expanded Windows SDK layout passes, the first native Windows declaration match, and corrected macOS helper/Linux BPF build passes, preserving the initial compiler failures. No produced Mac or Linux binary ran; the Linux collector was skipped. The Windows comparison loaded reviewed declarations without starting ETW. Real signing, disposable-Keychain, upgrade and controlled runtime gates remain open, including issue 50; these developer prototypes do not qualify application resource budgets. All 66 requirement states are unchanged; V08 remains Building and collection OFF.
