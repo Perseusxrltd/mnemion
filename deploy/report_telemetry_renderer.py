@@ -957,6 +957,21 @@ def _bounded_number(value: object, low: float, high: float) -> float | None:
     return number
 
 
+_LINUX_RESIDENCY_COMPONENTS = (
+    "total_bytes",
+    "anonymous_bytes",
+    "file_bytes",
+    "shared_bytes",
+)
+
+
+def _linux_residency_snapshot(value: object) -> dict | None:
+    """Bounded together-observed sample. Extra fields and bad numbers stay out."""
+    if type(value) is not dict:
+        return None
+    return {key: _optional_count(value.get(key)) for key in _LINUX_RESIDENCY_COMPONENTS}
+
+
 def _ledger_row(row: object) -> dict | None:
     if type(row) is not dict:
         return None
@@ -978,6 +993,11 @@ def _ledger_row(row: object) -> dict | None:
         "last_working_set_bytes": _optional_count(row.get("last_working_set_bytes")),
         "kernel_high_water_while_observed": row.get("kernel_high_water_while_observed") is True,
         "peak_working_set_final": _flag(row.get("peak_working_set_final")),
+        "first_linux_residency": _linux_residency_snapshot(row.get("first_linux_residency")),
+        "last_linux_residency": _linux_residency_snapshot(row.get("last_linux_residency")),
+        "sampled_rss_peak_residency": _linux_residency_snapshot(
+            row.get("sampled_rss_peak_residency")
+        ),
     }
 
 

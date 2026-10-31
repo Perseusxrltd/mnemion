@@ -2500,3 +2500,381 @@ def test_final_peak_fields_survive_both_normalizers():
     assert javascript["coverage"]["retained_handles_cover_unseen_processes"] is False
     assert javascript["resource_acceptance"] is False
     assert javascript["budget"]["compared"] is False
+
+
+def _status_lines(**kilobytes):
+    lines = ["Name:\tfixture"]
+    for key in ("VmRSS", "VmHWM", "RssAnon", "RssFile", "RssShmem"):
+        if key in kilobytes:
+            lines.append(f"{key}:\t{kilobytes[key]} kB")
+    return lines
+
+
+def _write_fake_proc(proc, pid, ticks, lines):
+    directory = proc / str(pid)
+    directory.mkdir(exist_ok=True)
+    fields = [
+        "S",
+        "1",
+        "1",
+        "1",
+        "0",
+        "-1",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "20",
+        "0",
+        "1",
+        "0",
+        str(ticks),
+    ]
+    stat = f"{pid} (fixture) " + " ".join(fields) + "\n"
+    (directory / "stat").write_bytes(stat.encode("ascii"))
+    (directory / "status").write_text("\n".join(lines) + "\n", encoding="ascii")
+
+
+def _project_owned(report):
+    import json
+    import subprocess
+
+    from deploy.report_telemetry_renderer import retain_owned_launch
+
+    python = retain_owned_launch(report)
+    script = (
+        "import { publicOwnedReport } from './studio/electron/scripts/installed-resource-report.mjs';"
+        "const chunks = [];"
+        "process.stdin.on('data', chunk => chunks.push(chunk));"
+        "process.stdin.on('end', () => {"
+        "const report = publicOwnedReport(JSON.parse(Buffer.concat(chunks).toString('utf8')));"
+        "process.stdout.write(JSON.stringify(report));"
+        "});"
+    )
+    completed = subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        input=json.dumps(report),
+        text=True,
+        capture_output=True,
+        check=True,
+        cwd=Path(__file__).resolve().parents[1],
+    )
+    javascript = json.loads(completed.stdout)
+    again = retain_owned_launch(javascript)
+    return python, javascript, again
+
+
+def test_linux_residency_breakdown_stays_with_its_sample(tmp_path, monkeypatch):
+    """Fake proc files only. This is not a native installed-workload acceptance run."""
+    import deploy.owned_launch_accounting as accounting
+
+    proc = tmp_path / "proc"
+    proc.mkdir()
+    leaf = tmp_path / "owned-leaf"
+    leaf.mkdir()
+    (leaf / "cpu.stat").write_text("usage_usec 10\n", encoding="ascii")
+    (leaf / "memory.peak").write_text("999\n", encoding="ascii")
+    real_path = accounting.Path
+
+    def fake_path(value, *args, **kwargs):
+        if isinstance(value, str) and value.startswith("/proc/"):
+            return real_path(proc, value[len("/proc/") :])
+        return real_path(value, *args, **kwargs)
+
+    monkeypatch.setattr(accounting, "Path", fake_path)
+    backend = accounting.LinuxCgroupBackend.__new__(accounting.LinuxCgroupBackend)
+    backend.leaf = leaf
+    backend._sampled_sum_peak = None
+    ledger = accounting._Ledger()
+
+    def sample_pid(pid, ticks, lines):
+        _write_fake_proc(proc, pid, ticks, lines)
+        (leaf / "cgroup.procs").write_text(f"{pid}\n{os.getpid()}\n", encoding="ascii")
+        backend.sample(ledger)
+
+    sample_pid(
+        424242,
+        100,
+        _status_lines(VmRSS=100, VmHWM=100, RssAnon=80, RssFile=10, RssShmem=10),
+    )
+    published = ledger.public()
+    assert [row["pid"] for row in published] == [424242]
+    expected_first = {
+        "total_bytes": 100 * 1024,
+        "anonymous_bytes": 80 * 1024,
+        "file_bytes": 10 * 1024,
+        "shared_bytes": 10 * 1024,
+    }
+    assert published[0]["first_linux_residency"] == expected_first
+    assert published[0]["last_linux_residency"] == expected_first
+    assert published[0]["sampled_rss_peak_residency"] == expected_first
+    assert published[0]["first_linux_residency"] is not published[0]["sampled_rss_peak_residency"]
+    assert published[0]["peak_working_set_bytes"] == 100 * 1024
+
+    published[0]["last_linux_residency"]["anonymous_bytes"] = 123
+    ledger.rows["424242:100"]["last_linux_residency"]["file_bytes"] = 456
+    reread = ledger.public()
+    assert published[0]["last_linux_residency"]["file_bytes"] == 10 * 1024
+    assert published[0]["last_linux_residency"]["anonymous_bytes"] == 123
+    assert reread[0]["last_linux_residency"]["anonymous_bytes"] == 80 * 1024
+    assert reread[0]["last_linux_residency"]["file_bytes"] == 456
+    assert published[0]["last_linux_residency"] is not reread[0]["last_linux_residency"]
+
+    sample_pid(
+        424242,
+        100,
+        _status_lines(VmRSS=90, VmHWM=500, RssAnon=0, RssFile=70, RssShmem=20),
+    )
+    assert published[0]["last_linux_residency"]["anonymous_bytes"] == 123
+    assert published[0]["last_linux_residency"]["file_bytes"] == 10 * 1024
+    assert published[0]["sampled_rss_peak_residency"] == expected_first
+    assert published[0]["peak_working_set_bytes"] == 100 * 1024
+    lowered = ledger.public()[0]
+    assert lowered["last_linux_residency"] == {
+        "total_bytes": 90 * 1024,
+        "anonymous_bytes": 0,
+        "file_bytes": 70 * 1024,
+        "shared_bytes": 20 * 1024,
+    }
+    assert lowered["first_linux_residency"] == expected_first
+    assert lowered["sampled_rss_peak_residency"] == expected_first
+    assert lowered["peak_working_set_bytes"] == 500 * 1024
+    assert lowered["kernel_high_water_while_observed"] is True
+    mixed_component_max = (80 + 70 + 20) * 1024
+    assert lowered["sampled_rss_peak_residency"]["total_bytes"] != mixed_component_max
+    assert lowered["sampled_rss_peak_residency"]["total_bytes"] != lowered["peak_working_set_bytes"]
+
+    sample_pid(
+        424242,
+        100,
+        _status_lines(VmRSS=100, VmHWM=100, RssAnon=1, RssFile=98, RssShmem=1),
+    )
+    tied = ledger.public()[0]
+    assert tied["sampled_rss_peak_residency"] == expected_first
+    assert tied["last_linux_residency"]["anonymous_bytes"] == 1024
+    assert tied["peak_working_set_bytes"] == 500 * 1024
+
+    sample_pid(
+        424242,
+        250,
+        _status_lines(VmRSS=30, VmHWM=40, RssAnon=10, RssFile=10, RssShmem=10),
+    )
+    changed = {row["identity"]: row for row in ledger.public()}
+    assert changed["424242:100"]["sampled_rss_peak_residency"] == expected_first
+    assert changed["424242:100"]["last_linux_residency"]["anonymous_bytes"] == 1024
+    assert changed["424242:250"]["first_linux_residency"]["total_bytes"] == 30 * 1024
+    assert changed["424242:250"]["peak_working_set_bytes"] == 40 * 1024
+    assert changed["424242:100"]["identity"] != changed["424242:250"]["identity"]
+
+    sample_pid(
+        424243,
+        7,
+        _status_lines(VmRSS=10, VmHWM=10, RssFile=4, RssShmem=6),
+    )
+    missing = {row["identity"]: row for row in ledger.public()}["424243:7"]
+    assert missing["first_working_set_bytes"] is None
+    assert missing["peak_working_set_bytes"] is None
+    assert missing["kernel_high_water_while_observed"] is False
+    assert missing["first_linux_residency"] is None
+    assert missing["last_linux_residency"] is None
+    assert missing["sampled_rss_peak_residency"] is None
+
+    sample_pid(
+        424244,
+        8,
+        [
+            "Name:\tfixture",
+            "VmRSS:\t1 kB",
+            "VmHWM:\t1 kB",
+            "RssAnon:\tno kB",
+            "RssFile:\t0 kB",
+            "RssShmem:\t0 kB",
+        ],
+    )
+    malformed = {row["identity"]: row for row in ledger.public()}["424244:8"]
+    assert malformed["first_linux_residency"] is None
+    assert malformed["first_working_set_bytes"] is None
+
+    sample_pid(
+        424245,
+        9,
+        _status_lines(VmRSS=0, VmHWM=0, RssAnon=0, RssFile=0, RssShmem=0),
+    )
+    zeros = {row["identity"]: row for row in ledger.public()}["424245:9"]
+    assert zeros["first_linux_residency"] == {
+        "total_bytes": 0,
+        "anonymous_bytes": 0,
+        "file_bytes": 0,
+        "shared_bytes": 0,
+    }
+    assert zeros["peak_working_set_bytes"] == 0
+    assert zeros["kernel_high_water_while_observed"] is True
+
+    ledger.observe(
+        424246,
+        11,
+        current=5,
+        high_water=None,
+        residency={
+            "total_bytes": 5,
+            "file_bytes": 0,
+            "shared_bytes": 5,
+            "raw_status": "Name:\tsecret",
+        },
+    )
+    partial = {row["identity"]: row for row in ledger.public()}["424246:11"]
+    assert partial["kernel_high_water_while_observed"] is False
+    assert partial["peak_working_set_bytes"] is None
+    assert partial["first_linux_residency"] == {
+        "total_bytes": 5,
+        "anonymous_bytes": None,
+        "file_bytes": 0,
+        "shared_bytes": 5,
+    }
+    assert "raw_status" not in partial["first_linux_residency"]
+
+    ledger.observe(8, 9, current=10, high_water=20)
+    unsupported = {row["identity"]: row for row in ledger.public()}["8:9"]
+    assert unsupported["first_working_set_bytes"] == 10
+    assert unsupported["peak_working_set_bytes"] == 20
+    assert unsupported["first_linux_residency"] is None
+    assert unsupported["last_linux_residency"] is None
+    assert unsupported["sampled_rss_peak_residency"] is None
+
+    assert ledger.note_final_peak(424242, 100, 9_000_000) is True
+    finished = {row["identity"]: row for row in ledger.public()}["424242:100"]
+    assert finished["peak_working_set_bytes"] == 9_000_000
+    assert finished["peak_working_set_final"] is True
+    assert finished["kernel_high_water_while_observed"] is True
+    assert finished["sampled_rss_peak_residency"] == expected_first
+
+    full = accounting._Ledger()
+    for index in range(accounting.MAX_LEDGER):
+        assert full.add_identity(1000 + index, 1) is not None
+    _write_fake_proc(
+        proc,
+        424299,
+        3,
+        _status_lines(VmRSS=1, VmHWM=1, RssAnon=1, RssFile=0, RssShmem=0),
+    )
+    (leaf / "cgroup.procs").write_text("424299\n", encoding="ascii")
+    backend.sample(full)
+    assert full.truncated is True
+    assert all(row["pid"] != 424299 for row in full.public())
+    assert all(row["first_linux_residency"] is None for row in full.public())
+
+    snapshot = backend.snapshot()
+    coverage = backend.coverage(snapshot, ledger.public())
+    assert snapshot["kernel"]["cgroup_memory_peak_bytes"] == 999
+    assert snapshot["kernel"]["cgroup_memory_peak_is_per_process_rss"] is False
+    assert snapshot["sampled_peaks"]["not_a_budget_measurement"] is True
+    assert snapshot["sampled_peaks"]["sum_double_counts_shared"] is True
+    assert coverage["platform"] == "linux"
+    assert coverage["status"] == "partial"
+    assert coverage["cpu_lifetime_complete"] is True
+    assert coverage["cpu_includes_exited_descendants"] is True
+    assert coverage["sampled_pid_cpu_is_complete"] is False
+    assert coverage["rss_high_water_covers_unseen_exited_processes"] is False
+    assert coverage["cgroup_memory_peak_is_per_process_rss"] is False
+    assert coverage["process_lifetime_count"] == "unavailable"
+    assert accounting.ADDITIONAL_RSS_BUDGET_BYTES == 8_388_608
+    assert accounting.CPU_BUDGET_ONE_CORE_FRACTION == 0.005
+    for row in ledger.public():
+        for field in (
+            "first_linux_residency",
+            "last_linux_residency",
+            "sampled_rss_peak_residency",
+        ):
+            if row[field] is not None:
+                assert row[field]["total_bytes"] != 999
+
+    oversized = {
+        "pid": 50,
+        "creation": "5",
+        "identity": "50:5",
+        "peak_working_set_bytes": 500 * 1024,
+        "first_working_set_bytes": 100 * 1024,
+        "last_working_set_bytes": 90 * 1024,
+        "kernel_high_water_while_observed": True,
+        "peak_working_set_final": False,
+        "raw_status": "Name:\tsecret",
+        "first_linux_residency": {
+            "total_bytes": 0,
+            "anonymous_bytes": "0",
+            "file_bytes": -1,
+            "shared_bytes": None,
+            "VmRSS": 999,
+        },
+        "last_linux_residency": {
+            "total_bytes": 2**63,
+            "anonymous_bytes": 0,
+            "file_bytes": True,
+            "shared_bytes": 4,
+        },
+        "sampled_rss_peak_residency": ["not-a-snapshot"],
+    }
+    report = {
+        "ledger": ledger.public() + [oversized],
+        "coverage": coverage,
+        "resource_acceptance": True,
+        "qualification": "qualified",
+        "kernel": snapshot["kernel"],
+        "sampled_peaks": snapshot["sampled_peaks"],
+        "platform_method": snapshot["method"],
+    }
+    python, javascript, again = _project_owned(report)
+    for projected in (python, javascript, again):
+        assert projected["resource_acceptance"] is False
+        assert projected["qualification"] == "unqualified"
+        assert projected["budget"]["additional_rss_bytes_per_process"] == 8_388_608
+        assert projected["budget"]["cpu_one_core_fraction"] == 0.005
+        assert projected["budget"]["status"] == "UNACCEPTED"
+        assert projected["budget"]["compared"] is False
+        assert projected["coverage"]["rss_high_water_covers_unseen_exited_processes"] is False
+        assert projected["coverage"]["cgroup_memory_peak_is_per_process_rss"] is False
+        assert projected["coverage"]["process_lifetime_count"] == "unavailable"
+        encoded = json.dumps(projected)
+        assert "secret" not in encoded
+        assert "VmRSS" not in encoded
+        assert "raw_status" not in encoded
+        assert "not-a-snapshot" not in encoded
+
+    views = [
+        {row["identity"]: row for row in projected["ledger"]}
+        for projected in (python, javascript, again)
+    ]
+    for view in views:
+        assert view["424242:100"]["sampled_rss_peak_residency"] == expected_first
+        assert view["424242:100"]["last_linux_residency"]["anonymous_bytes"] == 1024
+        assert view["424242:100"]["peak_working_set_bytes"] == 9_000_000
+        assert view["424242:100"]["peak_working_set_final"] is True
+        assert view["424242:250"]["first_linux_residency"]["total_bytes"] == 30 * 1024
+        assert view["424243:7"]["first_linux_residency"] is None
+        assert view["424244:8"]["sampled_rss_peak_residency"] is None
+        assert view["424245:9"]["first_linux_residency"]["shared_bytes"] == 0
+        assert view["424246:11"]["first_linux_residency"]["anonymous_bytes"] is None
+        assert view["424246:11"]["first_linux_residency"]["file_bytes"] == 0
+        assert view["424246:11"]["kernel_high_water_while_observed"] is False
+        assert view["8:9"]["first_linux_residency"] is None
+        assert view["8:9"]["peak_working_set_bytes"] == 20
+        bad = view["50:5"]
+        assert set(bad["first_linux_residency"]) == {
+            "total_bytes",
+            "anonymous_bytes",
+            "file_bytes",
+            "shared_bytes",
+        }
+        assert bad["first_linux_residency"]["total_bytes"] == 0
+        assert bad["first_linux_residency"]["anonymous_bytes"] is None
+        assert bad["first_linux_residency"]["file_bytes"] is None
+        assert bad["last_linux_residency"]["total_bytes"] is None
+        assert bad["last_linux_residency"]["anonymous_bytes"] == 0
+        assert bad["last_linux_residency"]["file_bytes"] is None
+        assert bad["last_linux_residency"]["shared_bytes"] == 4
+        assert bad["sampled_rss_peak_residency"] is None
+        assert bad["peak_working_set_bytes"] == 500 * 1024

@@ -38,6 +38,17 @@ function memory(value) {
   return count(value, 2 ** 62)
 }
 
+function residencySnapshot(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const component = (key) => (value[key] == null ? null : memory(value[key]))
+  return {
+    total_bytes: component('total_bytes'),
+    anonymous_bytes: component('anonymous_bytes'),
+    file_bytes: component('file_bytes'),
+    shared_bytes: component('shared_bytes'),
+  }
+}
+
 function ledgerRow(row) {
   if (!row || typeof row !== 'object') return null
   const pid = row.pid
@@ -55,6 +66,9 @@ function ledgerRow(row) {
     last_working_set_bytes: row.last_working_set_bytes == null ? null : memory(row.last_working_set_bytes),
     kernel_high_water_while_observed: row.kernel_high_water_while_observed === true,
     peak_working_set_final: flag(row.peak_working_set_final),
+    first_linux_residency: residencySnapshot(row.first_linux_residency),
+    last_linux_residency: residencySnapshot(row.last_linux_residency),
+    sampled_rss_peak_residency: residencySnapshot(row.sampled_rss_peak_residency),
   }
 }
 

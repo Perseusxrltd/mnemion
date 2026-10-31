@@ -5,7 +5,9 @@ Lifetime CPU comes from that group, not from a later poll of surviving PIDs.
 Working-set figures stay per process. Cgroup memory and Windows job commit
 are never reported as RSS. On Windows, PeakWorkingSetSize is read again
 through retained query handles only after the job has no active process.
-Missing counters stay null.
+Missing counters stay null. A Linux sample keeps the anonymous, file, and
+shared bytes observed together with that sample's resident total. Those
+snapshots are not a VmHWM breakdown and not a sum of component peaks.
 
 This module does not start product telemetry, change disclosure, or compare
 a run with the unaccepted 8 MiB / 0.5% budget.
@@ -205,6 +207,49 @@ def _single_counter(path: Path) -> int | None:
     return int(raw)
 
 
+# One /proc status read. total_bytes is VmRSS from that read, not the sum of
+# later component maxima and not VmHWM. VmHWM can predate the sampled breakdown.
+_LINUX_RESIDENCY_COMPONENTS = (
+    "total_bytes",
+    "anonymous_bytes",
+    "file_bytes",
+    "shared_bytes",
+)
+_LINUX_RESIDENCY_SNAPSHOTS = (
+    "first_linux_residency",
+    "last_linux_residency",
+    "sampled_rss_peak_residency",
+)
+
+
+def _bounded_linux_residency(components: object) -> dict | None:
+    """Keep a real zero. A missing or malformed component stays null."""
+    if type(components) is not dict:
+        return None
+    snapshot = {}
+    known = False
+    for key in _LINUX_RESIDENCY_COMPONENTS:
+        value = components.get(key)
+        if type(value) is int and value >= 0:
+            snapshot[key] = value
+            known = True
+        else:
+            snapshot[key] = None
+    if not known:
+        return None
+    return snapshot
+
+
+def _copy_linux_residency(snapshot: object) -> dict | None:
+    if type(snapshot) is not dict:
+        return None
+    copied = {}
+    for key in _LINUX_RESIDENCY_COMPONENTS:
+        value = snapshot.get(key)
+        copied[key] = value if type(value) is int and value >= 0 else None
+    return copied
+
+
 class _Ledger:
     def __init__(self):
         self.rows: dict[str, dict] = {}
@@ -233,12 +278,23 @@ class _Ledger:
             # Distinct from the live flag above. True only after a successful
             # post-drain query. A later failed query clears it and keeps the bytes.
             "peak_working_set_final": False,
+            # Null on Windows and macOS: this split is not available there.
+            # sampled_rss_peak_residency is the sample with the greatest VmRSS.
+            "first_linux_residency": None,
+            "last_linux_residency": None,
+            "sampled_rss_peak_residency": None,
         }
         self.rows[identity] = row
         return row
 
     def observe(
-        self, pid: int, creation: int, *, current: int | None, high_water: int | None
+        self,
+        pid: int,
+        creation: int,
+        *,
+        current: int | None,
+        high_water: int | None,
+        residency: dict | None = None,
     ) -> None:
         row = self.add_identity(pid, creation)
         if row is None:
@@ -253,6 +309,21 @@ class _Ledger:
                 high_water if previous is None else max(previous, high_water)
             )
             row["kernel_high_water_while_observed"] = True
+        # Rank the breakdown by this sample's VmRSS. A higher VmHWM does not
+        # replace it, and component maxima from other samples are not combined.
+        snapshot = _bounded_linux_residency(residency)
+        if snapshot is None:
+            return
+        if row["first_linux_residency"] is None:
+            row["first_linux_residency"] = _copy_linux_residency(snapshot)
+        row["last_linux_residency"] = _copy_linux_residency(snapshot)
+        total = snapshot["total_bytes"]
+        if type(total) is not int:
+            return
+        previous = row["sampled_rss_peak_residency"]
+        previous_total = None if type(previous) is not dict else previous.get("total_bytes")
+        if type(previous_total) is not int or total > previous_total:
+            row["sampled_rss_peak_residency"] = _copy_linux_residency(snapshot)
 
     def note_final_peak(self, pid: int, creation: int, high_water: int) -> bool:
         """Record a post-drain peak. Does not change the live-sample flag."""
@@ -272,7 +343,13 @@ class _Ledger:
         return True
 
     def public(self) -> list[dict]:
-        return [dict(self.rows[key]) for key in sorted(self.rows)]
+        copied = []
+        for key in sorted(self.rows):
+            row = dict(self.rows[key])
+            for field in _LINUX_RESIDENCY_SNAPSHOTS:
+                row[field] = _copy_linux_residency(row.get(field))
+            copied.append(row)
+        return copied
 
 
 class OwnedLaunch:
@@ -1540,7 +1617,18 @@ class LinuxCgroupBackend:
             if residency is None:
                 ledger.add_identity(pid, ticks)
                 continue
-            ledger.observe(pid, ticks, current=residency["VmRSS"], high_water=residency["VmHWM"])
+            ledger.observe(
+                pid,
+                ticks,
+                current=residency["VmRSS"],
+                high_water=residency["VmHWM"],
+                residency={
+                    "total_bytes": residency["VmRSS"],
+                    "anonymous_bytes": residency["RssAnon"],
+                    "file_bytes": residency["RssFile"],
+                    "shared_bytes": residency["RssShmem"],
+                },
+            )
             current_sum += residency["VmRSS"]
             saw += 1
         if saw:
