@@ -1,8 +1,9 @@
 # Browser journey source qualification
 
-30 October 2026. The manual Firefox and WebKit diagnostic is reviewed source;
-its actual browser journeys have not yet passed. Production collection remains
-off and V08 remains Building.
+30 October 2026. The fourth hosted run passed the Firefox and Playwright WebKit
+delivery and reload journeys. The source review and three earlier failed runs
+remain below. Native Safari, resource budgets and production ingress remain
+unqualified; production collection stays off and V08 stays Building.
 
 Actual Grok candidate `29c8ad1fcbcec1acf3a378474c8b241a0d221443` was frozen
 when its bounded implementation job ended. Astra corrected the output-directory
