@@ -19,7 +19,8 @@ that paired lifetime. Callback storage stays alive until the consumer thread
 is confirmed finished. There is no separate cleanup process.
 
 Native ETW is not invoked by tests. WinEtwApi is constructed only by an
-explicit caller after review.
+explicit caller after review. AdapterOwnership takes a library loader and
+is the offline stand-in.
 """
 
 from __future__ import annotations
@@ -132,6 +133,7 @@ _GAP_REASONS = frozenset(
         "consumer_still_live",
         "session_still_owned",
         "session_release_failed",
+        "session_already_attempted",
         "external_gap",
     }
 )
@@ -456,6 +458,10 @@ def _pair_generations(births, ends, gaps, ambiguities) -> list[dict]:
                     }
                 )
             elif mismatched:
+                # The End was observed, but it is not this Start. Leaving end
+                # empty and exit_ambiguous false would keep the PID interval
+                # open and admit a later child. The edge is unqualified.
+                exit_ambiguous = True
                 gaps.append("exit_key_mismatch")
                 ambiguities.append(
                     {
@@ -933,6 +939,9 @@ class EtwLifetimeObserver:
         self._stop_result = None
         self._close_result = None
         self._session_released = False
+        self._start_attempted = False
+        self._control_handle = None
+        self._acquired_trace = None
 
     @staticmethod
     def _bounded_cap(value: int | None, ceiling: int) -> int:
@@ -951,9 +960,12 @@ class EtwLifetimeObserver:
         return dict(self._request)
 
     def start_before_root(self) -> bool:
-        if self._started or self._closed:
+        # One attempt. A second call is refused before the API is touched,
+        # including after an open failure or a failed stop.
+        if self._start_attempted or self._started or self._closed:
             self._note_gap("session_not_started")
             return False
+        self._start_attempted = True
         started = self._api.start_session(self._request)
         if type(started) is not dict or started.get("ok") is not True:
             code = None if type(started) is not dict else started.get("code")
@@ -961,16 +973,29 @@ class EtwLifetimeObserver:
                 self._note_gap("session_exists_not_stopped")
             elif code == "access_denied":
                 self._note_gap("access_denied")
+            elif code == "session_already_attempted":
+                self._note_gap("session_already_attempted")
             else:
                 self._note_gap("session_not_started")
             return False
-        self._session = started.get("handle")
+        handle = started.get("handle")
+        if type(handle) is not int or handle <= 0:
+            self._note_gap("session_not_started")
+            return False
+        self._control_handle = handle
+        self._session = handle
         opened = self._api.open_trace(self._request["session_name"], self._on_event)
         if type(opened) is not dict or opened.get("ok") is not True:
             self._note_gap("open_trace_failed")
             self._stop_owned_session()
             return False
-        self._trace = opened.get("handle")
+        trace = opened.get("handle")
+        if type(trace) is not int or trace <= 0:
+            self._note_gap("open_trace_failed")
+            self._stop_owned_session()
+            return False
+        self._trace = trace
+        self._acquired_trace = trace
         self._callback_live = True
         self._thread = threading.Thread(target=self._consume, name="mnemion-etw-consume")
         self._thread.start()
@@ -1053,16 +1078,86 @@ class EtwLifetimeObserver:
         self._drop_callbacks_if_consumer_dead()
         self._closed = True
 
+    def recovery_state(self) -> dict:
+        """Local owner record. This is not copied into the resource report.
+
+        Session, trace, and callback ownership are separate. A released
+        session can still leave a trace handle or a live callback. There is
+        no separate cleanup process. A later native run has to be supervised
+        outside this process, on a disposable runner.
+        """
+        stop_ok = type(self._stop_result) is dict and self._stop_result.get("ok") is True
+        close_ok = type(self._close_result) is dict and self._close_result.get("ok") is True
+        close_pending = (
+            type(self._close_result) is dict and self._close_result.get("pending") is True
+        )
+        session_outstanding = (
+            self._control_handle is not None and self._session_released is not True
+        )
+        trace_outstanding = self._acquired_trace is not None and close_ok is not True
+        callback_outstanding = self._callbacks_released is not True and (
+            self._callback_live or self._thread is not None
+        )
+        return {
+            "start_attempted": self._start_attempted,
+            "control_handle": self._control_handle,
+            "trace_handle": self._acquired_trace,
+            "stop_ok": stop_ok,
+            "close_ok": close_ok,
+            "close_pending": close_pending,
+            "session_released": self._session_released,
+            "callbacks_released": self._callbacks_released,
+            "consumer_finished": not self._consumer_alive(),
+            "session_outstanding": session_outstanding,
+            "trace_outstanding": trace_outstanding,
+            "callback_outstanding": callback_outstanding,
+            "recoverable": session_outstanding or trace_outstanding or callback_outstanding,
+            "isolated_cleanup_process": False,
+        }
+
+    def retry_failed_close(self, handle=None) -> dict:
+        """Close the acquired trace again after the consumer thread has stopped.
+
+        A successful or pending close is not submitted again. A failed close
+        keeps the handle and can be retried. A foreign handle is refused
+        before the API is called.
+        """
+        if self._consumer_alive():
+            return {"ok": False, "code": "consumer_still_live", "pending": False}
+        known = self._acquired_trace
+        supplied = known if handle is None else handle
+        if type(supplied) is not int or supplied != known or known is None:
+            return {"ok": False, "code": "unknown_handle", "pending": False}
+        if type(self._close_result) is dict and self._close_result.get("pending") is True:
+            self._close_result = {"ok": True, "code": "ok", "pending": False}
+            self._trace = None
+            return {"ok": True, "code": "ok", "pending": False}
+        if type(self._close_result) is dict and self._close_result.get("ok") is True:
+            return {"ok": True, "code": "already_closed", "pending": False}
+        return self._close_trace_once()
+
     def release_finished_consumer(self) -> bool:
         """Join the consumer, then drop callbacks only if it has stopped.
 
         This does not start a helper process, does not stop a logger by name,
-        and does not rewrite a report that was already finalized.
+        and does not rewrite a report that was already finalized. Returning
+        true requires the trace close itself to be successful. Callback
+        release alone does not recover a failed close. A pending close is not
+        submitted again.
         """
         self._join_consumer(self._drain_seconds)
         if self._consumer_alive():
             return False
-        return self._drop_callbacks_if_consumer_dead()
+        close_ok = type(self._close_result) is dict and self._close_result.get("ok") is True
+        if type(self._close_result) is dict and self._close_result.get("pending") is True:
+            self._close_result = {"ok": True, "code": "ok", "pending": False}
+            self._trace = None
+            close_ok = True
+        elif close_ok is not True and self._acquired_trace is not None:
+            result = self._close_trace_once()
+            close_ok = type(result) is dict and result.get("ok") is True
+        released = self._drop_callbacks_if_consumer_dead()
+        return bool(released and close_ok)
 
     def _consume(self) -> None:
         try:
@@ -1172,18 +1267,22 @@ class EtwLifetimeObserver:
         }
 
     def _stop_owned_session(self) -> dict:
-        if self._stop_result is not None and self._stop_result.get("ok") is True:
+        handle = self._session if self._session is not None else self._control_handle
+        if (
+            self._stop_result is not None
+            and self._stop_result.get("ok") is True
+            and handle == self._control_handle
+        ):
             return self._stop_result
-        handle = self._session
-        if handle is None or self._api is None:
-            return {"ok": False, "code": "stop_failed", "loss": {}}
+        if type(handle) is not int or handle != self._control_handle or self._api is None:
+            return {"ok": False, "code": "unknown_handle", "loss": {}}
         try:
             result = self._api.stop_session(handle)
         except Exception:
             result = {"ok": False, "code": "stop_failed", "loss": {}}
         if type(result) is not dict:
             result = {"ok": False, "code": "stop_failed", "loss": {}}
-        if result.get("ok") is True:
+        if result.get("ok") is True and handle == self._control_handle:
             self._stop_result = result
         return result
 
@@ -1201,19 +1300,35 @@ class EtwLifetimeObserver:
         return thread is not None and thread.is_alive()
 
     def _close_trace_once(self) -> dict:
-        if self._close_result is not None:
-            return self._close_result
-        handle = self._trace
-        if handle is None or self._api is None:
-            result = {"ok": True, "code": "no_trace", "pending": False}
-            self._close_result = result
-            return result
+        # The consumer handle is not the control handle. Identity is the
+        # handle acquired at open, kept even after a successful close clears
+        # the live trace slot.
+        known = self._acquired_trace
+        current = self._trace
+        cached = self._close_result
+        if type(cached) is dict and (cached.get("ok") is True or cached.get("pending") is True):
+            if known is None or (current is not None and current != known):
+                return {"ok": False, "code": "unknown_handle", "pending": False}
+            return dict(cached)
+        handle = current if current is not None else known
+        if known is None or handle != known or self._api is None:
+            if known is None and handle is None and self._control_handle is None and self._thread is None:
+                result = {"ok": True, "code": "no_trace", "pending": False}
+                self._close_result = result
+                return dict(result)
+            if known is None and handle is None:
+                result = {"ok": True, "code": "no_trace", "pending": False}
+                self._close_result = result
+                return dict(result)
+            return {"ok": False, "code": "unknown_handle", "pending": False}
         try:
-            result = self._api.close_trace(handle)
+            result = self._api.close_trace(known)
         except Exception:
             result = {"ok": False, "code": "close_failed", "pending": False}
         if type(result) is not dict:
             result = {"ok": False, "code": "close_failed", "pending": False}
+        if result.get("code") == "unknown_handle":
+            return {"ok": False, "code": "unknown_handle", "pending": False}
         pending = result.get("pending") is True or result.get("code") == "close_pending"
         ok = result.get("ok") is True and not pending
         normalized = {
@@ -1221,7 +1336,10 @@ class EtwLifetimeObserver:
             "code": "close_pending" if pending else ("ok" if ok else "close_failed"),
             "pending": pending,
         }
-        self._close_result = normalized
+        # A hard failure is not cached, so the same trace handle can be closed
+        # again after the consumer is confirmed finished.
+        if ok or pending:
+            self._close_result = normalized
         if ok:
             self._trace = None
         return normalized
@@ -1255,18 +1373,25 @@ class EtwLifetimeObserver:
         return True
 
     def _drop_callbacks_if_consumer_dead(self) -> bool:
+        # Callback storage belongs to the consumer that acquired the trace.
+        # A refused wrapper has no trace and no thread; that absence is not
+        # permission to release another live consumer.
+        if self._acquired_trace is None:
+            return False
         if self._consumer_alive():
             return False
         if self._callbacks_released:
             return True
-        self._callback_live = False
         release = getattr(self._api, "release_callbacks", None)
         if release is not None:
             try:
-                release()
+                outcome = release(self._acquired_trace)
             except Exception:
                 self._note_gap("callback_failed")
                 return False
+            if outcome is False:
+                return False
+        self._callback_live = False
         self._callbacks_released = True
         return True
 
@@ -1300,6 +1425,9 @@ def observe_owned_launch(job, api, *, ready_seconds: float = 2.0, drain_seconds:
         return observer.finish(snapshot)
     finally:
         observer.close()
+        retain = getattr(api, "retain_recovery", None)
+        if retain is not None:
+            retain(observer.recovery_state())
 
 
 def _load_advapi32():
@@ -1631,33 +1759,160 @@ def abi_field_offsets() -> dict:
     }
 
 
-class WinEtwApi:
-    """Real advapi32 session. Constructing it loads nothing until start_session.
+class LocalCleanupOwner:
+    """Private recovery for handles this process already acquired.
 
-    An existing logger is never stopped. Access denial does not elevate.
+    The resource receipt does not carry this object. There is no separate
+    cleanup process.
     """
 
-    def __init__(self):
-        if ctypes.sizeof(ctypes.c_void_p) != 8:
-            raise OwnedLaunchUnsupported("windows_pointer_width")
-        sizes = consumer_layout_sizes()
-        if sizes["c_long"] != 4 or sizes["size_t"] != 8 or sizes["event_header"] != 80:
-            raise OwnedLaunchUnsupported("windows_llp64_layout")
-        if sizes["event_record"] != 112 or sizes["properties"] != 120 or sizes["wnode"] != 48:
-            raise OwnedLaunchUnsupported("windows_llp64_layout")
-        offsets = abi_field_offsets()
-        if (
-            offsets["wnode_guid"] != 24
-            or offsets["wnode_client_context"] != 40
-            or offsets["wnode_flags"] != 44
-            or sizes["event_trace"] != 88
-            or sizes["logfile_header"] != 280
-            or sizes["logfile"] != 448
-            or offsets["logfile_buffer_callback"] != 400
-            or offsets["logfile_event_record_callback"] != 424
-            or offsets["logfile_context"] != 440
-        ):
-            raise OwnedLaunchUnsupported("windows_llp64_layout")
+    def __init__(self, api, state):
+        if type(state) is not dict:
+            state = {}
+        control = state.get("control_handle")
+        trace = state.get("trace_handle")
+        if type(control) is not int or control <= 0:
+            control = None
+        if type(trace) is not int or trace <= 0:
+            trace = None
+        self._api = api
+        self._state = {
+            "control_handle": control,
+            "trace_handle": trace,
+            "stop_ok": state.get("stop_ok") is True,
+            "close_ok": state.get("close_ok") is True,
+            "close_pending": state.get("close_pending") is True,
+            "session_released": state.get("session_released") is True,
+            "callbacks_released": state.get("callbacks_released") is True,
+            "session_outstanding": state.get("session_outstanding") is True,
+            "trace_outstanding": state.get("trace_outstanding") is True,
+            "callback_outstanding": state.get("callback_outstanding") is True,
+            "consumer_completed": False,
+            "recoverable": state.get("recoverable") is True,
+            "isolated_cleanup_process": False,
+        }
+
+    def snapshot(self) -> dict:
+        self._refresh()
+        return dict(self._state)
+
+    def retry_stop(self, handle) -> dict:
+        known = self._state["control_handle"]
+        if type(handle) is not int or handle != known or known is None:
+            return {"ok": False, "code": "unknown_handle", "loss": {}}
+        if self._state["stop_ok"]:
+            return {"ok": True, "code": "already_stopped", "loss": {}}
+        result = self._api.stop_session(handle)
+        if type(result) is not dict:
+            return {"ok": False, "code": "stop_failed", "loss": {}}
+        if result.get("ok") is True:
+            self._state["stop_ok"] = True
+            if self._state["session_released"] is not True:
+                self._state["session_outstanding"] = True
+            self._refresh()
+        return result
+
+    def retry_close(self, handle) -> dict:
+        known = self._state["trace_handle"]
+        if type(handle) is not int or handle != known or known is None:
+            return {"ok": False, "code": "unknown_handle", "pending": False}
+        if self._state["close_pending"] is True:
+            # Pending CloseTrace is already with the original consumer.
+            # Completing it after that consumer exits must not submit it again.
+            if self._complete_pending_close_if_consumer_done():
+                self._refresh()
+                return {"ok": True, "code": "ok", "pending": False}
+            return {"ok": False, "code": "close_pending", "pending": True}
+        if self._state["close_ok"]:
+            return {"ok": True, "code": "already_closed", "pending": False}
+        result = self._api.close_trace(handle)
+        if type(result) is not dict:
+            return {"ok": False, "code": "close_failed", "pending": False}
+        if result.get("pending") is True:
+            self._state["close_pending"] = True
+            self._state["close_ok"] = False
+            self._state["trace_outstanding"] = True
+            self._refresh()
+            return result
+        if result.get("ok") is True:
+            self._state["close_ok"] = True
+            self._state["close_pending"] = False
+            self._state["trace_outstanding"] = False
+            self._refresh()
+        return result
+
+    def _complete_pending_close_if_consumer_done(self) -> bool:
+        trace = self._state["trace_handle"]
+        if type(trace) is not int or self._state["close_pending"] is not True:
+            return False
+        note = getattr(self._api, "note_consumer_close_completed", None)
+        if note is None or note(trace) is not True:
+            return False
+        release = getattr(self._api, "release_callbacks", None)
+        if release is not None and release(trace) is False:
+            return False
+        self._state["close_pending"] = False
+        self._state["close_ok"] = True
+        self._state["trace_outstanding"] = False
+        self._state["consumer_completed"] = True
+        self._state["callbacks_released"] = True
+        self._state["callback_outstanding"] = False
+        return True
+
+    def _live_view(self):
+        view = getattr(self._api, "ownership_view", None)
+        if view is None:
+            return None
+        found = view()
+        if type(found) is not dict:
+            return None
+        return found
+
+    def _refresh(self) -> None:
+        self._complete_pending_close_if_consumer_done()
+        view = self._live_view()
+        control = self._state["control_handle"]
+        trace = self._state["trace_handle"]
+        if view is not None and control is not None and view.get("control_handle") == control:
+            if view.get("stop_ok") is True:
+                self._state["stop_ok"] = True
+            if view.get("session_released") is True:
+                self._state["session_released"] = True
+                self._state["session_outstanding"] = False
+        if view is not None and trace is not None and view.get("trace_handle") == trace:
+            self._state["consumer_completed"] = view.get("consumer_completed") is True
+            if view.get("close_ok") is True and view.get("close_pending") is not True:
+                self._state["close_ok"] = True
+                self._state["close_pending"] = False
+                self._state["trace_outstanding"] = False
+            if view.get("callbacks_released") is True and view.get("consumer_completed") is True:
+                self._state["callbacks_released"] = True
+                self._state["callback_outstanding"] = False
+            elif (
+                view.get("consumer_completed") is not True
+                and self._state["callbacks_released"] is not True
+            ):
+                self._state["callback_outstanding"] = True
+        if self._state["close_ok"] is True:
+            self._state["close_pending"] = False
+            self._state["trace_outstanding"] = False
+        self._state["recoverable"] = bool(
+            self._state["session_outstanding"]
+            or self._state["trace_outstanding"]
+            or self._state["callback_outstanding"]
+        )
+        self._state["isolated_cleanup_process"] = False
+
+
+class AdapterOwnership:
+    """One session's control and consumer handles.
+
+    The loader runs only after the one-shot guard. Tests pass a fake loader.
+    This class does not load advapi32 by itself.
+    """
+
+    def __init__(self, load_library):
+        self._load_library = load_library
         self._library = None
         self._callback = None
         self._buffer_callback = None
@@ -1667,17 +1922,52 @@ class WinEtwApi:
         self._session_name = None
         self._stop_result = None
         self._close_result = None
+        self._start_attempted = False
+        self._open_attempted = False
+        self._control_handle = None
+        self._consumer_handle = None
+        self._consumer_completed = False
+        self._session_released = False
+        self.private_owner = None
+
+    def _session_accepts_open(self) -> bool:
+        """True only for a control session this object started and has not stopped."""
+        if self._library is None:
+            return False
+        if type(self._control_handle) is not int or self._control_handle <= 0:
+            return False
+        if self._session_released is True:
+            return False
+        if type(self._stop_result) is dict and self._stop_result.get("ok") is True:
+            return False
+        return True
+
+    def _consumer_handle_usable(self, trace_handle) -> bool:
+        if type(trace_handle) is not int or trace_handle <= 0:
+            return False
+        if trace_handle != self._consumer_handle or self._consumer_handle is None:
+            return False
+        if self._library is None or self._consumer_completed is True:
+            return False
+        if type(self._close_result) is dict and (
+            self._close_result.get("ok") is True or self._close_result.get("pending") is True
+        ):
+            return False
+        return True
 
     def start_session(self, request: dict) -> dict:
-        global native_session_starts
-        native_session_starts += 1
+        if self._start_attempted:
+            return {"ok": False, "code": "session_already_attempted", "handle": None}
         if type(request) is not dict or request.get("session_name") != SESSION_NAME:
             return {"ok": False, "code": "invalid_session", "handle": None}
         if request.get("session_name") == KERNEL_LOGGER_NAME or request.get("etl_file") is True:
             return {"ok": False, "code": "invalid_session", "handle": None}
         if request.get("stop_existing_session") is True or request.get("privilege_escalation") is True:
             return {"ok": False, "code": "invalid_session", "handle": None}
-        library = _load_advapi32()
+        self._start_attempted = True
+        global native_session_starts
+        native_session_starts += 1
+        library = self._load_library()
         self._library = library
         name = SESSION_NAME
         encoded = (name + "\x00").encode("utf-16-le")
@@ -1707,7 +1997,6 @@ class WinEtwApi:
         library.StartTraceW.restype = wintypes.ULONG
         code = int(library.StartTraceW(ctypes.byref(handle), name, ctypes.byref(props)))
         if code != 0 or handle.value == 0:
-            self._properties_buffer = None
             if code == 183:
                 return {"ok": False, "code": "already_exists", "handle": None}
             if code == 5:
@@ -1715,11 +2004,17 @@ class WinEtwApi:
             return {"ok": False, "code": f"start_{code:x}", "handle": None}
         self._properties_buffer = buffer
         self._session_name = name
-        return {"ok": True, "code": "ok", "handle": int(handle.value)}
+        self._control_handle = int(handle.value)
+        return {"ok": True, "code": "ok", "handle": self._control_handle}
 
     def open_trace(self, session_name: str, on_event) -> dict:
-        if session_name != SESSION_NAME or self._library is None:
+        if self._open_attempted or self._callback is not None or self._consumer_handle is not None:
+            return {"ok": False, "code": "open_already_attempted", "handle": None}
+        # Failed or stopped StartTrace must refuse before callbacks, the
+        # library, or OpenTrace. A loaded DLL is not an owned session.
+        if session_name != SESSION_NAME or not self._session_accepts_open():
             return {"ok": False, "code": "open_trace_failed", "handle": None}
+        self._open_attempted = True
         # Classic OpenTraceW needs the full logfile structure, including the
         # timezone and current-event tails. Those widths are checked when this
         # object is constructed. LogFileName stays null: no ETL file is opened.
@@ -1732,12 +2027,15 @@ class WinEtwApi:
             self._drop_callbacks()
             return {"ok": False, "code": "open_trace_failed", "handle": None}
         self._logfile = logfile
+        self._consumer_handle = handle
         return {"ok": True, "code": "ok", "handle": handle}
 
     def process_trace(self, trace_handle, on_ready) -> dict:
-        on_ready()
-        if self._library is None or trace_handle is None:
+        # Ready is the consumer's signal that ProcessTrace is about to run.
+        # A foreign or null handle must not signal it and must not reach the call.
+        if not self._consumer_handle_usable(trace_handle):
             return {"ok": False, "code": "process_trace_failed"}
+        on_ready()
         array = (ctypes.c_ulonglong * 1)(int(trace_handle))
         self._library.ProcessTrace.argtypes = [
             ctypes.POINTER(ctypes.c_ulonglong),
@@ -1746,7 +2044,10 @@ class WinEtwApi:
             ctypes.c_void_p,
         ]
         self._library.ProcessTrace.restype = wintypes.ULONG
-        code = int(self._library.ProcessTrace(array, 1, None, None))
+        try:
+            code = int(self._library.ProcessTrace(array, 1, None, None))
+        finally:
+            self._consumer_completed = True
         if code != 0:
             return {"ok": False, "code": f"process_{code:x}"}
         return {"ok": True, "code": "ok"}
@@ -1754,17 +2055,23 @@ class WinEtwApi:
     def stop_session(self, session_handle) -> dict:
         """Stop the handle this object started. The session name is not used.
 
-        A successful stop is remembered. A later call does not call StopTraceW
-        again and does not stop some other logger by name. A failed stop keeps
-        the property buffer so the owned session is not abandoned.
+        A successful stop is remembered for this control handle only. The
+        handle is checked before that cache and before StopTraceW. A failed
+        stop keeps the property buffer. Another handle is not stopped.
         """
+        if (
+            type(session_handle) is not int
+            or session_handle != self._control_handle
+            or self._control_handle is None
+        ):
+            return {"ok": False, "code": "unknown_handle", "loss": {}}
         if self._stop_result is not None and self._stop_result.get("ok") is True:
             return {
                 "ok": True,
                 "code": "already_stopped",
                 "loss": dict(self._stop_result["loss"]),
             }
-        if self._library is None or self._properties_buffer is None or session_handle is None:
+        if self._library is None or self._properties_buffer is None:
             return {"ok": False, "code": "stop_failed", "loss": {}}
         props = ctypes.cast(self._properties_buffer, ctypes.POINTER(_EVENT_TRACE_PROPERTIES)).contents
         self._library.StopTraceW.argtypes = [
@@ -1790,45 +2097,138 @@ class WinEtwApi:
         Callbacks are not dropped here. ERROR_CTX_CLOSE_PENDING means
         ProcessTrace may still invoke them. release_callbacks is separate
         and only safe after the consumer thread is confirmed finished.
-        Success and pending are not submitted again.
+        Success and pending are not submitted again. A hard failure is not
+        cached. The acquired consumer handle is checked before the cache and
+        before CloseTrace.
         """
+        if (
+            type(trace_handle) is not int
+            or trace_handle != self._consumer_handle
+            or self._consumer_handle is None
+        ):
+            return {"ok": False, "code": "unknown_handle", "pending": False}
         if self._close_result is not None and (
             self._close_result.get("ok") is True or self._close_result.get("pending") is True
         ):
             return dict(self._close_result)
-        if trace_handle is None:
-            result = {"ok": True, "code": "no_trace", "pending": False}
-            self._close_result = result
-            return dict(result)
         if self._library is None:
-            result = {"ok": False, "code": "close_failed", "pending": False}
-            self._close_result = result
-            return dict(result)
+            return {"ok": False, "code": "close_failed", "pending": False}
         self._library.CloseTrace.argtypes = [ctypes.c_ulonglong]
         self._library.CloseTrace.restype = wintypes.ULONG
         code = int(self._library.CloseTrace(ctypes.c_ulonglong(int(trace_handle))))
         result = interpret_close_trace(code)
-        self._close_result = dict(result)
+        if result.get("ok") is True or result.get("pending") is True:
+            self._close_result = dict(result)
         return dict(result)
 
-    def release_callbacks(self) -> None:
-        """Drop FFI callbacks. The caller must know the consumer has finished."""
+    def retain_recovery(self, state) -> None:
+        """Remember the first outstanding owner. Not a receipt field.
+
+        A refused or empty wrapper has no acquired handle. It must not replace
+        an outstanding owner, and a foreign handle is not adopted.
+        """
+        if type(state) is not dict:
+            return
+        control = state.get("control_handle")
+        trace = state.get("trace_handle")
+        control_known = type(control) is int and control > 0
+        trace_known = type(trace) is int and trace > 0
+        if control_known and control != self._control_handle:
+            return
+        if trace_known and trace != self._consumer_handle:
+            return
+        if not control_known and not trace_known:
+            return
+        if self.private_owner is not None:
+            return
+        self.private_owner = LocalCleanupOwner(self, state)
+
+    def release_callbacks(self, trace_handle=None) -> bool:
+        """Drop callbacks only for the consumer that acquired this trace.
+
+        The consumer must already have finished. A new observer with no thread
+        does not pass that consumer's handle and cannot clear its storage.
+        """
+        if (
+            type(trace_handle) is not int
+            or trace_handle != self._consumer_handle
+            or self._consumer_handle is None
+            or self._consumer_completed is not True
+        ):
+            return False
         self._drop_callbacks()
+        return True
+
+    def note_consumer_close_completed(self, trace_handle) -> bool:
+        """Mark a pending CloseTrace complete after that consumer has exited.
+
+        CloseTrace is not called again.
+        """
+        if (
+            type(trace_handle) is not int
+            or trace_handle != self._consumer_handle
+            or self._consumer_handle is None
+            or self._consumer_completed is not True
+        ):
+            return False
+        close = self._close_result
+        if type(close) is not dict:
+            return False
+        if close.get("ok") is True and close.get("pending") is not True:
+            return True
+        if close.get("pending") is True:
+            self._close_result = {"ok": True, "code": "ok", "pending": False}
+            return True
+        return False
+
+    def ownership_view(self) -> dict:
+        """Live ownership of this acquisition. Not a resource receipt."""
+        stop_ok = type(self._stop_result) is dict and self._stop_result.get("ok") is True
+        close = self._close_result if type(self._close_result) is dict else {}
+        callbacks_released = (
+            self._consumer_completed is True
+            and self._consumer_handle is not None
+            and self._callback is None
+            and self._buffer_callback is None
+            and self._logfile is None
+        )
+        return {
+            "control_handle": self._control_handle,
+            "trace_handle": self._consumer_handle,
+            "stop_ok": stop_ok,
+            "close_ok": close.get("ok") is True and close.get("pending") is not True,
+            "close_pending": close.get("pending") is True,
+            "session_released": self._session_released is True,
+            "callbacks_released": callbacks_released,
+            "consumer_completed": self._consumer_completed is True,
+        }
 
     def close_session(self, session_handle) -> dict:
         """Drop the owned property buffer only after this object's stop succeeded.
 
-        A failed stop keeps the buffer. This does not call StopTraceW and does
-        not address a logger by name.
+        A failed stop keeps the buffer. The control handle is checked before
+        the buffer is dropped. This does not call StopTraceW and does not
+        address a logger by name.
         """
+        if (
+            type(session_handle) is not int
+            or session_handle != self._control_handle
+            or self._control_handle is None
+        ):
+            return {"ok": False, "code": "unknown_handle"}
         if self._stop_result is None or self._stop_result.get("ok") is not True:
             return {"ok": False, "code": "session_still_owned"}
+        if self._session_released:
+            return {"ok": True, "code": "ok"}
         self._properties_buffer = None
         self._session_name = None
-        del session_handle
+        self._session_released = True
         return {"ok": True, "code": "ok"}
 
     def _new_logfile(self, on_event):
+        # A second open must not build a replacement callback pair.
+        if self._callback is not None or self._buffer_callback is not None:
+            return self._logfile
         # The consumer structure is built only after start_session. A failure
         # before OpenTrace never publishes a callback.
         record_callback = ctypes.WINFUNCTYPE(None, ctypes.POINTER(_EVENT_RECORD))
@@ -1866,6 +2266,37 @@ class WinEtwApi:
         self._callback = None
         self._buffer_callback = None
         self._logfile = None
+
+
+class WinEtwApi(AdapterOwnership):
+    """Real advapi32 session. Constructing it loads nothing until start_session.
+
+    An existing logger is never stopped. Access denial does not elevate.
+    Offline tests construct AdapterOwnership with a fake loader instead.
+    """
+
+    def __init__(self):
+        if ctypes.sizeof(ctypes.c_void_p) != 8:
+            raise OwnedLaunchUnsupported("windows_pointer_width")
+        sizes = consumer_layout_sizes()
+        if sizes["c_long"] != 4 or sizes["size_t"] != 8 or sizes["event_header"] != 80:
+            raise OwnedLaunchUnsupported("windows_llp64_layout")
+        if sizes["event_record"] != 112 or sizes["properties"] != 120 or sizes["wnode"] != 48:
+            raise OwnedLaunchUnsupported("windows_llp64_layout")
+        offsets = abi_field_offsets()
+        if (
+            offsets["wnode_guid"] != 24
+            or offsets["wnode_client_context"] != 40
+            or offsets["wnode_flags"] != 44
+            or sizes["event_trace"] != 88
+            or sizes["logfile_header"] != 280
+            or sizes["logfile"] != 448
+            or offsets["logfile_buffer_callback"] != 400
+            or offsets["logfile_event_record_callback"] != 424
+            or offsets["logfile_context"] != 440
+        ):
+            raise OwnedLaunchUnsupported("windows_llp64_layout")
+        AdapterOwnership.__init__(self, _load_advapi32)
 
 
 def _record_to_dict(record) -> dict:

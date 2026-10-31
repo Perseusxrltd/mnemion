@@ -37,11 +37,15 @@ from deploy.owned_launch_windows_etw import (
     counter_payload_size,
     decode_record,
     host_offset,
+    AdapterOwnership,
+    LocalCleanupOwner,
     interpret_close_trace,
     native_api_loaded,
     native_session_starts,
     observe_owned_launch,
+    resolve_owned,
     session_request,
+    SESSION_NAME,
     EtwLifetimeObserver,
 )
 
@@ -164,8 +168,11 @@ class FakeEtwApi:
         self.session = None
         return {"ok": True, "code": "ok"}
 
-    def release_callbacks(self):
+    def release_callbacks(self, trace_handle=None):
         self.callbacks_released = True
+
+    def retain_recovery(self, state):
+        self.private_owner = LocalCleanupOwner(self, state)
 
     def unblock(self):
         self._closed.set()
@@ -977,3 +984,272 @@ def test_close_trace_results_stay_explicit():
     assert interpret_close_trace(6) == {"ok": False, "code": "close_failed", "pending": False}
     assert "WinEtwApi(" not in inspect.getsource(interpret_close_trace)
     assert "WinEtwApi(" not in inspect.getsource(bridge_event)
+
+
+class _Call:
+    def __init__(self, function):
+        self.function = function
+        self.calls = []
+
+    def __call__(self, *args):
+        self.calls.append(args)
+        return self.function(*args)
+
+
+def _ownership_api(*, start_code=0, stop_codes=(0,), block_consumer=False, close_code=0):
+    """AdapterOwnership over a fake loader. No advapi32, ETW session, or workload."""
+    stops = iter(stop_codes)
+
+    def start(out_handle, _name, _properties):
+        if start_code == 0:
+            ctypes.cast(out_handle, ctypes.POINTER(ctypes.c_ulonglong)).contents.value = 101
+        return start_code
+
+    def process(*_args):
+        library.consumer_thread = threading.current_thread()
+        library.consumer_entered.set()
+        try:
+            if block_consumer:
+                library.consumer_gate.wait(5)
+            return 0
+        finally:
+            library.consumer_finished.set()
+
+    library = type("Library", (), {})()
+    library.StartTraceW = _Call(start)
+    library.OpenTraceW = _Call(lambda _logfile: 202)
+    library.ProcessTrace = _Call(process)
+    library.StopTraceW = _Call(lambda *_args: next(stops, 0))
+    library.CloseTrace = _Call(lambda *_args: close_code)
+    library.consumer_gate = threading.Event()
+    library.consumer_entered = threading.Event()
+    library.consumer_finished = threading.Event()
+    library.consumer_thread = None
+    loads = []
+
+    def load():
+        loads.append(True)
+        return library
+
+    api = AdapterOwnership(load)
+
+    def logfile(_on_event):
+        api._callback = object()
+        api._buffer_callback = object()
+        api._logfile = ctypes.c_ulonglong(0)
+        return api._logfile
+
+    api._new_logfile = logfile
+    return api, library, loads
+
+
+def _capture(api, *, ready_seconds=1.0, drain_seconds=1.0):
+    report = observe_owned_launch(
+        FakeJob(snapshot(1)),
+        api,
+        ready_seconds=ready_seconds,
+        drain_seconds=drain_seconds,
+    )
+    _assert_unaccepted(report)
+    _assert_handle_free(report)
+    return report
+
+
+def _assert_handle_free(report):
+    def walk(value):
+        if isinstance(value, dict):
+            assert not {"control_handle", "trace_handle", "private_owner"} & set(value)
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(report)
+
+
+def test_one_shot_keeps_known_cleanup_handles():
+    api, library, loads = _ownership_api()
+    assert api.start_session(session_request())["ok"] is True
+    assert api.open_trace(SESSION_NAME, lambda _event: None)["ok"] is True
+    callback = api._callback
+    assert api.open_trace(SESSION_NAME, lambda _event: None)["ok"] is False
+    assert api._callback is callback and len(library.OpenTraceW.calls) == 1
+    for handle in (None, 999, True):
+        assert api.stop_session(handle)["ok"] is False
+        assert api.close_trace(handle)["ok"] is False
+        assert api.close_session(handle)["ok"] is False
+    assert not library.StopTraceW.calls and not library.CloseTrace.calls
+    assert api.stop_session(101)["ok"] is True
+    assert api.close_trace(202)["ok"] is True
+    assert api.close_session(101)["ok"] is True
+    assert api.start_session(session_request())["ok"] is False
+    assert len(loads) == 1 and len(library.StartTraceW.calls) == 1
+    for handle in (None, 999, True):
+        assert api.stop_session(handle)["ok"] is False
+        assert api.close_trace(handle)["ok"] is False
+        assert api.close_session(handle)["ok"] is False
+    assert api.stop_session(101)["ok"] is True
+    assert api.close_trace(202)["ok"] is True
+    assert len(library.StopTraceW.calls) == len(library.CloseTrace.calls) == 1
+
+
+def test_failed_start_refuses_open_before_callbacks_or_open_trace():
+    api, library, _loads = _ownership_api(start_code=183)
+    assert api.start_session(session_request())["ok"] is False
+    result = api.open_trace(SESSION_NAME, lambda _event: None)
+    assert result["ok"] is False
+    assert library.OpenTraceW.calls == []
+    assert api._callback is None and api._buffer_callback is None and api._logfile is None
+
+
+def test_first_open_after_stop_refuses_before_callbacks_or_open_trace():
+    api, library, _loads = _ownership_api()
+    assert api.start_session(session_request())["ok"] is True
+    assert api.stop_session(101)["ok"] is True
+    result = api.open_trace(SESSION_NAME, lambda _event: None)
+    assert result["ok"] is False
+    assert library.OpenTraceW.calls == []
+    assert api._callback is None and api._buffer_callback is None and api._logfile is None
+
+
+def test_foreign_or_null_consumer_does_not_signal_or_process():
+    api, library, _loads = _ownership_api()
+    assert api.start_session(session_request())["ok"] is True
+    assert api.open_trace(SESSION_NAME, lambda _event: None)["ok"] is True
+    for handle in (999, None):
+        ready = []
+        result = api.process_trace(handle, lambda: ready.append(handle))
+        assert result["ok"] is False
+        assert ready == []
+        assert library.ProcessTrace.calls == []
+    ready = []
+    assert api.process_trace(202, lambda: ready.append(True))["ok"] is True
+    assert ready == [True]
+    assert len(library.ProcessTrace.calls) == 1
+
+
+def test_refused_wrapper_preserves_the_pending_owner():
+    api, library, _loads = _ownership_api(stop_codes=(5,))
+    report = _capture(api)
+    original = json.dumps(report, sort_keys=True)
+    state = api.private_owner.snapshot()
+    assert state["control_handle"] == 101 and state["recoverable"] is True
+    assert state["isolated_cleanup_process"] is False
+    _capture(api)
+    state = api.private_owner.snapshot()
+    assert state["control_handle"] == 101 and state["recoverable"] is True
+    assert len(library.StartTraceW.calls) == len(library.StopTraceW.calls) == 1
+    assert library.OpenTraceW.calls and len(library.OpenTraceW.calls) == 1
+    assert json.dumps(report, sort_keys=True) == original
+    _assert_handle_free(report)
+
+
+def test_refused_wrapper_does_not_release_a_live_consumer():
+    api, library, _loads = _ownership_api(block_consumer=True, close_code=7007)
+    try:
+        report = _capture(api, ready_seconds=1.0, drain_seconds=0.05)
+        assert library.consumer_entered.wait(0.5)
+        assert library.consumer_thread.is_alive()
+        assert report["session"]["consumer_finished"] is False
+        callback, buffer_callback, logfile = api._callback, api._buffer_callback, api._logfile
+        assert callback is not None and buffer_callback is not None and logfile is not None
+        _capture(api, ready_seconds=0.5, drain_seconds=0.05)
+        assert library.consumer_thread.is_alive()
+        assert api._callback is callback
+        assert api._buffer_callback is buffer_callback
+        assert api._logfile is logfile
+        assert len(library.CloseTrace.calls) == 1
+        assert len(library.ProcessTrace.calls) == 1
+    finally:
+        library.consumer_gate.set()
+        if library.consumer_thread is not None:
+            library.consumer_thread.join(1)
+            assert not library.consumer_thread.is_alive()
+
+
+def test_private_owner_reflects_completed_session_release():
+    api, _library, _loads = _ownership_api(stop_codes=(5, 0))
+    report = _capture(api)
+    original = json.dumps(report, sort_keys=True)
+    owner = api.private_owner
+    assert owner.retry_stop(101)["ok"] is True
+    assert api.close_session(101)["ok"] is True
+    state = owner.snapshot()
+    assert state["session_released"] is True
+    assert state["session_outstanding"] is False
+    assert state["recoverable"] is False
+    assert state["isolated_cleanup_process"] is False
+    assert json.dumps(report, sort_keys=True) == original
+    _assert_handle_free(report)
+
+
+def test_pending_close_completes_after_the_original_consumer_exits():
+    api, library, _loads = _ownership_api(block_consumer=True, close_code=7007)
+    try:
+        report = _capture(api, ready_seconds=1.0, drain_seconds=0.05)
+        original = json.dumps(report, sort_keys=True)
+        assert library.consumer_entered.wait(0.5)
+        assert library.consumer_thread.is_alive()
+        callback = api._callback
+        assert callback is not None
+        owner = api.private_owner
+        assert owner.snapshot()["close_pending"] is True
+        assert owner.retry_close(202)["pending"] is True
+        assert api._callback is callback
+        assert len(library.CloseTrace.calls) == 1
+        library.consumer_gate.set()
+        library.consumer_thread.join(1)
+        assert not library.consumer_thread.is_alive()
+        assert api._callback is callback
+        result = owner.retry_close(202)
+        assert result["ok"] is True and result["pending"] is False
+        assert len(library.CloseTrace.calls) == 1
+        assert api._callback is None and api._buffer_callback is None and api._logfile is None
+        state = owner.snapshot()
+        assert state["close_ok"] is True
+        assert state["close_pending"] is False
+        assert state["trace_outstanding"] is False
+        assert state["callback_outstanding"] is False
+        assert state["consumer_completed"] is True
+        assert state["isolated_cleanup_process"] is False
+        assert json.dumps(report, sort_keys=True) == original
+        _assert_handle_free(report)
+    finally:
+        library.consumer_gate.set()
+        if library.consumer_thread is not None:
+            library.consumer_thread.join(1)
+
+
+def test_mismatched_parent_end_does_not_admit_a_later_child():
+    def life_event(opcode, pid, parent, key, timestamp):
+        return {
+            "kind": "lifecycle",
+            "opcode": opcode,
+            "pid": pid,
+            "parent_pid": parent,
+            "unique_process_key": key,
+            "timestamp": timestamp,
+            "processor_index": 0,
+            "exit_status": 0,
+            "pointer_width": 8,
+            "version": 2,
+        }
+
+    events = [
+        life_event(OPCODE_START, 10, 1, 0xA, 5000),
+        life_event(OPCODE_END, 10, 1, 0xB, 5100),
+        life_event(OPCODE_START, 11, 10, 0xC, 5200),
+        life_event(OPCODE_END, 11, 10, 0xC, 5300),
+        {
+            "kind": "counter",
+            "opcode": OPCODE_PERFCTR,
+            "pid": 11,
+            "timestamp": 5250,
+            "peak_working_set_bytes": 80,
+        },
+    ]
+    result = resolve_owned(events, 10, 5000)
+    assert [row["pid"] for row in result["rows"]] == [10]
+    assert result["rows"][0]["peak_working_set_bytes"] is None
+    assert {"exit_key_mismatch", "exit_missing"} <= set(result["gaps"])
