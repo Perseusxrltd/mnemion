@@ -558,9 +558,15 @@ class ConnectorService(ConnectorSyncControls):
     def finish(self, identity: Identity, space: UUID, run: UUID, command: FinishInput) -> dict:
         with self.db.transaction(identity) as conn:
             _lock(conn, space)
-            self._scope(conn, space)
+            # Tenant ownership stays. Active source access is required only before
+            # an unfinished effect. This method suspends the scope in the same
+            # transaction as the receipt, and a lost response retries here: there
+            # is no Idempotency-Key cache to return that receipt.
+            self._scope(conn, space, active=False)
             require_space(conn, space, 20, writing=True)
             current = self._run(conn, space, run)
+            if current["state"] != "completed":
+                self._scope(conn, space)
             partial = current["mode"] == "snapshot" and command.skipped_documents > 0
             if (
                 (current["mode"] == "snapshot") != command.complete_inventory
@@ -609,6 +615,11 @@ class ConnectorService(ConnectorSyncControls):
                 )
             state = "finalizing" if len(missing) > 100 else "completed"
             deleted = (current["result"] or {}).get("removed", 0) + min(len(missing), 100)
+            # Content skips are absent from this set. A completed replay returns
+            # above and must not suspend a run that started later.
+            access_stop = state == "completed" and any(
+                error.error_code in ACCESS_WITHHOLD_CODES for error in command.file_errors
+            )
             result = {
                 "run_id": str(run),
                 "space_id": str(space),
@@ -618,8 +629,12 @@ class ConnectorService(ConnectorSyncControls):
                 "checkpoint_committed": state == "completed" and not partial,
                 "incomplete_inventory": partial,
                 "skipped_documents": command.skipped_documents,
-                "file_errors": [error.model_dump() for error in command.file_errors],
+                "file_errors": [
+                    error.model_dump(exclude_none=True) for error in command.file_errors
+                ],
             }
+            if access_stop:
+                result["access_suspended"] = True
             conn.execute(
                 """UPDATE mnemion.connector_runs SET state=%s,result=%s,
                          lease_until=now()+interval '5 minutes',finished_at=CASE WHEN %s='completed' THEN now() ELSE NULL END
@@ -636,13 +651,27 @@ class ConnectorService(ConnectorSyncControls):
                 # do not reveal files this scan did not re-read. Only a later
                 # content observation clears the hold. Retain is not one.
                 # Readable content skips are not in this set.
-                if any(error.error_code in ACCESS_WITHHOLD_CODES for error in command.file_errors):
+                if access_stop:
                     conn.execute(
                         """UPDATE mnemion.connector_items
                            SET withheld_at=clock_timestamp(), updated_at=clock_timestamp()
                            WHERE tenant_id=%s AND space_id=%s AND state<>'deleted'
                              AND validated_run IS DISTINCT FROM %s""",
                         (identity.tenant_id, space, run),
+                    )
+                    # The run is already completed, so this does not abort it.
+                    # The scope lock is still held. A newer run cannot have started.
+                    conn.execute(
+                        "SELECT mnemion.suspend_connector_scope(%s,%s)",
+                        (space, "provider_unavailable"),
+                    )
+                    audit(
+                        conn,
+                        identity,
+                        "connector.access_suspended",
+                        space,
+                        space_id=space,
+                        details={"reason_code": "provider_unavailable", "run_id": str(run)},
                     )
                 audit(
                     conn,

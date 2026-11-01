@@ -60,9 +60,15 @@ def relative_evidence(relative: str | None) -> dict:
         or any(ord(character) < 32 for character in relative)
     ):
         return {}
+    # A POSIX surrogateescape name can pass the checks above and still be
+    # unencodable. Omit it. Do not substitute another path or a lossy encoding.
+    try:
+        encoded = relative.encode()
+    except UnicodeEncodeError:
+        return {}
     return {
         "path": relative,
-        "path_sha256": hashlib.sha256(relative.encode()).hexdigest(),
+        "path_sha256": hashlib.sha256(encoded).hexdigest(),
     }
 
 

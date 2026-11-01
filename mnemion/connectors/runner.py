@@ -171,8 +171,18 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                                     ):
                                         raise ProviderError("text_source_server_upgrade_required")
                                     skipped["skipped_documents"] += 1
-                                    if len(skipped["file_errors"]) < 50:
-                                        skipped["file_errors"].append(value.report())
+                                    errors = skipped["file_errors"]
+                                    if value.abort_inventory:
+                                        # Keep the stopping access receipt, including a
+                                        # category with no publishable path. A full list
+                                        # drops one earlier content skip instead.
+                                        receipt = value.report()
+                                        if len(errors) < 50:
+                                            errors.append(receipt)
+                                        else:
+                                            errors[-1] = receipt
+                                    elif len(errors) < 50:
+                                        errors.append(value.report())
                                     yield None
                                     if value.abort_inventory:
                                         # Stop before the closing access refresh. That refresh
@@ -210,16 +220,13 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                     if result.get("incomplete_inventory"):
                         report["completed"] = False
                     if aborted["code"]:
-                        # The run receipt already holds the file diagnostic. Suspend
-                        # afterwards so an unread inventory cannot certify deletions,
-                        # without discarding that receipt.
+                        # Finish suspends this run with the receipt. A later
+                        # suspend can abort a run that started after that
+                        # response. An older finish omits the flag; calling
+                        # suspend then would be the same race.
                         report["completed"] = False
-                        try:
-                            bridge.suspend(target["space_id"], "provider_unavailable")
-                            result["access_suspended"] = True
-                        except (MnemionError, OSError, httpx.HTTPError):
-                            result["access_suspended"] = False
                         result["error_code"] = aborted["code"]
+                        result["access_suspended"] = bool(result.get("access_suspended"))
                 report["scopes"].append({"external_id": identifier, **result})
             except (ProviderError, OSError, ValueError, MnemionError, httpx.HTTPError) as exc:
                 report["completed"] = False

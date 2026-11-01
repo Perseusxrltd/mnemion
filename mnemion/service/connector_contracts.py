@@ -157,6 +157,9 @@ class SyncResult(InventoryStatus):
     pages: int
     removed: int
     checkpoint_committed: bool
+    # True only when this finish applied the access suspension. A replay
+    # returns the stored value and does not suspend again.
+    access_suspended: bool = False
 
 
 class Proposal(ResponseModel):

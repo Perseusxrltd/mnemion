@@ -379,8 +379,10 @@ replacement characters.
 The app's **Connections → Source status → File status** shows the skipped count,
 relative paths and reasons. CLI scan receipts and each scope's `inventory`
 response contain `incomplete_inventory`, `skipped_documents` and `file_errors`.
-Detailed errors are bounded to 50 paths of at most 512 characters, each with a
-SHA-256 of the complete relative path. No source content or absolute host path
+Detailed errors stay at 50 entries. Each published path is at most 512
+characters, with the SHA-256 of that relative path. When an access failure
+stops the scan after more than 50 skips, that stopping category replaces one
+earlier content diagnostic. No source content or absolute host path
 is included. Repair the file or deliberately exclude it, then request another
 scan; a clean result clears the warning.
 
@@ -431,8 +433,8 @@ withheld from readers. That includes the named file and later files the walk
 never opened. A file this run did read stays visible. Records are not marked
 deleted. A readable but malformed file (`source_is_not_utf8_text`,
 `source_contains_binary_data`, `source_too_large`) still keeps the last good
-copy and does not quarantine the rest of the source. The scope is then suspended
-as a follow-up. A later access-lease refresh clears that suspension. It can
+copy and does not quarantine the rest of the source. The same finish suspends
+the scope. A later call does not suspend it again. A later access-lease refresh clears that suspension. It can
 show files this scan re-read, and native memories in other spaces. It does not
 reveal withheld items, remove the failed inventory receipt, advance the last
 complete scan, or clear a hold because a run id or root lease changed. A
@@ -459,18 +461,32 @@ error. Any other reparse tag stays refused. If converting the handle to a C
 runtime descriptor fails, the raw handle is closed. The opened handle must
 still remain inside the selected root and be a regular file. A catalog check
 alone is not the control. Directory symlinks and junctions are still rejected
-while walking. The native Windows results are in the 29 October 2026
-validation note.
+while walking, before their contents are entered. The native Windows results
+are in the 29 October 2026 validation note.
 
-Directory symlinks are still rejected as `source_symlinks_not_supported` before
-their contents are walked. The scan report can name that relative directory, and
-the scope is suspended. That walk rejection does not by itself leave a completed
-inventory receipt, so a later access refresh can clear the suspension before
-another scan records a file failure. Unreadable JSON/JSONL and partial Git-journal
-inventories also stay fail-closed, because a skipped catalog or denial could
-expose withdrawn evidence. Use [live conversation capture](live-conversations.md)
-for actively appended transcripts. This change does not repair malformed files
-or bypass provider access rules.
+A directory that cannot be listed keeps the operating-system category
+(`source_permission_denied`, `source_disappeared`, `source_link_or_handle_changed`,
+or `source_io_failed`). A refused directory symlink or junction keeps
+`source_symlinks_not_supported`. When the directory can be named safely, the
+receipt also has the source-relative path, at most 512 characters, and the
+SHA-256 of that path. An absolute path, a path that escapes the root, a path
+longer than 512 characters, or a path containing controls is omitted. The
+category remains. Host paths, link targets, operating-system text, and file
+bytes are not stored. The stop uses the same incomplete inventory receipt as a
+selected file the runner cannot verify: the owned run finishes it, the previous
+checkpoint stays, nothing is inferred deleted, and items that run did not
+re-read are withheld. A later access refresh clears the suspension only. It
+does not remove the receipt or reveal those items.
+
+An unreadable journal catalog or segment that fails for one of those access
+reasons keeps that original category and path. The journal is not partly
+projected, so a missing denial cannot put withdrawn text back. Readable
+malformed text is still a journal error, not an access hold, and does not
+delete last-good ordinary records. A later complete scan restores unchanged
+items with the same identities and leaves the failed run's receipt in history.
+Use [live conversation capture](live-conversations.md) for actively appended
+transcripts. This change does not repair malformed files or bypass provider
+access rules.
 
 ## Updates, permissions, and deletion
 

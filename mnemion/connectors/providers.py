@@ -20,7 +20,13 @@ from urllib.parse import quote
 
 from .config import FilesystemConfig, GitConfig, RcloneConfig
 from .protocol import Document, Scope, SkippedDocument
-from .source_files import INVENTORY_STOP_CODES, SourceReadError, read_selected
+from .source_files import (
+    INVENTORY_STOP_CODES,
+    SourceReadError,
+    classify_source_os_error,
+    read_selected,
+    relative_evidence,
+)
 from ..journal.format import journal_candidate
 
 
@@ -209,6 +215,23 @@ def command(args: list[str], *, maximum=64_000_000, timeout=120, environment=Non
         return output.read(maximum + 1)
 
 
+def _directory_relative(root: Path, filename) -> str | None:
+    """Source-relative directory, or nothing when that path is not safe to publish."""
+    if not isinstance(filename, (str, bytes)):
+        return None
+    try:
+        candidate = Path(os.fsdecode(filename))
+        relative = candidate.relative_to(root).as_posix()
+    except (TypeError, ValueError, UnicodeError):
+        return None
+    if relative in ("", "."):
+        return None
+    try:
+        return relative_path(relative)
+    except ProviderError:
+        return None
+
+
 def filesystem_paths(config, *, verify_files=True):
     """A complete selected path catalog; unreadable directories never mean empty."""
     root = config.path.expanduser().resolve()
@@ -217,26 +240,29 @@ def filesystem_paths(config, *, verify_files=True):
     count = 0
 
     def failed(error):
-        raise ProviderError("source_folder_unreadable") from None
+        # The host path and strerror stay on the OSError and are not published.
+        if isinstance(error, OSError):
+            code = classify_source_os_error(error)
+        else:
+            code = "source_io_failed"
+        raise ProviderError(
+            code, relative=_directory_relative(root, getattr(error, "filename", None))
+        ) from None
 
     for parent, dirs, files in os.walk(root, followlinks=False, onerror=failed):
+        parent_path = Path(parent)
         dirs[:] = sorted(
             d
             for d in dirs
             if not any(
-                fnmatch.fnmatchcase((Path(parent) / d).relative_to(root).as_posix() + "/", pattern)
+                fnmatch.fnmatchcase((parent_path / d).relative_to(root).as_posix() + "/", pattern)
                 for pattern in config.exclude
             )
         )
-        for directory in dirs:
-            candidate = Path(parent) / directory
-            if candidate.is_symlink() or candidate.is_junction():
-                raise ProviderError(
-                    "source_symlinks_not_supported",
-                    relative=relative_path(candidate.relative_to(root).as_posix()),
-                )
+        # Ordinary files in this directory are real selected files. Read them
+        # before refusing a child link so the abort does not pretend they were unread.
         for filename in sorted(files):
-            path = Path(parent) / filename
+            path = parent_path / filename
             rel = relative_path(path.relative_to(root).as_posix())
             if not selected(config, rel):
                 continue
@@ -248,6 +274,15 @@ def filesystem_paths(config, *, verify_files=True):
             if count > config.max_files:
                 raise ProviderError("source_inventory_limit")
             yield rel
+        for directory in dirs:
+            candidate = parent_path / directory
+            if not (candidate.is_symlink() or candidate.is_junction()):
+                continue
+            try:
+                relative = relative_path(candidate.relative_to(root).as_posix())
+            except (ProviderError, ValueError):
+                relative = None
+            raise ProviderError("source_symlinks_not_supported", relative=relative)
 
 
 class FilesystemProvider:
@@ -266,7 +301,21 @@ class FilesystemProvider:
 
     def documents(self, scope_id: str):
         root = self.config.path.expanduser().resolve()
-        for count, rel in enumerate(filesystem_paths(self.config), 1):
+        paths = filesystem_paths(self.config)
+        count = 0
+        while True:
+            try:
+                rel = next(paths)
+            except StopIteration:
+                break
+            except ProviderError as exc:
+                if exc.code in INVENTORY_STOP_CODES:
+                    evidence = relative_evidence(exc.relative)
+                    # Stop with a receipt the owned run can finish. Do not walk on.
+                    yield SkippedDocument(evidence.get("path", ""), exc.code, abort_inventory=True)
+                    return
+                raise
+            count += 1
             try:
                 data = read_selected(root, rel, self.config.max_file_bytes)
             except SourceReadError as exc:

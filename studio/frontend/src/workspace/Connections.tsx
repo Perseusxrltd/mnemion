@@ -163,17 +163,20 @@ function InventoryDetails({ inventory }: { inventory?: SourceInventory | null })
     source_is_not_regular_file: "The path is not a regular file",
     source_handle_verification_unavailable: "This system cannot verify the opened file",
     source_changed_during_read: "The file changed while it was being read",
+    source_symlinks_not_supported: "The directory is a link the runner will not follow",
   };
   const stopped = inventory.file_errors.some(item => item.error_code !== "source_is_not_utf8_text" && item.error_code !== "source_contains_binary_data" && item.error_code !== "source_too_large");
   return <details style={{ minWidth: 180, maxWidth: 380 }}>
     <summary className="ws-link">{inventory.skipped_documents} {inventory.skipped_documents === 1 ? "file needs" : "files need"} attention</summary>
     <p className="ws-helper">{stopped
-      ? "The scan stopped at the first file the runner could not verify. Previously indexed text from files this scan did not re-read stays hidden until a later scan can read them. Files this scan did re-read remain. Missing files were not deleted. A newer access check does not make this inventory current."
+      ? "The scan stopped at the first path the runner could not verify. Previously indexed text from paths this scan did not re-read stays hidden until a later scan can read them. Paths this scan did re-read remain. Missing files were not deleted. A newer access check does not make this inventory current."
       : "Other valid files keep syncing. Last good data is retained; removal waits for a clean scan."}</p>
-    {inventory.file_errors.map(item => <p key={item.path_sha256} className="ws-helper">
-      <code title={`Path SHA-256: ${item.path_sha256}`} style={{ overflowWrap: "anywhere" }}>{item.path}</code><br />{reasons[item.error_code] ?? item.error_code}
+    {inventory.file_errors.map((item, index) => <p key={item.path_sha256 ?? `${item.error_code}-${index}`} className="ws-helper">
+      {item.path ? <><code title={item.path_sha256 ? `Path SHA-256: ${item.path_sha256}` : undefined} style={{ overflowWrap: "anywhere" }}>{item.path}</code><br /></> : null}{reasons[item.error_code] ?? item.error_code}
     </p>)}
-    {inventory.skipped_documents > inventory.file_errors.length && <p className="ws-helper">Showing the first {inventory.file_errors.length} affected files. Repair or exclude them, then scan again.</p>}
+    {inventory.skipped_documents > inventory.file_errors.length && <p className="ws-helper">{stopped
+      ? `Showing ${inventory.file_errors.length} of ${inventory.skipped_documents} affected files, including the failure that stopped the scan. Repair or exclude them, then scan again.`
+      : `Showing the first ${inventory.file_errors.length} affected files. Repair or exclude them, then scan again.`}</p>}
   </details>;
 }
 

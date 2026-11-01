@@ -8,6 +8,7 @@ from ..journal.index import journal_index
 from ..journal.notes import note_candidate
 from ..journal.privacy import scan
 from .protocol import Document, SkippedDocument
+from .source_files import INVENTORY_STOP_CODES
 
 
 def project_documents(documents):
@@ -26,6 +27,11 @@ def project_documents(documents):
                 # An unreadable structured file could contain the only denial
                 # or catalog. Never turn a partial journal into live evidence.
                 if document.path.lower().endswith((".json", ".jsonl")):
+                    if document.abort_inventory and document.code in INVENTORY_STOP_CODES:
+                        # Keep the original access category and path. Do not
+                        # project entries that this file might have withdrawn.
+                        yield document
+                        return
                     raise JournalError("journal_inventory_unreadable")
                 incomplete = True
                 yield document

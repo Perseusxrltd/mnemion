@@ -36,11 +36,18 @@ class SkippedDocument:
     abort_inventory: bool = False
 
     def report(self) -> dict:
+        if not self.path:
+            return SourceFileError(error_code=self.code).model_dump(exclude_none=True)
+        try:
+            digest = hashlib.sha256(self.path.encode()).hexdigest()
+        except UnicodeEncodeError:
+            # The category is the receipt. Re-encoding must not drop the abort.
+            return SourceFileError(error_code=self.code).model_dump(exclude_none=True)
         return SourceFileError(
             path=self.path[:512],
-            path_sha256=hashlib.sha256(self.path.encode()).hexdigest(),
+            path_sha256=digest,
             error_code=self.code,
-        ).model_dump()
+        ).model_dump(exclude_none=True)
 
 
 @dataclass(frozen=True)

@@ -11926,27 +11926,40 @@
               "source_outside_selected_root",
               "source_is_not_regular_file",
               "source_handle_verification_unavailable",
-              "source_changed_during_read"
+              "source_changed_during_read",
+              "source_symlinks_not_supported"
             ],
             "title": "Error Code",
             "type": "string"
           },
           "path": {
-            "maxLength": 512,
-            "minLength": 1,
-            "pattern": "^[^\\x00-\\x1f]+$",
-            "title": "Path",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
           },
           "path_sha256": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Path Sha256",
-            "type": "string"
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path Sha256"
           }
         },
         "required": [
-          "path",
-          "path_sha256",
           "error_code"
         ],
         "title": "SourceFileError",
@@ -12306,6 +12319,11 @@
       "SyncResult": {
         "additionalProperties": true,
         "properties": {
+          "access_suspended": {
+            "default": false,
+            "title": "Access Suspended",
+            "type": "boolean"
+          },
           "checkpoint_committed": {
             "title": "Checkpoint Committed",
             "type": "boolean"

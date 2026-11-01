@@ -97,8 +97,181 @@ def test_folder_symlink_cannot_escape_selected_vault_or_certify_deletions(tmp_pa
     except OSError:
         pytest.skip("Creating symlinks requires Windows developer mode or privilege")
     provider = FilesystemProvider(FilesystemConfig(path=root, **published()))
-    with pytest.raises(ProviderError, match="symlinks"):
-        list(provider.documents(provider.scopes()[0]))
+    from mnemion.connectors.protocol import Document, SkippedDocument
+
+    results = list(provider.documents(provider.scopes()[0]))
+    assert not any(
+        isinstance(value, Document) and "Private material" in value.text for value in results
+    )
+    stopped = [value for value in results if isinstance(value, SkippedDocument)]
+    assert len(stopped) == 1
+    assert stopped[0].abort_inventory
+    assert stopped[0].code == "source_symlinks_not_supported"
+    assert stopped[0].path == "linked"
+    rendered = repr(results)
+    assert "Private material" not in rendered
+    assert str(outside) not in rendered
+    receipt = stopped[0].report()
+    assert receipt["error_code"] == "source_symlinks_not_supported"
+    assert receipt["path"] == "linked"
+    assert receipt["path_sha256"] == hashlib.sha256(b"linked").hexdigest()
+
+
+def test_unreadable_directory_keeps_a_safe_category_and_omits_an_unsafe_path(tmp_path, monkeypatch):
+    """Not run on 1 November 2026. A listing failure is a receipt, not an empty catalog."""
+    import errno
+
+    from mnemion.connectors import providers
+    from mnemion.connectors.protocol import Document, SkippedDocument
+
+    root = tmp_path / "vault"
+    root.mkdir()
+    (root / "a-kept.md").write_text("Permitted source")
+    nested = root.resolve() / "nested"
+    outside = tmp_path / "outside-secret"
+    outside.mkdir()
+    seen = {"unsafe": False}
+
+    def walk(top, onerror=None, followlinks=False):
+        if onerror is None:
+            return
+        if not seen["unsafe"]:
+            onerror(PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(nested)))
+        else:
+            hidden = outside / "hidden"
+            onerror(PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(hidden)))
+        if False:
+            yield top, [], []
+
+    monkeypatch.setattr(providers.os, "walk", walk)
+    provider = FilesystemProvider(FilesystemConfig(path=root, **published()))
+    safe = list(provider.documents(provider.scopes()[0]))
+    stopped = [value for value in safe if isinstance(value, SkippedDocument)]
+    assert len(stopped) == 1 and stopped[0].abort_inventory
+    assert stopped[0].code == "source_permission_denied"
+    assert stopped[0].path == "nested"
+    assert not any(isinstance(value, Document) for value in safe)
+    rendered = repr(safe)
+    assert "PRIVATE_OS_STRING" not in rendered and str(root) not in rendered
+    seen["unsafe"] = True
+    omitted = list(provider.documents(provider.scopes()[0]))
+    hidden = [value for value in omitted if isinstance(value, SkippedDocument)]
+    assert len(hidden) == 1 and hidden[0].path == ""
+    assert hidden[0].code == "source_permission_denied" and hidden[0].abort_inventory
+    receipt = hidden[0].report()
+    assert receipt == {"error_code": "source_permission_denied"}
+    rendered = repr(omitted)
+    assert "PRIVATE_OS_STRING" not in rendered and str(outside) not in rendered
+
+
+def test_unencodable_directory_name_keeps_the_category_and_a_real_path_keeps_its_hash(
+    tmp_path, monkeypatch
+):
+    """A surrogate onerror name is omitted. A safe relative path keeps its hash."""
+    import errno
+    from pathlib import Path
+
+    from mnemion.connectors import providers
+    from mnemion.connectors.protocol import SkippedDocument
+    from mnemion.connectors.source_files import relative_evidence
+    from mnemion.service.connector_models import SourceFileError
+
+    root = tmp_path / "vault"
+    root.mkdir()
+    (root / "a-kept.md").write_text("Permitted source")
+    surrogate = "bad-\udcff"
+
+    def walk(top, onerror=None, followlinks=False):
+        if onerror is not None:
+            onerror(PermissionError(errno.EACCES, "PRIVATE_OS_STRING", str(Path(top) / surrogate)))
+        return
+        yield
+
+    monkeypatch.setattr(providers.os, "walk", walk)
+    provider = FilesystemProvider(FilesystemConfig(path=root, **published()))
+    stopped = [
+        value
+        for value in provider.documents(provider.scopes()[0])
+        if isinstance(value, SkippedDocument)
+    ]
+    assert len(stopped) == 1 and stopped[0].abort_inventory and stopped[0].path == ""
+    assert stopped[0].code == "source_permission_denied"
+    assert stopped[0].report() == {"error_code": "source_permission_denied"}
+    rendered = repr(stopped)
+    assert "PRIVATE_OS_STRING" not in rendered and "\\udcff" not in rendered
+    assert relative_evidence(surrogate) == {}
+    expected = hashlib.sha256(b"nested/ok.md").hexdigest()
+    assert relative_evidence("nested/ok.md") == {"path": "nested/ok.md", "path_sha256": expected}
+    assert (
+        SkippedDocument("nested/ok.md", "source_permission_denied", abort_inventory=True).report()[
+            "path_sha256"
+        ]
+        == expected
+    )
+    assert SourceFileError(error_code="source_permission_denied").model_dump(exclude_none=True) == {
+        "error_code": "source_permission_denied"
+    }
+    SourceFileError(
+        error_code="source_permission_denied", path="nested/ok.md", path_sha256=expected
+    )
+    with pytest.raises(ValidationError):
+        SourceFileError(error_code="source_permission_denied", path="nested/ok.md")
+    with pytest.raises(ValidationError):
+        SourceFileError(error_code="source_permission_denied", path_sha256=expected)
+    with pytest.raises(ValidationError):
+        SourceFileError(
+            error_code="source_permission_denied", path="/etc/passwd", path_sha256=expected
+        )
+    with pytest.raises(ValidationError):
+        SourceFileError(
+            error_code="source_permission_denied", path="../secret.md", path_sha256=expected
+        )
+
+
+def test_journal_access_stop_keeps_its_receipt_and_projects_nothing():
+    """Not run on 1 November 2026. An access stop must not become a partial journal."""
+    from uuid import uuid4
+
+    from mnemion.connectors.journal_projection import project_documents
+    from mnemion.connectors.protocol import Document, SkippedDocument
+    from mnemion.journal.format import JournalEntry, JournalError
+
+    tenant, space, writer = uuid4(), uuid4(), uuid4()
+    entry = JournalEntry(
+        id=uuid4(),
+        ts="2026-10-01T10:20:30Z",
+        tenant_id=tenant,
+        space_id=space,
+        memory_id=uuid4(),
+        version=1,
+        writer=writer,
+        subject="Kept",
+        text="Postgres journal kept",
+    )
+    journal = Document(
+        entry.relative_path,
+        entry.digest,
+        entry.relative_path,
+        entry.line().decode(),
+        metadata={"path": entry.relative_path},
+    )
+    stop = SkippedDocument("catalog.json", "source_permission_denied", abort_inventory=True)
+    projected = list(project_documents([journal, stop]))
+    assert projected == [stop]
+    assert "Postgres journal kept" not in repr(projected)
+    with pytest.raises(JournalError) as malformed:
+        list(project_documents([SkippedDocument("catalog.json", "source_is_not_utf8_text")]))
+    assert malformed.value.code == "journal_inventory_unreadable"
+    bad_catalog = Document(
+        "catalog.json",
+        "1",
+        "catalog.json",
+        '{"format":"mnemion-memory-journal-catalog"}\n',
+        metadata={"path": "catalog.json"},
+    )
+    with pytest.raises(JournalError) as invalid:
+        list(project_documents([bad_catalog]))
+    assert invalid.value.code == "invalid_journal_catalog"
 
 
 def test_file_replaced_after_checks_cannot_escape_selected_vault(tmp_path, monkeypatch):

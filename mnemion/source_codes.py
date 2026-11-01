@@ -15,5 +15,7 @@ ACCESS_WITHHOLD_CODES = frozenset(
         "source_is_not_regular_file",
         "source_handle_verification_unavailable",
         "source_changed_during_read",
+        # A directory symlink or junction is refused before its contents are walked.
+        "source_symlinks_not_supported",
     }
 )

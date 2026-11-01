@@ -830,3 +830,854 @@ def test_withheld_source_is_not_embedded_after_root_refresh(env, text_source, mo
         assert any("indexed before denial" in text for text in calls)
         assert any("second denial unread" in text for text in calls)
         assert embedded(denied_id) > 0 and embedded(second_id) > 0
+
+
+def _recall(reader):
+    return reader.request(
+        "POST",
+        "/v1/recall",
+        body={"query": "Postgres", "mode": "lexical", "all_accessible": True},
+    )
+
+
+def _connector_items(env, people, space):
+    with env.db.transaction(people["capture"][0]) as conn:
+        rows = conn.execute(
+            """SELECT external_id, origin_revision, state, withheld_at, validated_run, memory_id
+               FROM mnemion.connector_items WHERE space_id=%s""",
+            (space,),
+        ).fetchall()
+    return {row["memory_id"]: row for row in rows}
+
+
+def _refresh_root(service, people, connection, external_id):
+    from mnemion.service.connector_models import ScopeInput, utc_now
+
+    service.refresh_scope(
+        people["capture"][0],
+        connection,
+        ScopeInput(
+            external_id=external_id,
+            name="Fixture",
+            members=["employee:reader"],
+            observed_at=utc_now(),
+        ),
+    )
+
+
+def _texts(reader):
+    return " ".join(hit["text"] for hit in _recall(reader)["hits"])
+
+
+def _item_for_text(env, people, space, reader, fragment):
+    """Original memory id from authorized recall, then the database row for that id."""
+    memory_id = UUID(
+        next(hit["memory_id"] for hit in _recall(reader)["hits"] if fragment in hit["text"])
+    )
+    return _connector_items(env, people, space)[memory_id]
+
+
+def test_unreadable_selected_directory_stays_hidden_after_root_refresh(
+    env, text_source, monkeypatch
+):
+    """Not run on 1 November 2026. A denied child directory is not an empty inventory."""
+    import errno
+    import os
+    from pathlib import Path
+
+    from mnemion.connectors import providers
+    from mnemion.service.connector_models import (
+        BatchInput,
+        ConnectorItemInput,
+        RunInput,
+        SyncRequestInput,
+    )
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept beside directory", encoding="utf-8")
+    nested = root / "nested"
+    nested.mkdir()
+    (nested / "old.md").write_text("Postgres indexed inside directory", encoding="utf-8")
+    (root / "z-later.md").write_text("Postgres later directory unread", encoding="utf-8")
+    env.identities.grant(
+        env.owner,
+        env.space,
+        people["reader"][0].principal_id,
+        GrantInput(role="reader"),
+    )
+    env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="Postgres native directory neighbor"),
+        "field47-directory-neighbor",
+    )
+    deny = {"on": False}
+    real_scandir = providers.os.scandir
+
+    def scandir(path):
+        if deny["on"] and Path(path).name == "nested":
+            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", os.fspath(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(providers.os, "scandir", scandir)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        old = _item_for_text(env, people, space, reader, "indexed inside directory")
+        kept = _item_for_text(env, people, space, reader, "kept beside directory")
+        later = _item_for_text(env, people, space, reader, "later directory unread")
+        status = service.sync_status(env.owner, connection)
+        service.request_sync(
+            env.owner,
+            connection,
+            SyncRequestInput(expected_generation=status["requested_generation"]),
+        )
+        deny["on"] = True
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied"
+        assert scope["incomplete_inventory"] and scope["checkpoint_committed"] is False
+        assert scope["file_errors"] == [
+            {
+                "path": "nested",
+                "error_code": "source_permission_denied",
+                "path_sha256": hashlib.sha256(b"nested").hexdigest(),
+            }
+        ]
+        rendered = json.dumps(report)
+        assert "PRIVATE_OS_STRING" not in rendered and str(root) not in rendered
+        assert service.sync_status(env.owner, connection)["pending"]
+        assert service.sync_status(env.owner, connection)["last_successful"] is False
+        held = _connector_items(env, people, space)
+        assert held[kept["memory_id"]]["withheld_at"] is None
+        assert held[later["memory_id"]]["withheld_at"] is None
+        assert held[old["memory_id"]]["withheld_at"] is not None
+        assert all(row["state"] != "deleted" for row in held.values())
+        current = service.scopes(people["capture"][0], connection)["items"][0]
+        assert current["completed_at"] == first["completed_at"]
+        _refresh_root(service, people, connection, first["external_id"])
+        refreshed = service.scopes(people["capture"][0], connection)["items"][0]
+        assert refreshed["suspended_at"] is None and refreshed["access_current"]
+        assert refreshed["inventory"]["file_errors"][0]["path"] == "nested"
+        visible = _texts(reader)
+        assert "kept beside directory" in visible and "later directory unread" in visible
+        assert "native directory neighbor" in visible
+        assert "indexed inside directory" not in visible
+        retain_run = uuid4()
+        service.begin(people["capture"][0], space, RunInput(run_id=retain_run))
+        retained = service.page(
+            people["capture"][0],
+            space,
+            retain_run,
+            BatchInput(
+                sequence=0,
+                items=[
+                    ConnectorItemInput(
+                        external_id=old["external_id"],
+                        revision=old["origin_revision"],
+                        action="retain",
+                    )
+                ],
+            ),
+        )
+        assert retained["items"][0]["outcome"] == "unchanged"
+        assert _connector_items(env, people, space)[old["memory_id"]]["withheld_at"] is not None
+        service.suspend(people["capture"][0], space, "provider_unavailable")
+        _refresh_root(service, people, connection, first["external_id"])
+        deny["on"] = False
+        repaired = sync(config, client=client)
+        assert repaired["completed"] and repaired["removed"] == 0
+        restored = _connector_items(env, people, space)
+        assert restored[old["memory_id"]]["withheld_at"] is None
+        assert restored[old["memory_id"]]["state"] != "deleted"
+        assert restored[old["memory_id"]]["origin_revision"] == old["origin_revision"]
+        assert "indexed inside directory" in _texts(reader)
+        with env.db.transaction(people["capture"][0]) as conn:
+            failed = conn.execute(
+                """SELECT result FROM mnemion.connector_runs
+                   WHERE space_id=%s AND state='completed' AND result->>'incomplete_inventory'='true'
+                   ORDER BY finished_at, id""",
+                (space,),
+            ).fetchall()
+        assert failed[0]["result"]["file_errors"][0]["path"] == "nested"
+        latest = service.scopes(people["capture"][0], connection)["items"][0]
+        assert latest["completed_at"] != first["completed_at"]
+        assert not latest["inventory"]["incomplete_inventory"]
+
+
+def test_replaced_directory_link_stays_hidden_until_the_real_tree_returns(
+    env, text_source, tmp_path
+):
+    """Not run on 1 November 2026. Replacing a directory with a link is not a deletion."""
+    import shutil
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept beside link", encoding="utf-8")
+    nested = root / "nested"
+    nested.mkdir()
+    (nested / "old.md").write_text("Postgres indexed behind link", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "private.md").write_text("Postgres outside link secret", encoding="utf-8")
+    env.identities.grant(
+        env.owner,
+        env.space,
+        people["reader"][0].principal_id,
+        GrantInput(role="reader"),
+    )
+    env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="Postgres native link neighbor"),
+        "field47-link-neighbor",
+    )
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        old = _item_for_text(env, people, space, reader, "indexed behind link")
+        backup = tmp_path / "nested-real"
+        shutil.move(nested, backup)
+        try:
+            (root / "nested").symlink_to(outside, target_is_directory=True)
+        except OSError:
+            shutil.move(backup, nested)
+            pytest.skip("Creating symlinks requires Windows developer mode or privilege")
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_symlinks_not_supported"
+        assert scope["checkpoint_committed"] is False and scope["incomplete_inventory"]
+        assert scope["file_errors"][0]["path"] == "nested"
+        assert scope["file_errors"][0]["error_code"] == "source_symlinks_not_supported"
+        rendered = json.dumps(report)
+        assert str(outside) not in rendered and "outside link secret" not in rendered
+        _refresh_root(service, people, connection, first["external_id"])
+        visible = _texts(reader)
+        assert "kept beside link" in visible and "native link neighbor" in visible
+        assert "indexed behind link" not in visible and "outside link secret" not in visible
+        assert (
+            service.scopes(people["capture"][0], connection)["items"][0]["completed_at"]
+            == (first["completed_at"])
+        )
+        (root / "nested").unlink()
+        shutil.move(backup, nested)
+        repaired = sync(config, client=client)
+        assert repaired["completed"] and repaired["removed"] == 0
+        restored = _connector_items(env, people, space)
+        assert restored[old["memory_id"]]["withheld_at"] is None
+        assert restored[old["memory_id"]]["origin_revision"] == old["origin_revision"]
+        assert "indexed behind link" in _texts(reader)
+        assert "outside link secret" not in _texts(reader)
+        with env.db.transaction(people["capture"][0]) as conn:
+            failed = conn.execute(
+                """SELECT result->>'incomplete_inventory' AS incomplete,
+                          result->'file_errors' AS errors
+                   FROM mnemion.connector_runs
+                   WHERE space_id=%s AND state='completed'
+                   ORDER BY finished_at, id""",
+                (space,),
+            ).fetchall()
+        assert any(
+            row["incomplete"] == "true" and row["errors"][0]["path"] == "nested" for row in failed
+        )
+
+
+@pytest.mark.parametrize("denied_name", ["catalog.json", "segment"])
+def test_unreadable_journal_access_stop_hides_unverified_entries_until_repair(
+    env, text_source, monkeypatch, denied_name
+):
+    """Not run on 1 November 2026. An unreadable journal must not resurrect a denial."""
+    import errno
+    from uuid import uuid4 as new_id
+
+    from mnemion.connectors import source_files
+    from mnemion.connectors.config import ConnectorConfig
+    from mnemion.journal.format import JournalCatalog, JournalEntry
+    from mnemion.service.connector_models import SyncRequestInput
+
+    service, connection, people, config = text_source
+    payload = config.model_dump(mode="json")
+    payload["provider"]["max_file_bytes"] = 100000
+    config = ConnectorConfig.model_validate(payload)
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres ordinary neighbor", encoding="utf-8")
+    (root / "z-later.md").write_text("Postgres later journal file", encoding="utf-8")
+    tenant, source_space, writer = new_id(), new_id(), new_id()
+    kept = JournalEntry(
+        id=new_id(),
+        ts="2026-10-01T10:20:30Z",
+        tenant_id=tenant,
+        space_id=source_space,
+        memory_id=new_id(),
+        version=1,
+        writer=writer,
+        subject="Kept",
+        text="Postgres journal kept",
+    )
+    secret = JournalEntry(
+        id=new_id(),
+        ts="2026-10-01T10:20:30Z",
+        tenant_id=tenant,
+        space_id=source_space,
+        memory_id=new_id(),
+        version=1,
+        writer=writer,
+        subject="Secret",
+        text="Postgres journal withdrawn",
+    )
+    denial = JournalEntry.model_validate(
+        {
+            **secret.model_dump(),
+            "id": str(new_id()),
+            "version": 2,
+            "action": "forget",
+            "text": None,
+            "subject": None,
+            "metadata": {},
+        }
+    )
+    segment = root / kept.relative_path
+    segment.parent.mkdir()
+    segment.write_bytes(kept.line() + secret.line() + denial.line())
+    catalog = JournalCatalog(tenant_id=tenant, space_id=source_space, records=3)
+    (root / "catalog.json").write_bytes(catalog.encoded())
+    target = "catalog.json" if denied_name == "catalog.json" else segment.name
+    relative = "catalog.json" if denied_name == "catalog.json" else kept.relative_path
+    denied = {"on": False}
+
+    def blocked(name):
+        if denied["on"] and name == target:
+            return PermissionError(errno.EACCES, "PRIVATE_OS_STRING", "hidden")
+        return None
+
+    env.identities.grant(
+        env.owner,
+        env.space,
+        people["reader"][0].principal_id,
+        GrantInput(role="reader"),
+    )
+    env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="Postgres native journal neighbor"),
+        "field47-journal-neighbor",
+    )
+    patch_selected_reads(monkeypatch, source_files, blocked)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        journal = _item_for_text(env, people, space, reader, "journal kept")
+        later = _item_for_text(env, people, space, reader, "later journal file")
+        assert "journal kept" in _texts(reader) and "journal withdrawn" not in _texts(reader)
+        status = service.sync_status(env.owner, connection)
+        service.request_sync(
+            env.owner,
+            connection,
+            SyncRequestInput(expected_generation=status["requested_generation"]),
+        )
+        denied["on"] = True
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied"
+        assert scope["checkpoint_committed"] is False and scope["incomplete_inventory"]
+        assert scope["file_errors"][0]["path"] == relative
+        assert scope["file_errors"][0]["error_code"] == "source_permission_denied"
+        rendered = json.dumps(report)
+        assert "PRIVATE_OS_STRING" not in rendered and "journal withdrawn" not in rendered
+        assert service.sync_status(env.owner, connection)["last_successful"] is False
+        _refresh_root(service, people, connection, first["external_id"])
+        visible = _texts(reader)
+        assert "ordinary neighbor" in visible and "native journal neighbor" in visible
+        assert "journal kept" not in visible and "journal withdrawn" not in visible
+        if denied_name == "catalog.json":
+            assert "later journal file" not in visible
+            assert _connector_items(env, people, space)[later["memory_id"]]["withheld_at"]
+        else:
+            assert "later journal file" in visible
+        assert _connector_items(env, people, space)[journal["memory_id"]]["withheld_at"]
+        assert (
+            service.scopes(people["capture"][0], connection)["items"][0]["completed_at"]
+            == (first["completed_at"])
+        )
+        denied["on"] = False
+        repaired = sync(config, client=client)
+        assert repaired["completed"] and repaired["removed"] == 0
+        restored = _texts(reader)
+        assert "journal kept" in restored and "journal withdrawn" not in restored
+        assert "later journal file" in restored and "ordinary neighbor" in restored
+        healed = _connector_items(env, people, space)
+        assert healed[journal["memory_id"]]["withheld_at"] is None
+        assert healed[journal["memory_id"]]["origin_revision"] == journal["origin_revision"]
+        with env.db.transaction(people["capture"][0]) as conn:
+            failed = conn.execute(
+                """SELECT result->'file_errors' AS errors FROM mnemion.connector_runs
+                   WHERE space_id=%s AND state='completed'
+                     AND result->>'incomplete_inventory'='true'""",
+                (space,),
+            ).fetchall()
+        assert failed and failed[0]["errors"][0]["path"] == relative
+
+
+def test_directory_abort_does_not_suspend_another_runners_lease(env, text_source, monkeypatch):
+    """Not run on 1 November 2026. A competing lease is not an inventory abort."""
+    import errno
+    import os
+    from pathlib import Path
+
+    from mnemion.connectors import providers
+    from service_tests.test_connectors import begin
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept during busy lease", encoding="utf-8")
+    nested = root / "nested"
+    nested.mkdir()
+    (nested / "old.md").write_text("Postgres busy directory", encoding="utf-8")
+    real_scandir = providers.os.scandir
+    deny = {"on": False}
+
+    def scandir(path):
+        if deny["on"] and Path(path).name == "nested":
+            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", os.fspath(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(providers.os, "scandir", scandir)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+    ):
+        assert sync(config, client=client)["completed"]
+        # Armed only after the first inventory. A busy scope must not record
+        # this failure or suspend the other run.
+        deny["on"] = True
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        running = begin(service, people["capture"][0], space)
+        busy = sync(config, client=client)
+        assert not busy["completed"]
+        assert busy["scopes"][0]["error_code"] == "connector_busy"
+        assert not busy["scopes"][0].get("access_suspended")
+        assert "file_errors" not in busy["scopes"][0]
+        with env.db.transaction(people["capture"][0]) as conn:
+            state = conn.execute(
+                "SELECT state FROM mnemion.connector_runs WHERE id=%s", (running,)
+            ).fetchone()
+            assert state["state"] == "running"
+            scope_row = conn.execute(
+                "SELECT suspended_at FROM mnemion.connector_scopes WHERE space_id=%s",
+                (space,),
+            ).fetchone()
+            assert scope_row["suspended_at"] is None
+        held = _connector_items(env, people, space)
+        assert all(row["withheld_at"] is None for row in held.values())
+        assert all(row["state"] != "deleted" for row in held.values())
+        inventory = service.scopes(people["capture"][0], connection)["items"][0]["inventory"]
+        assert not inventory.get("file_errors")
+        assert inventory.get("incomplete_inventory") is False
+
+
+def test_access_stop_keeps_a_slot_after_fifty_content_skips(env, text_source, monkeypatch):
+    """Fifty readable skips must not push the directory abort out of the receipt."""
+    import errno
+    import os
+    from pathlib import Path
+
+    from mnemion.connectors import providers
+    from mnemion.service.connector_models import SyncRequestInput
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept before bounded abort", encoding="utf-8")
+    nested = root / "nested"
+    nested.mkdir()
+    (nested / "old.md").write_text("Postgres indexed before bounded abort", encoding="utf-8")
+    env.identities.grant(
+        env.owner,
+        env.space,
+        people["reader"][0].principal_id,
+        GrantInput(role="reader"),
+    )
+    deny = {"on": False}
+    real_scandir = providers.os.scandir
+
+    def scandir(path):
+        if deny["on"] and Path(path).name == "nested":
+            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", os.fspath(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(providers.os, "scandir", scandir)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        old = _item_for_text(env, people, space, reader, "indexed before bounded abort")
+        kept = _item_for_text(env, people, space, reader, "kept before bounded abort")
+        for number in range(50):
+            (root / f"bad-{number:02}.md").write_bytes(b"\xff")
+        status = service.sync_status(env.owner, connection)
+        service.request_sync(
+            env.owner,
+            connection,
+            SyncRequestInput(expected_generation=status["requested_generation"]),
+        )
+        deny["on"] = True
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied"
+        assert scope["incomplete_inventory"] and scope["checkpoint_committed"] is False
+        assert scope["skipped_documents"] == 51
+        assert len(scope["file_errors"]) == 50
+        assert {
+            "path": "nested",
+            "error_code": "source_permission_denied",
+            "path_sha256": hashlib.sha256(b"nested").hexdigest(),
+        } in scope["file_errors"]
+        assert service.sync_status(env.owner, connection)["pending"]
+        current = service.scopes(people["capture"][0], connection)["items"][0]
+        assert current["completed_at"] == first["completed_at"]
+        assert current["checkpoint"] == first["checkpoint"]
+        held = _connector_items(env, people, space)
+        assert held[old["memory_id"]]["withheld_at"] is not None
+        assert held[kept["memory_id"]]["withheld_at"] is None
+        assert all(row["state"] != "deleted" for row in held.values())
+        _refresh_root(service, people, connection, first["external_id"])
+        visible = _texts(reader)
+        assert "kept before bounded abort" in visible
+        assert "indexed before bounded abort" not in visible
+        durable = service.scopes(people["capture"][0], connection)["items"][0]
+        assert durable["completed_at"] == first["completed_at"]
+        assert len(durable["inventory"]["file_errors"]) == 50
+        assert any(
+            error["error_code"] == "source_permission_denied" and error.get("path") == "nested"
+            for error in durable["inventory"]["file_errors"]
+        )
+        deny["on"] = False
+        for path in root.glob("bad-*.md"):
+            path.unlink()
+        repaired = sync(config, client=client)
+        assert repaired["completed"] and repaired["removed"] == 0 and repaired["changed"] == 0
+        restored = _connector_items(env, people, space)
+        assert restored[old["memory_id"]]["withheld_at"] is None
+        assert restored[old["memory_id"]]["origin_revision"] == old["origin_revision"]
+        assert restored[kept["memory_id"]]["origin_revision"] == kept["origin_revision"]
+        assert "indexed before bounded abort" in _texts(reader)
+        assert not service.sync_status(env.owner, connection)["pending"]
+
+
+def test_finished_abort_does_not_suspend_a_later_owned_run(env, text_source, monkeypatch):
+    """Replay A's stored receipt before any access refresh or B. Later replay, transport, and a busy rejection must leave B active."""
+    import errno
+    import os
+    from pathlib import Path
+
+    from mnemion.connectors import providers
+    from mnemion.service.connector_models import FinishInput
+    from service_tests.test_connectors import begin
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "a-kept.md").write_text("Postgres kept during later run", encoding="utf-8")
+    nested = root / "nested"
+    nested.mkdir()
+    (nested / "old.md").write_text("Postgres hidden during later run", encoding="utf-8")
+    deny = {"on": False}
+    real_scandir = providers.os.scandir
+
+    def scandir(path):
+        if deny["on"] and Path(path).name == "nested":
+            raise PermissionError(errno.EACCES, "PRIVATE_OS_STRING", os.fspath(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(providers.os, "scandir", scandir)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        operator = people["capture"][0]
+        stale = begin(service, operator, space)
+        with env.db.transaction(operator) as conn:
+            conn.execute(
+                "UPDATE mnemion.connector_runs SET lease_until=now()-interval '1 second' WHERE id=%s",
+                (stale,),
+            )
+        with pytest.raises(ServiceError) as expired:
+            service.finish(
+                operator,
+                space,
+                stale,
+                FinishInput(
+                    skipped_documents=1,
+                    file_errors=[{"error_code": "source_permission_denied"}],
+                ),
+            )
+        assert expired.value.code == "run_inactive"
+        with env.db.transaction(operator) as conn:
+            expired_row = conn.execute(
+                "SELECT state, result FROM mnemion.connector_runs WHERE id=%s", (stale,)
+            ).fetchone()
+            scope_row = conn.execute(
+                "SELECT suspended_at FROM mnemion.connector_scopes WHERE space_id=%s",
+                (space,),
+            ).fetchone()
+        assert expired_row["state"] == "running" and expired_row["result"] is None
+        assert scope_row["suspended_at"] is None
+        original = client.request
+        captured = {}
+        armed = {"on": False}
+
+        def effects(run_id):
+            with env.db.transaction(operator) as conn:
+                run = conn.execute(
+                    """SELECT state, result, finished_at, lease_until
+                       FROM mnemion.connector_runs WHERE id=%s""",
+                    (run_id,),
+                ).fetchone()
+                scope_row = conn.execute(
+                    """SELECT suspended_at, suspension_reason, access_valid_until,
+                              checkpoint, completed_at
+                       FROM mnemion.connector_scopes WHERE space_id=%s""",
+                    (space,),
+                ).fetchone()
+                audits = conn.execute(
+                    """SELECT action, count(*) AS n FROM mnemion.audit_events
+                       WHERE space_id=%s
+                         AND action IN ('connector.access_suspended','connector.synced')
+                       GROUP BY action ORDER BY action""",
+                    (space,),
+                ).fetchall()
+                runs = conn.execute(
+                    "SELECT count(*) AS n FROM mnemion.connector_runs WHERE space_id=%s",
+                    (space,),
+                ).fetchone()
+            return {
+                "run": (run["state"], run["result"], run["finished_at"], run["lease_until"]),
+                "suspended_at": scope_row["suspended_at"],
+                "suspension_reason": scope_row["suspension_reason"],
+                "access_valid_until": scope_row["access_valid_until"],
+                "checkpoint": scope_row["checkpoint"],
+                "completed_at": scope_row["completed_at"],
+                "audits": tuple((row["action"], row["n"]) for row in audits),
+                "runs": runs["n"],
+                "items": {
+                    key: (
+                        row["withheld_at"],
+                        row["state"],
+                        row["validated_run"],
+                        row["origin_revision"],
+                    )
+                    for key, row in _connector_items(env, people, space).items()
+                },
+            }
+
+        def inject(method, path, **kwargs):
+            result = original(method, path, **kwargs)
+            if armed["on"] and method == "POST" and str(path).endswith("/finish") and not captured:
+                captured["path"] = path
+                captured["body"] = kwargs.get("body")
+                captured["result"] = result
+                finished = UUID(result["run_id"])
+                captured["before"] = effects(finished)
+                captured["immediate"] = original(
+                    "POST",
+                    path,
+                    body=kwargs.get("body"),
+                    key=kwargs.get("key"),
+                )
+                captured["after"] = effects(finished)
+                _refresh_root(service, people, connection, first["external_id"])
+                captured["run"] = begin(service, operator, space)
+            return result
+
+        client.request = inject
+        deny["on"] = True
+        armed["on"] = True
+        report = sync(config, client=client)
+        stored = captured["before"]["run"][1]
+        assert captured["immediate"] == captured["result"]
+        assert captured["immediate"]["run_id"] == stored["run_id"]
+        assert captured["immediate"]["access_suspended"] is True
+        assert stored["access_suspended"] is True
+        assert captured["before"]["suspended_at"] is not None
+        assert captured["after"] == captured["before"]
+        assert captured["run"] != UUID(report["scopes"][0]["run_id"])
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied" and scope["access_suspended"]
+        assert scope["file_errors"][0]["path"] == "nested"
+
+        def active(run_id):
+            with env.db.transaction(operator) as conn:
+                run = conn.execute(
+                    "SELECT state, lease_until>now() AS lease_current FROM mnemion.connector_runs WHERE id=%s",
+                    (run_id,),
+                ).fetchone()
+                scope_row = conn.execute(
+                    "SELECT suspended_at FROM mnemion.connector_scopes WHERE space_id=%s",
+                    (space,),
+                ).fetchone()
+            return run, scope_row
+
+        run, scope_row = active(captured["run"])
+        assert run["state"] == "running" and run["lease_current"]
+        assert scope_row["suspended_at"] is None
+        held = {
+            key: (row["withheld_at"], row["state"], row["validated_run"], row["origin_revision"])
+            for key, row in _connector_items(env, people, space).items()
+        }
+        assert any(row[0] is not None for row in held.values())
+        replay = original(
+            "POST",
+            captured["path"],
+            body=captured["body"],
+            key="replay-owned-abort",
+        )
+        assert replay["run_id"] == captured["result"]["run_id"]
+        assert replay["access_suspended"] is True
+        run, scope_row = active(captured["run"])
+        assert run["state"] == "running" and run["lease_current"]
+        assert scope_row["suspended_at"] is None
+        again = {
+            key: (row["withheld_at"], row["state"], row["validated_run"], row["origin_revision"])
+            for key, row in _connector_items(env, people, space).items()
+        }
+        assert again == held
+
+        def transport(method, path, **kwargs):
+            if method == "POST" and str(path).endswith("/runs"):
+                raise httpx.ConnectError("synthetic transport")
+            return original(method, path, **kwargs)
+
+        client.request = transport
+        failed = sync(config, client=client)
+        assert not failed["completed"]
+        assert failed["scopes"][0]["error_code"] == "source_read_failed"
+        assert "file_errors" not in failed["scopes"][0]
+        assert not failed["scopes"][0].get("access_suspended")
+        run, scope_row = active(captured["run"])
+        assert run["state"] == "running" and run["lease_current"]
+        assert scope_row["suspended_at"] is None
+        latest = service.scopes(operator, connection)["items"][0]["inventory"]
+        assert latest["file_errors"][0]["path"] == "nested"
+        after_transport = {
+            key: (row["withheld_at"], row["state"], row["validated_run"], row["origin_revision"])
+            for key, row in _connector_items(env, people, space).items()
+        }
+        assert after_transport == held
+        client.request = original
+        rejected = sync(config, client=client)
+        assert not rejected["completed"]
+        assert rejected["scopes"][0]["error_code"] == "connector_busy"
+        assert "file_errors" not in rejected["scopes"][0]
+        assert not rejected["scopes"][0].get("access_suspended")
+        run, scope_row = active(captured["run"])
+        assert run["state"] == "running" and run["lease_current"]
+        assert scope_row["suspended_at"] is None
+        after_service = {
+            key: (row["withheld_at"], row["state"], row["validated_run"], row["origin_revision"])
+            for key, row in _connector_items(env, people, space).items()
+        }
+        assert after_service == held
+        assert (
+            service.scopes(operator, connection)["items"][0]["inventory"]["file_errors"][0]["path"]
+            == "nested"
+        )
+
+
+def test_unencodable_directory_name_keeps_a_category_only_hold(env, text_source, monkeypatch):
+    """A surrogate directory name is withheld without a path or OS message."""
+    import errno
+    import os
+    from pathlib import Path
+
+    from mnemion.connectors import providers
+    from mnemion.connectors.source_files import relative_evidence
+
+    service, connection, people, config = text_source
+    root = config.provider.path
+    (root / "old.md").write_text("Postgres surrogate unread", encoding="utf-8")
+    env.identities.grant(
+        env.owner,
+        env.space,
+        people["reader"][0].principal_id,
+        GrantInput(role="reader"),
+    )
+    safe = relative_evidence("nested/ok.md")
+    assert safe == {
+        "path": "nested/ok.md",
+        "path_sha256": hashlib.sha256(b"nested/ok.md").hexdigest(),
+    }
+    assert relative_evidence("bad-\udcff") == {}
+    real_walk = providers.os.walk
+    armed = {"on": False}
+
+    def walk(top, onerror=None, followlinks=False):
+        if not armed["on"]:
+            yield from real_walk(top, onerror=onerror, followlinks=followlinks)
+            return
+        if onerror is not None:
+            onerror(
+                PermissionError(
+                    errno.EACCES,
+                    "PRIVATE_OS_STRING",
+                    os.fspath(Path(top) / "bad-\udcff"),
+                )
+            )
+        return
+        yield
+
+    monkeypatch.setattr(providers.os, "walk", walk)
+    with (
+        serve(create_app(env.db, env.embedder, studio_enabled=False)) as url,
+        Client(url, people["capture"][1]) as client,
+        Client(url, people["reader"][1]) as reader,
+    ):
+        assert sync(config, client=client)["completed"]
+        first = service.scopes(people["capture"][0], connection)["items"][0]
+        space = UUID(first["space_id"])
+        old = _item_for_text(env, people, space, reader, "surrogate unread")
+        armed["on"] = True
+        report = sync(config, client=client)
+        assert not report["completed"] and report["removed"] == 0
+        scope = report["scopes"][0]
+        assert scope["error_code"] == "source_permission_denied"
+        assert scope["access_suspended"] and scope["checkpoint_committed"] is False
+        assert len(scope["file_errors"]) == 1
+        diagnostic = scope["file_errors"][0]
+        assert diagnostic["error_code"] == "source_permission_denied"
+        assert diagnostic.get("path") is None
+        assert diagnostic.get("path_sha256") is None
+        rendered = json.dumps(report)
+        assert "PRIVATE_OS_STRING" not in rendered and "\\udcff" not in rendered
+        assert str(root) not in rendered
+        _refresh_root(service, people, connection, first["external_id"])
+        assert "surrogate unread" not in _texts(reader)
+        assert _connector_items(env, people, space)[old["memory_id"]]["withheld_at"] is not None
+        durable = service.scopes(people["capture"][0], connection)["items"][0]
+        assert durable["completed_at"] == first["completed_at"]
+        assert durable["inventory"]["file_errors"] == [{"error_code": "source_permission_denied"}]

@@ -111,8 +111,6 @@ class BatchInput(Command):
 
 
 class SourceFileError(Command):
-    path: str = Field(min_length=1, max_length=512, pattern=r"^[^\x00-\x1f]+$")
-    path_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     error_code: Literal[
         "source_is_not_utf8_text",
         "source_contains_binary_data",
@@ -126,11 +124,17 @@ class SourceFileError(Command):
         "source_is_not_regular_file",
         "source_handle_verification_unavailable",
         "source_changed_during_read",
+        "source_symlinks_not_supported",
     ]
+    # A category is still evidence when the relative path cannot be published.
+    path: str | None = Field(default=None, min_length=1, max_length=512, pattern=r"^[^\x00-\x1f]+$")
+    path_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @field_validator("path")
     @classmethod
     def relative(cls, value):
+        if value is None:
+            return None
         if (
             PurePosixPath(value).is_absolute()
             or ".." in PurePosixPath(value).parts
@@ -138,6 +142,12 @@ class SourceFileError(Command):
         ):
             raise ValueError("Source diagnostics require a relative path")
         return value
+
+    @model_validator(mode="after")
+    def path_and_hash(self):
+        if (self.path is None) != (self.path_sha256 is None):
+            raise ValueError("A source diagnostic publishes a relative path and its hash together")
+        return self
 
 
 class FinishInput(Command):
