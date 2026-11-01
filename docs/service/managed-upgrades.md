@@ -14,8 +14,13 @@ patch-only policy may need this procedure once to reach 4.7.1. The automatic
 path retains its verified backup, readiness and rollback checks.
 
 Automatic compatible updates remain enabled according to the saved preference.
-They never opt into a schema migration. An operator or authorized host agent
-chooses the exact new version and supplies `--allow-migration` for this path.
+They never opt into a schema migration. A temporary manifest-check failure can
+be retried twice, on the schedule in the [managed updates guide](managed-updates.md).
+Retries keep the existing migration and version-compatibility gates. A
+successful subsequent signed compatible check can stage and apply that update.
+An operator-required result does not stage or apply automatically. An operator
+or authorized host agent chooses the exact new version and supplies
+`--allow-migration` for this schema-boundary path.
 The ordinary tenant administrator's memory key does not grant OS or database
 owner access. Run these commands as the unprivileged account that owns the
 [managed installation](managed-updates.md), using its original state directory.

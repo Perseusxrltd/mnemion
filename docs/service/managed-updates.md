@@ -29,6 +29,24 @@ marked `schedule_estimated`; it uses the latest deadline allowed by normal
 connector lease or completing a check. Disabling automatic updates reports no
 scheduled check and prevents automatic network requests.
 
+A manifest check that fails for a typed temporary DNS retry (`EAI_AGAIN`), a
+timeout, a connection reset, or an unreachable network is retried at most twice,
+after about five and fifteen minutes, with the same ±10% jitter. Each base delay
+is capped by the configured interval. The used count is stored in the existing
+schedule record, so a restart or a busy operation lease cannot refill it, and a
+malformed count does not grant another pair of retries. Any completed check
+clears it, including a current, unpublished, or operator-required schema or
+version result; an operator-required result still does not stage or cut over.
+A nontransient exception from that check also clears it, including a
+certificate, other DNS, HTTP, or integrity failure, so the next failure
+episode starts with two further attempts. After two transient attempts the
+count stays exhausted. Certificate failures, other DNS and HTTP failures,
+local filesystem errors, and failures while staging or applying keep the
+normal cadence, six hours by default, and do not use the short retry.
+History adds only a fixed category, whether that category is retryable, and the
+retry count, beside the existing safe sentence. It does not store the exception,
+address, URL, query, header, proxy, or certificate path.
+
 From **4.46.1**, command startup defers unrelated desktop, recovery and client
 setup to reduce CPU work on small hosts. A failed process transition retains
 bounded evidence through rollback. `updates status` includes `last_failure`
@@ -163,6 +181,8 @@ registration still require the organization's deployment controls.
 
 The updater checks the official stable release after 1–2 minutes and roughly
 every six hours, with jitter to spread simultaneous organization downloads.
+Temporary manifest failures use only the two shorter retries described above;
+every other result keeps this cadence.
 It checks a separate Ed25519 signature before interpreting the release payload.
 The payload binds version, repository, source commit, wheel/sdist hashes and
 sizes, the optional native dependency, Python compatibility, the dependency lock

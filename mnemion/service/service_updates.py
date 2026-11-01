@@ -24,7 +24,14 @@ from . import update_measurement
 from .update_cleanup import KEEP_BACKUPS, SLOT, retain_backup, retain_runtimes
 from .update_manifest import ManifestError, ServiceRelease, verify_manifest, version_tuple
 from .update_packages import copy_inspected_source, verify_installed_package
-from .update_transport import UpdateNotPublished, download_artifact, fetch_manifest
+from .update_transport import (
+    RETRYABLE_TRANSPORT,
+    TRANSPORT_CATEGORIES,
+    TransportFailure,
+    UpdateNotPublished,
+    download_artifact,
+    fetch_manifest,
+)
 from .update_trust import SERVICE_UPDATE_PUBLIC_KEY
 from .update_schedule import UpdateSchedule, schedule_status
 from .process_transition import (
@@ -36,6 +43,7 @@ from .process_transition import (
 
 UV_VERSION = "0.12.24"
 DEFAULT_INTERVAL = 6 * 60 * 60
+TRANSIENT_CHECK_DELAYS = (5 * 60, 15 * 60)
 MIN_FREE_BYTES = 3 * 1024**3
 MAX_COMMAND_LOG_BYTES = 262144
 
@@ -985,6 +993,26 @@ def _apply_fresh(
     }
 
 
+def _transient_check_delay(used: int, interval: int) -> float | None:
+    """Five then fifteen minutes for a manifest check, capped by the normal interval."""
+    if type(used) is not int or type(interval) is not int:
+        return None
+    if not 0 <= used < len(TRANSIENT_CHECK_DELAYS) or interval < 0:
+        return None
+    return min(TRANSIENT_CHECK_DELAYS[used], interval) * random.uniform(0.9, 1.1)
+
+
+def _check_failure_fields(error: BaseException, ordinal: int) -> dict:
+    detail = str(error) if isinstance(error, ManifestError) else "Inspect private update logs"
+    fields = {"detail": detail}
+    if isinstance(error, TransportFailure) and error.category in TRANSPORT_CATEGORIES:
+        fields["category"] = error.category
+        fields["retryable"] = error.category in RETRYABLE_TRANSPORT
+        if type(ordinal) is int and 0 <= ordinal <= 2:
+            fields["transport_retry"] = ordinal
+    return fields
+
+
 def watch(state: Path) -> int:
     state, root, settings = _root(state)
 
@@ -1027,11 +1055,17 @@ def watch(state: Path) -> int:
                         )
                     return 1
             if config["enabled"] and schedule.due():
+                checked = False
+                check_started = False
+                follow_up = None
                 try:
                     with state_io.lock(root):
                         state_io.clear_connector_pause(root)
                         schedule.attempt()
+                        check_started = True
                         result = _check(root)
+                        checked = True
+                        schedule.reset_transport_retries()
                         if result["status"] == "available" and not (
                             result["schema_compatible"] and result["version_compatible"]
                         ):
@@ -1053,27 +1087,56 @@ def watch(state: Path) -> int:
                     # Managed connector scans share the operation lease. Retry
                     # shortly after a complete scan, rather than losing a whole
                     # six-hour update window or interrupting source ingestion.
+                    # The lease wait does not spend or refill a transport retry.
                     state_io.pause_new_connector_scans(root)
                     schedule.after(30, reason="operation_busy")
                     update_measurement.quiet_wait(5, clock=time)
                     continue
                 except Exception as error:
+                    # Only the manifest check may use a short retry. Staging,
+                    # backup and process failures keep the normal cadence.
                     # The bounded private logs retain diagnostics. Public state
                     # never serializes arbitrary provider/subprocess exceptions.
+                    transient = (
+                        not checked
+                        and isinstance(error, TransportFailure)
+                        and error.category in RETRYABLE_TRANSPORT
+                    )
+                    delay = None
+                    if transient:
+                        delay = _transient_check_delay(
+                            schedule.transport_retries, config["interval_seconds"]
+                        )
+                    if delay is not None:
+                        schedule.consume_transport_retry()
+                        follow_up = (delay, "transient_transport")
+                    else:
+                        # Reset only after _check raises something other than a
+                        # retryable transport error. An exhausted transient count
+                        # stays spent. Lock deferral, pause, and restart never
+                        # reach this branch. Stage and apply already cleared the
+                        # count when the check returned.
+                        if check_started and not checked and not transient:
+                            schedule.reset_transport_retries()
+                        follow_up = (
+                            config["interval_seconds"] * random.uniform(0.9, 1.1),
+                            "periodic",
+                        )
                     try:
                         with state_io.lock(root):
                             state_io.record(
                                 root,
                                 "check_failed",
-                                detail=str(error)
-                                if isinstance(error, ManifestError)
-                                else "Inspect private update logs",
+                                **_check_failure_fields(error, schedule.transport_retries),
                             )
                     except ManifestError:
                         pass
-                schedule.after(
-                    config["interval_seconds"] * random.uniform(0.9, 1.1), reason="periodic"
-                )
+                if follow_up is None:
+                    follow_up = (
+                        config["interval_seconds"] * random.uniform(0.9, 1.1),
+                        "periodic",
+                    )
+                schedule.after(follow_up[0], reason=follow_up[1])
             update_measurement.quiet_wait(10, clock=time)
     except UpdateInterrupted:
         return 0

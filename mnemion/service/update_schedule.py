@@ -31,6 +31,8 @@ class UpdateSchedule:
     time handles a wall clock moved backwards. A short monotonic floor prevents
     repeated forward corrections from causing a network request every loop.
     Persist only wall-clock diagnostics, never a reboot-unsafe monotonic value.
+    A transport retry count from 0 to 2 may sit beside those diagnostics.
+    A missing count is zero. A malformed count grants no further short retries.
     """
 
     def __init__(self, root: Path, clock=time):
@@ -40,8 +42,43 @@ class UpdateSchedule:
         self.next_monotonic = 0.0
         self.not_before = 0.0
         self.record: dict = {}
+        self._retries = 0
+        self._retries_loaded = False
+
+    def _read_retry_count(self) -> int:
+        path = self.root / "schedule.json"
+        if not path.exists():
+            return 0
+        try:
+            value = state_io.read(path)
+        except ManifestError:
+            return 2
+        count = value.get("transport_retries", 0)
+        if type(count) is int and 0 <= count <= 2:
+            return count
+        return 2
+
+    @property
+    def transport_retries(self) -> int:
+        if not self._retries_loaded:
+            self._retries = self._read_retry_count()
+            self._retries_loaded = True
+        return self._retries
+
+    def consume_transport_retry(self) -> int:
+        if self.transport_retries < 2:
+            self._retries += 1
+        return self._retries
+
+    def reset_transport_retries(self) -> None:
+        """A completed check ends the episode. Persist that before the process exits."""
+        self._retries = 0
+        self._retries_loaded = True
+        if self.record.pop("transport_retries", None) is not None:
+            state_io.write(self.root / "schedule.json", self.record)
 
     def after(self, delay: float, *, reason: str) -> None:
+        retries = self.transport_retries
         wall, monotonic = self.clock.time(), self.clock.monotonic()
         self.next_wall = wall + delay
         self.next_monotonic = monotonic + delay
@@ -54,6 +91,8 @@ class UpdateSchedule:
             "reason": reason,
             "last_attempt_at": self.record.get("last_attempt_at"),
         }
+        if retries:
+            self.record["transport_retries"] = retries
         state_io.write(self.root / "schedule.json", self.record)
 
     def due(self) -> bool:

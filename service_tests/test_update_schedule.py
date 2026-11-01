@@ -89,3 +89,85 @@ def test_invalid_persisted_schedule_is_not_reported_as_healthy(schedule, value):
     state_io.write(root / "schedule.json", {"format": 1, "next_check_at": value})
     with pytest.raises(update_schedule.ManifestError, match="Invalid managed update schedule"):
         update_schedule.schedule_status(root, enabled=True, interval=21600, last_check=None)
+
+
+def test_invalid_schedule_stays_invalid_when_a_retry_count_is_present(schedule):
+    _, _, root = schedule
+    state_io.write(
+        root / "schedule.json",
+        {"format": 1, "next_check_at": "not-a-date", "transport_retries": 0},
+    )
+    with pytest.raises(update_schedule.ManifestError, match="Invalid managed update schedule"):
+        update_schedule.schedule_status(root, enabled=True, interval=21600, last_check=None)
+
+
+def test_older_schedule_records_stay_valid_without_a_retry_count(schedule, monkeypatch):
+    timer, clock, root = schedule
+    monkeypatch.setattr(update_schedule.time, "time", clock.time)
+    timer.after(21600, reason="periodic")
+    timer.attempt()
+    stored = state_io.read(root / "schedule.json")
+    assert "transport_retries" not in stored
+    assert not any("monotonic" in key for key in stored)
+    status = update_schedule.schedule_status(root, enabled=True, interval=21600, last_check=None)
+    assert set(status) == {"next_check_at", "overdue", "schedule_estimated", "last_attempt_at"}
+    restarted = update_schedule.UpdateSchedule(root, clock=clock)
+    assert restarted.transport_retries == 0
+    restarted.after(60, reason="startup")
+    saved = state_io.read(root / "schedule.json")
+    assert saved.get("transport_retries", 0) == 0
+    assert saved["reason"] == "startup"
+    assert update_schedule.schedule_status(root, enabled=True, interval=21600, last_check=None)[
+        "next_check_at"
+    ]
+
+
+@pytest.mark.parametrize("bad", ["0", -1, 3, 1.5, True, None, [], {}])
+def test_malformed_retry_count_does_not_grant_another_allowance(schedule, bad):
+    timer, clock, root = schedule
+    state_io.write(
+        root / "schedule.json",
+        {
+            "format": 1,
+            "next_check_at": update_schedule._stamp(clock.wall + 60),
+            "transport_retries": bad,
+        },
+    )
+    assert update_schedule.schedule_status(root, enabled=True, interval=21600, last_check=None)[
+        "next_check_at"
+    ]
+    assert timer.transport_retries == 2
+    timer.after(60, reason="startup")
+    saved = state_io.read(root / "schedule.json")
+    assert saved["transport_retries"] == 2 and saved["reason"] == "startup"
+    assert not any("monotonic" in key for key in saved)
+
+
+def test_startup_and_deferral_keep_the_saved_retry_count(schedule):
+    timer, clock, root = schedule
+    state_io.write(
+        root / "schedule.json",
+        {
+            "format": 1,
+            "next_check_at": update_schedule._stamp(clock.wall + 300),
+            "scheduled_at": update_schedule._stamp(clock.wall),
+            "delay_seconds": 300,
+            "reason": "transient_transport",
+            "last_attempt_at": None,
+            "transport_retries": 1,
+        },
+    )
+    assert timer.transport_retries == 1
+    timer.after(90, reason="startup")
+    assert state_io.read(root / "schedule.json")["transport_retries"] == 1
+    timer.after(30, reason="operation_busy")
+    saved = state_io.read(root / "schedule.json")
+    assert saved["reason"] == "operation_busy" and saved["transport_retries"] == 1
+    assert timer.consume_transport_retry() == 2
+    timer.after(900, reason="transient_transport")
+    assert state_io.read(root / "schedule.json")["transport_retries"] == 2
+    assert timer.consume_transport_retry() == 2
+    timer.reset_transport_retries()
+    cleared = state_io.read(root / "schedule.json")
+    assert "transport_retries" not in cleared
+    assert cleared["reason"] == "transient_transport"

@@ -2,11 +2,14 @@
 
 import copy
 from contextlib import nullcontext
+from datetime import datetime
 import json
 import os
+import ssl
 import subprocess
 import sys
 from types import SimpleNamespace
+from urllib.error import URLError
 import xmlrpc.client
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -15,7 +18,9 @@ import pytest
 from deploy.service_update_manifest import payload
 from mnemion.service import service_updates as updates
 from mnemion.service import update_state as state_io
+from mnemion.service import update_transport as transport
 from mnemion.service.update_manifest import ManifestError, sign_manifest, validate_payload
+from mnemion.service.update_transport import TransportFailure
 from service_tests.update_fixture import package_inputs
 
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="Managed Supervisor updates run on Unix")
@@ -893,3 +898,462 @@ def test_private_state_lock_and_event_history_are_bounded(tmp_path):
     (root / "history.json").chmod(0o644)
     with pytest.raises(ManifestError, match="private"):
         state_io.read(root / "history.json")
+
+
+_SENTINEL_URL = "https://user:sentinel-password@github.com/Perseusxrltd/mnemion?sentinel-query=1"
+_HTTPS = "Cannot download the service update over HTTPS"
+
+
+def install_update_clock(monkeypatch, stop, endpoint="low", on_sleep=None):
+    elapsed = [0.0]
+    wall0 = 1_791_872_000.0
+
+    def uniform(low, high):
+        # Startup stays at its low jitter. Retry and periodic checks use an endpoint.
+        if high - low > 1:
+            return 60
+        return low if endpoint == "low" else high
+
+    def sleep(seconds):
+        elapsed[0] += seconds
+        if on_sleep is not None:
+            on_sleep(elapsed[0])
+        if elapsed[0] > 100_000 or stop():
+            raise updates.UpdateInterrupted()
+
+    monkeypatch.setattr(
+        updates,
+        "time",
+        SimpleNamespace(
+            monotonic=lambda: elapsed[0],
+            time=lambda: wall0 + elapsed[0],
+            sleep=sleep,
+        ),
+    )
+    monkeypatch.setattr(updates.random, "uniform", uniform)
+    return elapsed, wall0
+
+
+def recorded_schedules(monkeypatch):
+    seen = []
+    original = updates.UpdateSchedule.after
+
+    def after(self, delay, *, reason):
+        original(self, delay, reason=reason)
+        saved = state_io.read(self.root / "schedule.json")
+        seen.append((reason, delay, saved.get("transport_retries", 0)))
+
+    monkeypatch.setattr(updates.UpdateSchedule, "after", after)
+    return seen
+
+
+def install_opener(monkeypatch, factory):
+    def open_request(request, **kwargs):
+        raise factory()
+
+    monkeypatch.setattr(
+        transport.urllib.request,
+        "build_opener",
+        lambda *args: SimpleNamespace(open=open_request),
+    )
+
+
+def fail_manifest(monkeypatch, factory):
+    install_opener(monkeypatch, factory)
+    monkeypatch.setattr(updates, "fetch_manifest", transport.fetch_manifest)
+
+
+def test_short_manifest_retry_is_capped_by_the_configured_interval(monkeypatch):
+    monkeypatch.setattr(updates.random, "uniform", lambda low, high: low)
+    assert updates._transient_check_delay(0, 100) == pytest.approx(100 * 0.9)
+    assert updates._transient_check_delay(0, 21600) == pytest.approx(300 * 0.9)
+    assert updates._transient_check_delay(1, 900) == pytest.approx(810)
+    assert updates._transient_check_delay(1, 21600) == pytest.approx(810)
+    assert updates._transient_check_delay(2, 21600) is None
+    assert updates._transient_check_delay(True, 21600) is None
+    monkeypatch.setattr(updates.random, "uniform", lambda low, high: high)
+    assert updates._transient_check_delay(0, 21600) == pytest.approx(330)
+    assert updates._transient_check_delay(1, 21600) == pytest.approx(990)
+
+
+@pytest.mark.parametrize("endpoint", ["low", "high"])
+def test_transient_manifest_failure_retries_then_applies_once(managed, monkeypatch, endpoint):
+    factor = 0.9 if endpoint == "low" else 1.1
+    calls = []
+    shot = {}
+    failed = {"value": False}
+
+    def fetch():
+        if not failed["value"]:
+            failed["value"] = True
+            install_opener(monkeypatch, lambda: URLError(TimeoutError(_SENTINEL_URL)))
+            return transport.fetch_manifest()
+        return managed.envelope
+
+    def remember(_now):
+        if calls and "during" not in shot and elapsed[0] > calls[0][1]:
+            shot["during"] = state_io.read(managed.root / "schedule.json")
+
+    elapsed, _wall0 = install_update_clock(
+        monkeypatch,
+        lambda: any(item[0] == "apply" for item in calls),
+        endpoint,
+        on_sleep=remember,
+    )
+    schedules = recorded_schedules(monkeypatch)
+    real_check = updates._check
+
+    def check(root):
+        calls.append(("check", elapsed[0]))
+        return real_check(root)
+
+    monkeypatch.setattr(updates, "fetch_manifest", fetch)
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates,
+        "_stage",
+        lambda *args: calls.append(("stage", elapsed[0])) or {"automatic_compatible": True},
+    )
+    monkeypatch.setattr(
+        updates,
+        "_apply",
+        lambda *args: calls.append(("apply", elapsed[0])) or {"status": "updated"},
+    )
+    assert updates.watch(managed.state) == 0
+    delay = 300 * factor
+    assert [item[0] for item in calls] == ["check", "check", "stage", "apply"]
+    assert calls[0][1] == 60
+    assert calls[1][1] == pytest.approx(60 + delay, abs=10)
+    assert calls[2][1] == calls[1][1] and calls[3][1] == calls[1][1]
+    during = shot["during"]
+    assert during["reason"] == "transient_transport"
+    assert during["transport_retries"] == 1
+    assert during["delay_seconds"] == pytest.approx(delay)
+    scheduled_at = datetime.fromisoformat(during["scheduled_at"]).timestamp()
+    next_check = datetime.fromisoformat(during["next_check_at"]).timestamp()
+    assert next_check == pytest.approx(scheduled_at + during["delay_seconds"])
+    final = state_io.read(managed.root / "schedule.json")
+    assert "transport_retries" not in final
+    raw = (managed.root / "history.json").read_bytes()
+    assert b"sentinel-password" not in raw and b"sentinel-query" not in raw
+    event = json.loads(raw)["events"][0]
+    assert event["event"] == "check_failed"
+    assert event["detail"] == _HTTPS
+    assert event["category"] == "timeout" and event["retryable"] is True
+    assert event["transport_retry"] == 1
+    assert schedules[1][0] == "transient_transport"
+
+
+@pytest.mark.parametrize("endpoint", ["low", "high"])
+def test_two_short_retries_then_the_normal_interval_survive_restart(managed, monkeypatch, endpoint):
+    factor = 0.9 if endpoint == "low" else 1.1
+    calls = []
+    goal = {"n": 3}
+    elapsed, _wall0 = install_update_clock(monkeypatch, lambda: len(calls) >= goal["n"], endpoint)
+    schedules = recorded_schedules(monkeypatch)
+    fail_manifest(monkeypatch, lambda: URLError(TimeoutError(_SENTINEL_URL)))
+    real_check = updates._check
+
+    def check(root):
+        calls.append(elapsed[0])
+        return real_check(root)
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    assert updates.watch(managed.state) == 0
+    assert calls[0] == 60
+    assert calls[1] == pytest.approx(60 + 300 * factor, abs=10)
+    assert calls[2] == pytest.approx(calls[1] + 900 * factor, abs=10)
+    assert [item[0] for item in schedules] == [
+        "startup",
+        "transient_transport",
+        "transient_transport",
+        "periodic",
+    ]
+    assert schedules[1][1] == pytest.approx(300 * factor) and schedules[1][2] == 1
+    assert schedules[2][1] == pytest.approx(900 * factor) and schedules[2][2] == 2
+    assert schedules[3][1] == pytest.approx(21600 * factor) and schedules[3][2] == 2
+    raw = (managed.root / "history.json").read_bytes()
+    assert b"sentinel-password" not in raw and b"sentinel-query" not in raw
+    ordinals = [event["transport_retry"] for event in json.loads(raw)["events"]]
+    assert ordinals == [1, 2, 2]
+    elapsed[0] = 0
+    goal["n"] = 4
+    assert updates.watch(managed.state) == 0
+    assert calls[3] == 60
+    assert [item[0] for item in schedules[4:]] == ["startup", "periodic"]
+    assert schedules[4][2] == 2
+    assert schedules[5][1] == pytest.approx(21600 * factor) and schedules[5][2] == 2
+    assert schedules[5][0] == "periodic"
+    saved_events = state_io.read(managed.root / "history.json")["events"]
+    restarted = [event["transport_retry"] for event in saved_events]
+    assert restarted == [1, 2, 2, 2]
+
+
+def test_a_busy_lease_does_not_spend_or_refill_the_transport_budget(managed, monkeypatch):
+    calls = []
+    lease = {"held": None, "released": False}
+    elapsed, _wall0 = install_update_clock(
+        monkeypatch,
+        lambda: len(calls) >= 2,
+        on_sleep=lambda now: _move_lease(managed, lease, now),
+    )
+    schedules = recorded_schedules(monkeypatch)
+    fail_manifest(monkeypatch, lambda: URLError(ConnectionResetError(_SENTINEL_URL)))
+    real_check = updates._check
+
+    def check(root):
+        calls.append(elapsed[0])
+        return real_check(root)
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    try:
+        assert updates.watch(managed.state) == 0
+    finally:
+        if lease["held"] is not None and not lease["released"]:
+            lease["held"].__exit__(None, None, None)
+    assert calls[0] == 60 and calls[1] == 365
+    assert [item[0] for item in schedules] == [
+        "startup",
+        "transient_transport",
+        "operation_busy",
+        "transient_transport",
+    ]
+    assert schedules[1][0] == "transient_transport"
+    assert schedules[1][1] == pytest.approx(270) and schedules[1][2] == 1
+    assert schedules[2][0] == "operation_busy" and schedules[2][1] == 30 and schedules[2][2] == 1
+    assert schedules[3][0] == "transient_transport"
+    assert schedules[3][1] == pytest.approx(810) and schedules[3][2] == 2
+
+
+def _move_lease(managed, lease, now):
+    if now >= 300 and lease["held"] is None:
+        lease["held"] = state_io.lock(managed.root, shared=True)
+        lease["held"].__enter__()
+    if now >= 350 and lease["held"] is not None and not lease["released"]:
+        lease["held"].__exit__(None, None, None)
+        lease["released"] = True
+
+
+def test_schema_refusal_after_a_transient_retry_returns_to_the_normal_cadence(managed, monkeypatch):
+    calls = []
+    elapsed, _wall0 = install_update_clock(monkeypatch, lambda: len(calls) >= 2)
+    schedules = recorded_schedules(monkeypatch)
+    real_check = updates._check
+    phase = {"n": 0}
+
+    def fetch():
+        phase["n"] += 1
+        if phase["n"] == 1:
+            install_opener(monkeypatch, lambda: URLError(TimeoutError(_SENTINEL_URL)))
+            return transport.fetch_manifest()
+        value = copy.deepcopy(managed.value)
+        value["migrations"]["002_new.sql"] = "f" * 64
+        return sign_manifest(value, managed.key.private_bytes_raw())
+
+    def check(root):
+        calls.append(elapsed[0])
+        return real_check(root)
+
+    monkeypatch.setattr(updates, "fetch_manifest", fetch)
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    monkeypatch.setattr(
+        updates, "_apply", lambda *args: (_ for _ in ()).throw(AssertionError("applied"))
+    )
+    assert updates.watch(managed.state) == 0
+    assert calls == [60, 330]
+    assert [item[0] for item in schedules] == ["startup", "transient_transport", "periodic"]
+    assert schedules[2][1] == pytest.approx(19440) and schedules[2][2] == 0
+    assert state_io.read(managed.root / "active.json") == managed.old
+    events = state_io.read(managed.root / "history.json")["events"]
+    assert events[0]["category"] == "timeout" and events[0]["transport_retry"] == 1
+    assert events[1]["event"] == "operator_required"
+    assert events[1]["reason"] == "version_or_schema_changed"
+    assert b"sentinel-password" not in (managed.root / "history.json").read_bytes()
+
+
+@pytest.mark.parametrize("status", ["current", "not_published"])
+def test_completed_check_clears_the_retry_budget(managed, monkeypatch, status):
+    calls = []
+    elapsed, _wall0 = install_update_clock(monkeypatch, lambda: len(calls) >= 2)
+    schedules = recorded_schedules(monkeypatch)
+
+    def check(_root):
+        calls.append(elapsed[0])
+        if len(calls) == 1:
+            raise TransportFailure(_HTTPS, "network_unreachable")
+        return {"status": status}
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    assert updates.watch(managed.state) == 0
+    assert calls == [60, 330]
+    assert schedules[1][0] == "transient_transport" and schedules[1][2] == 1
+    assert schedules[2][0] == "periodic" and schedules[2][1] == pytest.approx(19440)
+    assert schedules[2][2] == 0
+    assert "transport_retries" not in state_io.read(managed.root / "schedule.json")
+
+
+@pytest.mark.parametrize("phase", ["stage", "apply"])
+def test_stage_and_apply_failures_do_not_use_the_short_retry(managed, monkeypatch, phase):
+    calls = []
+    elapsed, _wall0 = install_update_clock(
+        monkeypatch,
+        lambda: "apply" in calls or (phase == "stage" and "stage" in calls),
+    )
+    schedules = recorded_schedules(monkeypatch)
+
+    def check(_root):
+        calls.append("check")
+        return {
+            "status": "available",
+            "schema_compatible": True,
+            "version_compatible": True,
+            "available_version": "4.0.8",
+        }
+
+    def stage(*_args):
+        calls.append("stage")
+        if phase == "stage":
+            raise TransportFailure(_HTTPS, "timeout")
+        return {"automatic_compatible": True}
+
+    def apply(*_args):
+        calls.append("apply")
+        raise TransportFailure(_HTTPS, "connection_reset")
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(updates, "_stage", stage)
+    monkeypatch.setattr(updates, "_apply", apply)
+    assert updates.watch(managed.state) == 0
+    assert calls == (["check", "stage"] if phase == "stage" else ["check", "stage", "apply"])
+    assert [item[0] for item in schedules] == ["startup", "periodic"]
+    assert schedules[1][1] == pytest.approx(19440) and schedules[1][2] == 0
+    event = state_io.read(managed.root / "history.json")["events"][0]
+    assert event["event"] == "check_failed"
+    assert event["category"] == ("timeout" if phase == "stage" else "connection_reset")
+    assert event["retryable"] is True and event["transport_retry"] == 0
+    assert event["detail"] == _HTTPS
+
+
+def test_manifest_text_is_not_parsed_as_a_transient_failure(managed, monkeypatch):
+    calls = []
+    elapsed, _wall0 = install_update_clock(monkeypatch, lambda: len(calls) >= 1)
+    schedules = recorded_schedules(monkeypatch)
+
+    def check(_root):
+        calls.append(elapsed[0])
+        raise ManifestError(f"{_HTTPS} EAI_AGAIN ETIMEDOUT")
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    assert updates.watch(managed.state) == 0
+    assert calls == [60]
+    assert schedules[1][0] == "periodic" and schedules[1][1] == pytest.approx(19440)
+    event = state_io.read(managed.root / "history.json")["events"][0]
+    assert event["detail"] == f"{_HTTPS} EAI_AGAIN ETIMEDOUT"
+    assert "category" not in event and "retryable" not in event
+
+
+def test_certificate_failure_keeps_the_normal_interval(managed, monkeypatch):
+    calls = []
+    elapsed, _wall0 = install_update_clock(monkeypatch, lambda: len(calls) >= 1)
+    schedules = recorded_schedules(monkeypatch)
+    fail_manifest(
+        monkeypatch,
+        lambda: URLError(ssl.SSLCertVerificationError(1, _SENTINEL_URL)),
+    )
+    real_check = updates._check
+
+    def check(root):
+        calls.append(elapsed[0])
+        return real_check(root)
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    assert updates.watch(managed.state) == 0
+    assert schedules[1][0] == "periodic" and schedules[1][1] == pytest.approx(19440)
+    assert schedules[1][2] == 0
+    raw = (managed.root / "history.json").read_bytes()
+    assert b"sentinel-password" not in raw and b"sentinel-query" not in raw
+    event = json.loads(raw)["events"][0]
+    assert event["category"] == "tls_certificate" and event["retryable"] is False
+    assert event["transport_retry"] == 0 and event["detail"] == _HTTPS
+
+
+@pytest.mark.parametrize("failure", ["certificate", "http", "integrity"])
+def test_nontransient_check_exception_resets_a_spent_allowance(managed, monkeypatch, failure):
+    if failure == "certificate":
+        error = TransportFailure(_HTTPS, "tls_certificate")
+    elif failure == "http":
+        error = TransportFailure(_HTTPS, "http_server")
+    else:
+        error = ManifestError("Signed manifest integrity check failed")
+    state_io.write(
+        managed.root / "schedule.json",
+        {
+            "format": 1,
+            "next_check_at": "2026-10-31T00:00:00Z",
+            "scheduled_at": "2026-10-31T00:00:00Z",
+            "delay_seconds": 19440,
+            "reason": "periodic",
+            "last_attempt_at": None,
+            "transport_retries": 2,
+        },
+    )
+    calls = []
+    goal = {"n": 1}
+    elapsed, _wall0 = install_update_clock(monkeypatch, lambda: len(calls) >= goal["n"])
+    schedules = recorded_schedules(monkeypatch)
+
+    def check(_root):
+        calls.append(elapsed[0])
+        if len(calls) == 1:
+            raise error
+        raise TransportFailure(_HTTPS, "timeout")
+
+    monkeypatch.setattr(updates, "_check", check)
+    monkeypatch.setattr(
+        updates, "_stage", lambda *args: (_ for _ in ()).throw(AssertionError("staged"))
+    )
+    monkeypatch.setattr(
+        updates, "_apply", lambda *args: (_ for _ in ()).throw(AssertionError("applied"))
+    )
+    assert updates.watch(managed.state) == 0
+    assert calls == [60]
+    assert [item[0] for item in schedules] == ["startup", "periodic"]
+    assert schedules[0][2] == 2
+    assert schedules[1][1] == pytest.approx(19440) and schedules[1][2] == 0
+    assert "transport_retries" not in state_io.read(managed.root / "schedule.json")
+    failed = state_io.read(managed.root / "history.json")["events"][0]
+    assert failed["event"] == "check_failed"
+    if isinstance(error, TransportFailure):
+        assert failed["category"] == error.category and failed["retryable"] is False
+        assert failed["transport_retry"] == 0 and failed["detail"] == _HTTPS
+    else:
+        assert failed["detail"] == "Signed manifest integrity check failed"
+        assert "category" not in failed and "retryable" not in failed
+    goal["n"] = 2
+    elapsed[0] = 0
+    assert updates.watch(managed.state) == 0
+    assert calls[1] == 60
+    assert [item[0] for item in schedules[2:]] == ["startup", "transient_transport"]
+    assert schedules[2][2] == 0
+    assert schedules[3][1] == pytest.approx(300 * 0.9) and schedules[3][2] == 1
+    restarted = state_io.read(managed.root / "history.json")["events"][1]
+    assert restarted["category"] == "timeout" and restarted["retryable"] is True
+    assert restarted["transport_retry"] == 1 and restarted["detail"] == _HTTPS
