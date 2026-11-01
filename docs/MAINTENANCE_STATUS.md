@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-11-01T23:07:24+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-01T23:12:48+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.46.63](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.63). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.46.64](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.64). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -22,22 +22,25 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 41359317564](https://github.com/Perseusxrltd/mnemion/actions/runs/41359317564) |
-| public-updates\.yml | v4\.46\.63 | success | [Run 41354406946](https://github.com/Perseusxrltd/mnemion/actions/runs/41354406946) |
-| release\.yml | release/4\.46\.63 | success | [Run 41349211852](https://github.com/Perseusxrltd/mnemion/actions/runs/41349211852) |
+| public-updates\.yml | v4\.46\.64 | in\_progress | [Run 41360943307](https://github.com/Perseusxrltd/mnemion/actions/runs/41360943307) |
 | release\.yml | release/4\.46\.64 | success | [Run 41355830658](https://github.com/Perseusxrltd/mnemion/actions/runs/41355830658) |
-| verify-artifacts\.yml | main | in\_progress | [Run 41360480273](https://github.com/Perseusxrltd/mnemion/actions/runs/41360480273) |
-| website-release\.yml | main | success | [Run 41356870595](https://github.com/Perseusxrltd/mnemion/actions/runs/41356870595) |
-| website-release\.yml | v4\.46\.63 | success | [Run 41354404727](https://github.com/Perseusxrltd/mnemion/actions/runs/41354404727) |
+| verify-artifacts\.yml | main | success | [Run 41360480273](https://github.com/Perseusxrltd/mnemion/actions/runs/41360480273) |
+| website-release\.yml | main | success | [Run 41353352666](https://github.com/Perseusxrltd/mnemion/actions/runs/41353352666) |
+| website-release\.yml | v4\.46\.64 | success | [Run 41360940801](https://github.com/Perseusxrltd/mnemion/actions/runs/41360940801) |
 
 ## Active jobs
 
-[Run 41359317564](https://github.com/Perseusxrltd/mnemion/actions/runs/41359317564): 9/12 jobs completed; 9 succeeded.
+[Run 41359317564](https://github.com/Perseusxrltd/mnemion/actions/runs/41359317564): 10/12 jobs completed; 10 succeeded.
 
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 41360480273](https://github.com/Perseusxrltd/mnemion/actions/runs/41360480273): 0/1 jobs completed; 0 succeeded.
+[Run 41360943307](https://github.com/Perseusxrltd/mnemion/actions/runs/41360943307): 1/7 jobs completed; 1 succeeded.
 
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
+- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
+- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 
