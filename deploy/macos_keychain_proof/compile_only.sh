@@ -25,7 +25,9 @@ if [ "$arch" != "arm64" ] && [ "$arch" != "x86_64" ]; then
 fi
 
 root="deploy/macos_keychain_proof"
-pin="$root/generated/parent_pin.h"
+caller_pin="$root/generated/caller_pin.h"
+parent_pin="$root/generated/parent_pin.h"
+store_config="$root/generated/fixture_store_config.h"
 mkdir -p "$out"
 receipt="$out/receipt.txt"
 echo "lane=compile_only" > "$receipt"
@@ -35,25 +37,67 @@ echo "binary_executed=no" >> "$receipt"
 echo "codesign=not_called" >> "$receipt"
 echo "security_tool=not_called" >> "$receipt"
 echo "certificate_der_comparison=not_performed" >> "$receipt"
+echo "fixture_store_guard=source_linked_not_executed" >> "$receipt"
+echo "interaction_bracket=source_linked_not_executed" >> "$receipt"
+echo "sealed_fixture=source_linked_not_executed" >> "$receipt"
+echo "creation_marker=source_linked_not_executed" >> "$receipt"
+echo "exact_helper_pins=parent_only" >> "$receipt"
+echo "signer_controller=not_this_lane" >> "$receipt"
 echo "keychain=not_modified" >> "$receipt"
 echo "electron=not_used" >> "$receipt"
 echo "arch=$arch" >> "$receipt"
 echo "deployment_target=13.0" >> "$receipt"
 
-if [ ! -f "$pin" ]; then
-  echo "missing compile_only pin header" | tee -a "$receipt" >&2
+if [ ! -f "$caller_pin" ] || [ ! -f "$parent_pin" ] || [ ! -f "$store_config" ]; then
+  echo "missing compile_only pin or store header" | tee -a "$receipt" >&2
   exit 2
 fi
-if ! grep -F -q 'MNEMION_PIN_CLASS "compile_only"' "$pin"; then
-  echo "pin header is not compile_only" | tee -a "$receipt" >&2
+if ! grep -F -q 'MNEMION_PIN_CLASS "compile_only"' "$caller_pin"; then
+  echo "caller pin header is not compile_only" | tee -a "$receipt" >&2
   exit 2
 fi
-if ! grep -F -q 'compile_only: not a certificate' "$pin"; then
-  echo "pin header is missing compile_only metadata" | tee -a "$receipt" >&2
+if ! grep -F -q 'compile_only: not a certificate' "$caller_pin"; then
+  echo "caller pin header is missing compile_only metadata" | tee -a "$receipt" >&2
   exit 2
 fi
-if grep -F -q 'BEGIN PRIVATE' "$pin"; then
-  echo "pin header contains a private key" | tee -a "$receipt" >&2
+if grep -F -q 'MNEMION_HELPER_CDHASH' "$caller_pin"; then
+  echo "caller pin header contains parent-only helper pins" | tee -a "$receipt" >&2
+  exit 2
+fi
+if ! grep -F -q 'MNEMION_HELPER_CDHASH' "$parent_pin"; then
+  echo "parent pin header is missing the helper cdhash" | tee -a "$receipt" >&2
+  exit 2
+fi
+if grep -F -q 'MNEMION_PIN_CLASS' "$parent_pin"; then
+  echo "parent pin header must not carry the caller pin class" | tee -a "$receipt" >&2
+  exit 2
+fi
+if ! grep -F -q 'MNEMION_FIXTURE_STORE_CLASS "compile_only"' "$store_config"; then
+  echo "fixture store config is not compile_only" | tee -a "$receipt" >&2
+  exit 2
+fi
+if ! grep -F -q 'compile_only: not an owned store' "$store_config"; then
+  echo "fixture store config is missing compile_only metadata" | tee -a "$receipt" >&2
+  exit 2
+fi
+for macro in \
+  MNEMION_FIXTURE_RUN_DIRECTORY \
+  MNEMION_FIXTURE_NONCE \
+  MNEMION_FIXTURE_EUID \
+  MNEMION_FIXTURE_RUN_DEVICE \
+  MNEMION_FIXTURE_RUN_INODE \
+  MNEMION_FIXTURE_STORE_DEVICE \
+  MNEMION_FIXTURE_STORE_INODE \
+  MNEMION_FIXTURE_SERVICE \
+  MNEMION_FIXTURE_ACCOUNT
+do
+  if ! grep -F -q "#define ${macro} " "$store_config"; then
+    echo "fixture store config is missing $macro" | tee -a "$receipt" >&2
+    exit 2
+  fi
+done
+if grep -F -q 'BEGIN PRIVATE' "$caller_pin" "$parent_pin" "$store_config"; then
+  echo "generated header contains a private key" | tee -a "$receipt" >&2
   exit 2
 fi
 
@@ -103,6 +147,21 @@ if [ ! -f "$needed" ]; then
   exit 2
 fi
 needed="$root/identity_dump.m"
+if [ ! -f "$needed" ]; then
+  echo "missing $needed" | tee -a "$receipt" >&2
+  exit 2
+fi
+needed="$root/fixture_store.m"
+if [ ! -f "$needed" ]; then
+  echo "missing $needed" | tee -a "$receipt" >&2
+  exit 2
+fi
+needed="$root/fixture_store_syntax.c"
+if [ ! -f "$needed" ]; then
+  echo "missing $needed" | tee -a "$receipt" >&2
+  exit 2
+fi
+needed="$root/exact_helper.m"
 if [ ! -f "$needed" ]; then
   echo "missing $needed" | tee -a "$receipt" >&2
   exit 2
@@ -160,9 +219,10 @@ run_clang helper \
   "$root/helper_main.m" \
   "$root/auth.m" \
   "$root/key_item.m" \
+  "$root/fixture_store.m" \
+  "$root/fixture_store_syntax.c" \
   "$root/v10_crypt.c" \
   -framework Security \
-  -framework LocalAuthentication \
   -framework CoreFoundation
 
 run_clang parent \
@@ -181,8 +241,11 @@ run_clang parent \
   -o "$parent_bin" \
   "$root/parent_main.m" \
   "$root/auth.m" \
+  "$root/exact_helper.m" \
   "$root/bundle_manifest.c" \
   "$root/signing.m" \
+  "$root/fixture_store.m" \
+  "$root/fixture_store_syntax.c" \
   -framework Security \
   -framework CoreFoundation
 

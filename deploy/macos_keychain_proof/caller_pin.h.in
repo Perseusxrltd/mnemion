@@ -1,0 +1,17 @@
+#ifndef MNEMION_CALLER_PIN_H
+#define MNEMION_CALLER_PIN_H
+/* Helper-side caller certificate pins. The manual recipe writes
+   generated/caller_pin.h after the fixture leaf exists and before the helper
+   is signed. This header must not carry the helper cdhash, manifest,
+   identifier pin, or designated requirement. Those stay parent-only so the
+   helper can be signed and frozen once. See STAGED_BUILD.md.
+   Required macros, all ordinary C string literals:
+     MNEMION_PIN_CLASS "fixture"
+     MNEMION_PIN_METADATA one line that does not say compile_only
+     MNEMION_FIXTURE_LEAF_SHA1 exactly 40 hex characters
+     MNEMION_FIXTURE_LEAF_SHA256 exactly 64 hex characters
+   The compile-only lane writes syntactically valid placeholders whose class
+   and metadata say compile_only. Those are not certificate DER and are not
+   runtime pins. Process start refuses them before any Keychain operation. */
+#error "Unsubstituted caller certificate pin. Review the source, then run the manual macOS recipe."
+#endif

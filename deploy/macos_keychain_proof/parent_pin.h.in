@@ -1,20 +1,15 @@
 #ifndef MNEMION_PARENT_PIN_H
 #define MNEMION_PARENT_PIN_H
-/* The manual macOS recipe writes generated/parent_pin.h from one disposable
-   fixture certificate and the frozen helper. Do not commit a publisher
-   certificate or a real pin. An unsubstituted build must fail closed.
+/* Parent-only exact-helper pins. The manual recipe writes
+   generated/parent_pin.h from the already signed and frozen helper.
+   The helper binary must not include this header. See STAGED_BUILD.md.
    Required macros, all ordinary C string literals:
-     MNEMION_PIN_CLASS "fixture"
-     MNEMION_PIN_METADATA a one-line fixture description that does not say compile_only
-     MNEMION_FIXTURE_LEAF_SHA1 exactly 40 hex characters
-     MNEMION_FIXTURE_LEAF_SHA256 exactly 64 hex characters
      MNEMION_HELPER_CDHASH exactly 40 or 64 uppercase hex characters
      MNEMION_HELPER_MANIFEST_SHA256 exactly 64 lowercase hex characters
+       from bundle_manifest_digest, not a tar or ZIP hash
      MNEMION_SEALED_HELPER_IDENTIFIER the helper bundle identifier
      MNEMION_HELPER_DESIGNATED the helper designated requirement, one line
-   The compile-only lane writes syntactically valid dummy values whose class
-   and metadata say compile_only. Those pins are not certificate DER and are
-   not native acceptance. A later recipe must compare the SHA-256 pin to the
-   actual certificate DER. This header does not do that comparison. */
-#error "Unsubstituted fixture pin. Review the source, then run the manual macOS recipe."
+   Caller certificate pins live in caller_pin.h. Compile-only placeholders
+   are refused at process start. They are not runtime pins. */
+#error "Unsubstituted parent helper pin. Freeze the signed helper, then write this header."
 #endif

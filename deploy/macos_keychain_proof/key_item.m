@@ -1,23 +1,15 @@
 #include "key_item.h"
 
+#include "fixture_store.h"
 #include "protocol.h"
 #include "v10_crypt.h"
 
 #include <CoreFoundation/CoreFoundation.h>
-#include <LocalAuthentication/LocalAuthentication.h>
 #include <Security/Security.h>
 
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-
-static CFStringRef service_name(void) {
-    return CFStringCreateWithCString(NULL, MNEMION_KEYCHAIN_SERVICE, kCFStringEncodingUTF8);
-}
-
-static CFStringRef account_name(void) {
-    return CFStringCreateWithCString(NULL, MNEMION_KEYCHAIN_ACCOUNT, kCFStringEncodingUTF8);
-}
 
 void key_state_init(struct key_state *state) {
     memset(state->derived, 0, sizeof state->derived);
@@ -68,57 +60,33 @@ static enum key_result accept_password(struct key_state *state, CFDataRef data) 
     return KEY_OK;
 }
 
-enum key_result key_item_load(struct key_state *state, int allow_prompt) {
-    CFStringRef service;
-    CFStringRef account;
-    CFMutableDictionaryRef query;
-    CFTypeRef found = NULL;
-    OSStatus status;
+enum key_result key_item_load(struct key_state *state) {
+    CFDataRef found = NULL;
+    OSStatus status = errSecParam;
+    int invoked = 0;
     enum key_result result;
-    LAContext *context = nil;
-    service = service_name();
-    account = account_name();
-    query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    if (service == NULL || account == NULL || query == NULL) {
-        if (service != NULL) CFRelease(service);
-        if (account != NULL) CFRelease(account);
-        if (query != NULL) CFRelease(query);
+    if (state == NULL) {
         return KEY_UNAVAILABLE;
     }
-    CFDictionarySetValue(query, kSecClass, kSecClassGenericPassword);
-    CFDictionarySetValue(query, kSecAttrService, service);
-    CFDictionarySetValue(query, kSecAttrAccount, account);
-    CFDictionarySetValue(query, kSecReturnData, kCFBooleanTrue);
-    CFDictionarySetValue(query, kSecMatchLimit, kSecMatchLimitOne);
-    if (!allow_prompt) {
-        /* Availability must fail closed instead of raising a prompt.
-           Seal and open pass allow_prompt and do not install this context,
-           so the system can still show the first-use prompt. */
-        context = [[LAContext alloc] init];
-        if (context == nil) {
-            CFRelease(query);
-            CFRelease(service);
-            CFRelease(account);
-            return KEY_UNAVAILABLE;
+    if (fixture_store_copy_matching(&found, &status, &invoked) != 0) {
+        if (invoked > 0) {
+            atomic_fetch_add_explicit(&state->keychain_calls, (uint_fast64_t)invoked, memory_order_relaxed);
         }
-        context.interactionNotAllowed = YES;
-        CFDictionarySetValue(query, kSecUseAuthenticationContext, context);
+        if (found != NULL) {
+            CFRelease(found);
+        }
+        return KEY_UNAVAILABLE;
     }
-    atomic_fetch_add_explicit(&state->keychain_calls, 1, memory_order_relaxed);
-    status = SecItemCopyMatching(query, &found);
-    CFRelease(query);
-    if (context != nil) {
-        [context release];
+    if (invoked > 0) {
+        atomic_fetch_add_explicit(&state->keychain_calls, (uint_fast64_t)invoked, memory_order_relaxed);
     }
-    CFRelease(service);
-    CFRelease(account);
     if (status != errSecSuccess) {
         if (found != NULL) {
             CFRelease(found);
         }
         return map_status(status);
     }
-    result = accept_password(state, (CFDataRef)found);
+    result = accept_password(state, found);
     CFRelease(found);
     return result;
 }
@@ -146,52 +114,39 @@ static void base64_16(const uint8_t raw[16], char out[25]) {
     out[24] = '\0';
 }
 
-enum key_result key_item_create_empty(struct key_state *state) {
+enum key_result key_item_create_empty(struct key_state *state, int caller_claims_absent) {
     uint8_t raw[16];
     char password[25];
-    CFStringRef service;
-    CFStringRef account;
-    CFDataRef secret = NULL;
-    CFMutableDictionaryRef query;
-    OSStatus status;
+    OSStatus status = errSecParam;
+    int invoked = 0;
     enum key_result loaded;
+    if (state == NULL) {
+        return KEY_UNAVAILABLE;
+    }
     if (SecRandomCopyBytes(kSecRandomDefault, sizeof raw, raw) != errSecSuccess) {
         mnemion_zero(raw, sizeof raw);
         return KEY_UNAVAILABLE;
     }
     base64_16(raw, password);
     mnemion_zero(raw, sizeof raw);
-    service = service_name();
-    account = account_name();
-    secret = CFDataCreate(NULL, (const UInt8 *)password, 24);
-    query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    if (service == NULL || account == NULL || secret == NULL || query == NULL) {
+    if (fixture_store_add_new((const uint8_t *)password, 24, caller_claims_absent, &status, &invoked) != 0) {
         mnemion_zero(password, sizeof password);
-        if (service != NULL) CFRelease(service);
-        if (account != NULL) CFRelease(account);
-        if (secret != NULL) CFRelease(secret);
-        if (query != NULL) CFRelease(query);
+        if (invoked > 0) {
+            atomic_fetch_add_explicit(&state->keychain_calls, (uint_fast64_t)invoked, memory_order_relaxed);
+        }
         return KEY_UNAVAILABLE;
     }
-    CFDictionarySetValue(query, kSecClass, kSecClassGenericPassword);
-    CFDictionarySetValue(query, kSecAttrService, service);
-    CFDictionarySetValue(query, kSecAttrAccount, account);
-    CFDictionarySetValue(query, kSecValueData, secret);
-    CFDictionarySetValue(query, kSecAttrAccessible, kSecAttrAccessibleWhenUnlocked);
-    atomic_fetch_add_explicit(&state->keychain_calls, 1, memory_order_relaxed);
-    status = SecItemAdd(query, NULL);
-    CFRelease(query);
-    CFRelease(secret);
-    CFRelease(service);
-    CFRelease(account);
+    if (invoked > 0) {
+        atomic_fetch_add_explicit(&state->keychain_calls, (uint_fast64_t)invoked, memory_order_relaxed);
+    }
     mnemion_zero(password, sizeof password);
     if (status == errSecDuplicateItem) {
-        /* Somebody else created it. Read it. Never replace it. */
-        return key_item_load(state, 1);
+        /* The explicit store already has the item. Read it. Never replace it. */
+        return key_item_load(state);
     }
     if (status != errSecSuccess) {
         return map_status(status);
     }
-    loaded = key_item_load(state, 1);
+    loaded = key_item_load(state);
     return loaded;
 }

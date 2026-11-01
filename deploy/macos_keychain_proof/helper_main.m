@@ -1,6 +1,8 @@
 /* Compiled with -fno-objc-arc and -DOS_OBJECT_USE_OBJC=0. XPC retains stay manual. */
 
 #include "auth.h"
+#include "fixture_store.h"
+#include "fixture_store_syntax.h"
 #include "key_item.h"
 #include "protocol.h"
 #include "v10_crypt.h"
@@ -116,6 +118,8 @@ static void send_now(xpc_connection_t peer, xpc_object_t event, const char *resu
 }
 
 static int allowed_key(const char *key) {
+    /* Service, account, and store path are not request fields.
+       empty_profile is accepted and is not a store or ciphertext proof. */
     return strcmp(key, "op") == 0 || strcmp(key, "value") == 0 || strcmp(key, "empty_profile") == 0;
 }
 
@@ -206,17 +210,19 @@ static int payload_acceptable(const char *op, const uint8_t *value, size_t value
     return 1;
 }
 
-static enum key_result ensure_key(int empty_profile) {
+static enum key_result ensure_key(int allow_create, int caller_claims_absent) {
     enum key_result result;
     if (g_key.derived_valid) {
         return KEY_OK;
     }
-    result = key_item_load(&g_key, 1);
+    result = key_item_load(&g_key);
     if (result == KEY_OK) {
         return KEY_OK;
     }
-    if (result == KEY_ABSENT && empty_profile) {
-        return key_item_create_empty(&g_key);
+    /* allow_create only starts the one-time transaction. The claim is not
+       evidence that the ciphertext directory is empty or that the key is absent. */
+    if (result == KEY_ABSENT && allow_create) {
+        return key_item_create_empty(&g_key, caller_claims_absent);
     }
     key_state_zero(&g_key);
     return result;
@@ -293,26 +299,28 @@ static void perform(struct job *job) {
         if (g_key.derived_valid) {
             name = "ok";
         } else {
-            loaded = key_item_load(&g_key, 0);
+            loaded = key_item_load(&g_key);
             if (loaded != KEY_OK) {
                 key_state_zero(&g_key);
             }
             name = result_name(loaded);
         }
     } else if (strcmp(job->op, "seal") == 0) {
-        loaded = ensure_key(job->empty_profile);
+        loaded = ensure_key(1, job->empty_profile);
         if (loaded != KEY_OK) {
             name = result_name(loaded);
         } else if (v10_seal(g_key.derived, job->value, job->value_len, output, sizeof output, &output_len) != 0 ||
                    output_len == 0 || v10_ciphertext_bounds(output, output_len) != 0) {
             name = "rejected";
+        } else if (fixture_store_publish_ciphertext(output, output_len) != 0) {
+            name = "unavailable";
         } else {
             name = "ok";
             payload = output;
             payload_len = output_len;
         }
     } else if (strcmp(job->op, "open") == 0) {
-        loaded = ensure_key(0);
+        loaded = ensure_key(0, job->empty_profile);
         if (loaded != KEY_OK) {
             name = result_name(loaded);
         } else if (v10_open(g_key.derived, job->value, job->value_len, output, sizeof output, &output_len) != 0 ||
@@ -457,8 +465,8 @@ static void new_peer(xpc_connection_t peer) {
     xpc_connection_resume(peer);
 }
 
-int main(void) {
-    if (auth_pin_shape_ok() != 0) {
+int main(int argc, char **argv) {
+    if (auth_caller_pin_shape_ok() != 0) {
         fprintf(stderr, "pin_rejected\n");
         return 1;
     }
@@ -466,6 +474,17 @@ int main(void) {
         fprintf(stderr, "compile_only_pins\n");
         return 3;
     }
+    if (fixture_store_runtime_allowed() != 0) {
+        fprintf(stderr, "store_config_rejected\n");
+        return 1;
+    }
+    /* Normal launchd startup has no extra argument. The sealed header is the
+       run. Extra argv is refused. Environment and XPC fields are not read. */
+    if (fixture_syntax_helper_launch(argc, NULL, NULL) != FIXTURE_SYNTAX_OK || fixture_store_bind() != 0) {
+        fprintf(stderr, "store_refused\n");
+        return 1;
+    }
+    (void)argv;
     key_state_init(&g_key);
     if (auth_build_parent_requirement(g_parent_requirement, sizeof g_parent_requirement) != 0) {
         return 1;

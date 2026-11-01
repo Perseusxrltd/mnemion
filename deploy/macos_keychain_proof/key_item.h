@@ -5,13 +5,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Login-item lookup for the fixed service and account only.
+/* Fixture-store lookup for the sealed synthetic service and account only.
    No path, ACL, partition, access group, or raw-key return across XPC.
    keychain_calls counts SecItem entries and is not a credential.
-   allow_prompt 0 installs an LAContext with interactionNotAllowed, so a
-   lookup that would show UI fails. It does not change the item, its ACL,
-   or its partition. allow_prompt nonzero omits that context: the system
-   creates one for a first-use prompt. */
+   The store guard disables file-Keychain UI for the call and restores it.
+   Creation is the one-time directory transaction. A caller claim that the
+   profile is empty is not evidence. */
 
 enum key_result {
     KEY_OK = 0,
@@ -30,7 +29,7 @@ struct key_state {
 void key_state_init(struct key_state *state);
 void key_state_zero(struct key_state *state);
 
-enum key_result key_item_load(struct key_state *state, int allow_prompt);
-enum key_result key_item_create_empty(struct key_state *state);
+enum key_result key_item_load(struct key_state *state);
+enum key_result key_item_create_empty(struct key_state *state, int caller_claims_absent);
 
 #endif

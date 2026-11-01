@@ -34,18 +34,45 @@ jobs:
         shell: bash
         run: |
           mkdir -p deploy/macos_keychain_proof/generated
-          cat > deploy/macos_keychain_proof/generated/parent_pin.h << 'EOF'
-          #ifndef MNEMION_PARENT_PIN_H
-          #define MNEMION_PARENT_PIN_H
+          cat > deploy/macos_keychain_proof/generated/caller_pin.h << 'EOF'
+          #ifndef MNEMION_CALLER_PIN_H
+          #define MNEMION_CALLER_PIN_H
           /* compile_only: not a certificate, not a frozen helper, not native acceptance. */
           #define MNEMION_PIN_CLASS "compile_only"
           #define MNEMION_PIN_METADATA "compile_only: not a certificate, not a frozen helper, not native acceptance"
           #define MNEMION_FIXTURE_LEAF_SHA1 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
           #define MNEMION_FIXTURE_LEAF_SHA256 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+          #endif
+          EOF
+          cat > deploy/macos_keychain_proof/generated/parent_pin.h << 'EOF'
+          #ifndef MNEMION_PARENT_PIN_H
+          #define MNEMION_PARENT_PIN_H
+          /* compile_only placeholders. Not runtime helper pins. */
           #define MNEMION_HELPER_CDHASH "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
           #define MNEMION_HELPER_MANIFEST_SHA256 "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
           #define MNEMION_SEALED_HELPER_IDENTIFIER "com.perseusxr.mnemion-studio.credential-helper"
           #define MNEMION_HELPER_DESIGNATED "identifier \"com.perseusxr.mnemion-studio.credential-helper\" and certificate leaf = H\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\""
+          #endif
+          EOF
+          cat > deploy/macos_keychain_proof/generated/fixture_store_config.h << 'EOF'
+          #ifndef MNEMION_FIXTURE_STORE_CONFIG_H
+          #define MNEMION_FIXTURE_STORE_CONFIG_H
+          /* compile_only: not an owned store, not native acceptance. */
+          #define MNEMION_FIXTURE_STORE_CLASS "compile_only"
+          #define MNEMION_FIXTURE_STORE_METADATA "compile_only: not an owned store, not native acceptance"
+          #define MNEMION_FIXTURE_SERVICE_PREFIX "mnemion-disposable-service-"
+          #define MNEMION_FIXTURE_ACCOUNT_PREFIX "mnemion-disposable-account-"
+          #define MNEMION_FIXTURE_STORE_BASENAME "throwaway.keychain"
+          #define MNEMION_FIXTURE_RECORD_BASENAME "fixture-run.txt"
+          #define MNEMION_FIXTURE_RUN_DIRECTORY "/compile-only/not-a-run"
+          #define MNEMION_FIXTURE_NONCE "00000000000000000000000000000000"
+          #define MNEMION_FIXTURE_EUID 0
+          #define MNEMION_FIXTURE_RUN_DEVICE 0
+          #define MNEMION_FIXTURE_RUN_INODE 0
+          #define MNEMION_FIXTURE_STORE_DEVICE 0
+          #define MNEMION_FIXTURE_STORE_INODE 0
+          #define MNEMION_FIXTURE_SERVICE "mnemion-disposable-service-00000000000000000000000000000000"
+          #define MNEMION_FIXTURE_ACCOUNT "mnemion-disposable-account-00000000000000000000000000000000"
           #endif
           EOF
       - name: Compile helper, parent, and identity tool

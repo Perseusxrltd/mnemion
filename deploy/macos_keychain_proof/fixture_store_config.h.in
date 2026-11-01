@@ -1,0 +1,25 @@
+#ifndef MNEMION_FIXTURE_STORE_CONFIG_H
+#define MNEMION_FIXTURE_STORE_CONFIG_H
+/* The later disposable recipe writes generated/fixture_store_config.h
+   after it creates the private run and before it freezes the helper.
+   An unsubstituted build must not compile. Required macros:
+     MNEMION_FIXTURE_STORE_CLASS "fixture"
+     MNEMION_FIXTURE_STORE_METADATA one line that does not say compile_only
+       and does not contain UNSUBSTITUTED
+     MNEMION_FIXTURE_SERVICE_PREFIX "mnemion-disposable-service-"
+     MNEMION_FIXTURE_ACCOUNT_PREFIX "mnemion-disposable-account-"
+     MNEMION_FIXTURE_STORE_BASENAME "throwaway.keychain"
+     MNEMION_FIXTURE_RECORD_BASENAME "fixture-run.txt"
+     MNEMION_FIXTURE_RUN_DIRECTORY canonical absolute run path
+     MNEMION_FIXTURE_NONCE 32 lowercase hex digits
+     MNEMION_FIXTURE_EUID expected effective uid, an integer
+     MNEMION_FIXTURE_RUN_DEVICE and MNEMION_FIXTURE_RUN_INODE
+     MNEMION_FIXTURE_STORE_DEVICE and MNEMION_FIXTURE_STORE_INODE
+     MNEMION_FIXTURE_SERVICE prefix plus nonce
+     MNEMION_FIXTURE_ACCOUNT prefix plus nonce
+   The run record must match these sealed values. A compile_only class
+   refuses runtime. No extra argv, environment value, or XPC field can
+   replace this header. Prefixes other than the fixed synthetic names,
+   including ProtectedCloudStorage, refuse. */
+#error "Unsubstituted fixture store config. Review the source, then run the manual macOS recipe."
+#endif

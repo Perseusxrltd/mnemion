@@ -5,6 +5,8 @@
 
 #include "auth.h"
 #include "bundle_manifest.h"
+#include "exact_helper.h"
+#include "fixture_store.h"
 #include "parent_pin.h"
 #include "protocol.h"
 #include "signing.h"
@@ -57,7 +59,7 @@ struct reply_owner {
 };
 
 static void usage(void) {
-    fprintf(stderr, "usage: parent check-helper|availability|seal|open|framing-unknown|framing-oversize|drop|direct-lookup\n");
+    fprintf(stderr, "usage: parent check-helper|availability|seal|open|framing-unknown|framing-oversize|drop|direct-lookup [sealed-run]\n");
 }
 
 static void emit(const char *result, long long calls) {
@@ -106,7 +108,8 @@ static int verify_helper(const char *bundle, char *helper_requirement, size_t re
     if (length < 0 || (size_t)length >= sizeof helper) {
         return -1;
     }
-    if (auth_pin_shape_ok() != 0 || auth_build_helper_requirement(helper_requirement, requirement_cap) != 0) {
+    if (auth_caller_pin_shape_ok() != 0 || auth_exact_helper_pin_shape_ok() != 0 ||
+        auth_build_helper_requirement(helper_requirement, requirement_cap) != 0) {
         return -1;
     }
     /* Manifest, cdhash, identifier, and designated requirement are sealed
@@ -423,34 +426,27 @@ static int write_new(const char *path, const uint8_t *bytes, size_t length) {
     return 0;
 }
 
-/* Proof fixture only. The disposable account and Keychain guard is still
-   pending. This command is not a product feature and not native acceptance. */
+/* Proof fixture only. Binds the sealed run, not a caller-selected store.
+   This command is not a product feature and not native acceptance. */
 static int direct_lookup(void) {
-    CFStringRef service = CFStringCreateWithCString(NULL, MNEMION_KEYCHAIN_SERVICE, kCFStringEncodingUTF8);
-    CFStringRef account = CFStringCreateWithCString(NULL, MNEMION_KEYCHAIN_ACCOUNT, kCFStringEncodingUTF8);
-    CFMutableDictionaryRef query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    CFTypeRef found = NULL;
-    OSStatus status;
+    CFDataRef found = NULL;
+    OSStatus status = errSecParam;
+    int invoked = 0;
     const char *name = "unavailable";
-    if (service == NULL || account == NULL || query == NULL) {
-        if (service != NULL) {
-            CFRelease(service);
-        }
-        if (account != NULL) {
-            CFRelease(account);
-        }
-        if (query != NULL) {
-            CFRelease(query);
-        }
+    if (fixture_store_runtime_allowed() != 0 || fixture_store_bind() != 0) {
+        fprintf(stderr, "store_refused\n");
+        printf("result=unavailable\nkeychain_calls=0\n");
         return 1;
     }
-    CFDictionarySetValue(query, kSecClass, kSecClassGenericPassword);
-    CFDictionarySetValue(query, kSecAttrService, service);
-    CFDictionarySetValue(query, kSecAttrAccount, account);
-    CFDictionarySetValue(query, kSecReturnData, kCFBooleanTrue);
-    CFDictionarySetValue(query, kSecMatchLimit, kSecMatchLimitOne);
-    fprintf(stderr, "direct_lookup=prompt_possible\n");
-    status = SecItemCopyMatching(query, &found);
+    if (fixture_store_copy_matching(&found, &status, &invoked) != 0) {
+        if (found != NULL) {
+            CFRelease(found);
+        }
+        fprintf(stderr, "store_refused\n");
+        printf("result=unavailable\nkeychain_calls=%d\n", invoked);
+        return 1;
+    }
+    fprintf(stderr, "direct_lookup=interaction_bracket\n");
     if (status == errSecSuccess) {
         /* The password bytes are released with the process. They are not printed. */
         name = "ok";
@@ -464,10 +460,7 @@ static int direct_lookup(void) {
     if (found != NULL) {
         CFRelease(found);
     }
-    CFRelease(query);
-    CFRelease(service);
-    CFRelease(account);
-    printf("result=%s\nkeychain_calls=1\n", name);
+    printf("result=%s\nkeychain_calls=%d\n", name, invoked);
     return strcmp(name, "ok") == 0 ? 0 : 1;
 }
 
@@ -495,7 +488,7 @@ int main(int argc, char **argv) {
     xpc_object_t message;
     const char *command;
     int status;
-    if (auth_pin_shape_ok() != 0) {
+    if (auth_caller_pin_shape_ok() != 0 || auth_exact_helper_pin_shape_ok() != 0) {
         fprintf(stderr, "pin_rejected\n");
         return 1;
     }
@@ -503,12 +496,25 @@ int main(int argc, char **argv) {
         fprintf(stderr, "compile_only_pins\n");
         return 3;
     }
+    if (fixture_store_runtime_allowed() != 0) {
+        fprintf(stderr, "store_config_rejected\n");
+        return 1;
+    }
     if (argc < 2) {
         usage();
         return 2;
     }
     command = argv[1];
-    if (strcmp(command, "direct-lookup") == 0 && argc == 2) {
+    if (strcmp(command, "direct-lookup") == 0) {
+        if (argc == 3 && fixture_store_argument_matches_seal(argv[2]) != 0) {
+            fprintf(stderr, "store_refused\n");
+            printf("result=unavailable\nkeychain_calls=0\n");
+            return 1;
+        }
+        if (argc != 2 && argc != 3) {
+            usage();
+            return 2;
+        }
         return direct_lookup();
     }
     if (bundle_root(bundle, sizeof bundle) != 0 ||
@@ -565,7 +571,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     if (strcmp(command, "seal") == 0 && (argc == 4 || (argc == 5 && strcmp(argv[2], "--empty-profile") == 0))) {
-        /* --empty-profile is only a caller assertion. The fixture must still prove emptiness. */
+        /* --empty-profile does not name a store and is not evidence the directory is empty. */
         int empty = argc == 5;
         const char *input = argv[empty ? 3 : 2];
         const char *output = argv[empty ? 4 : 3];

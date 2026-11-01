@@ -15,7 +15,8 @@
 #define MNEMION_HELPER_SERVICE "com.perseusxr.mnemion-studio.credential-helper"
 
 /* Reporter item, docs/validation/2026-10-29-macos-keychain.md. A helper
-   bundle rename must not change these lookup strings. */
+   bundle rename must not change these production lookup strings. Fixture
+   lookups do not use them. The disposable store guard rejects them. */
 #define MNEMION_KEYCHAIN_SERVICE "mnemion-studio Safe Storage"
 #define MNEMION_KEYCHAIN_ACCOUNT "mnemion-studio Key"
 
