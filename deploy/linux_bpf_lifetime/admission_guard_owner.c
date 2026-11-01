@@ -84,20 +84,47 @@ static int arm_absolute(int tfd, const struct timespec *when)
 	return timerfd_settime(tfd, TFD_TIMER_ABSTIME, &spec, NULL);
 }
 
+/* One read on a nonblocking timerfd. Eight bytes and a nonzero expiration
+ * count are the consumed coalesced count. EAGAIN, EINTR, a short or empty
+ * read, and any other error are not a consumed expiration and are not
+ * retried. Callers still keep the timeout they already took from poll or
+ * from the absolute deadline.
+ */
 static void consume_timer(int tfd)
 {
 	uint64_t ticks = 0;
+	ssize_t n;
 
-	if (tfd >= 0)
-		(void)read(tfd, &ticks, sizeof ticks);
+	if (tfd < 0)
+		return;
+	n = read(tfd, &ticks, sizeof ticks);
+	if (n == (ssize_t)sizeof ticks && ticks > 0)
+		return;
+	if (n < 0 && (errno == EINTR || errno == EAGAIN))
+		return;
+	/* Short, empty, or another errno. The read did not return an expiration. */
+	return;
 }
 
+/* One read on a nonblocking signalfd. A full signalfd_siginfo with a signal
+ * number is one consumed signal. EAGAIN, EINTR, a short or empty read, and
+ * any other error are not a consumed signal and are not retried. Callers
+ * still keep the interruption they already took from poll.
+ */
 static void consume_signal(int sfd)
 {
-	struct signalfd_siginfo info;
+	struct signalfd_siginfo info = {0};
+	ssize_t n;
 
-	if (sfd >= 0)
-		(void)read(sfd, &info, sizeof info);
+	if (sfd < 0)
+		return;
+	n = read(sfd, &info, sizeof info);
+	if (n == (ssize_t)sizeof info && info.ssi_signo != 0)
+		return;
+	if (n < 0 && (errno == EINTR || errno == EAGAIN))
+		return;
+	/* Short, empty, or another errno. The read did not return a signal. */
+	return;
 }
 
 static void note_child_status(struct external_owner_result *out, int status)
