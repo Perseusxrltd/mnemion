@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.46.62",
-    "published_at": "2026-10-31T12:29:29Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.62"
+    "version": "v4.46.63",
+    "published_at": "2026-11-01T21:54:44Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.63"
   },
   "issues": [
     {
@@ -57,48 +57,26 @@
   ],
   "runs": [
     {
-      "id": 41349558745,
+      "id": 41355948958,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "30782814a92356991102316b8d64932850a0e938",
+      "source_commit": "a2d5d74da82a76282ac9c3a8e8c6b9d4dce94300",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-11-01T21:25:30Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41349558745"
+      "updated_at": "2026-11-01T22:50:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41355948958"
     },
     {
-      "id": 41301105859,
-      "attempt": 1,
-      "workflow": "database-cache.yml",
-      "branch": "main",
-      "source_commit": "d6214e31e893c7842213cff5c4d8b6b152b6a8ce",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-11-01T11:23:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41301105859"
-    },
-    {
-      "id": 41201338411,
+      "id": 41354406946,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.46.62",
-      "source_commit": "1bc16c1e299e642a9e8f5591f93118ac5df04939",
+      "branch": "v4.46.63",
+      "source_commit": "4c76ecac17771d424b8fe21ecae898696dbcc710",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T12:41:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201338411"
-    },
-    {
-      "id": 41196826469,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.62",
-      "source_commit": "1bc16c1e299e642a9e8f5591f93118ac5df04939",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-31T12:24:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41196826469"
+      "updated_at": "2026-11-01T22:06:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41354406946"
     },
     {
       "id": 41349211852,
@@ -106,10 +84,21 @@
       "workflow": "release.yml",
       "branch": "release/4.46.63",
       "source_commit": "4c76ecac17771d424b8fe21ecae898696dbcc710",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-11-01T21:49:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41349211852"
+    },
+    {
+      "id": 41355830658,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.46.64",
+      "source_commit": "23a3fc8684f573a93abc7b4f7168f159db90c2e4",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-11-01T20:59:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41349211852",
+      "updated_at": "2026-11-01T22:15:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41355830658",
       "job_details_schema": 2,
       "job_progress": {
         "total": 21,
@@ -117,7 +106,7 @@
         "succeeded": 18,
         "active": [
           {
-            "id": 124976746115,
+            "id": 124996750912,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
@@ -126,12 +115,12 @@
             ]
           },
           {
-            "id": 124976746132,
-            "name": "native / windows-2022 / x64",
+            "id": 124996750965,
+            "name": "native / macos-15-intel / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -139,38 +128,38 @@
       "failed_jobs": []
     },
     {
-      "id": 41200981019,
+      "id": 41353986084,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "97a90b26f357a96246d2ce15ebcc4e6a23175d1d",
+      "source_commit": "93ab27c418b664ff26434a24127c21af913295ab",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T12:29:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019"
+      "updated_at": "2026-11-01T21:54:53Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41353986084"
     },
     {
-      "id": 41349558820,
+      "id": 41356870595,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "30782814a92356991102316b8d64932850a0e938",
+      "source_commit": "a2d5d74da82a76282ac9c3a8e8c6b9d4dce94300",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-11-01T20:58:45Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41349558820"
+      "updated_at": "2026-11-01T22:23:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41356870595"
     },
     {
-      "id": 41201336239,
+      "id": 41354404727,
       "attempt": 1,
       "workflow": "website-release.yml",
-      "branch": "v4.46.62",
-      "source_commit": "1bc16c1e299e642a9e8f5591f93118ac5df04939",
+      "branch": "v4.46.63",
+      "source_commit": "4c76ecac17771d424b8fe21ecae898696dbcc710",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-31T12:29:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
+      "updated_at": "2026-11-01T21:55:04Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41354404727"
     }
   ],
-  "observed_at": "2026-11-01T21:26:07+00:00"
+  "observed_at": "2026-11-01T22:51:33+00:00"
 }
