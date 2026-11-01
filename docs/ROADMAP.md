@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.63**.
+Reviewed source distribution: **4.46.64**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-11-01**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -35,6 +35,16 @@ separate from telemetry's own overhead allowance.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+**1 November 2026, source access and host recovery:**
+The 4.46.64 batch retains owned directory and journal access-stop receipts,
+including safe replay and withholding until a complete scan. All
+[24 focused source-access checks](validation/2026-11-01-source-abort-diagnostics.md)
+passed. The accompanying [Git-cache recovery checks](validation/2026-11-01-git-cache-restore.md)
+passed all 22 selected cases and preserve both key policies and resumable
+restore behavior. Unavailable live filesystem sources and the remaining
+GitHub issue #47 acceptance stay open. These fixes add no background worker
+or model load; all 66 requirement states and V08's inactive status are unchanged.
 
 **31 October 2026, Python permission reads and Linux residency:**
 The [source follow-up](validation/2026-10-31-telemetry-permission-and-residency.md)
