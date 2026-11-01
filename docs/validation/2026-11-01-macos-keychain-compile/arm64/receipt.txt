@@ -1,0 +1,21 @@
+lane=compile_only
+runtime_validation=not_performed
+native_acceptance=not_claimed
+binary_executed=no
+codesign=not_called
+security_tool=not_called
+certificate_der_comparison=not_performed
+fixture_store_guard=source_linked_not_executed
+interaction_bracket=source_linked_not_executed
+sealed_fixture=source_linked_not_executed
+creation_marker=source_linked_not_executed
+exact_helper_pins=parent_only
+signer_controller=not_this_lane
+keychain=not_modified
+electron=not_used
+arch=arm64
+deployment_target=13.0
+   97880 /Users/runner/work/_temp/keychain-compile-only/bin/MnemionCredentialHelper
+   97384 /Users/runner/work/_temp/keychain-compile-only/bin/MnemionCredentialParent
+   34800 /Users/runner/work/_temp/keychain-compile-only/bin/MnemionIdentityDump
+compile_result=objects_linked_not_executed

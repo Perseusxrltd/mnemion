@@ -95,3 +95,8 @@ Issue 50 stays open. Normal-helper source and 19 fixture checks are the
 evidence linked from the issue plan. Actual affected-Mac acceptance is still
 open. No Mac keychain was unlocked, no installed Studio was modified, and no
 version was bumped.
+
+The [1 November Mac fixture compilation](2026-11-01-macos-keychain-compile.md)
+passed compilation and linkage on Intel and ARM64. No fixture binary ran and
+no Keychain was changed. Wrapper, filesystem, signing and affected-user
+acceptance remain separate; this compile milestone does not close issue 50.

@@ -1,0 +1,82 @@
+{
+  "run_id": 41346487519,
+  "run_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41346487519",
+  "attempt": 1,
+  "source": "4c76ecac17771d424b8fe21ecae898696dbcc710",
+  "conclusion": "success",
+  "scope": "compile_and_link_only",
+  "fixture_binaries_executed": false,
+  "behavioral_tests_executed": false,
+  "keychain_operations_performed": false,
+  "product_acceptance": false,
+  "artifacts": [
+    {
+      "architecture": "x86_64",
+      "runner": "macos-15-intel",
+      "job_id": 124967295110,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41346487519/job/124967295110",
+      "artifact_id": 13099137471,
+      "artifact_sha256": "58b583d006788810502e4b55bc95fa99a6bae12ce19ab39a9364f37dd6c70a69",
+      "members": [
+        {
+          "path": "x86_64/receipt.txt",
+          "bytes": 793,
+          "sha256": "fd700d5a4aed5cc97f66bd36ed35f63bc881e6336643e97b9865f95a01ae3a02",
+          "verbatim": true
+        },
+        {
+          "path": "x86_64/helper.txt",
+          "bytes": 16,
+          "sha256": "a7cdfe2dadd1b9e389db58d8991b164da599abbf13ad41557bdf56d62b2586ba",
+          "verbatim": true
+        },
+        {
+          "path": "x86_64/parent.txt",
+          "bytes": 16,
+          "sha256": "a7cdfe2dadd1b9e389db58d8991b164da599abbf13ad41557bdf56d62b2586ba",
+          "verbatim": true
+        },
+        {
+          "path": "x86_64/identity.txt",
+          "bytes": 16,
+          "sha256": "a7cdfe2dadd1b9e389db58d8991b164da599abbf13ad41557bdf56d62b2586ba",
+          "verbatim": true
+        }
+      ]
+    },
+    {
+      "architecture": "arm64",
+      "runner": "macos-26",
+      "job_id": 124967295431,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41346487519/job/124967295431",
+      "artifact_id": 13099795897,
+      "artifact_sha256": "207ef68a12483fd2a31635f56697ea0320111a048c5f192e0a5793410b86eacf",
+      "members": [
+        {
+          "path": "arm64/receipt.txt",
+          "bytes": 792,
+          "sha256": "1457632ca44348e55214239f360bbca20ed10cb67c4db2a5505b7d309a19e72e",
+          "verbatim": true
+        },
+        {
+          "path": "arm64/helper.txt",
+          "bytes": 16,
+          "sha256": "a7cdfe2dadd1b9e389db58d8991b164da599abbf13ad41557bdf56d62b2586ba",
+          "verbatim": true
+        },
+        {
+          "path": "arm64/parent.txt",
+          "bytes": 16,
+          "sha256": "a7cdfe2dadd1b9e389db58d8991b164da599abbf13ad41557bdf56d62b2586ba",
+          "verbatim": true
+        },
+        {
+          "path": "arm64/identity.txt",
+          "bytes": 16,
+          "sha256": "a7cdfe2dadd1b9e389db58d8991b164da599abbf13ad41557bdf56d62b2586ba",
+          "verbatim": true
+        }
+      ]
+    }
+  ]
+}
