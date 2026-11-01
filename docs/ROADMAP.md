@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.62**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-31**.
+Reviewed source distribution: **4.46.63**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-11-01**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
