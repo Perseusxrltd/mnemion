@@ -56,11 +56,17 @@ static const char *k_setup_fail_readback =
     "ui_get,ui_set_disable,ui_get_readback,ui_set_restore,ui_get_readback";
 static const char *k_open_fail =
     "ui_get,ui_set_disable,ui_get_readback,sec_open,ui_set_restore,ui_get_readback";
+/* copy_matching_holding() revalidates the bound store before its copy query
+   (fixture_store.m), so these copy orders, and dispose-parent's copy bracket,
+   require one sec_path immediately before sec_copy. add_holding() revalidates
+   and then calls that function, so the six add/probe orders require two
+   adjacent sec_path tokens before sec_copy. Both checks stay exact. */
 static const char *k_copy_hit =
-    "ui_get,ui_set_disable,ui_get_readback,sec_copy,sec_item_keychain,sec_path,ui_set_restore,ui_get_readback";
-static const char *k_copy_miss = "ui_get,ui_set_disable,ui_get_readback,sec_copy,ui_set_restore,ui_get_readback";
+    "ui_get,ui_set_disable,ui_get_readback,sec_path,sec_copy,sec_item_keychain,sec_path,ui_set_restore,ui_get_readback";
+static const char *k_copy_miss =
+    "ui_get,ui_set_disable,ui_get_readback,sec_path,sec_copy,ui_set_restore,ui_get_readback";
 static const char *k_copy_restore_fail =
-    "ui_get,ui_set_disable,ui_get_readback,sec_copy,sec_item_keychain,sec_path,ui_set_restore";
+    "ui_get,ui_set_disable,ui_get_readback,sec_path,sec_copy,sec_item_keychain,sec_path,ui_set_restore";
 
 static void fail(void) {
     g_bad = 1;
@@ -441,7 +447,7 @@ static int case_dispose_parent(void) {
     expect(strcmp(err_text, "store_refused\n") == 0);
     expect(strcmp(g_order_buf,
                   "ui_get,ui_set_disable,ui_get_readback,sec_open,sec_path,ui_set_restore,ui_get_readback,ui_get,"
-                  "ui_set_disable,ui_get_readback,sec_copy,sec_item_keychain,sec_path,ui_set_restore") == 0);
+                  "ui_set_disable,ui_get_readback,sec_path,sec_copy,sec_item_keychain,sec_path,ui_set_restore") == 0);
     expect(strstr(out_text, "fixture-synthetic") == NULL);
     expect(strstr(err_text, "fixture-synthetic") == NULL);
     finish_counts(before_data, before_issued, before_disposed);
@@ -674,7 +680,7 @@ int main(int argc, char **argv) {
         expect(strcmp(g_add, "not_called") == 0);
     } else if (strcmp(name, "ciphertext-missing-key") == 0) {
         case_add(1, FIXTURE_COPY_ABSENT, FIXTURE_ADD_FAIL, FIXTURE_FS_NONE, FIXTURE_PAUSE_NONE,
-                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_copy,ui_set_restore,ui_get_readback,"
+                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_path,sec_path,sec_copy,ui_set_restore,ui_get_readback,"
                  "lock_released",
                  -1, errSecParam, "ciphertext_present", "expected_refusal", "injected_api");
         expect(strcmp(g_marker, "absent") == 0);
@@ -682,7 +688,7 @@ int main(int argc, char **argv) {
         expect(strcmp(g_add, "not_called") == 0);
     } else if (strcmp(name, "add-fail") == 0) {
         case_add(1, FIXTURE_COPY_ABSENT, FIXTURE_ADD_FAIL, FIXTURE_FS_NONE, FIXTURE_PAUSE_NONE,
-                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_copy,marker_create,marker_fsync,dir_fsync,"
+                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_path,sec_path,sec_copy,marker_create,marker_fsync,dir_fsync,"
                  "sec_add,ui_set_restore,ui_get_readback,lock_released",
                  0, errSecAuthFailed, "add", "expected_refusal", "injected_api");
         expect(strcmp(g_marker, "present") == 0);
@@ -698,21 +704,21 @@ int main(int argc, char **argv) {
         case_publish(FIXTURE_FS_PUBLISH_DIR_FSYNC, "publish_dir_fsync");
     } else if (strcmp(name, "marker-partial-write") == 0) {
         case_add(1, FIXTURE_COPY_ABSENT, FIXTURE_ADD_FAIL, FIXTURE_FS_MARKER_WRITE, FIXTURE_PAUSE_NONE,
-                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_copy,marker_create,marker_write_partial,"
+                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_path,sec_path,sec_copy,marker_create,marker_write_partial,"
                  "ui_set_restore,ui_get_readback,lock_released",
                  -1, errSecParam, "marker_write", "expected_refusal", "injected_fs");
         expect(strcmp(g_marker, "partial") == 0);
         expect(strcmp(g_add, "not_called") == 0);
     } else if (strcmp(name, "marker-fsync-fail") == 0) {
         case_add(1, FIXTURE_COPY_ABSENT, FIXTURE_ADD_FAIL, FIXTURE_FS_MARKER_FSYNC, FIXTURE_PAUSE_NONE,
-                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_copy,marker_create,marker_fsync_fail,"
+                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_path,sec_path,sec_copy,marker_create,marker_fsync_fail,"
                  "ui_set_restore,ui_get_readback,lock_released",
                  -1, errSecParam, "marker_fsync", "expected_refusal", "injected_fs");
         expect(strcmp(g_marker, "present") == 0);
         expect(strcmp(g_add, "not_called") == 0);
     } else if (strcmp(name, "marker-dir-fsync-fail") == 0) {
         case_add(1, FIXTURE_COPY_ABSENT, FIXTURE_ADD_FAIL, FIXTURE_FS_MARKER_DIR_FSYNC, FIXTURE_PAUSE_NONE,
-                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_copy,marker_create,marker_fsync,"
+                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_path,sec_path,sec_copy,marker_create,marker_fsync,"
                  "dir_fsync_fail,ui_set_restore,ui_get_readback,lock_released",
                  -1, errSecParam, "marker_dir_fsync", "expected_refusal", "injected_fs");
         expect(strcmp(g_marker, "present") == 0);
@@ -721,7 +727,7 @@ int main(int argc, char **argv) {
         case_restart_first();
     } else if (strcmp(name, "restart-second") == 0) {
         case_add(1, FIXTURE_COPY_ABSENT, FIXTURE_ADD_FAIL, FIXTURE_FS_NONE, FIXTURE_PAUSE_NONE,
-                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_copy,ui_set_restore,ui_get_readback,"
+                 "lock_acquired,ui_get,ui_set_disable,ui_get_readback,sec_path,sec_path,sec_copy,ui_set_restore,ui_get_readback,"
                  "lock_released",
                  -1, errSecParam, "restart_second", "expected_refusal", "process_restart");
         expect(strcmp(g_marker, "present") == 0);
