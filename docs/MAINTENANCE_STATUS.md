@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-11-01T20:51:24+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-01T21:26:07+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.62](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.62). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,10 +21,19 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 41346082060](https://github.com/Perseusxrltd/mnemion/actions/runs/41346082060) |
+| ci\.yml | main | success | [Run 41349558745](https://github.com/Perseusxrltd/mnemion/actions/runs/41349558745) |
 | database-cache\.yml | main | success | [Run 41301105859](https://github.com/Perseusxrltd/mnemion/actions/runs/41301105859) |
 | public-updates\.yml | v4\.46\.62 | success | [Run 41201338411](https://github.com/Perseusxrltd/mnemion/actions/runs/41201338411) |
 | release\.yml | release/4\.46\.62 | success | [Run 41196826469](https://github.com/Perseusxrltd/mnemion/actions/runs/41196826469) |
+| release\.yml | release/4\.46\.63 | in\_progress | [Run 41349211852](https://github.com/Perseusxrltd/mnemion/actions/runs/41349211852) |
 | verify-artifacts\.yml | main | success | [Run 41200981019](https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019) |
-| website-release\.yml | main | success | [Run 41344726166](https://github.com/Perseusxrltd/mnemion/actions/runs/41344726166) |
+| website-release\.yml | main | success | [Run 41349558820](https://github.com/Perseusxrltd/mnemion/actions/runs/41349558820) |
 | website-release\.yml | v4\.46\.62 | success | [Run 41201336239](https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239) |
+
+## Active jobs
+
+[Run 41349211852](https://github.com/Perseusxrltd/mnemion/actions/runs/41349211852): 19/21 jobs completed; 18 succeeded.
+
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
+
