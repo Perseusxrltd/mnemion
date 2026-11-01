@@ -69,8 +69,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "completed": 9,
+        "succeeded": 9,
         "active": [
           {
             "id": 124995926062,
@@ -97,15 +97,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124995926127,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           }
         ]
@@ -174,7 +165,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron test"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -242,5 +233,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41354404727"
     }
   ],
-  "observed_at": "2026-11-01T22:24:09+00:00"
+  "observed_at": "2026-11-01T22:29:01+00:00"
 }
