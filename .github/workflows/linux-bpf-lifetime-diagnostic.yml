@@ -1,17 +1,35 @@
 name: Linux BPF lifetime diagnostic
 
-# Manual compile-only dispatch. This does not adopt a backend, activate
-# telemetry, or accept a resource budget. The Ubuntu label is not a kernel pin.
-# The native collector is not qualified. It stays off unless run_native is
-# explicitly true on a later dispatch. Build outputs are retained either way.
+# Manual dispatch. The default lane compiles and does not execute a new
+# native binary. run_native=false with compile-only stays on that path.
+# run_native=false with guard-only executes the unprivileged guard.
+# run_native=true is refused and must not run direct or admit.
+# guard-only is a separate choice. An external owner runs only the
+# unprivileged guard check, with its own monotonic deadline and a separate
+# cleanup deadline. It does not signal a pid or process-group id. That lane
+# does not admit. Guard success requires the current owner status file to
+# be retained. A failed copy is not ignored.
+# admission-only is a separate choice. Root selects it later. It runs the
+# same owner around the unprivileged guard check, retains that current
+# status, then one admit into publisher-owned custody, then exports that
+# receipt for the current reader.
+# It does not adopt a backend, activate telemetry, or accept a resource budget.
 
 on:
   workflow_dispatch:
     inputs:
       run_native:
-        description: Later explicit capability run. Stays false. Does not qualify the collector.
+        description: Legacy switch. False with compile-only executes no new native binary. False with guard-only executes the guard. True is refused and does not run direct or admit.
         type: boolean
         default: false
+      lane:
+        description: compile-only runs no new native binary. guard-only is the unprivileged supervision lane. admission-only is the later explicit lane.
+        type: choice
+        options:
+          - compile-only
+          - guard-only
+          - admission-only
+        default: compile-only
 
 permissions:
   contents: read
@@ -39,17 +57,150 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang llvm gcc libc6-dev make pkg-config libbpf-dev libelf-dev zlib1g-dev linux-libc-dev python3 python3-pytest
-      - name: Build the CO-RE objects and loader
-        run: make -C deploy/linux_bpf_lifetime
+      - name: Build the CO-RE objects, loader, guard check, and owner
+        run: make -C deploy/linux_bpf_lifetime all
       - name: Run the offline parse and initialization checks
         run: python3 -m pytest tests/test_linux_bpf_lifetime_parse.py -q --noconftest
-      - name: Run one admitted diagnostic
+      - name: Refuse the legacy native switch
         if: ${{ inputs.run_native == true }}
+        run: |
+          echo "legacy run_native=true is refused and does not run direct or admit"
+          exit 1
+      - name: Run the guard-only lane
+        if: ${{ inputs.run_native == false && inputs.lane == 'guard-only' }}
+        run: |
+          set -u
+          invoke="$(mktemp -d "$RUNNER_TEMP/lifetime-guard-XXXXXX")"
+          mkdir -p deploy/linux_bpf_lifetime/ci-receipts
+          owner_status_retained() {
+            local file="$1"
+            local key
+            [ -f "$file" ] || return 1
+            for key in child_exited child_exit_code child_signaled child_term_signal timed_out interrupted cleanup_confirmed ownership_unresolved; do
+              grep -Eq "^${key}=-?[0-9]+$" "$file" || return 1
+            done
+          }
+          set +e
+          ./deploy/linux_bpf_lifetime/admission_guard_owner \
+            --run-ms 60000 --cleanup-ms 5000 \
+            --status "$invoke/guard-owner-status.txt" \
+            -- ./deploy/linux_bpf_lifetime/admission_guard_check \
+            > "$invoke/supervision-check.txt" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > deploy/linux_bpf_lifetime/ci-receipts/guard-check-status.txt
+          supervision_copy=0
+          cp -f "$invoke/supervision-check.txt" deploy/linux_bpf_lifetime/ci-receipts/supervision-check.txt || supervision_copy=$?
+          status_copy=0
+          cp -f "$invoke/guard-owner-status.txt" deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt || status_copy=$?
+          if [ "$supervision_copy" -ne 0 ] || [ "$status_copy" -ne 0 ] || ! owner_status_retained deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt; then
+            echo "owner_status_retention=failed"
+            echo "owner_exit=$rc"
+            if [ -s "$invoke/guard-owner-status.txt" ]; then
+              cat "$invoke/guard-owner-status.txt" >&2 || echo "owner_status_cat=failed"
+            fi
+            if [ -s "$invoke/supervision-check.txt" ]; then
+              cat "$invoke/supervision-check.txt" >&2 || echo "owner_supervision_cat=failed"
+            fi
+            if [ "$rc" -ne 0 ]; then
+              exit "$rc"
+            fi
+            exit 1
+          fi
+          if [ "$rc" -ne 0 ]; then
+            exit "$rc"
+          fi
+      - name: Run the admission-only lane
+        if: ${{ inputs.run_native == false && inputs.lane == 'admission-only' }}
         timeout-minutes: 5
         run: |
-          sudo ./deploy/linux_bpf_lifetime/lifetime_diag --mode admit --receipt "$RUNNER_TEMP/lifetime-admit.bin"
-          sudo ./deploy/linux_bpf_lifetime/lifetime_diag --mode direct --receipt "$RUNNER_TEMP/lifetime-direct.bin"
-          python3 -c 'import pathlib,sys; sys.path.insert(0,"."); from deploy.linux_bpf_lifetime.receipt import validate_receipt; p=pathlib.Path(r"'"$RUNNER_TEMP"'/lifetime-direct.bin"); r=validate_receipt(p.read_bytes()); print(r); raise SystemExit(0 if r["ok"] else 1)'
+          set -u
+          invoke="$(mktemp -d "$RUNNER_TEMP/lifetime-admit-XXXXXX")"
+          mkdir -p deploy/linux_bpf_lifetime/ci-receipts
+          owner_status_retained() {
+            local file="$1"
+            local key
+            [ -f "$file" ] || return 1
+            for key in child_exited child_exit_code child_signaled child_term_signal timed_out interrupted cleanup_confirmed ownership_unresolved; do
+              grep -Eq "^${key}=-?[0-9]+$" "$file" || return 1
+            done
+          }
+          set +e
+          ./deploy/linux_bpf_lifetime/admission_guard_owner \
+            --run-ms 60000 --cleanup-ms 5000 \
+            --status "$invoke/guard-owner-status.txt" \
+            -- ./deploy/linux_bpf_lifetime/admission_guard_check \
+            > "$invoke/supervision-check.txt" 2>&1
+          check_rc=$?
+          set -e
+          supervision_copy=0
+          cp -f "$invoke/supervision-check.txt" deploy/linux_bpf_lifetime/ci-receipts/supervision-check.txt || supervision_copy=$?
+          status_copy=0
+          cp -f "$invoke/guard-owner-status.txt" deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt || status_copy=$?
+          if [ "$supervision_copy" -ne 0 ] || [ "$status_copy" -ne 0 ] || ! owner_status_retained deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt; then
+            echo "owner_status_retention=failed"
+            echo "owner_exit=$check_rc"
+            echo "privileged admit was not started"
+            if [ -s "$invoke/guard-owner-status.txt" ]; then
+              cat "$invoke/guard-owner-status.txt" >&2 || echo "owner_status_cat=failed"
+            fi
+            if [ -s "$invoke/supervision-check.txt" ]; then
+              cat "$invoke/supervision-check.txt" >&2 || echo "owner_supervision_cat=failed"
+            fi
+            if [ "$check_rc" -ne 0 ]; then
+              exit "$check_rc"
+            fi
+            exit 1
+          fi
+          if [ "$check_rc" -ne 0 ]; then
+            echo "unprivileged supervision check failed; privileged admit was not started"
+            exit "$check_rc"
+          fi
+          set +e
+          custody="$(sudo mktemp -d "$RUNNER_TEMP/lifetime-custody-XXXXXX")"
+          if [ -z "$custody" ]; then
+            echo "publisher custody was not created"
+            exit 1
+          fi
+          echo "publisher_custody=$custody"
+          echo "publisher_receipt_removed=0"
+          sudo ./deploy/linux_bpf_lifetime/lifetime_diag --mode admit --receipt "$custody/lifetime-admit.bin"
+          admit_rc=$?
+          export_rc=1
+          if sudo test -f "$custody/lifetime-admit.bin"; then
+            sudo cp -f -- "$custody/lifetime-admit.bin" "$invoke/lifetime-admit.bin"
+            copy_rc=$?
+            sudo chown -- "$(id -u):$(id -g)" "$invoke/lifetime-admit.bin"
+            chown_rc=$?
+            sudo chmod -- 0444 "$invoke/lifetime-admit.bin"
+            mode_rc=$?
+            sudo cmp -s -- "$custody/lifetime-admit.bin" "$invoke/lifetime-admit.bin"
+            cmp_rc=$?
+            if [ "$copy_rc" -eq 0 ] && [ "$chown_rc" -eq 0 ] && [ "$mode_rc" -eq 0 ] && [ "$cmp_rc" -eq 0 ]; then
+              export_rc=0
+            else
+              rm -f -- "$invoke/lifetime-admit.bin"
+              echo "receipt_export=0"
+            fi
+          else
+            echo "receipt_export=0"
+          fi
+          reader_rc=1
+          if [ "$export_rc" -eq 0 ]; then
+            python3 deploy/linux_bpf_lifetime/admit_observe.py "$invoke/lifetime-admit.bin" > "$invoke/admission-verdict.txt"
+            reader_rc=$?
+          else
+            printf '%s\n' "receipt_export=0" "admission_verdict=fail" > "$invoke/admission-verdict.txt"
+          fi
+          set -e
+          if [ -f "$invoke/lifetime-admit.bin" ]; then
+            cp -f "$invoke/lifetime-admit.bin" deploy/linux_bpf_lifetime/ci-receipts/lifetime-admit.bin
+          fi
+          cp -f "$invoke/admission-verdict.txt" deploy/linux_bpf_lifetime/ci-receipts/admission-verdict.txt
+          cat "$invoke/admission-verdict.txt"
+          if [ "$admit_rc" -ne 0 ] || [ "$export_rc" -ne 0 ] || [ "$reader_rc" -ne 0 ]; then
+            exit 1
+          fi
       - name: Retain sanitized build outputs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -62,3 +213,26 @@ jobs:
             deploy/linux_bpf_lifetime/lifetime_bitfield.bpf.o
             deploy/linux_bpf_lifetime/lifetime_diag
             deploy/linux_bpf_lifetime/sha256_selftest
+      - name: Retain the admission receipt and verdict
+        if: ${{ always() && inputs.run_native == false && inputs.lane == 'admission-only' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-bpf-lifetime-admission-${{ matrix.os }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            deploy/linux_bpf_lifetime/ci-receipts/supervision-check.txt
+            deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt
+            deploy/linux_bpf_lifetime/ci-receipts/lifetime-admit.bin
+            deploy/linux_bpf_lifetime/ci-receipts/admission-verdict.txt
+      - name: Retain the guard-only status and output
+        if: ${{ always() && inputs.run_native == false && inputs.lane == 'guard-only' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-bpf-lifetime-guard-${{ matrix.os }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            deploy/linux_bpf_lifetime/ci-receipts/supervision-check.txt
+            deploy/linux_bpf_lifetime/ci-receipts/guard-check-status.txt
+            deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt

@@ -18,6 +18,7 @@
 #include <linux/bpf.h>
 #include <linux/btf.h>
 #include <linux/capability.h>
+#include <poll.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/random.h>
@@ -28,6 +29,8 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 
+#include "admission_guard.h"
+
 #include <bpf/bpf.h>
 #include <bpf/btf.h>
 #include <bpf/libbpf.h>
@@ -37,12 +40,13 @@
 #include "lifetime_receipt.h"
 #include "lifetime_sha256.h"
 
-/* Cleanup owner stays outside the owned cgroup and is the only process
- * that writes cgroup.kill. Descendants are not stopped by historical
- * numeric process ids. Scope is no external migration: a process a
- * privileged outsider moves out is outside this claim.
- * Birth launch is clone3 with CLONE_INTO_CGROUP. A write of a process id
- * before exec is not this path.
+/* The guardian process stays outside the owned cgroup. It alone writes
+ * cgroup.kill, and it holds the directory fd across controller death.
+ * Descendants are not stopped by historical numeric process ids.
+ * Scope is no external migration: a process a privileged outsider moves
+ * out is outside this claim. Birth launch is clone3 with
+ * CLONE_INTO_CGROUP. A write of a process id before exec is not this path.
+ * Collection modes are not entered from this slice.
  */
 
 #ifndef CLONE_INTO_CGROUP
@@ -181,6 +185,9 @@ static uint64_t g_cgroup_id;
 static uint32_t g_mode;
 static int g_keep_fd = -1;
 static int g_thread_tid = 1;
+static int g_is_guardian;
+static int g_clone_permitted;
+static struct timespec g_admission_deadline;
 
 static void note(const char *msg)
 {
@@ -274,73 +281,73 @@ static int send_msg(int fd, const struct life_msg *msg)
 
 static int recv_msg(int fd, struct life_msg *msg)
 {
-	ssize_t n = recv(fd, msg, sizeof(*msg), 0);
+	for (;;) {
+		ssize_t n = recv(fd, msg, sizeof(*msg), 0);
 
-	if (n < 0 && errno == EINTR)
-		n = recv(fd, msg, sizeof(*msg), 0);
-	return n == (ssize_t)sizeof(*msg) ? 0 : -1;
+		if (n < 0 && errno == EINTR)
+			continue;
+		return n == (ssize_t)sizeof(*msg) ? 0 : -1;
+	}
 }
 
-static int write_receipt(const char *path, const struct lifetime_receipt *receipt)
+static int recv_msg_until(int fd, struct life_msg *msg, const struct timespec *deadline)
 {
-	char tmp[PATH_MAX];
-	int fd;
-	int rc;
+	for (;;) {
+		struct pollfd pfd;
+		int remain = 0;
+		int rc;
 
-	if (snprintf(tmp, sizeof tmp, "%s.tmp", path) >= (int)sizeof tmp)
-		return -1;
-	fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
-	if (fd < 0)
-		return -1;
-	rc = write_full(fd, receipt, sizeof(*receipt));
-	if (rc == 0 && fsync(fd) != 0)
-		rc = -1;
-	if (close(fd) != 0)
-		rc = -1;
-	if (rc != 0) {
-		unlink(tmp);
-		return -1;
-	}
-	if (rename(tmp, path) != 0) {
-		unlink(tmp);
-		return -1;
-	}
-	return 0;
-}
-
-static int read_receipt(const char *path, struct lifetime_receipt *receipt)
-{
-	int fd = open(path, O_RDONLY | O_CLOEXEC);
-	size_t n = 0;
-	char *p;
-
-	if (fd < 0)
-		return -1;
-	p = (char *)receipt;
-	while (n < sizeof(*receipt)) {
-		ssize_t got = read(fd, p + n, sizeof(*receipt) - n);
-		if (got < 0) {
+		if (guard_remaining_ms(deadline, &remain) != 0)
+			return -1;
+		pfd.fd = fd;
+		pfd.events = POLLIN;
+		rc = poll(&pfd, 1, remain);
+		if (rc < 0) {
 			if (errno == EINTR)
 				continue;
-			close(fd);
 			return -1;
 		}
-		if (got == 0)
-			break;
-		n += (size_t)got;
+		if (rc == 0)
+			return -1;
+		if (recv_msg(fd, msg) == 0)
+			return 0;
+		return -1;
 	}
-	close(fd);
-	return n == sizeof(*receipt) ? 0 : -1;
 }
 
+static int recv_exact_until(int fd, void *buf, size_t len, const struct timespec *deadline)
+{
+	for (;;) {
+		struct pollfd pfd;
+		int remain = 0;
+		int rc;
+		ssize_t n;
+
+		if (guard_remaining_ms(deadline, &remain) != 0)
+			return -1;
+		pfd.fd = fd;
+		pfd.events = POLLIN;
+		rc = poll(&pfd, 1, remain);
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			return -1;
+		}
+		if (rc == 0)
+			return -1;
+		n = recv(fd, buf, len, 0);
+		if (n < 0 && errno == EINTR)
+			continue;
+		return n == (ssize_t)len ? 0 : -1;
+	}
+}
+
+/* Memory only. The guardian is the one writer and it publishes after cleanup. */
 static void seal_and_write(void)
 {
 	g_receipt.known_fixture_births = 0;
 	if (g_receipt.reason == LIFETIME_REASON_NONE && g_preset_reason != LIFETIME_REASON_NONE)
 		g_receipt.reason = g_preset_reason;
-	lifetime_apply(&g_receipt);
-	if (write_receipt(g_receipt_path, &g_receipt) != 0)
-		note("receipt write failed");
 }
 
 static int cap_bit(uint64_t caps, int cap)
@@ -664,7 +671,11 @@ static int read_cpu(int dirfd, struct cpu_view *out)
 
 static int cgroup_kill_write(int dirfd)
 {
-	int fd = openat(dirfd, "cgroup.kill", O_WRONLY | O_CLOEXEC);
+	int fd;
+
+	if (!g_is_guardian || dirfd < 0)
+		return -1;
+	fd = openat(dirfd, "cgroup.kill", O_WRONLY | O_CLOEXEC);
 	char one = '1';
 	int rc;
 
@@ -675,39 +686,33 @@ static int cgroup_kill_write(int dirfd)
 	return rc;
 }
 
-static int cleanup_tree(void)
+static int cleanup_kill(int dirfd, void *ctx)
 {
-	uint64_t deadline;
-	int kill_rc;
+	(void)ctx;
+	return cgroup_kill_write(dirfd);
+}
 
-	if (g_leaf_path[0] == '\0')
-		return 1;
-	if (g_dirfd < 0)
-		return rmdir(g_leaf_path) == 0 ? 1 : 0;
-	kill_rc = cgroup_kill_write(g_dirfd);
-	deadline = mono_ms() + LIFETIME_CLEANUP_MS;
-	for (;;) {
-		int status = 0;
-		int populated = -1;
-		while (waitpid(-1, &status, WNOHANG) > 0)
-			continue;
-		if (read_populated(g_dirfd, &populated) == 0 && populated == 0 && rmdir(g_leaf_path) == 0) {
-			close(g_dirfd);
-			g_dirfd = -1;
-			return 1;
-		}
-		if (mono_ms() >= deadline)
-			break;
-		sleep_ms(20);
-	}
-	(void)kill_rc;
-	return 0;
+static int cleanup_populated(int dirfd, int *out, void *ctx)
+{
+	(void)ctx;
+	return read_populated(dirfd, out);
+}
+
+static int cleanup_remove(void *ctx)
+{
+	char *path = ctx;
+
+	if (!path || !path[0])
+		return -1;
+	return rmdir(path) == 0 ? 0 : -1;
 }
 
 static pid_t clone3_into(int dirfd)
 {
 	struct lifetime_clone_args args;
 
+	if (!g_clone_permitted || dirfd < 0)
+		return -1;
 	memset(&args, 0, sizeof args);
 	args.flags = CLONE_INTO_CGROUP;
 	args.exit_signal = SIGCHLD;
@@ -715,19 +720,20 @@ static pid_t clone3_into(int dirfd)
 	return (pid_t)syscall(__NR_clone3, &args, sizeof args);
 }
 
-static int wait_pid_bounded(pid_t pid, int *status, uint32_t bound_ms)
+static int wait_pid_until(pid_t pid, int *status, const struct timespec *deadline)
 {
-	uint64_t deadline = mono_ms() + bound_ms;
-
 	for (;;) {
+		int remain = 0;
 		pid_t got = waitpid(pid, status, WNOHANG);
+
 		if (got == pid)
 			return 0;
 		if (got < 0 && errno != EINTR)
 			return -1;
-		if (mono_ms() >= deadline)
+		if (guard_remaining_ms(deadline, &remain) != 0)
 			return -1;
-		sleep_ms(20);
+		if (poll(NULL, 0, remain > 20 ? 20 : remain) < 0 && errno != EINTR)
+			return -1;
 	}
 }
 
@@ -1092,23 +1098,50 @@ static int probe_direct_launch(void)
 		char buf[4096];
 		int fd;
 		ssize_t n;
+		int keep = fds[1];
+		pid_t parent = getppid();
+
+		/* Controller death delivers SIGKILL. The guardian still has to reap the zombie. */
+		if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0 || getppid() != parent)
+			_exit(127);
+		if (g_dirfd >= 0 && g_dirfd != keep)
+			close(g_dirfd);
+		g_dirfd = -1;
 		close(fds[0]);
+		close_from_3_except(keep);
 		fd = open("/proc/self/cgroup", O_RDONLY | O_CLOEXEC);
 		if (fd < 0)
 			_exit(127);
 		n = read(fd, buf, sizeof buf);
 		if (n < 0)
 			_exit(127);
-		if (write(fds[1], buf, (size_t)n) != n)
+		if (write(keep, buf, (size_t)n) != n)
 			_exit(127);
 		_exit(0);
 	}
+	g_receipt.clone3_ok = 1;
 	close(fds[1]);
-	if (wait_pid_bounded(pid, &status, 2000u) != 0) {
-		cgroup_kill_write(g_dirfd);
-		wait_pid_bounded(pid, &status, LIFETIME_CLEANUP_MS);
-		close(fds[0]);
-		return -1;
+	{
+		struct timespec preflight_deadline = g_admission_deadline;
+		struct timespec short_deadline;
+
+		if (clock_gettime(CLOCK_MONOTONIC, &short_deadline) != 0) {
+			close(fds[0]);
+			return -1;
+		}
+		guard_add_ms(&short_deadline, 2000u);
+		if (short_deadline.tv_sec < preflight_deadline.tv_sec ||
+		    (short_deadline.tv_sec == preflight_deadline.tv_sec &&
+		     short_deadline.tv_nsec < preflight_deadline.tv_nsec))
+			preflight_deadline = short_deadline;
+		if (wait_pid_until(pid, &status, &preflight_deadline) != 0) {
+			close(fds[0]);
+			/* Pin before signaling. ECHILD from the following wait is not success. */
+			guard_signal_pinned(pid, SIGKILL);
+			if (wait_pid_until(pid, &status, &preflight_deadline) != 0)
+				dprintf(STDERR_FILENO, "lifetime_diag: unreaped_preflight=%d\n", (int)pid);
+			return -1;
+		}
 	}
 	if (read_full_fd(fds[0], text, sizeof text, NULL) != 0) {
 		close(fds[0]);
@@ -1124,6 +1157,8 @@ static int probe_direct_launch(void)
 	}
 	if (read_populated(g_dirfd, &populated) != 0 || populated != 0)
 		return -1;
+	g_receipt.direct_launch_ok = 1;
+	g_receipt.launch_path = LIFETIME_LAUNCH_CLONE3;
 	return 0;
 }
 
@@ -1506,6 +1541,67 @@ static void launch_blocker(void)
 	g_receipt.fixture_launched = 1;
 }
 
+static int g_worker_park = -1;
+
+static int release_links(struct bpf_link **links, int n, struct bpf_object **obj, struct btf **btf)
+{
+	int rc = 0;
+	int i;
+
+	for (i = 0; i < n; i++) {
+		if (!links[i] || libbpf_get_error(links[i])) {
+			links[i] = NULL;
+			continue;
+		}
+		if (bpf_link__destroy(links[i]) != 0)
+			rc = -1;
+		links[i] = NULL;
+	}
+	if (obj && *obj) {
+		bpf_object__close(*obj);
+		*obj = NULL;
+	}
+	if (btf && *btf) {
+		btf__free(*btf);
+		*btf = NULL;
+	}
+	return rc;
+}
+
+static void collector_finish(int sock, struct bpf_link **links, int n, struct bpf_object **obj,
+			     struct btf **btf, uint32_t code, uint32_t reason, int status)
+{
+	struct life_msg out;
+
+	if (release_links(links, n, obj, btf) != 0) {
+		g_receipt.observation_failed = 1;
+		g_receipt.detach_or_loss = 1;
+		g_receipt.links_verified = 0;
+		g_receipt.enabled_after_validation = 0;
+		if (status == 0)
+			status = 1;
+	}
+	memset(&out, 0, sizeof out);
+	out.code = code;
+	out.reason = reason;
+	out.mode = g_mode;
+	out.page_size = g_receipt.page_size;
+	out.cgroup_id = g_cgroup_id;
+	out.clear_refs_state = g_receipt.clear_refs_state;
+	out.io_encoding = g_receipt.io_thread_encoding;
+	out.links_verified = g_receipt.links_verified;
+	out.prototype_ok = g_receipt.prototype_ok;
+	out.recursion_field_ok = g_receipt.recursion_field_ok;
+	out.config_taskstats = g_receipt.config_taskstats;
+	out.config_cgroups = g_receipt.config_cgroups;
+	out.btf_ok = g_receipt.btf_ok;
+	out.enabled_after_validation = g_receipt.enabled_after_validation;
+	send_msg(sock, &out);
+	if (send(sock, &g_receipt, sizeof g_receipt, MSG_NOSIGNAL) != (ssize_t)sizeof g_receipt)
+		status = 1;
+	_exit(status);
+}
+
 static void collector(int sock)
 {
 	struct btf *btf = NULL;
@@ -1537,6 +1633,18 @@ static void collector(int sock)
 	uint64_t work_deadline;
 	const char *clear_name = "clear_refs_write";
 
+	if (g_worker_park >= 0) {
+		char byte = 0;
+
+		if (read(g_worker_park, &byte, 1) != 1)
+			_exit(1);
+		close(g_worker_park);
+		g_worker_park = -1;
+	}
+	if (g_dirfd >= 0) {
+		close(g_dirfd);
+		g_dirfd = -1;
+	}
 	libbpf_set_print(quiet_libbpf);
 	memset(&msg, 0, sizeof msg);
 	msg.mode = g_mode;
@@ -1546,26 +1654,15 @@ static void collector(int sock)
 	if (!btf || libbpf_get_error(btf)) {
 		g_receipt.btf_ok = 0;
 		g_receipt.prototype_ok = 0;
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		msg.reason = LIFETIME_REASON_BTF;
-		send_msg(sock, &msg);
-		_exit(1);
+		btf = NULL;
+		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_BTF, 1);
 	}
 	g_receipt.btf_ok = 1;
 	clear_func = btf__find_by_name_kind(btf, clear_name, BTF_KIND_FUNC) >= 0;
 	clear_proc = access("/proc/self/clear_refs", F_OK) == 0;
 	if (prototypes_ok(btf, &io_bitfield) != 0 || io_bitfield < 0) {
 		g_receipt.prototype_ok = 0;
-		btf__free(btf);
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		msg.reason = LIFETIME_REASON_PROTOTYPE;
-		msg.prototype_ok = 0;
-		msg.config_taskstats = g_receipt.config_taskstats;
-		msg.config_cgroups = g_receipt.config_cgroups;
-		send_msg(sock, &msg);
-		_exit(1);
+		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_PROTOTYPE, 1);
 	}
 	g_receipt.prototype_ok = 1;
 	if (!clear_func && !clear_proc) {
@@ -1577,45 +1674,24 @@ static void collector(int sock)
 	g_receipt.io_thread_encoding = io_bitfield ? LIFETIME_IO_ENCODING_BITFIELD : LIFETIME_IO_ENCODING_PLAIN;
 	if (exe_object(object_path, sizeof object_path, object_name) != 0) {
 		g_receipt.btf_ok = 0;
-		btf__free(btf);
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		send_msg(sock, &msg);
-		_exit(1);
+		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
 	}
 	obj = bpf_object__open_file(object_path, NULL);
 	if (!obj || libbpf_get_error(obj)) {
-		btf__free(btf);
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		msg.reason = LIFETIME_REASON_LINK;
-		send_msg(sock, &msg);
-		_exit(1);
+		obj = NULL;
+		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
 	}
 	for (i = 0; i < 4; i++) {
 		programs[i] = bpf_object__find_program_by_name(obj, names[i]);
-		if (!programs[i]) {
-			bpf_object__close(obj);
-			btf__free(btf);
-			seal_and_write();
-			msg.code = LIFE_MSG_REFUSED;
-			msg.reason = LIFETIME_REASON_LINK;
-			send_msg(sock, &msg);
-			_exit(1);
-		}
+		if (!programs[i])
+			collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
 	}
 	if (g_receipt.clear_refs_state == LIFETIME_CLEAR_ABSENT ||
 	    g_receipt.clear_refs_state == LIFETIME_CLEAR_UNOBSERVABLE)
 		bpf_program__set_autoload(programs[3], false);
 	if (bpf_object__load(obj) != 0) {
-		bpf_object__close(obj);
-		btf__free(btf);
 		g_receipt.links_verified = 0;
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		msg.reason = LIFETIME_REASON_LINK;
-		send_msg(sock, &msg);
-		_exit(1);
+		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
 	}
 	cfg_fd = map_fd_by_name(obj, "lifetime_cfg");
 	counters_fd = map_fd_by_name(obj, "lifetime_counters");
@@ -1624,13 +1700,7 @@ static void collector(int sock)
 	completed_fd = map_fd_by_name(obj, "lifetime_completed");
 	if (cfg_fd < 0 || counters_fd < 0 || tasks_fd < 0 || groups_fd < 0 || completed_fd < 0 ||
 	    set_cfg(cfg_fd, g_cgroup_id, 0, NULL) != 0) {
-		bpf_object__close(obj);
-		btf__free(btf);
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		msg.reason = LIFETIME_REASON_LINK;
-		send_msg(sock, &msg);
-		_exit(1);
+		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
 	}
 	for (i = 0; i < 4; i++) {
 		int fd;
@@ -1639,18 +1709,14 @@ static void collector(int sock)
 			continue;
 		links[link_count] = bpf_program__attach(programs[i]);
 		if (!links[link_count] || libbpf_get_error(links[link_count])) {
+			links[link_count] = NULL;
 			if (i == 3) {
 				g_receipt.clear_refs_state = LIFETIME_CLEAR_ATTACH_FAILED;
 				break;
 			}
-			bpf_object__close(obj);
-			btf__free(btf);
 			g_receipt.links_verified = 0;
-			seal_and_write();
-			msg.code = LIFE_MSG_REFUSED;
-			msg.reason = LIFETIME_REASON_LINK;
-			send_msg(sock, &msg);
-			_exit(1);
+			collector_finish(sock, links, link_count, &obj, &btf, LIFE_MSG_REFUSED,
+					 LIFETIME_REASON_LINK, 1);
 		}
 		fd = bpf_program__fd(programs[i]);
 		prog_fds[link_count] = fd;
@@ -1678,32 +1744,26 @@ static void collector(int sock)
 	msg.enabled_after_validation = g_receipt.enabled_after_validation;
 	if (!g_receipt.links_verified || !g_receipt.prototype_ok || !g_receipt.recursion_field_ok ||
 	    !g_receipt.config_taskstats || !g_receipt.config_cgroups) {
-		seal_and_write();
-		msg.code = LIFE_MSG_REFUSED;
-		send_msg(sock, &msg);
-		bpf_object__close(obj);
-		btf__free(btf);
-		_exit(1);
+		collector_finish(sock, links, link_count, &obj, &btf, LIFE_MSG_REFUSED,
+				 g_receipt.reason != LIFETIME_REASON_NONE ? g_receipt.reason
+									  : LIFETIME_REASON_LINK,
+				 1);
 	}
 	msg.code = LIFE_MSG_ATTACHED;
-	if (send_msg(sock, &msg) != 0) {
-		bpf_object__close(obj);
-		btf__free(btf);
-		_exit(1);
+	if (send_msg(sock, &msg) != 0)
+		collector_finish(sock, links, link_count, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
+	if (recv_msg_until(sock, &msg, &g_admission_deadline) != 0 ||
+	    (msg.code != LIFE_MSG_GO && msg.code != LIFE_MSG_VALIDATE)) {
+		collector_finish(sock, links, link_count, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_LINK, 1);
 	}
-	if (recv_msg(sock, &msg) != 0 || (msg.code != LIFE_MSG_GO && msg.code != LIFE_MSG_VALIDATE)) {
-		seal_and_write();
-		bpf_object__close(obj);
-		btf__free(btf);
-		_exit(1);
-	}
-	if (msg.code == LIFE_MSG_VALIDATE) {
-		g_receipt.collection_enabled = 0;
-		g_receipt.fixture_launched = 0;
-		seal_and_write();
-		bpf_object__close(obj);
-		btf__free(btf);
-		_exit(0);
+	if (g_mode == LIFETIME_MODE_ADMIT || msg.code == LIFE_MSG_VALIDATE) {
+		if (g_mode != LIFETIME_MODE_ADMIT || msg.code != LIFE_MSG_VALIDATE) {
+			g_receipt.observation_failed = 1;
+			collector_finish(sock, links, link_count, &obj, &btf, LIFE_MSG_REFUSED,
+					 LIFETIME_REASON_UNSUPPORTED, 1);
+		}
+		collector_finish(sock, links, link_count, &obj, &btf, LIFE_MSG_VALIDATE, LIFETIME_REASON_NONE,
+				 g_receipt.links_verified ? 0 : 1);
 	}
 	for (i = 0; i < link_count; i++) {
 		if (recursion_supported(prog_fds[i], &baseline[i]) != 0) {
@@ -1793,7 +1853,8 @@ static void collector(int sock)
 	_exit(0);
 }
 
-static int static_checks_ok(void)
+/* Cheap gates only. Launch and link results are filled by later supervised steps. */
+static int cheap_prerequisites_ok(void)
 {
 	if (g_receipt.arch != LIFETIME_ARCH_X86_64 && g_receipt.arch != LIFETIME_ARCH_AARCH64)
 		return 0;
@@ -1805,85 +1866,28 @@ static int static_checks_ok(void)
 		return 0;
 	if (!g_receipt.cgroup_ok || !g_receipt.cgroup_kill_ok || !g_receipt.populated_ok)
 		return 0;
-	if (!g_receipt.clone3_ok || !g_receipt.direct_launch_ok || !g_receipt.cpu_stat_ok)
-		return 0;
-	if (!g_receipt.containment_ok || g_receipt.launch_path != LIFETIME_LAUNCH_CLONE3)
+	if (!g_receipt.cpu_stat_ok || !g_receipt.containment_ok)
 		return 0;
 	return 1;
 }
 
-static void owner_finish(pid_t child, int child_fd, int pidfd, int go_sent)
+static int disabled_attach_ok(void)
 {
-	int status = 0;
-	int signaled = 0;
-	uint64_t deadline = mono_ms() + LIFETIME_WORK_MS + LIFETIME_CLEANUP_MS + LIFE_OWNER_GRACE_MS;
-	int exited = 0;
-
-	for (;;) {
-		pid_t got = waitpid(child, &status, WNOHANG);
-		if (got == child) {
-			exited = 1;
-			break;
-		}
-		if (mono_ms() >= deadline)
-			break;
-		sleep_ms(20);
-	}
-	if (!exited && pidfd >= 0) {
-		syscall(__NR_pidfd_send_signal, pidfd, SIGKILL, NULL, 0);
-		wait_pid_bounded(child, &status, LIFETIME_CLEANUP_MS);
-		signaled = 1;
-	} else if (WIFSIGNALED(status)) {
-		signaled = 1;
-	}
-	if (signaled) {
-		struct lifetime_receipt saved = g_receipt;
-		memset(&g_receipt, 0, sizeof g_receipt);
-		g_receipt = saved;
-		g_receipt.collector_death = 1;
-		g_receipt.observation_failed = 1;
-		g_receipt.coverage_pass = 0;
-		g_receipt.fixture_launched = go_sent ? 1 : 0;
-		g_receipt.collection_enabled = go_sent ? 1 : 0;
-		memset(g_receipt.counters, 0, sizeof g_receipt.counters);
-		g_receipt.summary_count = 0;
-		g_receipt.active_tasks = 0;
-		g_receipt.active_groups = 0;
-		g_receipt.reason = LIFETIME_REASON_NONE;
-		if (cleanup_tree()) {
-			g_receipt.cleanup_attempted = 1;
-			g_receipt.cleanup_pass = 1;
-		} else {
-			g_receipt.cleanup_attempted = 1;
-			g_receipt.cleanup_pass = 0;
-		}
-		seal_and_write();
-		if (pidfd >= 0)
-			close(pidfd);
-		close(child_fd);
-		if (!go_sent)
-			_exit(1);
-		_exit(lifetime_mode_exit_ok(&g_receipt) ? 0 : 1);
-	}
-	if (pidfd >= 0)
-		close(pidfd);
-	close(child_fd);
-	if (read_receipt(g_receipt_path, &g_receipt) != 0) {
-		g_receipt.observation_failed = 1;
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
-		_exit(1);
-	}
-	g_receipt.cleanup_attempted = 1;
-	g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-	g_receipt.known_fixture_births = 0;
-	if (write_receipt(g_receipt_path, &g_receipt) != 0)
-		note("receipt write failed");
-	_exit(lifetime_mode_exit_ok(&g_receipt) ? 0 : 1);
+	if (g_receipt.collection_enabled || g_receipt.fixture_launched || g_receipt.summary_count)
+		return 0;
+	if (!g_receipt.links_verified || !g_receipt.prototype_ok || !g_receipt.recursion_field_ok)
+		return 0;
+	if (!g_receipt.config_taskstats || !g_receipt.config_cgroups)
+		return 0;
+	if (g_receipt.clear_refs_state != LIFETIME_CLEAR_ABSENT &&
+	    g_receipt.clear_refs_state != LIFETIME_CLEAR_ATTACHED)
+		return 0;
+	if (!g_receipt.enabled_after_validation)
+		return 0;
+	return 1;
 }
 
-static int setup_cgroup(void)
+static int setup_cgroup(int ctrl)
 {
 	char relative[PATH_MAX];
 	char joined[PATH_MAX];
@@ -1892,9 +1896,11 @@ static int setup_cgroup(void)
 	char leaf_real[PATH_MAX];
 	int kill_fd;
 	int populated = -1;
+	uint32_t reply = 0;
 	struct cpu_view cpu;
-	unsigned char rnd[8];
 
+	if (g_leaf_name[0] == 0)
+		return -1;
 	if (access("/sys/fs/cgroup/cgroup.controllers", F_OK) != 0)
 		return -1;
 	if (cgroup_relative(relative, sizeof relative) != 0)
@@ -1905,20 +1911,19 @@ static int setup_cgroup(void)
 		return -1;
 	if (!path_is_under(parent_real, root_real))
 		return -1;
-	if (getrandom(rnd, sizeof rnd, 0) != (ssize_t)sizeof rnd)
-		return -1;
-	if (snprintf(g_leaf_name, sizeof g_leaf_name, "mnemion-bpf-life-%02x%02x%02x%02x%02x%02x%02x%02x",
-		     rnd[0], rnd[1], rnd[2], rnd[3], rnd[4], rnd[5], rnd[6], rnd[7]) >= (int)sizeof g_leaf_name)
-		return -1;
 	if (snprintf(g_cgroup_rel, sizeof g_cgroup_rel, "%s/%s", relative, g_leaf_name) >= (int)sizeof g_cgroup_rel)
 		return -1;
 	if (snprintf(g_leaf_path, sizeof g_leaf_path, "%s/%s", parent_real, g_leaf_name) >= (int)sizeof g_leaf_path)
 		return -1;
+	if (guard_send_path(ctrl, g_leaf_path) != 0)
+		return -1;
+	if (guard_recv_reply(ctrl, &g_admission_deadline, &reply) != 0 || reply != GUARD_PATH_OK)
+		return -1;
 	if (mkdir(g_leaf_path, 0755) != 0)
 		return -1;
-	if (!realpath(g_leaf_path, leaf_real) || !path_is_under(leaf_real, parent_real))
+	if (!realpath(g_leaf_path, leaf_real) || strcmp(leaf_real, g_leaf_path) != 0 ||
+	    !path_is_under(leaf_real, parent_real))
 		return -1;
-	memcpy(g_leaf_path, leaf_real, strlen(leaf_real) + 1);
 	g_dirfd = open(g_leaf_path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (g_dirfd < 0)
 		return -1;
@@ -1940,6 +1945,11 @@ static int setup_cgroup(void)
 		return -1;
 	g_receipt.containment = LIFETIME_CONTAIN_CGROUP_KILL;
 	g_receipt.containment_ok = 1;
+	if (guard_send_fd(ctrl, g_dirfd) != 0)
+		return -1;
+	reply = 0;
+	if (guard_recv_reply(ctrl, &g_admission_deadline, &reply) != 0 || reply != GUARD_CUSTODY_OK)
+		return -1;
 	return 0;
 }
 
@@ -2010,16 +2020,324 @@ static int parse_mode(const char *text)
 	return -1;
 }
 
+static char g_cleanup_path[PATH_MAX];
+
+static int message_matches_invocation(const struct life_msg *msg, uint32_t code)
+{
+	return msg->code == code && msg->reason == LIFETIME_REASON_NONE && msg->mode == g_mode &&
+	       msg->cgroup_id == g_cgroup_id;
+}
+
+static int receipt_blocks_admit(const struct lifetime_receipt *receipt)
+{
+	if (receipt->observation_failed)
+		return 1;
+	if (receipt->mode != g_mode || receipt->reason != LIFETIME_REASON_NONE)
+		return 1;
+	if (receipt->collection_enabled || receipt->fixture_launched || receipt->summary_count)
+		return 1;
+	if (receipt->coverage_pass || receipt->resource_acceptance || receipt->budget_comparison_allowed)
+		return 1;
+	return 0;
+}
+
+/* The guardian owns the final reap after it has accepted GUARD_WATCH.
+ * This only looks at the exit. ECHILD is not exit 0.
+ */
+static int observe_validate_child(pid_t child, int *status)
+{
+	if (guard_observe_exit(child, status, &g_admission_deadline) == 0)
+		return 0;
+	if (guard_signal_pinned(child, SIGKILL) != 0) {
+		dprintf(STDERR_FILENO, "lifetime_diag: unreaped_validate_worker=%d\n", (int)child);
+		return -1;
+	}
+	if (guard_observe_exit(child, status, &g_admission_deadline) == 0)
+		return 0;
+	dprintf(STDERR_FILENO, "lifetime_diag: unreaped_validate_worker=%d\n", (int)child);
+	return -1;
+}
+
+static int run_validate_worker(int ctrl)
+{
+	int sv[2] = {-1, -1};
+	int park[2] = {-1, -1};
+	pid_t child;
+	uint32_t reply = 0;
+	struct life_msg msg;
+	struct lifetime_receipt child_receipt;
+	int status = 0;
+
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, sv) != 0)
+		return -1;
+	if (pipe2(park, O_CLOEXEC) != 0) {
+		close(sv[0]);
+		close(sv[1]);
+		return -1;
+	}
+	g_worker_park = park[0];
+	child = fork();
+	if (child < 0) {
+		g_worker_park = -1;
+		close(park[0]);
+		close(park[1]);
+		close(sv[0]);
+		close(sv[1]);
+		return -1;
+	}
+	if (child == 0) {
+		pid_t parent = getppid();
+
+		close(sv[0]);
+		close(park[1]);
+		if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0 || getppid() != parent)
+			_exit(127);
+		collector(sv[1]);
+		_exit(1);
+	}
+	close(sv[1]);
+	close(park[0]);
+	g_worker_park = -1;
+	if (guard_send_simple(ctrl, GUARD_WATCH, child) != 0 ||
+	    guard_recv_reply(ctrl, &g_admission_deadline, &reply) != 0 || reply != GUARD_WATCH_OK) {
+		/* The guardian did not take this child, so this parent still reaps it. */
+		guard_signal_pinned(child, SIGKILL);
+		wait_pid_until(child, &status, &g_admission_deadline);
+		close(park[1]);
+		close(sv[0]);
+		return -1;
+	}
+	if (write(park[1], "g", 1) != 1) {
+		guard_signal_pinned(child, SIGKILL);
+		close(park[1]);
+		close(sv[0]);
+		return -1;
+	}
+	close(park[1]);
+	memset(&msg, 0, sizeof msg);
+	if (recv_msg_until(sv[0], &msg, &g_admission_deadline) != 0) {
+		observe_validate_child(child, &status);
+		close(sv[0]);
+		return -1;
+	}
+	if (msg.code == LIFE_MSG_REFUSED) {
+		memset(&child_receipt, 0, sizeof child_receipt);
+		if (recv_exact_until(sv[0], &child_receipt, sizeof child_receipt, &g_admission_deadline) == 0)
+			g_receipt = child_receipt;
+		g_receipt.observation_failed = 1;
+		close(sv[0]);
+		observe_validate_child(child, &status);
+		return -1;
+	}
+	if (!message_matches_invocation(&msg, LIFE_MSG_ATTACHED)) {
+		g_receipt.observation_failed = 1;
+		if (g_receipt.reason == LIFETIME_REASON_NONE)
+			g_receipt.reason = LIFETIME_REASON_ATTACH;
+		close(sv[0]);
+		observe_validate_child(child, &status);
+		return -1;
+	}
+	{
+		struct life_msg validate;
+
+		memset(&validate, 0, sizeof validate);
+		validate.code = LIFE_MSG_VALIDATE;
+		validate.mode = g_mode;
+		validate.cgroup_id = g_cgroup_id;
+		if (send_msg(sv[0], &validate) != 0 ||
+		    recv_msg_until(sv[0], &msg, &g_admission_deadline) != 0) {
+			close(sv[0]);
+			observe_validate_child(child, &status);
+			return -1;
+		}
+	}
+	memset(&child_receipt, 0, sizeof child_receipt);
+	if (msg.code == LIFE_MSG_REFUSED || !message_matches_invocation(&msg, LIFE_MSG_VALIDATE)) {
+		if (recv_exact_until(sv[0], &child_receipt, sizeof child_receipt, &g_admission_deadline) == 0)
+			g_receipt = child_receipt;
+		g_receipt.observation_failed = 1;
+		close(sv[0]);
+		observe_validate_child(child, &status);
+		return -1;
+	}
+	if (recv_exact_until(sv[0], &child_receipt, sizeof child_receipt, &g_admission_deadline) != 0) {
+		close(sv[0]);
+		observe_validate_child(child, &status);
+		return -1;
+	}
+	close(sv[0]);
+	g_receipt = child_receipt;
+	if (observe_validate_child(child, &status) != 0)
+		return -1;
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0 || receipt_blocks_admit(&g_receipt)) {
+		g_receipt.observation_failed = 1;
+		return -1;
+	}
+	return 0;
+}
+
+static void controller_main(int ctrl)
+{
+	uint32_t reply = 0;
+
+	g_is_guardian = 0;
+	g_clone_permitted = 0;
+	if (lifetime_sha256_selftest() != 0) {
+		fill_identity();
+		g_receipt.btf_ok = 0;
+		g_receipt.reason = LIFETIME_REASON_DIGEST;
+		guard_send_result(ctrl, &g_receipt);
+		guard_send_simple(ctrl, GUARD_DONE, 0);
+		_exit(1);
+	}
+	fill_identity();
+	if (setup_cgroup(ctrl) != 0) {
+		note("cgroup setup refused");
+		if (g_receipt.reason == LIFETIME_REASON_NONE)
+			g_receipt.reason = LIFETIME_REASON_CGROUP;
+		guard_send_result(ctrl, &g_receipt);
+		guard_send_simple(ctrl, GUARD_DONE, 0);
+		_exit(1);
+	}
+	if (!cheap_prerequisites_ok()) {
+		note("admission prerequisites refused");
+		guard_send_result(ctrl, &g_receipt);
+		guard_send_simple(ctrl, GUARD_DONE, 0);
+		_exit(1);
+	}
+	if (run_validate_worker(ctrl) != 0) {
+		g_receipt.observation_failed = 1;
+		note("disabled attach worker failed");
+		if (g_dirfd >= 0) {
+			close(g_dirfd);
+			g_dirfd = -1;
+		}
+		guard_send_result(ctrl, &g_receipt);
+		guard_send_simple(ctrl, GUARD_DONE, 0);
+		_exit(1);
+	}
+	if (guard_send_simple(ctrl, GUARD_CLONE, 0) == 0 &&
+	    guard_recv_reply(ctrl, &g_admission_deadline, &reply) == 0 && reply == GUARD_CLONE_OK) {
+		g_clone_permitted = 1;
+		if (probe_direct_launch() != 0) {
+			note("direct launch refused");
+			g_receipt.observation_failed = 1;
+			if (g_receipt.reason == LIFETIME_REASON_NONE)
+				g_receipt.reason = LIFETIME_REASON_DIRECT_LAUNCH;
+		}
+		g_clone_permitted = 0;
+	} else {
+		note("clone permit refused");
+		g_receipt.observation_failed = 1;
+		if (g_receipt.reason == LIFETIME_REASON_NONE)
+			g_receipt.reason = LIFETIME_REASON_DIRECT_LAUNCH;
+	}
+	if (g_dirfd >= 0) {
+		close(g_dirfd);
+		g_dirfd = -1;
+	}
+	if (g_receipt.collection_enabled || g_receipt.fixture_launched || g_receipt.summary_count ||
+	    g_receipt.coverage_pass || g_receipt.resource_acceptance || g_receipt.budget_comparison_allowed ||
+	    g_receipt.reason != LIFETIME_REASON_NONE)
+		g_receipt.observation_failed = 1;
+	guard_send_result(ctrl, &g_receipt);
+	guard_send_simple(ctrl, GUARD_DONE, 0);
+	_exit(g_receipt.observation_failed || !disabled_attach_ok() || !g_receipt.direct_launch_ok ||
+			      g_receipt.reason != LIFETIME_REASON_NONE
+		      ? 1
+		      : 0);
+}
+
+static int publish_admission(struct admission_outcome *out)
+{
+	struct lifetime_receipt *receipt;
+	uint32_t i;
+	uint8_t keep_collection;
+	uint8_t keep_fixture;
+	uint8_t keep_coverage;
+	uint8_t keep_accept;
+	uint8_t keep_budget;
+	uint32_t keep_summaries;
+	struct timespec final_deadline;
+	pid_t unreaped_publisher = 0;
+
+	if (!out->have_result) {
+		memset(&out->receipt, 0, sizeof out->receipt);
+		out->receipt.mode = LIFETIME_MODE_ADMIT;
+		out->receipt.reason =
+			out->timed_out ? LIFETIME_REASON_CONTAINMENT : LIFETIME_REASON_COLLECTOR_DEATH;
+		out->receipt.observation_failed = 1;
+	}
+	receipt = &out->receipt;
+	if (receipt->mode == 0)
+		receipt->mode = LIFETIME_MODE_ADMIT;
+	if (receipt->collection_enabled || receipt->summary_count || receipt->fixture_launched ||
+	    receipt->coverage_pass || receipt->resource_acceptance || receipt->budget_comparison_allowed) {
+		receipt->observation_failed = 1;
+		if (receipt->reason == LIFETIME_REASON_NONE)
+			receipt->reason = LIFETIME_REASON_CONTAINMENT;
+	}
+	keep_collection = receipt->collection_enabled;
+	keep_fixture = receipt->fixture_launched;
+	keep_coverage = receipt->coverage_pass;
+	keep_accept = receipt->resource_acceptance;
+	keep_budget = receipt->budget_comparison_allowed;
+	keep_summaries = receipt->summary_count;
+	for (i = 0; i < LIFETIME_CTR_COUNT; i++) {
+		if (receipt->counters[i] != 0)
+			receipt->observation_failed = 1;
+	}
+	if (out->clone_permits != 1 &&
+	    (receipt->direct_launch_ok || receipt->clone3_ok ||
+	     receipt->launch_path == LIFETIME_LAUNCH_CLONE3)) {
+		receipt->observation_failed = 1;
+		if (receipt->reason == LIFETIME_REASON_NONE)
+			receipt->reason = LIFETIME_REASON_DIRECT_LAUNCH;
+	}
+	if (out->timed_out || out->controller_lost || out->protocol_failed || out->reap_unconfirmed ||
+	    !out->cleanup_confirmed || (out->owned_watched > 0 && out->unreaped_watched > 0)) {
+		receipt->observation_failed = 1;
+		if (out->controller_lost)
+			receipt->collector_death = 1;
+		if (receipt->reason == LIFETIME_REASON_NONE)
+			receipt->reason =
+				out->timed_out ? LIFETIME_REASON_CONTAINMENT : LIFETIME_REASON_COLLECTOR_DEATH;
+	}
+	receipt->cleanup_attempted = 1;
+	receipt->cleanup_pass = out->cleanup_confirmed ? 1 : 0;
+	lifetime_apply(receipt);
+	receipt->collection_enabled = keep_collection;
+	receipt->fixture_launched = keep_fixture;
+	receipt->coverage_pass = keep_coverage;
+	receipt->resource_acceptance = keep_accept;
+	receipt->budget_comparison_allowed = keep_budget;
+	receipt->summary_count = keep_summaries;
+	if (keep_collection || keep_fixture || keep_coverage || keep_accept || keep_budget || keep_summaries)
+		receipt->observation_failed = 1;
+	final_deadline = g_admission_deadline;
+	guard_add_ms(&final_deadline, LIFETIME_CLEANUP_MS);
+	if (receipt_publish_supervised(g_receipt_path, receipt, sizeof *receipt, &final_deadline, -1, -1,
+				       &unreaped_publisher) != 0) {
+		note("receipt publication unconfirmed");
+		if (unreaped_publisher > 0)
+			dprintf(STDERR_FILENO, "lifetime_diag: unreaped_publisher=%d\n", (int)unreaped_publisher);
+		return 1;
+	}
+	return lifetime_mode_exit_ok(receipt) ? 0 : 1;
+}
+
 int main(int argc, char **argv)
 {
 	const char *mode_text = NULL;
 	const char *path = NULL;
 	int i;
 	int sv[2] = {-1, -1};
-	pid_t child;
-	int pidfd;
-	struct life_msg msg;
-	struct timeval tv;
+	int park[2] = {-1, -1};
+	pid_t child = -1;
+	int pidfd = -1;
+	unsigned char rnd[8];
+	struct admission_guard_ops ops;
+	struct admission_outcome outcome;
 
 	if (argc >= 2 && strcmp(argv[1], "--payload") == 0)
 		_exit(0);
@@ -2029,12 +2347,12 @@ int main(int argc, char **argv)
 		else if (strcmp(argv[i], "--receipt") == 0 && i + 1 < argc)
 			path = argv[++i];
 		else {
-			dprintf(STDERR_FILENO, "usage: lifetime_diag --mode <mode> --receipt <path>\n");
+			dprintf(STDERR_FILENO, "usage: lifetime_diag --mode admit --receipt <path>\n");
 			return 2;
 		}
 	}
 	if (!mode_text || !path || parse_mode(mode_text) < 0) {
-		dprintf(STDERR_FILENO, "usage: lifetime_diag --mode <mode> --receipt <path>\n");
+		dprintf(STDERR_FILENO, "usage: lifetime_diag --mode admit --receipt <path>\n");
 		return 2;
 	}
 	if (strlen(path) + 1 > sizeof g_receipt_path) {
@@ -2043,114 +2361,115 @@ int main(int argc, char **argv)
 	}
 	memcpy(g_receipt_path, path, strlen(path) + 1);
 	g_mode = (uint32_t)parse_mode(mode_text);
-	prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
-	signal(SIGPIPE, SIG_IGN);
-	if (lifetime_sha256_selftest() != 0) {
-		fill_identity();
-		g_receipt.btf_ok = 0;
-		g_receipt.reason = LIFETIME_REASON_DIGEST;
-		seal_and_write();
+	if (clock_gettime(CLOCK_MONOTONIC, &g_admission_deadline) != 0) {
+		note("clock refused");
 		return 1;
 	}
-	fill_identity();
-	if (setup_cgroup() != 0) {
-		note("cgroup setup refused");
-		g_receipt.cgroup_ok = g_dirfd >= 0 ? g_receipt.cgroup_ok : 0;
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
+	guard_add_ms(&g_admission_deadline, LIFETIME_ADMISSION_MS);
+	{
+		pid_t unreaped_inspect = 0;
+		int absent = receipt_confirm_absent(g_receipt_path, &g_admission_deadline, &unreaped_inspect);
+
+		if (absent == -2)
+			note("refusing to replace an existing receipt");
+		else if (absent != 0)
+			note("receipt inspection unconfirmed");
+		if (unreaped_inspect > 0)
+			dprintf(STDERR_FILENO, "lifetime_diag: unreaped_inspector=%d\n", (int)unreaped_inspect);
+		if (absent != 0)
+			return 1;
+	}
+	if (g_mode != LIFETIME_MODE_ADMIT) {
+		memset(&outcome, 0, sizeof outcome);
+		outcome.have_result = 1;
+		outcome.receipt.mode = g_mode;
+		outcome.receipt.reason = LIFETIME_REASON_UNSUPPORTED;
+		outcome.receipt.observation_failed = 1;
+		outcome.protocol_failed = 1;
+		note("only --mode admit is enabled");
+		return publish_admission(&outcome);
+	}
+	if (prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) != 0) {
+		note("subreaper setup refused");
+		memset(&outcome, 0, sizeof outcome);
+		outcome.protocol_failed = 1;
+		return publish_admission(&outcome);
+	}
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+		note("SIGPIPE setup refused");
+		memset(&outcome, 0, sizeof outcome);
+		outcome.protocol_failed = 1;
+		return publish_admission(&outcome);
+	}
+	g_is_guardian = 1;
+	if (getrandom(rnd, sizeof rnd, GRND_NONBLOCK) != (ssize_t)sizeof rnd) {
+		note("leaf name refused");
+		memset(&outcome, 0, sizeof outcome);
+		outcome.protocol_failed = 1;
+		return publish_admission(&outcome);
+	}
+	if (snprintf(g_leaf_name, sizeof g_leaf_name, "mnemion-bpf-life-%02x%02x%02x%02x%02x%02x%02x%02x",
+		     rnd[0], rnd[1], rnd[2], rnd[3], rnd[4], rnd[5], rnd[6], rnd[7]) >= (int)sizeof g_leaf_name) {
 		return 1;
 	}
-	if (probe_direct_launch() == 0) {
-		g_receipt.clone3_ok = 1;
-		g_receipt.direct_launch_ok = 1;
-		g_receipt.launch_path = LIFETIME_LAUNCH_CLONE3;
-	} else {
-		note("direct launch refused");
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
-		return 1;
-	}
-	if (!static_checks_ok()) {
-		note("admission refused before launch");
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
-		return 1;
-	}
-	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, sv) != 0) {
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
-		return 1;
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, sv) != 0 || pipe2(park, O_CLOEXEC) != 0) {
+		note("supervisor channel refused");
+		memset(&outcome, 0, sizeof outcome);
+		outcome.protocol_failed = 1;
+		return publish_admission(&outcome);
 	}
 	child = fork();
 	if (child < 0) {
-		close(sv[0]);
-		close(sv[1]);
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
-		return 1;
+		note("controller fork refused");
+		memset(&outcome, 0, sizeof outcome);
+		outcome.protocol_failed = 1;
+		return publish_admission(&outcome);
 	}
 	if (child == 0) {
+		char byte = 0;
+
 		close(sv[0]);
-		collector(sv[1]);
+		close(park[1]);
+		if (read(park[0], &byte, 1) != 1)
+			_exit(1);
+		close(park[0]);
+		controller_main(sv[1]);
 		_exit(1);
 	}
 	close(sv[1]);
+	close(park[0]);
 	pidfd = (int)syscall(__NR_pidfd_open, child, 0);
 	if (pidfd < 0) {
-		close(sv[0]);
-		wait_pid_bounded(child, NULL, 2000u);
-		g_receipt.containment_ok = 0;
-		g_receipt.observation_failed = 1;
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		seal_and_write();
-		return 1;
-	}
-	tv.tv_sec = 20;
-	tv.tv_usec = 0;
-	setsockopt(sv[0], SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
-	memset(&msg, 0, sizeof msg);
-	if (recv_msg(sv[0], &msg) != 0 || msg.code == LIFE_MSG_REFUSED) {
 		int status = 0;
-		waitpid(child, &status, 0);
-		close(pidfd);
+
+		kill(child, SIGKILL);
+		if (wait_pid_until(child, &status, &g_admission_deadline) != 0)
+			dprintf(STDERR_FILENO, "lifetime_diag: unreaped_controller=%d\n", (int)child);
 		close(sv[0]);
-		if (read_receipt(g_receipt_path, &g_receipt) != 0)
-			g_receipt.observation_failed = 1;
-		g_receipt.cleanup_attempted = 1;
-		g_receipt.cleanup_pass = cleanup_tree() ? 1 : 0;
-		g_receipt.known_fixture_births = 0;
-		write_receipt(g_receipt_path, &g_receipt);
-		return lifetime_mode_exit_ok(&g_receipt) ? 0 : 1;
+		close(park[1]);
+		note("controller pidfd refused");
+		memset(&outcome, 0, sizeof outcome);
+		outcome.protocol_failed = 1;
+		return publish_admission(&outcome);
 	}
-	if (msg.code != LIFE_MSG_ATTACHED || !msg.links_verified || !msg.prototype_ok || !msg.recursion_field_ok ||
-	    (msg.clear_refs_state != LIFETIME_CLEAR_ABSENT && msg.clear_refs_state != LIFETIME_CLEAR_ATTACHED) ||
-	    !msg.enabled_after_validation) {
-		struct life_msg stop;
-		memset(&stop, 0, sizeof stop);
-		stop.code = LIFE_MSG_STOP;
-		send_msg(sv[0], &stop);
-		owner_finish(child, sv[0], pidfd, 0);
+	memset(&ops, 0, sizeof ops);
+	ops.kill_write = cleanup_kill;
+	ops.read_populated = cleanup_populated;
+	ops.remove_leaf = cleanup_remove;
+	ops.ctx = g_cleanup_path;
+	memset(g_cleanup_path, 0, sizeof g_cleanup_path);
+	if (admission_supervise(child, pidfd, sv[0], &g_admission_deadline, LIFETIME_CLEANUP_MS, g_leaf_name,
+				"/sys/fs/cgroup", g_cleanup_path, sizeof g_cleanup_path, &ops, park[1],
+				&outcome) != 0) {
+		outcome.protocol_failed = 1;
 	}
-	g_receipt.clear_refs_state = msg.clear_refs_state;
-	g_receipt.io_thread_encoding = msg.io_encoding;
-	g_receipt.links_verified = msg.links_verified;
-	g_receipt.prototype_ok = msg.prototype_ok;
-	g_receipt.recursion_field_ok = msg.recursion_field_ok;
-	g_receipt.config_taskstats = msg.config_taskstats;
-	g_receipt.config_cgroups = msg.config_cgroups;
-	g_receipt.btf_ok = msg.btf_ok;
-	g_receipt.enabled_after_validation = msg.enabled_after_validation;
-	memset(&msg, 0, sizeof msg);
-	msg.code = g_mode == LIFETIME_MODE_ADMIT ? LIFE_MSG_VALIDATE : LIFE_MSG_GO;
-	msg.mode = g_mode;
-	if (send_msg(sv[0], &msg) != 0)
-		owner_finish(child, sv[0], pidfd, 0);
-	owner_finish(child, sv[0], pidfd, msg.code == LIFE_MSG_GO);
-	return 1;
+	close(pidfd);
+	if (outcome.held_cleanup_pidfd >= 0)
+		close(outcome.held_cleanup_pidfd);
+	if (outcome.held_verify_pidfd >= 0)
+		close(outcome.held_verify_pidfd);
+	if (outcome.held_watched_pidfd >= 0)
+		close(outcome.held_watched_pidfd);
+	close(sv[0]);
+	return publish_admission(&outcome);
 }

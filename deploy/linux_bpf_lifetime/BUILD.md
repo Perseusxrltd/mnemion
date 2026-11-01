@@ -23,7 +23,7 @@ The Makefile pins Clang 14 to `-mcpu=v1` for both objects. That is the smallest 
 
 The group `live` counter stays an unused sequentially consistent add, including an add of `(__u32)-1`. A 32-bit `__sync_fetch_and_sub` was the operation Clang 14 could not select (`AtomicLoadSub` i32). The unused add stays a non-fetch XADD. `-mcpu=v3` is not required for the cookie return. It would also enable alu32 and jmp32 for the whole translation unit. v1 leaves those off.
 
-The cookie instruction is still `BPF_FETCH` on this v1 object. Linux added that immediate in commit `5ca419f2864a` (2021-01-14), and it shipped in Linux 5.12. The loader still admits the running kernel. A finished compile is not permission to load. This repository has not compiled these objects and has not loaded them.
+The cookie instruction is still `BPF_FETCH` on this v1 object. Linux added that immediate in commit `5ca419f2864a` (2021-01-14), and it shipped in Linux 5.12. The loader still admits the running kernel. A finished compile is not permission to load. [Run 41240313726](https://github.com/Perseusxrltd/mnemion/actions/runs/41240313726) compiled the earlier objects and loader for x64 and ARM64 without loading BPF. The current admission and owner changes still require their first compilation and separate runtime checks.
 
 Windows and a WSL userland without those packages can review and run the offline receipt tests. They cannot produce `lifetime.bpf.o`.
 
@@ -49,7 +49,13 @@ The loader reads BTF and opens the matching object. If `kernel_clone_args.io_thr
 
 ## Run later, as root, on a disposable machine
 
-Do not point this at a production host. The manual workflow is compile-only unless its dispatch input `run_native` is explicitly true. That input defaults to false. The collector is not qualified, and the workflow does not run it on the compile-only path. Build outputs are retained.
+Do not point this at a production host. `run_native=false` with the default `compile-only` lane does not execute a new native binary. `run_native=false` with `guard-only` executes the unprivileged guard under its external owner. `run_native=true` is refused. The collector is not qualified. Build outputs are retained.
+
+`admission_guard_owner` exits 0 only when the child result is success and the status file was exclusively created, fully written, and closed. An existing status path is left in place. Publication failure prints `owner_status_publication=failed`, the checker, timeout, interruption, and cleanup fields, and `owner_child_result`. A child result of 0 then exits 1. A nonzero child result is the process status. Those fields are not rewritten to hide the publication failure. Guard-only and admission-only both keep that current file, including every status line, before guard success or admit. A failed copy stops the lane.
+
+Cleanup uses `WNOHANG` only. Each pass reads the absolute cleanup deadline, reaps at most the existing 16-child hint, then signals adopted live children through a pidfd. `EINTR` retries the deadline check. Expiry leaves cleanup unconfirmed. `waitpid(-1)` returning `ECHILD` is still the empty-child proof. There is no blocking final wait.
+
+`admission_guard_check` calls `external_owner_run` in process for the hanging checker and the early-exit child. That does not exec `admission_guard_owner` and does not prove status create, write, or close. `--status-fixture --status PATH` is the publication entry. It starts no child. Neither lane selects it. This tree has not run it.
 
 ```sh
 sudo ./deploy/linux_bpf_lifetime/lifetime_diag --mode admit --receipt /tmp/lifetime-admit.bin

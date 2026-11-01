@@ -374,7 +374,17 @@ def mode_exit_ok(receipt: Receipt) -> bool:
     mode = int(receipt.mode)
     if mode == CONST["LIFETIME_MODE_ADMIT"]:
         return bool(
-            receipt.support_admitted and not receipt.fixture_launched and not receipt.coverage_pass
+            receipt.reason == CONST["LIFETIME_REASON_NONE"]
+            and receipt.support_admitted
+            and not receipt.collection_enabled
+            and receipt.summary_count == 0
+            and not receipt.fixture_launched
+            and not receipt.coverage_pass
+            and not receipt.observation_failed
+            and not receipt.collector_death
+            and receipt.direct_launch_ok
+            and receipt.clone3_ok
+            and receipt.launch_path == CONST["LIFETIME_LAUNCH_CLONE3"]
         )
     if mode == CONST["LIFETIME_MODE_CAPACITY"]:
         return bool(not receipt.coverage_pass and overflow and not receipt.collector_death)

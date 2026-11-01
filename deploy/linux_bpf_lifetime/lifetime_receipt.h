@@ -23,6 +23,7 @@ typedef uint64_t __u64;
 #define LIFETIME_RECEIPT_BYTES 29160u
 #define LIFETIME_WORK_MS 10000u
 #define LIFETIME_CLEANUP_MS 5000u
+#define LIFETIME_ADMISSION_MS 20000u
 
 #define LIFETIME_MODE_ADMIT 1u
 #define LIFETIME_MODE_DIRECT 2u
@@ -489,7 +490,13 @@ static inline int lifetime_mode_exit_ok(const struct lifetime_receipt *r)
 		return 0;
 	switch (r->mode) {
 	case LIFETIME_MODE_ADMIT:
-		return r->support_admitted && !r->fixture_launched && !r->coverage_pass;
+		/* Collection stays off. The preflight result is this run's
+		 * clone3 observation. A lost controller is not admission.
+		 */
+		return r->reason == LIFETIME_REASON_NONE && r->support_admitted && !r->collection_enabled &&
+			r->summary_count == 0 && !r->fixture_launched && !r->coverage_pass &&
+			!r->observation_failed && !r->collector_death && r->direct_launch_ok && r->clone3_ok &&
+			r->launch_path == LIFETIME_LAUNCH_CLONE3;
 	case LIFETIME_MODE_CAPACITY:
 		return !r->coverage_pass && overflow && !r->collector_death;
 	case LIFETIME_MODE_RESET:
