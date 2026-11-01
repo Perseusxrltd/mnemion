@@ -1,0 +1,125 @@
+name: Windows ETW lifecycle observation
+
+# Manual only. One native x64 job on windows-2022.
+# No matrix, no second architecture, no compiler, no owned-launch suite, no push trigger.
+# The 30s worker bound and the 5s supervisor drain live in the driver.
+# This job timeout only stops a stuck runner. Runner disposal is not ETW cleanup.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact reviewed source commit (40 hex characters)
+        required: true
+        type: string
+      attempt:
+        description: Receipt attempt label
+        required: false
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-etw-lifecycle-${{ inputs.source }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: lifecycle / x64
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13.17"
+          architecture: x64
+      - name: Observe one job-owned ETW lifecycle
+        shell: python {0}
+        env:
+          REVIEWED_SOURCE: ${{ inputs.source }}
+          ATTEMPT: ${{ inputs.attempt }}
+          MNEMION_ETW_LIFECYCLE_DISPATCH: "1"
+        run: |
+          import json, os, re, subprocess, sys
+          from pathlib import Path
+
+          source = os.environ["REVIEWED_SOURCE"]
+          receipt = Path("output/windows-etw-lifecycle/receipt.json")
+          receipt.parent.mkdir(parents=True, exist_ok=True)
+
+          def refuse_source(checked=None):
+              # Do not import or run the driver from a tree that is not the reviewed commit.
+              requested = source if re.fullmatch(r"[0-9a-f]{40}", source) else None
+              body = {
+                  "check": "windows_etw_lifecycle",
+                  "owned_event_qualified": False,
+                  "requested_source": requested,
+                  "unsupported": "wrong_source",
+              }
+              if type(checked) is str and re.fullmatch(r"[0-9a-f]{40}", checked):
+                  body["head"] = checked
+              receipt.write_text(
+                  json.dumps(body, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
+              raise SystemExit(1)
+
+          if re.fullmatch(r"[0-9a-f]{40}", source) is None:
+              refuse_source()
+          try:
+              head = subprocess.check_output(
+                  ["git", "rev-parse", "HEAD"],
+                  text=True,
+                  timeout=10,
+              ).strip()
+          except (OSError, subprocess.SubprocessError):
+              refuse_source()
+          if head != source:
+              refuse_source(head)
+          completed = subprocess.run(
+              [
+                  sys.executable,
+                  "-m",
+                  "deploy.windows_etw_lifecycle",
+                  "--source",
+                  source,
+                  "--attempt",
+                  os.environ.get("ATTEMPT", "1"),
+                  "--receipt",
+                  str(receipt),
+              ]
+          )
+          if not receipt.is_file():
+              raise SystemExit(completed.returncode or 1)
+          data = json.loads(receipt.read_text(encoding="utf-8"))
+          sys.path.insert(0, os.getcwd())
+          from deploy.windows_etw_lifecycle import (
+              etw_lifecycle_receipt_qualifies,
+              receipt_schema_ok,
+              stored_qualification_matches,
+          )
+          if not receipt_schema_ok(data) or not stored_qualification_matches(data):
+              raise SystemExit(1)
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as handle:
+                  handle.write(
+                      "qualified=%s unsupported=%s\n"
+                      % (data["owned_event_qualified"], data["unsupported"])
+                  )
+          if completed.returncode != 0 or not etw_lifecycle_receipt_qualifies(data):
+              raise SystemExit(completed.returncode or 1)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-etw-lifecycle-x64
+          path: output/windows-etw-lifecycle/receipt.json
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
