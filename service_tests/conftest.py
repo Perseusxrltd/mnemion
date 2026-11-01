@@ -77,7 +77,9 @@ class FixtureEmbedder:
 def pg_bin():
     if value := os.environ.get("MNEMION_PG_BIN"):
         return Path(value)
-    if value := shutil.which("pg_dump"):
+    # No test-admin DSN means postgres() owns the disposable pgserver. Its
+    # client tools must match that server. An external DSN keeps system pg_dump.
+    if os.environ.get("MNEMION_TEST_ADMIN_DSN") and (value := shutil.which("pg_dump")):
         return Path(value).parent
     try:
         from pgserver._commands import POSTGRES_BIN_PATH

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import fnmatch
 import hashlib
 import json
@@ -9,6 +10,7 @@ import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import tempfile
 import threading
@@ -294,6 +296,75 @@ class FilesystemProvider:
                 yield None
 
 
+def _permission_denied(exc: OSError) -> bool:
+    if exc.errno in {errno.EACCES, errno.EPERM}:
+        return True
+    # Windows ERROR_ACCESS_DENIED. Do not infer this from POSIX mode bits.
+    return getattr(exc, "winerror", None) == 5
+
+
+def _invoking_process_can(path: Path, mode: int) -> bool:
+    """Ask the OS about this process. Execute bits are not Windows ACLs."""
+    if os.name == "nt":
+        mode &= ~os.X_OK
+        if mode == 0:
+            return False
+    return os.access(path, mode)
+
+
+def _remote_cache_location(path: Path) -> str:
+    """Classify a remote cache without creating it.
+
+    "absent" means a missing leaf whose existing ancestor can hold Git's normal
+    parent and cache creation. "present" means Git can be started at the path.
+    A symlink is followed only as ``git -C`` and mkdir would follow it. The
+    leaf is not created.
+    """
+    current = path
+    while True:
+        try:
+            info = os.lstat(current)
+        except FileNotFoundError:
+            parent = current.parent
+            if parent == current:
+                raise ProviderError("git_cache_ancestor_invalid")
+            current = parent
+            continue
+        except OSError as exc:
+            code = (
+                "git_cache_ancestor_inaccessible"
+                if _permission_denied(exc)
+                else "git_cache_ancestor_invalid"
+            )
+            raise ProviderError(code) from None
+        break
+    if current != path:
+        try:
+            followed = os.stat(current)
+        except OSError as exc:
+            code = (
+                "git_cache_ancestor_inaccessible"
+                if _permission_denied(exc)
+                else "git_cache_ancestor_invalid"
+            )
+            raise ProviderError(code) from None
+        if not stat.S_ISDIR(followed.st_mode):
+            raise ProviderError("git_cache_ancestor_invalid")
+        if not _invoking_process_can(current, os.W_OK | os.X_OK):
+            raise ProviderError("git_cache_ancestor_unusable")
+        return "absent"
+    try:
+        followed = os.stat(path) if stat.S_ISLNK(info.st_mode) else info
+    except OSError as exc:
+        code = "git_cache_inaccessible" if _permission_denied(exc) else "git_cache_invalid"
+        raise ProviderError(code) from None
+    if not stat.S_ISDIR(followed.st_mode):
+        raise ProviderError("git_cache_invalid")
+    if not _invoking_process_can(path, os.R_OK | os.X_OK):
+        raise ProviderError("git_cache_inaccessible")
+    return "present"
+
+
 class GitProvider:
     access_mode = "published"
 
@@ -317,6 +388,135 @@ class GitProvider:
             maximum=maximum,
             environment=self.environment,
         )
+
+    def _require_configured_origin(self) -> None:
+        origin = self.git("remote", "get-url", "origin").decode().strip()
+        if origin != self.config.remote:
+            raise ProviderError("git_cache_remote_mismatch")
+
+    def _runner_git_environment(self) -> dict[str, str]:
+        """Environment the supervised connector actually gives Git.
+
+        ``service_updates._environment`` drops ambient ``GIT_DIR``,
+        ``GIT_WORK_TREE`` and Git config overrides. The two Git safety
+        variables are set by this provider, as they are when the runner
+        constructs ``GitProvider`` inside that filtered process.
+        """
+        from ..service.service_updates import _environment
+
+        environment = _environment()
+        environment["GIT_TERMINAL_PROMPT"] = "0"
+        environment["GIT_OPTIONAL_LOCKS"] = "0"
+        return environment
+
+    def _inspect_git(self, *args: str) -> bytes:
+        return command(
+            [
+                "git",
+                "-c",
+                "core.hooksPath=" + os.devnull,
+                "-c",
+                "protocol.file.allow=never",
+                "-C",
+                str(self.config.path),
+                *args,
+            ],
+            environment=self._runner_git_environment(),
+        )
+
+    def _inspect_text(self, *args: str) -> str:
+        try:
+            raw = self._inspect_git(*args)
+        except ProviderError as exc:
+            if exc.code != "provider_command_failed" or args[:2] != (
+                "rev-parse",
+                "--path-format=absolute",
+            ):
+                raise
+            raw = self._inspect_git("rev-parse", *args[2:])
+        try:
+            return raw.decode()
+        except UnicodeDecodeError:
+            raise ProviderError("git_cache_invalid") from None
+
+    def _metadata_path(self, text: str) -> Path:
+        # ``git -C`` makes a relative answer relative to the configured path.
+        path = Path(text)
+        if not path.is_absolute():
+            path = self.config.path / path
+        return path
+
+    def _metadata_directories(self) -> tuple[Path, Path, Path]:
+        text = self._inspect_text(
+            "rev-parse",
+            "--path-format=absolute",
+            "--absolute-git-dir",
+            "--git-common-dir",
+            "--git-path",
+            "FETCH_HEAD",
+        )
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        if len(lines) != 3:
+            raise ProviderError("git_cache_invalid")
+        git_dir, common_dir, fetch_head = (self._metadata_path(line) for line in lines)
+        return git_dir, common_dir, fetch_head
+
+    def _require_metadata_writable(self, git_dir: Path, common_dir: Path, fetch_head: Path) -> None:
+        """Write and search on Git metadata only. Do not create files or locks."""
+        checked = set()
+        for directory in (git_dir, common_dir):
+            key = os.fspath(directory)
+            if key in checked:
+                continue
+            checked.add(key)
+            try:
+                info = os.lstat(directory)
+                if stat.S_ISLNK(info.st_mode):
+                    info = os.stat(directory)
+            except OSError as exc:
+                code = "git_cache_inaccessible" if _permission_denied(exc) else "git_cache_invalid"
+                raise ProviderError(code) from None
+            if not stat.S_ISDIR(info.st_mode):
+                raise ProviderError("git_cache_invalid")
+            if not _invoking_process_can(directory, os.W_OK | os.X_OK):
+                raise ProviderError("git_cache_inaccessible")
+        try:
+            os.lstat(fetch_head)
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            code = "git_cache_inaccessible" if _permission_denied(exc) else "git_cache_invalid"
+            raise ProviderError(code) from None
+        if not _invoking_process_can(fetch_head, os.W_OK):
+            raise ProviderError("git_cache_inaccessible")
+
+    def _inspect_configured_origin(self) -> None:
+        try:
+            origin = self._inspect_text("remote", "get-url", "origin").strip()
+        except UnicodeDecodeError:
+            raise ProviderError("git_cache_invalid") from None
+        if origin != self.config.remote:
+            raise ProviderError("git_cache_remote_mismatch")
+
+    def inspect_remote_cache(self) -> None:
+        """Readiness for a remote cache this process can create or reuse.
+
+        Does not clone, fetch, create the cache, or decide that the remote
+        authorized this host. An absent cache is acceptable when an existing
+        ancestor can hold the normal parent and cache creation performed later
+        by scopes(). An existing bare repository or working tree is acceptable
+        when its origin matches and this process can write the Git metadata
+        the later fetch updates. Documents in a working tree are not required
+        to be writable. The check uses the managed runner's filtered Git
+        environment and this process's OS permissions only.
+        """
+        if not self.config.remote:
+            return
+        if _remote_cache_location(self.config.path) == "absent":
+            return
+        git_dir, common_dir, fetch_head = self._metadata_directories()
+        self._require_metadata_writable(git_dir, common_dir, fetch_head)
+        self._inspect_configured_origin()
 
     def scopes(self):
         if self.config.remote:
@@ -344,9 +544,7 @@ class GitProvider:
                 finally:
                     shutil.rmtree(stage, ignore_errors=True)
             # Refuse to reuse an arbitrary repository for a different remote.
-            origin = self.git("remote", "get-url", "origin").decode().strip()
-            if origin != self.config.remote:
-                raise ProviderError("git_cache_remote_mismatch")
+            self._require_configured_origin()
             self.git("fetch", "--prune", "--no-tags", "origin", self.config.ref)
             reference = "FETCH_HEAD"
         else:

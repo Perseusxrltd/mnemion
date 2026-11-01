@@ -243,6 +243,56 @@ the external route. An inbound Git source contains only its own committed
 documents, not every native Mnemion save or its current access/deletion state.
 See [source scope and write-back limits](connectors.md).
 
+Before the destination directory is created, each mapped remote Git cache is
+inspected as the account that invokes restore. Supervised restore does not
+switch users. It runs only on Linux or macOS as an unprivileged account, so
+this check cannot prove a different account and it does not treat POSIX mode
+bits as Windows ACLs. An absent remote cache passes when an existing ancestor
+can hold Git's normal parent and cache creation; the leaf stays absent for the
+later clone. An existing cache may be a bare repository or a working tree.
+Its origin must be exactly the configured remote. The check asks Git for that
+repository's metadata directory and common directory, then requires this
+account to be able to search and write that metadata, including an existing
+`FETCH_HEAD`. It does not require the working tree's documents to be writable,
+create files, or take a lock. Inspection uses the managed runner's filtered
+environment, so ambient Git directory and configuration overrides are not
+applied. The account's own Git configuration still applies through its home
+directory, as it does for the supervised runner.
+
+A current connector ledger leaves two saved connections out of that inspection.
+One is a connection the ledger explicitly disables. The other is a saved
+connection the ledger does not list. Recovery leaves both inactive: it does
+not enable them or issue keys for them. An enabled ledger connection can still
+be ineligible once its saved key is compared with the restored database, so a
+bad cache on that connection is kept as a fixed code. That code does not abort
+restore before the comparison can be made. A ledger that cannot classify
+connections still rejects a bad cache immediately.
+
+The comparison runs after the restored database identity has been verified and
+before any source key, connector configuration, or runner enrollment. It uses
+the same read-only rule as source-key issuance, including a reviewed key that
+`rotate_all` replaces rather than drops. A candidate that rule omits drops its
+recorded cache failure. An eligible candidate with a bad cache fails with
+`provider.path` and that fixed class before a source key is issued. Issuance
+checks the same rule again before it writes a credential or enrolls a runner.
+
+This failure can happen after the new database and the recovery journal exist.
+The journal remains at `database_restored` with the same pinned package,
+ledger, access policy, and path mappings. Repair the cache at the selected
+path and run the same restore command to resume. A different path mapping is a
+different recovery selection and needs a new destination. Not every cache
+rejection precedes database creation. A journal that has already reached
+`complete` still returns the finished restore without issuing another key; a
+later eligible cache failure is reported instead of that idempotent result.
+
+The inspection does not clone, fetch, authorize the upstream, or complete a
+source scan. Those remain the later authenticated connector run. Passing is
+local cache readiness, not proof that a remote accepted this host. Other
+source paths are not required to exist here. Restore does not invent mappings
+or change ownership of a directory this account cannot search. An inaccessible
+or invalid cache fails with the field `provider.path` and a fixed class,
+without the path, remote, or command output.
+
 ## Choose the access policy deliberately
 
 The default, `--access-policy rotate_all`, invalidates backed-up API keys and

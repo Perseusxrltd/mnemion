@@ -23,6 +23,8 @@ from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.rows import dict_row
 
 from ..archives import canonical_json, private_json, publish_file
+from ..connectors.config import GitConfig
+from ..connectors.providers import GitProvider, ProviderError, _permission_denied
 from ..private_output import private_output
 from . import recovery, service_updates, supervision, update_state
 from .db import new_token, token_hash
@@ -62,6 +64,189 @@ def _replace_paths(value, files, mappings):
     if isinstance(value, dict):
         return {key: _replace_paths(item, files, mappings) for key, item in value.items()}
     return value
+
+
+_REMOTE_GIT_CACHE_CODES = frozenset(
+    {
+        "git_cache_ancestor_inaccessible",
+        "git_cache_ancestor_unusable",
+        "git_cache_ancestor_invalid",
+        "git_cache_inaccessible",
+        "git_cache_invalid",
+        "git_cache_not_bare",
+        "git_cache_remote_mismatch",
+        "git_cache_mapping_invalid",
+        "provider_command_unavailable",
+        "provider_output_too_large",
+    }
+)
+
+
+def _fixed_cache_code(code: str) -> str:
+    if code not in _REMOTE_GIT_CACHE_CODES:
+        return "git_cache_invalid"
+    return code
+
+
+def _cache_failure(code: str) -> HostRecoveryError:
+    return HostRecoveryError("provider.path: " + _fixed_cache_code(code))
+
+
+def _saved_connector_id(item) -> str | None:
+    if not isinstance(item, dict):
+        return None
+    identifier = item.get("id")
+    if not isinstance(identifier, str):
+        return None
+    try:
+        return str(UUID(identifier))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+def _classified_connector_ledger(ledger):
+    """Map each connection id to whether that connection is explicitly disabled.
+
+    None means this ledger cannot classify connectors, so a cache failure stays
+    immediate. A classified map is the connection list recovery applies: a saved
+    connection that is disabled or absent stays inactive. An enabled connection
+    remains unresolved until its saved key is reviewed. This does not enable a
+    connector, issue a key, or read a credential.
+    """
+    if not isinstance(ledger, dict):
+        return None
+    state = ledger.get("connector_state")
+    if (
+        not isinstance(state, dict)
+        or state.get("version") not in (1, 2, 3)
+        or not isinstance(state.get("connections"), list)
+    ):
+        return None
+    classified = {}
+    for row in state["connections"]:
+        if not isinstance(row, dict) or "disabled_at" not in row:
+            return None
+        identifier = row.get("id")
+        if not isinstance(identifier, str):
+            return None
+        try:
+            key = str(UUID(identifier))
+        except (ValueError, AttributeError, TypeError):
+            return None
+        if key in classified:
+            return None
+        classified[key] = row.get("disabled_at") is not None
+    return classified
+
+
+def _asset_targets(assets, root: Path) -> dict:
+    """Same asset substitution restore will apply, without creating directories."""
+    files = {}
+    if not isinstance(assets, list):
+        return files
+    try:
+        asset_root = (root / "assets").resolve()
+    except OSError as exc:
+        code = (
+            "git_cache_ancestor_inaccessible"
+            if _permission_denied(exc)
+            else "git_cache_ancestor_invalid"
+        )
+        raise _cache_failure(code) from None
+    except RuntimeError:
+        raise _cache_failure("git_cache_ancestor_invalid") from None
+    for item in assets:
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str) or not item["id"]:
+            continue
+        target = str(asset_root / item["id"])
+        files["@" + item["id"]] = target
+        source = item.get("source")
+        if isinstance(source, str) and source:
+            files[source] = target
+    return files
+
+
+def _remote_git_cache_code(item, files, mappings) -> str | None:
+    """Fixed code for one saved remote Git cache, or None when this entry has none."""
+    config = item.get("config")
+    if not isinstance(config, dict):
+        return None
+    provider = _replace_paths(config, files, mappings).get("provider")
+    if not isinstance(provider, dict) or provider.get("type") != "git":
+        return None
+    remote = provider.get("remote")
+    if remote is None or remote == "":
+        return None
+    path_text = provider.get("path")
+    if (
+        not isinstance(remote, str)
+        or not isinstance(path_text, str)
+        or not path_text
+        or any(ord(char) < 32 for char in remote + path_text)
+        or not Path(path_text).is_absolute()
+    ):
+        return "git_cache_mapping_invalid"
+    try:
+        git_config = GitConfig(
+            path=Path(path_text),
+            remote=remote,
+            scope_id="cache-preflight",
+            name="cache-preflight",
+            members=[],
+            publish_to_mapped_members=True,
+        )
+    except ValueError:
+        return "git_cache_mapping_invalid"
+    try:
+        GitProvider(git_config).inspect_remote_cache()
+    except ProviderError as exc:
+        return _fixed_cache_code(exc.code)
+    except UnicodeDecodeError:
+        return "git_cache_invalid"
+    except OSError as exc:
+        if _permission_denied(exc):
+            return "git_cache_inaccessible"
+        return "git_cache_invalid"
+    return None
+
+
+def require_remote_git_caches(connectors, assets, mappings, root: Path, ledger=None):
+    """Read local Git caches without creating them or deciding key eligibility.
+
+    Supervised restore runs as the invoking account and does not switch users.
+    An absent remote cache is allowed when an existing ancestor can hold the
+    provider's normal parent and cache creation. The leaf is not created here.
+    An existing bare repository or working tree must match its configured
+    origin and have writable Git metadata. On a classified connector ledger,
+    a saved connection that is explicitly disabled or absent is skipped and is
+    not enabled or rekeyed. An enabled connection whose key is still unresolved
+    contributes a fixed code and does not abort restore. Passing does not
+    clone, fetch, authorize the remote, or complete a scan. Local Git and other
+    providers may still refer to storage created elsewhere.
+    """
+    if not isinstance(connectors, list):
+        raise _cache_failure("git_cache_mapping_invalid")
+    files = _asset_targets(assets, root)
+    classified = _classified_connector_ledger(ledger)
+    deferred = {}
+    for item in connectors:
+        if not isinstance(item, dict):
+            raise _cache_failure("git_cache_mapping_invalid")
+        identifier = _saved_connector_id(item)
+        if (
+            classified is not None
+            and identifier is not None
+            and (identifier not in classified or classified[identifier])
+        ):
+            continue
+        code = _remote_git_cache_code(item, files, mappings)
+        if code is None:
+            continue
+        if classified is not None and identifier is not None and not classified[identifier]:
+            deferred[identifier] = code
+            continue
+        raise _cache_failure(code)
+    return deferred
 
 
 def _restored_database(dsn, name, owner_file: Path, plan):
@@ -245,52 +430,121 @@ def _database_roles(dsn, runtime_dsn, name, root, request):
     return credentials, output
 
 
+def _ledger_key_index(ledger):
+    state = ledger.get("application_key_state", {"keys": []}) if isinstance(ledger, dict) else {}
+    keys = state.get("keys", []) if isinstance(state, dict) else []
+    if not isinstance(keys, list):
+        return {}
+    return {(item["tenant_id"], item["id"]): item for item in keys if isinstance(item, dict)}
+
+
+def _connector_access(connection, item, old_token, ledger_keys, preserve):
+    """Read-only prefix of source-key issuance.
+
+    The predicates stay in issuance order: an enabled application principal,
+    the backed-up token hash, the reviewed ledger key, a retained active key,
+    the preserve_applications refusal, then the bounded expiry used by
+    rotate_all. A reviewed key that the database has already revoked stays
+    eligible under rotate_all; that mode replaces it after this prefix.
+    Nothing here writes a credential receipt or inserts a key.
+    """
+    identifier = str(UUID(item["id"]))
+    principal = connection.execute(
+        """SELECT c.tenant_id,c.principal_id FROM mnemion.connectors c
+        JOIN mnemion.principals p ON p.tenant_id=c.tenant_id AND p.id=c.principal_id
+        WHERE c.id=%s AND c.disabled_at IS NULL AND p.disabled_at IS NULL
+          AND p.kind='application' AND NOT p.administrator""",
+        (identifier,),
+    ).fetchone()
+    if principal is None:
+        return None
+    original = connection.execute(
+        """SELECT id,expires_at FROM mnemion.api_keys
+        WHERE tenant_id=%s AND principal_id=%s AND token_hash=%s""",
+        (principal["tenant_id"], principal["principal_id"], token_hash(old_token)),
+    ).fetchone()
+    reviewed = (
+        ledger_keys.get((str(principal["tenant_id"]), str(original["id"]))) if original else None
+    )
+    if reviewed is None:
+        return None
+    kept = connection.execute(
+        """SELECT id FROM mnemion.api_keys WHERE tenant_id=%s AND principal_id=%s
+        AND token_hash=%s AND revoked_at IS NULL AND NOT session_key
+        AND (expires_at IS NULL OR expires_at>clock_timestamp())""",
+        (principal["tenant_id"], principal["principal_id"], token_hash(old_token)),
+    ).fetchone()
+    if kept:
+        return {"reuse": old_token}
+    if preserve:
+        return None
+    expiry = connection.execute(
+        "SELECT least(%s::timestamptz,%s::timestamptz) AS value",
+        (original["expires_at"], reviewed["expires_at"]),
+    ).fetchone()["value"]
+    if (
+        expiry is not None
+        and not connection.execute(
+            "SELECT %s::timestamptz>clock_timestamp() AS active",
+            (expiry,),
+        ).fetchone()["active"]
+    ):
+        return None
+    return {"principal": principal, "expiry": expiry}
+
+
+def _reject_eligible_git_cache(deferred, connectors, paths, mappings, dsn, ledger_keys, preserve):
+    """Drop cache failures for omitted candidates and stop before issuing a source key.
+
+    The token is the authenticated package's ``@asset-*`` reference after the
+    existing path substitution. Its read uses the same 16385-byte private-file
+    bound as issuance. The token and its hash are not logged.
+    """
+    if not deferred:
+        return
+    failure = None
+    seen = set()
+    with psycopg.connect(dsn, row_factory=dict_row) as connection:
+        connection.execute("SET TRANSACTION READ ONLY")
+        for item in connectors if isinstance(connectors, list) else ():
+            identifier = _saved_connector_id(item)
+            if identifier is None or identifier not in deferred:
+                continue
+            seen.add(identifier)
+            try:
+                config = _replace_paths(item["config"], paths, mappings)
+                token = read_private(Path(config["service_token"]["file"]), 16385).decode().strip()
+            except (
+                HostRecoveryError,
+                UnicodeDecodeError,
+                OSError,
+                KeyError,
+                TypeError,
+                AttributeError,
+            ):
+                failure = failure or deferred[identifier]
+                continue
+            if _connector_access(connection, item, token, ledger_keys, preserve) is not None:
+                failure = failure or deferred[identifier]
+    missing = [identifier for identifier in deferred if identifier not in seen]
+    if missing:
+        raise _cache_failure(deferred[missing[0]])
+    if failure is not None:
+        raise _cache_failure(failure)
+
+
 def _connector_key(dsn, root, item, old_token, ledger_keys, preserve):
     identifier = str(UUID(item["id"]))
     output = root / ("connector-" + identifier + "-credentials.json")
     with psycopg.connect(dsn, row_factory=dict_row) as connection:
-        principal = connection.execute(
-            """SELECT c.tenant_id,c.principal_id FROM mnemion.connectors c
-            JOIN mnemion.principals p ON p.tenant_id=c.tenant_id AND p.id=c.principal_id
-            WHERE c.id=%s AND c.disabled_at IS NULL AND p.disabled_at IS NULL
-              AND p.kind='application' AND NOT p.administrator""",
-            (identifier,),
-        ).fetchone()
-        if principal is None:
+        # Issuance revalidates the read-only prefix before it writes a receipt or a key.
+        decision = _connector_access(connection, item, old_token, ledger_keys, preserve)
+        if decision is None:
             return None
-        original = connection.execute(
-            "SELECT id,expires_at FROM mnemion.api_keys WHERE tenant_id=%s AND principal_id=%s AND token_hash=%s",
-            (principal["tenant_id"], principal["principal_id"], token_hash(old_token)),
-        ).fetchone()
-        reviewed = (
-            ledger_keys.get((str(principal["tenant_id"]), str(original["id"])))
-            if original
-            else None
-        )
-        if reviewed is None:
-            return None
-        kept = connection.execute(
-            """SELECT id FROM mnemion.api_keys WHERE tenant_id=%s AND principal_id=%s
-            AND token_hash=%s AND revoked_at IS NULL AND NOT session_key
-            AND (expires_at IS NULL OR expires_at>clock_timestamp())""",
-            (principal["tenant_id"], principal["principal_id"], token_hash(old_token)),
-        ).fetchone()
-        if kept:
-            return old_token
-        if preserve:
-            return None
-        expiry = connection.execute(
-            "SELECT least(%s::timestamptz,%s::timestamptz) AS value",
-            (original["expires_at"], reviewed["expires_at"]),
-        ).fetchone()["value"]
-        if (
-            expiry is not None
-            and not connection.execute(
-                "SELECT %s::timestamptz>clock_timestamp() AS active",
-                (expiry,),
-            ).fetchone()["active"]
-        ):
-            return None
+        if "reuse" in decision:
+            return decision["reuse"]
+        principal = decision["principal"]
+        expiry = decision["expiry"]
         if not output.exists():
             token, _ = new_token()
             private_json(
@@ -423,6 +677,12 @@ def restore(
             "runtime_database_target": list(service_updates._target(runtime_dsn)),
             **({"database_locale": database_locale} if database_locale is not None else {}),
         }
+        # Read-only inspection before the destination directory, journal, or
+        # database. A classified ledger omits disabled and absent connections.
+        # Enabled connections keep fixed codes until their saved keys are reviewed.
+        deferred_cache_failures = require_remote_git_caches(
+            saved["connectors"], saved["assets"], mappings, root, current_ledger
+        )
         update_state.directory(root)
         with update_state.lock(root):
             record = root / "restore.json"
@@ -463,6 +723,26 @@ def restore(
                         Path(active["python"]).is_file() and Path(active["directory"]).is_dir()
                     )
                 if database_present and runtime_present:
+                    if deferred_cache_failures:
+                        published = {}
+                        published_root = root / "assets"
+                        for asset in saved["assets"]:
+                            target = str(published_root / asset["id"])
+                            published["@" + asset["id"]] = target
+                            if asset["source"]:
+                                published[asset["source"]] = target
+                        role_file = root / "database-credentials.json"
+                        if not role_file.is_file():
+                            raise _cache_failure(next(iter(deferred_cache_failures.values())))
+                        _reject_eligible_git_cache(
+                            deferred_cache_failures,
+                            saved["connectors"],
+                            published,
+                            mappings,
+                            _json(role_file)["admin_database_url"],
+                            _ledger_key_index(current_ledger),
+                            access_policy == "preserve_applications",
+                        )
                     current = supervision.start(state) if start else supervision.status(state)
                     return {
                         "restored": True,
@@ -522,6 +802,16 @@ def restore(
                 if item["json"]:
                     content = canonical_json(_replace_paths(json.loads(content), paths, mappings))
                 _once(asset_root / item["id"], content)
+            ledger_keys = _ledger_key_index(current_ledger)
+            _reject_eligible_git_cache(
+                deferred_cache_failures,
+                saved["connectors"],
+                paths,
+                mappings,
+                credentials["admin_database_url"],
+                ledger_keys,
+                access_policy == "preserve_applications",
+            )
             environment = _replace_paths(saved["environment"], paths, mappings)
             # A journal registry can contain a local scanner executable and
             # Git/state paths. Restore its encrypted asset for inspection,
@@ -553,11 +843,6 @@ def restore(
             sources = update_state.directory(root / "connectors")
             connector_paths = []
             inactive = []
-            ledger = current_ledger
-            ledger_keys = {
-                (item["tenant_id"], item["id"]): item
-                for item in ledger.get("application_key_state", {"keys": []})["keys"]
-            }
             local_host = "127.0.0.1" if listen == "0.0.0.0" else "::1" if listen == "::" else listen
             local_host = "[" + local_host + "]" if ":" in local_host else local_host
             for item in saved["connectors"]:

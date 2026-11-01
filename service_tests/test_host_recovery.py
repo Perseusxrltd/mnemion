@@ -1,5 +1,6 @@
 """Real database/host loss with encrypted off-host copies and stable identities."""
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -627,3 +628,308 @@ def test_newer_encrypted_ledger_preserves_deletions_and_does_not_rekey_revoked_s
             )
     finally:
         database.close()
+
+
+KEPT_REMOTE = "https://example.invalid/kept.git"
+OTHER_REMOTE = "https://example.invalid/other.git"
+
+
+def _private_git_home(monkeypatch, home: Path) -> None:
+    """Isolate Git through HOME. Inspection drops GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM."""
+    (home / ".config" / "git").mkdir(parents=True)
+    (home / ".gitconfig").write_text("")
+    (home / ".config" / "git" / "config").write_text("")
+    monkeypatch.setenv("HOME", str(home))
+    for name in (
+        "GIT_CONFIG_GLOBAL",
+        "GIT_CONFIG_SYSTEM",
+        "GIT_CONFIG_NOSYSTEM",
+        "XDG_CONFIG_HOME",
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
+def _git(*args) -> None:
+    subprocess.run(["git", *args], check=True, capture_output=True, timeout=30)
+
+
+def _bare_cache(path: Path, origin: str) -> None:
+    template = path.parent / "empty-template"
+    template.mkdir(exist_ok=True)
+    _git("init", "--bare", "--template", str(template), str(path))
+    _git(
+        "-c",
+        "core.hooksPath=" + os.devnull,
+        "-C",
+        str(path),
+        "remote",
+        "add",
+        "origin",
+        origin,
+    )
+
+
+def _git_connector(origin, service, principal, key, root, directory, remote, ref):
+    created = service.create(
+        origin,
+        ConnectorInput(
+            name=directory,
+            provider="git",
+            access_mode="published",
+            principal_id=principal,
+        ),
+    )
+    token_file = root / (directory + ".key")
+    token_file.write_text(key["api_key"])
+    token_file.chmod(0o600)
+    config = root / (directory + ".json")
+    private_json(
+        config,
+        {
+            "service_url": "http://127.0.0.1",
+            "service_token": {"file": str(token_file)},
+            "connector_id": created["id"],
+            "poll_seconds": 30,
+            "provider": {
+                "type": "git",
+                "path": str(root / "saved-caches" / (directory + ".git")),
+                "remote": remote,
+                "ref": ref,
+                "scope_id": directory,
+                "name": directory,
+                "members": ["staff:" + directory],
+                "publish_to_mapped_members": True,
+            },
+        },
+    )
+    return created["id"], config
+
+
+@pytest.mark.parametrize("access_policy", ["preserve_applications", "rotate_all"])
+def test_newer_ledger_omits_ineligible_git_caches_and_keeps_the_pinned_restore(
+    env, postgres, pg_bin, tmp_path, monkeypatch, access_policy
+):
+    """Extend the newer-ledger rule with real keys, not a mocked eligibility flag.
+
+    An enabled connection whose saved key is absent from the newer key ledger,
+    and a saved connection absent from the newer connection ledger, each have an
+    unusable remote Git cache. An unrelated active key stays in that ledger.
+    The eligible cache fails before any source key; repairing that same path
+    resumes the original selection.
+    """
+    if shutil.which("git") is None:
+        pytest.skip("Install Git to exercise native Git cache inspection")
+    _private_git_home(monkeypatch, tmp_path / "git-home")
+    source = tmp_path / "source-host"
+    source.mkdir(mode=0o700)
+    saved_root = source / "saved-caches"
+    live_root = tmp_path / "live-caches"
+    live_root.mkdir()
+    for name in ("kept", "unlisted", "absent"):
+        _bare_cache(live_root / (name + ".git"), OTHER_REMOTE)
+    roles = source / "roles.json"
+    private_json(
+        roles,
+        {
+            "database_url": postgres[1],
+            "worker_database_url": postgres[2],
+            "admin_database_url": postgres[0],
+        },
+    )
+    environment = source / "environment.json"
+    private_json(
+        environment,
+        {
+            "MNEMION_MODEL_OFFLINE": "1",
+            "MNEMION_EVALUATIONS_DISABLED": "1",
+            "MNEMION_LIBRARIAN_DISABLED": "1",
+        },
+    )
+    service = ConnectorService(env.memory)
+    kept_principal, kept_key = application(env, "Kept git source")
+    unlisted_principal, unlisted_key = application(env, "Unlisted git key")
+    absent_principal, absent_key = application(env, "Absent git connection")
+    _, unrelated_key = application(env, "Unrelated application")
+    kept_id, kept_config = _git_connector(
+        env.owner, service, kept_principal, kept_key, source, "kept", KEPT_REMOTE, "main"
+    )
+    unlisted_id, unlisted_config = _git_connector(
+        env.owner,
+        service,
+        unlisted_principal,
+        unlisted_key,
+        source,
+        "unlisted",
+        KEPT_REMOTE,
+        "main",
+    )
+    absent_id, absent_config = _git_connector(
+        env.owner, service, absent_principal, absent_key, source, "absent", KEPT_REMOTE, "main"
+    )
+    state = source / "state"
+    supervision.prepare(
+        state,
+        roles,
+        roles,
+        environment=environment,
+        public_url="https://memory.example.com",
+        connector_configs=(kept_config, unlisted_config, absent_config),
+    )
+    copies = tmp_path / "copies"
+    copies.mkdir(mode=0o700)
+    key_file = copies / "recovery.key"
+    host_package.create_key(key_file)
+    package = copies / "office.mnemion-host"
+    report = host_package.snapshot(
+        state, package, key_file, admin=roles, pg_bin=pg_bin, plan_output=copies / "plan.json"
+    )
+    plain = copies / "ledger.json"
+    host_recovery.recovery.export_ledger(postgres[0], plain)
+    payload = json.loads(plain.read_text(encoding="utf-8"))
+    payload.pop("sha256", None)
+    payload["application_key_state"]["keys"] = [
+        row for row in payload["application_key_state"]["keys"] if row["id"] != unlisted_key["id"]
+    ]
+    payload["connector_state"]["connections"] = [
+        row for row in payload["connector_state"]["connections"] if row["id"] != absent_id
+    ]
+    payload["sha256"] = hashlib.sha256(canonical_json(payload)).hexdigest()
+    # private_json publishes exclusively, so the exported ledger.json stays intact.
+    newer_plain = copies / "newer-ledger.json"
+    private_json(newer_plain, payload)
+    encrypted = copies / "newer.mnemion-ledger"
+    receipt = backup_encryption.encrypt_file(
+        newer_plain, encrypted, key_file.read_text(encoding="utf-8").strip(), kind="ledger"
+    )
+    with host_package.opened_ledger(encrypted, key_file, receipt.encrypted_sha256) as (_, loaded):
+        key_ids = {row["id"] for row in loaded["application_key_state"]["keys"]}
+        assert unrelated_key["id"] in key_ids
+        assert kept_key["id"] in key_ids
+        assert absent_key["id"] in key_ids
+        assert unlisted_key["id"] not in key_ids
+        assert len(key_ids) >= 3
+        listed = {row["id"]: row["disabled_at"] for row in loaded["connector_state"]["connections"]}
+        assert absent_id not in listed
+        assert listed[kept_id] is None and listed[unlisted_id] is None
+    destination = tmp_path / "restored-host"
+    database_name = "host_eligibility_" + uuid4().hex
+    mapping = (str(saved_root), str(live_root))
+
+    def restore_with(path_mapping):
+        return host_recovery.restore(
+            package,
+            key_file,
+            destination,
+            operator_dsn=postgres[0],
+            database_name=database_name,
+            expected_sha256=report["sha256"],
+            pg_bin=pg_bin,
+            managed=False,
+            access_policy=access_policy,
+            latest_ledger=encrypted,
+            ledger_sha256=receipt.encrypted_sha256,
+            path_mappings=[path_mapping],
+        )
+
+    try:
+        with pytest.raises(HostRecoveryError) as caught:
+            restore_with(mapping)
+        assert str(caught.value) == "provider.path: git_cache_remote_mismatch"
+        assert KEPT_REMOTE not in str(caught.value)
+        assert OTHER_REMOTE not in str(caught.value)
+        assert str(live_root) not in str(caught.value)
+        journal = json.loads((destination / "restore.json").read_text(encoding="utf-8"))
+        assert journal["phase"] == "database_restored"
+        assert journal["selection"]["mappings"] == [list(mapping)]
+        assert journal["selection"]["access_policy"] == access_policy
+        assert not (destination / "connectors").exists()
+        assert not (destination / "service").exists()
+        assert list(destination.rglob("*.key")) == []
+        assert list(destination.rglob("connector-*-credentials.json")) == []
+        elsewhere = tmp_path / "other-cache-root"
+        elsewhere.mkdir()
+        with pytest.raises(HostRecoveryError, match="different reviewed recovery"):
+            restore_with((str(saved_root), str(elsewhere)))
+        unchanged = json.loads((destination / "restore.json").read_text(encoding="utf-8"))
+        assert unchanged["restore_id"] == journal["restore_id"]
+        assert unchanged["phase"] == "database_restored"
+        assert unchanged["selection"] == journal["selection"]
+        _git(
+            "-c",
+            "core.hooksPath=" + os.devnull,
+            "-C",
+            str(live_root / "kept.git"),
+            "remote",
+            "set-url",
+            "origin",
+            KEPT_REMOTE,
+        )
+        result = restore_with(mapping)
+        finished = json.loads((destination / "restore.json").read_text(encoding="utf-8"))
+        assert finished["restore_id"] == journal["restore_id"]
+        assert finished["selection"] == journal["selection"]
+        assert finished["phase"] == "complete"
+        assert result["inactive_connector_ids"] == [unlisted_id, absent_id]
+        assert result["supervised_connectors"] == 1
+        assert finished["connector_ids"] == [kept_id]
+        restored = json.loads((destination / "connectors" / (kept_id + ".json")).read_text())
+        assert restored["connector_id"] == kept_id
+        assert restored["provider"]["ref"] == "main"
+        assert restored["provider"]["remote"] == KEPT_REMOTE
+        assert restored["provider"]["path"] == str(live_root / "kept.git")
+        sources = destination / "connectors"
+        assert (sources / (kept_id + ".key")).is_file()
+        for omitted in (unlisted_id, absent_id):
+            assert not (sources / (omitted + ".json")).exists()
+            assert not (sources / (omitted + ".key")).exists()
+            assert not (sources / ("connector-" + omitted + "-credentials.json")).exists()
+        roles_out = json.loads((destination / "database-credentials.json").read_text())
+        with psycopg.connect(roles_out["admin_database_url"]) as connection:
+            kept_active = connection.execute(
+                """SELECT count(*) FROM mnemion.api_keys
+                WHERE principal_id=%s AND revoked_at IS NULL""",
+                (kept_principal,),
+            ).fetchone()[0]
+            unlisted_active = connection.execute(
+                """SELECT count(*) FROM mnemion.api_keys
+                WHERE principal_id=%s AND revoked_at IS NULL""",
+                (unlisted_principal,),
+            ).fetchone()[0]
+            unrelated_active = connection.execute(
+                """SELECT count(*) FROM mnemion.api_keys
+                WHERE principal_id=%s AND revoked_at IS NULL""",
+                (unrelated_key["principal_id"],),
+            ).fetchone()[0]
+        assert kept_active == 1
+        assert unlisted_active == 0
+        if access_policy == "preserve_applications":
+            assert unrelated_active == 1
+        else:
+            assert unrelated_active == 0
+        kept_key_bytes = (sources / (kept_id + ".key")).read_bytes()
+        again = restore_with(mapping)
+        assert again["already_restored"] is True
+        assert (sources / (kept_id + ".key")).read_bytes() == kept_key_bytes
+        repeated = json.loads((destination / "restore.json").read_text(encoding="utf-8"))
+        assert repeated["selection"] == journal["selection"]
+        assert repeated["inactive_connector_ids"] == [unlisted_id, absent_id]
+    finally:
+        target = destination / "service"
+        if (target / "settings.json").exists():
+            assert supervision.stop(target)["stopped"]
+        with psycopg.connect(postgres[0], autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(
+                    sql.Identifier(database_name)
+                )
+            )
+            credentials = destination / "database-credentials.json"
+            if credentials.exists():
+                for dsn in json.loads(credentials.read_text(encoding="utf-8")).values():
+                    connection.execute(
+                        sql.SQL("DROP ROLE IF EXISTS {}").format(
+                            sql.Identifier(conninfo_to_dict(dsn)["user"])
+                        )
+                    )
