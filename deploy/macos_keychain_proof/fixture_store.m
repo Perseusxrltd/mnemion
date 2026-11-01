@@ -1,5 +1,6 @@
 #include "fixture_store.h"
 
+#include "fixture_inject.h"
 #include "fixture_store_config.h"
 #include "fixture_store_syntax.h"
 #include "protocol.h"
@@ -75,29 +76,51 @@ int fixture_store_argument_matches_seal(const char *path) {
 
 static OSStatus keychain_open(const char *path, SecKeychainRef *out) {
     OSStatus status;
+#if defined(MNEMION_FIXTURE_INJECT)
+    CFTypeRef object = NULL;
+    if (out == NULL) {
+        return errSecParam;
+    }
+    status = fixture_inject_open(path, &object);
+    *out = (SecKeychainRef)object;
+#else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     status = SecKeychainOpen(path, out);
 #pragma clang diagnostic pop
+#endif
     return status;
 }
 
 static OSStatus keychain_path(SecKeychainRef keychain, char *buffer, UInt32 capacity, UInt32 *length) {
     OSStatus status;
+#if defined(MNEMION_FIXTURE_INJECT)
+    status = fixture_inject_path((CFTypeRef)keychain, buffer, capacity, length);
+#else
     *length = capacity;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     status = SecKeychainGetPath(keychain, length, buffer);
 #pragma clang diagnostic pop
+#endif
     return status;
 }
 
 static OSStatus item_keychain(SecKeychainItemRef item, SecKeychainRef *out) {
     OSStatus status;
+#if defined(MNEMION_FIXTURE_INJECT)
+    CFTypeRef object = NULL;
+    if (out == NULL) {
+        return errSecParam;
+    }
+    status = fixture_inject_item_keychain((CFTypeRef)item, &object);
+    *out = (SecKeychainRef)object;
+#else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     status = SecKeychainItemCopyKeychain(item, out);
 #pragma clang diagnostic pop
+#endif
     return status;
 }
 
@@ -111,19 +134,27 @@ static int ui_get(Boolean *allowed) {
     if (allowed == NULL) {
         return -1;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    status = fixture_inject_ui_get(allowed);
+#else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     status = SecKeychainGetUserInteractionAllowed(allowed);
 #pragma clang diagnostic pop
+#endif
     return status == errSecSuccess ? 0 : -1;
 }
 
 static int ui_set(Boolean allowed) {
     OSStatus status;
+#if defined(MNEMION_FIXTURE_INJECT)
+    status = fixture_inject_ui_set(allowed);
+#else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     status = SecKeychainSetUserInteractionAllowed(allowed);
 #pragma clang diagnostic pop
+#endif
     return status == errSecSuccess ? 0 : -1;
 }
 
@@ -149,6 +180,9 @@ static int ui_enter(Boolean *prior_out) {
     if (prior_out == NULL || pthread_mutex_lock(&g_ui_mu) != 0) {
         return -1;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    fixture_inject_note_bracket();
+#endif
     if (ui_get(&prior) != 0) {
         if (pthread_mutex_unlock(&g_ui_mu) != 0) {
             return -1;
@@ -614,10 +648,14 @@ static int item_is_this_store(CFTypeRef found) {
     }
     {
         CFTypeID item_type;
+#if defined(MNEMION_FIXTURE_INJECT)
+        item_type = fixture_inject_item_type_id();
+#else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         item_type = SecKeychainItemGetTypeID();
 #pragma clang diagnostic pop
+#endif
         if (CFGetTypeID(item) != item_type) {
             return -1;
         }
@@ -639,7 +677,11 @@ static CFDataRef copy_password(CFTypeRef found) {
     if (data == NULL || CFGetTypeID(data) != CFDataGetTypeID() || CFDataGetLength(data) <= 0) {
         return NULL;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    return fixture_inject_copy_data(data);
+#else
     return CFDataCreateCopy(NULL, data);
+#endif
 }
 
 static int copy_matching_holding(CFDataRef *data_out, OSStatus *status_out, int *invoked) {
@@ -660,7 +702,11 @@ static int copy_matching_holding(CFDataRef *data_out, OSStatus *status_out, int 
     CFDictionarySetValue(query, kSecReturnRef, kCFBooleanTrue);
     CFDictionarySetValue(query, kSecMatchLimit, kSecMatchLimitOne);
     *invoked = 1;
+#if defined(MNEMION_FIXTURE_INJECT)
+    status = fixture_inject_copy(query, &found);
+#else
     status = SecItemCopyMatching(query, &found);
+#endif
     *status_out = status;
     CFRelease(query);
     if (status == errSecItemNotFound) {
@@ -709,19 +755,58 @@ int fixture_store_copy_matching(CFDataRef *data_out, OSStatus *status_out, int *
     return finish_ui(prior, result);
 }
 
-static int write_all(int fd, const void *bytes, size_t length) {
+static int write_all(int site, int fd, const void *bytes, size_t length) {
     const char *cursor = bytes;
     size_t filled = 0;
     if (fd < 0 || bytes == NULL || length == 0) {
         return -1;
     }
     while (filled < length) {
-        ssize_t count = write(fd, cursor + filled, length - filled);
-        if (count <= 0) {
+#if defined(MNEMION_FIXTURE_INJECT)
+        size_t accepted = 0;
+        int decision = fixture_inject_before_write(site, fd, cursor + filled, length - filled, &accepted);
+        if (decision > 0) {
+            fixture_inject_trace(site == FIXTURE_FS_MARKER_WRITE ? "marker_write_partial" : "publish_write_partial");
             return -1;
         }
-        filled += (size_t)count;
+        if (decision < 0) {
+            fixture_inject_trace(site == FIXTURE_FS_MARKER_WRITE ? "marker_write_fail" : "publish_write_fail");
+            return -1;
+        }
+#else
+        (void)site;
+#endif
+        {
+            ssize_t count = write(fd, cursor + filled, length - filled);
+            if (count <= 0) {
+                return -1;
+            }
+            filled += (size_t)count;
+        }
     }
+    return 0;
+}
+
+static int fsync_checked(int site, int fd, const char *ok_token, const char *fail_token) {
+#if defined(MNEMION_FIXTURE_INJECT)
+    if (fixture_inject_before_fsync(site, fd) != 0) {
+        fixture_inject_trace(fail_token);
+        return -1;
+    }
+#else
+    (void)site;
+    (void)ok_token;
+    (void)fail_token;
+#endif
+    if (fsync(fd) != 0) {
+#if defined(MNEMION_FIXTURE_INJECT)
+        fixture_inject_trace(fail_token);
+#endif
+        return -1;
+    }
+#if defined(MNEMION_FIXTURE_INJECT)
+    fixture_inject_trace(ok_token);
+#endif
     return 0;
 }
 
@@ -821,6 +906,9 @@ static int acquire_fixture_lock(int *fd_out) {
     }
     if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
         close(fd);
+#if defined(MNEMION_FIXTURE_INJECT)
+        fixture_inject_trace("lock_busy");
+#endif
         return -1;
     }
     *fd_out = fd;
@@ -835,6 +923,11 @@ static int release_fixture_lock(int fd) {
     if (flock(fd, LOCK_UN) != 0) {
         failed = 1;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    else {
+        fixture_inject_trace("lock_released");
+    }
+#endif
     if (close(fd) != 0) {
         failed = 1;
     }
@@ -864,9 +957,13 @@ static int write_marker(void) {
     if (fd < 0) {
         return -1;
     }
-    if (fchmod(fd, 0600) != 0 || write_all(fd, body, (size_t)written) != 0 || fsync(fd) != 0 ||
-        fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_uid != geteuid() || (st.st_mode & 07777) != 0600 ||
-        fsync(g_store.run_fd) != 0) {
+#if defined(MNEMION_FIXTURE_INJECT)
+    fixture_inject_trace("marker_create");
+#endif
+    if (fchmod(fd, 0600) != 0 || write_all(FIXTURE_FS_MARKER_WRITE, fd, body, (size_t)written) != 0 ||
+        fsync_checked(FIXTURE_FS_MARKER_FSYNC, fd, "marker_fsync", "marker_fsync_fail") != 0 || fstat(fd, &st) != 0 ||
+        !S_ISREG(st.st_mode) || st.st_uid != geteuid() || (st.st_mode & 07777) != 0600 ||
+        fsync_checked(FIXTURE_FS_MARKER_DIR_FSYNC, g_store.run_fd, "dir_fsync", "dir_fsync_fail") != 0) {
         close(fd);
         return -1;
     }
@@ -925,6 +1022,11 @@ static int add_holding(const uint8_t *secret, size_t secret_len, int caller_clai
     if (write_marker() != 0) {
         return -1;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    if (fixture_inject_checkpoint_before_add() != 0) {
+        return -1;
+    }
+#endif
     payload = CFDataCreate(NULL, secret, (CFIndex)secret_len);
     query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     if (payload == NULL || query == NULL || install_names(query) != 0 || install_scope(query) != 0 ||
@@ -940,7 +1042,11 @@ static int add_holding(const uint8_t *secret, size_t secret_len, int caller_clai
     CFDictionarySetValue(query, kSecValueData, payload);
     CFDictionarySetValue(query, kSecAttrAccessible, kSecAttrAccessibleWhenUnlocked);
     *invoked = probe_invoked + 1;
+#if defined(MNEMION_FIXTURE_INJECT)
+    status = fixture_inject_add(query, NULL);
+#else
     status = SecItemAdd(query, NULL);
+#endif
     *status_out = status;
     CFRelease(query);
     CFRelease(payload);
@@ -965,6 +1071,15 @@ int fixture_store_add_new(const uint8_t *secret, size_t secret_len, int caller_c
     if (acquire_fixture_lock(&lock_fd) != 0) {
         return -1;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    fixture_inject_trace("lock_acquired");
+    if (fixture_inject_checkpoint_holding_lock() != 0) {
+        if (release_fixture_lock(lock_fd) != 0) {
+            return -1;
+        }
+        return -1;
+    }
+#endif
     if (ui_enter(&prior) != 0) {
         if (release_fixture_lock(lock_fd) != 0) {
             return -1;
@@ -1010,7 +1125,12 @@ static int publish_holding(const uint8_t *bytes, size_t length) {
             close(dirfd);
             return -1;
         }
-        if (fchmod(fd, 0600) != 0 || write_all(fd, bytes, length) != 0 || fsync(fd) != 0 || fsync(dirfd) != 0) {
+#if defined(MNEMION_FIXTURE_INJECT)
+        fixture_inject_trace("publish_create");
+#endif
+        if (fchmod(fd, 0600) != 0 || write_all(FIXTURE_FS_PUBLISH_WRITE, fd, bytes, length) != 0 ||
+            fsync_checked(FIXTURE_FS_PUBLISH_FSYNC, fd, "publish_fsync", "publish_fsync_fail") != 0 ||
+            fsync_checked(FIXTURE_FS_PUBLISH_DIR_FSYNC, dirfd, "publish_dir_fsync", "publish_dir_fsync_fail") != 0) {
             close(fd);
             close(dirfd);
             return -1;
@@ -1038,6 +1158,9 @@ int fixture_store_publish_ciphertext(const uint8_t *bytes, size_t length) {
     if (acquire_fixture_lock(&lock_fd) != 0) {
         return -1;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    fixture_inject_trace("lock_acquired");
+#endif
     if (ui_enter(&prior) != 0) {
         if (release_fixture_lock(lock_fd) != 0) {
             return -1;
@@ -1051,3 +1174,75 @@ int fixture_store_publish_ciphertext(const uint8_t *bytes, size_t length) {
     }
     return result;
 }
+
+#if defined(MNEMION_FIXTURE_INJECT)
+int fixture_observe_run(int *marker, int *publication, int *directory) {
+    int run;
+    int cipher;
+    struct stat st;
+    DIR *dir;
+    struct dirent *ent;
+    int marker_state = FIXTURE_MARKER_ABSENT;
+    int publication_state = FIXTURE_PUB_NONE;
+    int directory_state = FIXTURE_DIR_EMPTY;
+    if (marker == NULL || publication == NULL || directory == NULL) {
+        return -1;
+    }
+    *marker = FIXTURE_MARKER_ABSENT;
+    *publication = FIXTURE_PUB_NONE;
+    *directory = FIXTURE_DIR_EMPTY;
+    run = open(MNEMION_FIXTURE_RUN_DIRECTORY, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (run < 0) {
+        return -1;
+    }
+    if (fstatat(run, FIXTURE_FIXED_MARKER_NAME, &st, AT_SYMLINK_NOFOLLOW) != 0) {
+        if (errno != ENOENT) {
+            close(run);
+            return -1;
+        }
+    } else if (!S_ISREG(st.st_mode) || S_ISLNK(st.st_mode)) {
+        close(run);
+        return -1;
+    } else if (st.st_size < 64) {
+        marker_state = FIXTURE_MARKER_PARTIAL;
+    } else {
+        marker_state = FIXTURE_MARKER_PRESENT;
+    }
+    cipher = openat(run, FIXTURE_FIXED_CIPHERTEXT_DIR, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (cipher < 0) {
+        close(run);
+        return -1;
+    }
+    dir = fdopendir(cipher);
+    if (dir == NULL) {
+        close(cipher);
+        close(run);
+        return -1;
+    }
+    errno = 0;
+    while ((ent = readdir(dir)) != NULL) {
+        struct stat child;
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+        directory_state = FIXTURE_DIR_OCCUPIED;
+        if (fstatat(dirfd(dir), ent->d_name, &child, AT_SYMLINK_NOFOLLOW) != 0 || S_ISLNK(child.st_mode)) {
+            closedir(dir);
+            close(run);
+            return -1;
+        }
+        if (strncmp(ent->d_name, "published-", 10) == 0 && S_ISREG(child.st_mode)) {
+            publication_state = FIXTURE_PUB_RETAINED;
+        }
+    }
+    if (errno != 0 || closedir(dir) != 0) {
+        close(run);
+        return -1;
+    }
+    close(run);
+    *marker = marker_state;
+    *publication = publication_state;
+    *directory = directory_state;
+    return 0;
+}
+#endif

@@ -1,0 +1,289 @@
+name: Keychain injected fixture
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact source commit, 40 lowercase hex characters
+        required: true
+        type: string
+      target:
+        description: arm64 selects macos-26; x64 selects macos-15-intel
+        type: choice
+        default: arm64
+        options:
+          - arm64
+          - x64
+      run_fixture:
+        description: false compiles only; true runs the supervised injected fixture once
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Manual and inactive until Astra dispatches it after review. Not push, pull
+# request, or workflow_call. GitHub Actions run 41346487519 is an earlier
+# helper compile and is not evidence for this owner. Do not replay it.
+# false compiles the owner with the flags in FIXTURE_OWNER.md and compiles
+# the helper, parent, and identity tool through compile_only.sh. It does not
+# execute those binaries. true runs the documented supervisor once, keeps the
+# exit status and outer cleanup field, and fails unless settlement is complete.
+# The job does not call codesign, security, launchctl, or a default-store API.
+# It does not retry. Compile evidence and fixture evidence are separate uploads.
+# KILL, elapsed time, and disposal of the runner are not kernel-reap evidence.
+
+jobs:
+  injected-fixture:
+    name: injected fixture / ${{ inputs.target }}
+    runs-on: ${{ inputs.target == 'x64' && 'macos-15-intel' || 'macos-26' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Verify source, compile, and maybe run the supervised fixture
+        shell: bash
+        env:
+          REQUESTED_SOURCE: ${{ inputs.source }}
+          REQUESTED_TARGET: ${{ inputs.target }}
+          RUN_FIXTURE: ${{ inputs.run_fixture }}
+        run: |
+          set -eu
+          owner_parent_ok() {
+            path="$1"
+            cwd=$(pwd)
+            length=${#path}
+            if [ "${path#/}" = "$path" ] || [ "$length" -lt 2 ] || [ "$length" -gt 800 ]; then
+              return 1
+            fi
+            case "$path" in
+              */) return 1 ;;
+            esac
+            case "$path" in
+              *//*|*\\*|*\"*) return 1 ;;
+            esac
+            case "$path" in
+              /tmp|/tmp/*|/var|/var/*|/private/tmp|/private/tmp/*|/private/var|/private/var/*) return 1 ;;
+            esac
+            case "$path" in
+              */Library/Keychains|*/Library/Keychains/*|*login.keychain*) return 1 ;;
+            esac
+            case "$path" in
+              "$cwd"|"$cwd"/*|"${GITHUB_WORKSPACE}"|"${GITHUB_WORKSPACE}"/*) return 1 ;;
+            esac
+            case "$cwd" in
+              "$path"|"$path"/*) return 1 ;;
+            esac
+            case "$GITHUB_WORKSPACE" in
+              "$path"|"$path"/*) return 1 ;;
+            esac
+            rest=${path#/}
+            acc=""
+            while [ -n "$rest" ]; do
+              part=${rest%%/*}
+              if [ "$part" = "$rest" ]; then
+                rest=""
+              else
+                rest=${rest#*/}
+              fi
+              if [ -z "$part" ] || [ "$part" = "." ] || [ "$part" = ".." ]; then
+                return 1
+              fi
+              acc="${acc}/${part}"
+              if [ -L "$acc" ] || [ ! -d "$acc" ]; then
+                return 1
+              fi
+            done
+            return 0
+          }
+
+          if [ -z "${RUNNER_TEMP:-}" ] || [ ! -d "$RUNNER_TEMP" ]; then
+            echo "RUNNER_TEMP is not a private directory" >&2
+            exit 2
+          fi
+          case "$RUNNER_TEMP" in
+            "$GITHUB_WORKSPACE"|"$GITHUB_WORKSPACE"/*) echo "RUNNER_TEMP is inside the source tree" >&2; exit 2 ;;
+          esac
+          if [ "${#REQUESTED_SOURCE}" -ne 40 ]; then
+            echo "source must be exactly 40 lowercase hex characters" >&2
+            exit 2
+          fi
+          hex="$REQUESTED_SOURCE"
+          while [ -n "$hex" ]; do
+            char=${hex%${hex#?}}
+            case "$char" in
+              [0-9]|[a-f]) ;;
+              *) echo "source must be exactly 40 lowercase hex characters" >&2; exit 2 ;;
+            esac
+            hex=${hex#?}
+          done
+          case "$REQUESTED_TARGET" in
+            arm64) arch=arm64; runner_name=macos-26 ;;
+            x64) arch=x86_64; runner_name=macos-15-intel ;;
+            *) echo "target must be arm64 or x64" >&2; exit 2 ;;
+          esac
+          head=$(git rev-parse HEAD)
+          base="${RUNNER_TEMP}/keychain-injected-fixture"
+          rm -rf "$base"
+          umask 077
+          mkdir -p "$base/parent" "$base/owner-compile" "$base/wrapper-compile" "$base/fixture-evidence"
+          parent="$base/parent"
+          status="$base/owner-compile/status.txt"
+          {
+            echo "evidence_class=compile"
+            echo "source=$head"
+            echo "requested_source=$REQUESTED_SOURCE"
+            echo "architecture=$arch"
+            echo "target=$REQUESTED_TARGET"
+            echo "runner=$runner_name"
+            echo "compiler=clang"
+            echo "compile_phase_binary_executed=no"
+            echo "fixture_evidence=separate"
+            echo "fixture_selected=$RUN_FIXTURE"
+            echo "run_41346487519=not_evidence_for_this_owner"
+          } > "$status"
+          if [ "$head" != "$REQUESTED_SOURCE" ]; then
+            echo "head_match=no" >> "$status"
+            echo "checked out HEAD does not equal the requested source" >&2
+            exit 2
+          fi
+          echo "head_match=yes" >> "$status"
+          machine=$(uname -m)
+          if [ "$machine" != "$arch" ]; then
+            echo "runner machine is $machine, wanted $arch on $runner_name" >&2
+            exit 2
+          fi
+          if ! owner_parent_ok "$parent"; then
+            echo "private parent does not meet the owner path rules" >&2
+            exit 2
+          fi
+          remove_owner_bin() {
+            rm -f "$parent/fixture-owner"
+          }
+          trap remove_owner_bin EXIT
+
+          mkdir -p deploy/macos_keychain_proof/generated
+          cat > deploy/macos_keychain_proof/generated/caller_pin.h << 'EOF'
+          #ifndef MNEMION_CALLER_PIN_H
+          #define MNEMION_CALLER_PIN_H
+          /* compile_only: not a certificate, not a frozen helper, not native acceptance. */
+          #define MNEMION_PIN_CLASS "compile_only"
+          #define MNEMION_PIN_METADATA "compile_only: not a certificate, not a frozen helper, not native acceptance"
+          #define MNEMION_FIXTURE_LEAF_SHA1 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          #define MNEMION_FIXTURE_LEAF_SHA256 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+          #endif
+          EOF
+          cat > deploy/macos_keychain_proof/generated/parent_pin.h << 'EOF'
+          #ifndef MNEMION_PARENT_PIN_H
+          #define MNEMION_PARENT_PIN_H
+          /* compile_only placeholders. Not runtime helper pins. */
+          #define MNEMION_HELPER_CDHASH "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+          #define MNEMION_HELPER_MANIFEST_SHA256 "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          #define MNEMION_SEALED_HELPER_IDENTIFIER "com.perseusxr.mnemion-studio.credential-helper"
+          #define MNEMION_HELPER_DESIGNATED "identifier \"com.perseusxr.mnemion-studio.credential-helper\" and certificate leaf = H\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\""
+          #endif
+          EOF
+          cat > deploy/macos_keychain_proof/generated/fixture_store_config.h << 'EOF'
+          #ifndef MNEMION_FIXTURE_STORE_CONFIG_H
+          #define MNEMION_FIXTURE_STORE_CONFIG_H
+          /* compile_only: not an owned store, not native acceptance. */
+          #define MNEMION_FIXTURE_STORE_CLASS "compile_only"
+          #define MNEMION_FIXTURE_STORE_METADATA "compile_only: not an owned store, not native acceptance"
+          #define MNEMION_FIXTURE_SERVICE_PREFIX "mnemion-disposable-service-"
+          #define MNEMION_FIXTURE_ACCOUNT_PREFIX "mnemion-disposable-account-"
+          #define MNEMION_FIXTURE_STORE_BASENAME "throwaway.keychain"
+          #define MNEMION_FIXTURE_RECORD_BASENAME "fixture-run.txt"
+          #define MNEMION_FIXTURE_RUN_DIRECTORY "/compile-only/not-a-run"
+          #define MNEMION_FIXTURE_NONCE "00000000000000000000000000000000"
+          #define MNEMION_FIXTURE_EUID 0
+          #define MNEMION_FIXTURE_RUN_DEVICE 0
+          #define MNEMION_FIXTURE_RUN_INODE 0
+          #define MNEMION_FIXTURE_STORE_DEVICE 0
+          #define MNEMION_FIXTURE_STORE_INODE 0
+          #define MNEMION_FIXTURE_SERVICE "mnemion-disposable-service-00000000000000000000000000000000"
+          #define MNEMION_FIXTURE_ACCOUNT "mnemion-disposable-account-00000000000000000000000000000000"
+          #endif
+          EOF
+
+          owner_log="$base/owner-compile/owner.txt"
+          set +e
+          clang -arch "$arch" -mmacosx-version-min=13.0 -std=gnu11 -Werror -Wall -Wextra -Werror=implicit-function-declaration -o "$parent/fixture-owner" deploy/macos_keychain_proof/fixture_owner.c >"$owner_log" 2>&1
+          owner_rc=$?
+          echo "compiler_exit=$owner_rc" >>"$owner_log"
+          bash deploy/macos_keychain_proof/compile_only.sh --compile-only "$arch" "$base/wrapper-compile"
+          wrapper_rc=$?
+          set -e
+          echo "owner_compiler_exit=$owner_rc" >> "$status"
+          echo "wrapper_compiler_exit=$wrapper_rc" >> "$status"
+          if [ "$owner_rc" -ne 0 ] || [ "$wrapper_rc" -ne 0 ]; then
+            exit 1
+          fi
+          if [ "$RUN_FIXTURE" != "true" ]; then
+            echo "fixture_executed=no" >> "$status"
+            exit 0
+          fi
+
+          fixture_status="$base/fixture-evidence/status.txt"
+          fixture_out="$base/fixture-evidence/stdout.txt"
+          set +e
+          "$parent/fixture-owner" "$arch" "$parent" >"$fixture_out" 2>"$base/fixture-evidence/stderr.txt"
+          owner_exit=$?
+          set -e
+          outer=""
+          while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+              "case=supervisor "*) outer=$line ;;
+            esac
+          done < "$fixture_out"
+          cleanup=missing
+          case "$outer" in
+            *cleanup=*)
+              rest=${outer#*cleanup=}
+              cleanup=${rest%% *}
+              ;;
+          esac
+          {
+            echo "evidence_class=fixture"
+            echo "source=$head"
+            echo "architecture=$arch"
+            echo "target=$REQUESTED_TARGET"
+            echo "runner=$runner_name"
+            echo "owner_exit=$owner_exit"
+            echo "cleanup=$cleanup"
+            echo "fixture_binary_executed=yes"
+            echo "kernel_stuck_reaped=not_claimed"
+            echo "run_41346487519=not_evidence_for_this_owner"
+          } > "$fixture_status"
+          if [ "$owner_exit" -ne 0 ] || [ "$cleanup" != "complete" ]; then
+            if [ "$owner_exit" -eq 0 ]; then
+              exit 2
+            fi
+            exit "$owner_exit"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: keychain-injected-owner-compile-${{ inputs.target }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/keychain-injected-fixture/owner-compile/status.txt
+            ${{ runner.temp }}/keychain-injected-fixture/owner-compile/owner.txt
+            ${{ runner.temp }}/keychain-injected-fixture/wrapper-compile/helper.txt
+            ${{ runner.temp }}/keychain-injected-fixture/wrapper-compile/parent.txt
+            ${{ runner.temp }}/keychain-injected-fixture/wrapper-compile/identity.txt
+            ${{ runner.temp }}/keychain-injected-fixture/wrapper-compile/receipt.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && inputs.run_fixture
+        with:
+          name: keychain-injected-fixture-run-${{ inputs.target }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/keychain-injected-fixture/fixture-evidence/stdout.txt
+            ${{ runner.temp }}/keychain-injected-fixture/fixture-evidence/status.txt

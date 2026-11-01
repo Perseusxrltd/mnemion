@@ -12,6 +12,8 @@ permissions:
 # The upload names logs, the receipt, and the two plists. It does not upload the
 # output directory or any binary name. The script deletes the three linked
 # binaries on EXIT, and on INT or TERM, even when clang stops early.
+# The injected fixture owner is a separate manual program. This workflow does not
+# build it or start it. That lane stays inactive until Astra reviews the source.
 
 jobs:
   compile:

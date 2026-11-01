@@ -1,9 +1,11 @@
 # Next staged build step
 
-The signer, freeze, parent A/B assembly, and watchdog are not implemented
-here. The compile-only lane stays non-executing. The guard below is source
-only: sealed configuration, the file-Keychain interaction bracket, and the
-one-time creation marker.
+The signer, freeze, and parent A/B assembly are not implemented here. The
+compile-only lane stays non-executing. `fixture_owner.c` is the external
+disposable owner for an injected API boundary and real private files. That
+owner has not been executed. The guard below is source only: sealed
+configuration, the file-Keychain interaction bracket, and the one-time
+creation marker.
 
 Do this later, in order, on a disposable Mac runner:
 
@@ -35,11 +37,15 @@ Do this later, in order, on a disposable Mac runner:
    different parent cdhashes. Check helper tree equality, manifest, designated
    requirement, cdhash, and certificate hashes in both bundles.
 
-The controller that creates the owned run directory, the throwaway store, the
-external deadline, and the five synthetic cases remains later source work.
-Compile-only placeholders still refuse process start.
+`fixture_owner.c` is the controller source for one owned run directory, the
+throwaway store file, the external deadline, and the injected cases. Building
+or starting it is a separate manual step in `FIXTURE_OWNER.md`. It is inactive
+until Astra reviews that source. Compile-only placeholders still refuse
+process start. Real store creation, an ephemeral signing identity and its DER
+measurement, frozen-helper A/B builds, actual approval retention, and
+independent Chromium or Electron interoperability remain unproved.
 
-When that controller is written, the guard already requires all of this:
+The guard already requires all of this:
 
 - Launchd starts the helper with no extra argument. The sealed header is the
   run. Extra argv is refused. An environment value or an XPC field cannot

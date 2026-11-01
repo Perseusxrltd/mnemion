@@ -191,6 +191,7 @@ static int fixture_policy_cases(const char *prefix_s, const char *prefix_a, cons
                FIXTURE_SYNTAX_NAME) != 0) {
         return -1;
     }
+    /* Predicate coverage only. These booleans are not wrapper, fsync, or restart evidence. */
     if (fixture_syntax_ui_setup(1, 1, 1, 0, &operate) != FIXTURE_UI_READY || operate != 1) {
         return -1;
     }

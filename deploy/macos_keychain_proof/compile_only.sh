@@ -43,6 +43,7 @@ echo "sealed_fixture=source_linked_not_executed" >> "$receipt"
 echo "creation_marker=source_linked_not_executed" >> "$receipt"
 echo "exact_helper_pins=parent_only" >> "$receipt"
 echo "signer_controller=not_this_lane" >> "$receipt"
+echo "injected_fixture_lane=not_this_lane" >> "$receipt"
 echo "keychain=not_modified" >> "$receipt"
 echo "electron=not_used" >> "$receipt"
 echo "arch=$arch" >> "$receipt"
@@ -132,6 +133,16 @@ if [ ! -f "$needed" ]; then
   exit 2
 fi
 needed="$root/parent_main.m"
+if [ ! -f "$needed" ]; then
+  echo "missing $needed" | tee -a "$receipt" >&2
+  exit 2
+fi
+needed="$root/parent_direct_lookup.m"
+if [ ! -f "$needed" ]; then
+  echo "missing $needed" | tee -a "$receipt" >&2
+  exit 2
+fi
+needed="$root/fixture_inject.h"
 if [ ! -f "$needed" ]; then
   echo "missing $needed" | tee -a "$receipt" >&2
   exit 2
@@ -240,6 +251,7 @@ run_clang parent \
   -I "$root/generated" \
   -o "$parent_bin" \
   "$root/parent_main.m" \
+  "$root/parent_direct_lookup.m" \
   "$root/auth.m" \
   "$root/exact_helper.m" \
   "$root/bundle_manifest.c" \

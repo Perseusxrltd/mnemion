@@ -4,6 +4,10 @@
 #include "protocol.h"
 #include "v10_crypt.h"
 
+#if defined(MNEMION_FIXTURE_INJECT)
+#include "fixture_inject.h"
+#endif
+
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
 
@@ -123,7 +127,11 @@ enum key_result key_item_create_empty(struct key_state *state, int caller_claims
     if (state == NULL) {
         return KEY_UNAVAILABLE;
     }
+#if defined(MNEMION_FIXTURE_INJECT)
+    if (fixture_inject_random(raw, sizeof raw) != 0) {
+#else
     if (SecRandomCopyBytes(kSecRandomDefault, sizeof raw, raw) != errSecSuccess) {
+#endif
         mnemion_zero(raw, sizeof raw);
         return KEY_UNAVAILABLE;
     }
