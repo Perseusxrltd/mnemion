@@ -57,15 +57,15 @@
   ],
   "runs": [
     {
-      "id": 41344355291,
+      "id": 41344726119,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "3da7603507e327d0a6cdcc6abae9a2110fb9fc3f",
-      "status": "in_progress",
+      "source_commit": "212c7d445d3427e80dcaddbb80b7eba4e4aad80e",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-11-01T19:57:50Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41344355291",
+      "updated_at": "2026-11-01T20:03:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41344726119",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
@@ -73,43 +73,16 @@
         "succeeded": 3,
         "active": [
           {
-            "id": 124960879812,
+            "id": 124962280589,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
+              "Run python deploy/bundle_studio.py"
             ]
           },
           {
-            "id": 124960917413,
-            "name": "supervision (macos-26)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 124960917431,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124960917434,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 124960917438,
+            "id": 124962321964,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
@@ -118,16 +91,7 @@
             ]
           },
           {
-            "id": 124960917442,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 124960917447,
+            "id": 124962321994,
             "name": "container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -136,16 +100,50 @@
             ]
           },
           {
-            "id": 124960917466,
+            "id": 124962322042,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 124962322049,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 124962322053,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
             ]
           },
           {
-            "id": 124960917488,
+            "id": 124962322057,
+            "name": "supervision (macos-15-intel)",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 124962322067,
+            "name": "supervision (macos-26)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 124962322092,
             "name": "container (ubuntu-22.04-arm)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -202,15 +200,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41200981019"
     },
     {
-      "id": 41344355411,
+      "id": 41344726166,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "3da7603507e327d0a6cdcc6abae9a2110fb9fc3f",
+      "source_commit": "212c7d445d3427e80dcaddbb80b7eba4e4aad80e",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-11-01T19:57:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41344355411"
+      "updated_at": "2026-11-01T20:02:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41344726166"
     },
     {
       "id": 41201336239,
@@ -224,5 +222,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-11-01T19:58:24+00:00"
+  "observed_at": "2026-11-01T20:03:36+00:00"
 }
