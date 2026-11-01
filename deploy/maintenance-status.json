@@ -57,15 +57,15 @@
   ],
   "runs": [
     {
-      "id": 41344726119,
+      "id": 41346082060,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "212c7d445d3427e80dcaddbb80b7eba4e4aad80e",
-      "status": "queued",
+      "source_commit": "4c76ecac17771d424b8fe21ecae898696dbcc710",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-11-01T20:03:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41344726119",
+      "updated_at": "2026-11-01T20:17:59Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41346082060",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
@@ -73,7 +73,7 @@
         "succeeded": 3,
         "active": [
           {
-            "id": 124962280589,
+            "id": 124966153384,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
@@ -82,16 +82,34 @@
             ]
           },
           {
-            "id": 124962321964,
-            "name": "legacy",
+            "id": 124966191786,
+            "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Run python -m pip install uv==0.12.24"
             ]
           },
           {
-            "id": 124962321994,
+            "id": 124966191827,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+            ]
+          },
+          {
+            "id": 124966191831,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 124966191834,
             "name": "container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -100,41 +118,7 @@
             ]
           },
           {
-            "id": 124962322042,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 124962322049,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 124962322053,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 124962322057,
-            "name": "supervision (macos-15-intel)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 124962322067,
+            "id": 124966191843,
             "name": "supervision (macos-26)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -143,12 +127,30 @@
             ]
           },
           {
-            "id": 124962322092,
-            "name": "container (ubuntu-22.04-arm)",
+            "id": 124966191869,
+            "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 124966191960,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+            ]
+          },
+          {
+            "id": 124966192084,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           }
         ]
@@ -222,5 +224,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41201336239"
     }
   ],
-  "observed_at": "2026-11-01T20:03:36+00:00"
+  "observed_at": "2026-11-01T20:18:16+00:00"
 }
