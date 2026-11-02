@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Box, CirclePause, CirclePlay, Focus, Maximize2, Minimize2, Minus, Plus, RotateCcw, Search } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, CirclePause, CirclePlay, Focus, Maximize2, Minimize2, Minus, Plus, RotateCcw, Search } from "lucide-react";
 import type { Knowledge, MnemionClient } from "@mnemion/client";
 import { filterGraph, kindColors, kindLabels, positionGraph, project, type MapGraph, type MapNode } from "./map-model";
+import { directoryNames, earlierMapActivity, initialMapActivity, latestMapActivity, MAP_ACTIVITY_PAGE_SIZE, MAP_ACTIVITY_RETAINED_PAGES, mapActivityPoll, mapActivityScopeKey, mapActivityView, mapDirectoryQueryKey, newerMapActivity, type MapActivityPlace } from "./map-activity";
 import "./memory-map.css";
 
 export function compactMapDefault(): boolean {
@@ -13,8 +14,8 @@ export function compactMapDefault(): boolean {
 const short = (value: string) => value.slice(0, 8);
 const date = (value: string) => new Date(value).toLocaleString();
 
-export default function MemoryMap({ result, client, space, reviewer, administrator, live, setLive, limit, setLimit, checkedAt, refreshing }: {
-  result: Knowledge; client: MnemionClient; space: string; reviewer: boolean; administrator: boolean;
+export default function MemoryMap({ result, client, space, reviewer, administrator, sessionIdentity, live, setLive, limit, setLimit, checkedAt, refreshing }: {
+  result: Knowledge; client: MnemionClient; space: string; reviewer: boolean; administrator: boolean; sessionIdentity: string;
   live: boolean; setLive: (value: boolean) => void; limit: number; setLimit: (value: number) => void;
   checkedAt: number; refreshing: boolean;
 }) {
@@ -40,24 +41,54 @@ export default function MemoryMap({ result, client, space, reviewer, administrat
   }), [graph, result, search, kind, creator, hours, checkedAt, focused, selected, limit]);
   const node = visible.nodes.find(item => item.id === selected);
   const creators = useMemo(() => [...new Set(result.memories.map(memory => memory.created_by))].sort(), [result]);
-  const identities = useQuery({ queryKey: ["map-identities", client.baseUrl, space],
+  const identities = useQuery({ queryKey: mapDirectoryQueryKey(sessionIdentity, client.baseUrl, space),
     queryFn: ({ signal }) => client.request<{ items: import("@mnemion/client").Principal[] }>("GET", "/v1/principals", { signal }),
     enabled: administrator, refetchInterval: live ? 60_000 : false, refetchIntervalInBackground: false,
     refetchOnWindowFocus: live, refetchOnReconnect: live, retry: 0, gcTime: 0,
   });
-  const knownIdentities = new Map((identities.error ? [] : identities.data?.items || []).map(identity => [identity.id, identity]));
+  const knownIdentities = directoryNames(administrator, !!identities.error, identities.data?.items);
   function identityName(id: string) { const identity = knownIdentities.get(id); return identity ? `${identity.name} · ${identity.kind === "human" ? "person" : "agent / app"}` : `Identity ${short(id)}`; }
   const recent = useMemo(() => [...result.memories].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)), [result]);
   const evidence = node ? result.memories.filter(memory => memory.memory_id === node.memory_id ||
     result.edges.some(edge => (edge.source === node.id && edge.target === "memory:" + memory.memory_id) || (edge.target === node.id && edge.source === "memory:" + memory.memory_id))) : [];
-  const activity = useQuery({ queryKey: ["map-activity", client.baseUrl, space],
-    queryFn: ({ signal }) => client.request<{ items: import("@mnemion/client").AuditEvent[] }>("GET", `/v1/spaces/${encodeURIComponent(space)}/activity?limit=40`, { signal }),
-    enabled: reviewer, refetchInterval: live ? 20_000 : false, refetchIntervalInBackground: false,
-    refetchOnWindowFocus: live, refetchOnReconnect: live, retry: 0, gcTime: 0,
+  const scopeKey = mapActivityScopeKey({
+    endpoint: client.baseUrl, access: sessionIdentity, space, reviewer, administrator,
+    search, kind, creator, hours, limit, focus: focused ? selected : "",
   });
-  const visibleMemoryIds = new Set(visible.nodes.filter(node => node.kind === "memory").map(node => node.memory_id));
-  const events = activity.error ? [] : activity.data?.items.filter(event => visibleMemoryIds.has(event.resource_id) &&
-    ["memory.created", "memory.revised", "memory.reviewed"].includes(event.action)).slice(0, 8) || [];
+  const [storedPlace, setStoredPlace] = useState<MapActivityPlace>(() => initialMapActivity(scopeKey));
+  let place = storedPlace;
+  if (place.scopeKey !== scopeKey) {
+    place = initialMapActivity(scopeKey);
+    setStoredPlace(place);
+  }
+  const activityCursor = place.cursor;
+  const poll = mapActivityPoll(live, activityCursor);
+  const activity = useQuery({
+    queryKey: ["map-activity", scopeKey, activityCursor ?? ""],
+    queryFn: ({ signal, queryKey }) => {
+      const cursor = typeof queryKey[2] === "string" && queryKey[2] ? queryKey[2] : undefined;
+      return client.activity(space, { limit: MAP_ACTIVITY_PAGE_SIZE, cursor, signal }).then(page => ({
+        request: { scopeKey: String(queryKey[1]), cursor },
+        page,
+      }));
+    },
+    enabled: reviewer, refetchInterval: poll, refetchIntervalInBackground: false,
+    refetchOnWindowFocus: poll !== false, refetchOnReconnect: poll !== false, retry: 0, gcTime: 0,
+  });
+  const visibleMemoryIds = new Set(visible.nodes.filter(node => node.kind === "memory").map(node => node.memory_id).filter((memoryId): memoryId is string => typeof memoryId === "string"));
+  const response = activity.data;
+  const aligned = !!response && response.request.scopeKey === place.scopeKey && response.request.cursor === activityCursor;
+  const activityView = mapActivityView({
+    reviewer, pending: activity.isPending || (!aligned && activity.isFetching),
+    error: activity.isError || (!!response && !aligned && !activity.isPending && !activity.isFetching),
+    page: aligned ? response.page : undefined,
+    pageRequest: { scopeKey: place.scopeKey, cursor: activityCursor },
+    place, visibleMemoryIds,
+  });
+  function showEarlier() {
+    const next = aligned ? response?.page.next_cursor : undefined;
+    if (typeof next === "string" && next) setStoredPlace(earlierMapActivity(place, next));
+  }
 
   function choose(id: string) { setSelected(id); }
   return <section ref={shell} className="mm-shell" aria-label="Live memory map">
@@ -97,8 +128,24 @@ export default function MemoryMap({ result, client, space, reviewer, administrat
     {(visible.matched > visible.nodes.length || result.truncated) && <p className="ws-notice" role="status">This is a bounded view: {result.memories.length} loaded memories, {visible.nodes.length} of {visible.matched} matching nodes. Narrow the subject or space, or increase the view budget. Hidden nodes and relationships are not counted as absent.</p>}
     <div className="mm-lower">
       <details className="mm-index"><summary>Browse connections as a list · {visible.nodes.length}</summary><p className="ws-helper">Use this list to select any displayed point with the keyboard or without the canvas.</p><div>{visible.nodes.map(item => <button key={item.id} aria-pressed={node?.id === item.id} onClick={() => choose(item.id)}><i style={{ background: kindColors[item.kind] }} /><span>{item.label}</span><small>{kindLabels[item.kind]}</small></button>)}</div></details>
-      <section className="mm-activity" aria-label="Recorded memory activity"><h3>Work behind the map</h3><p>Recorded changes in the selected space, linked to visible memories. Identity IDs can represent a person or an agent.</p>
-        {!reviewer ? <p className="ws-helper">A reviewer can inspect the activity trail. Your permitted memories and their evidence remain available above.</p> : activity.error ? <p role="status">Activity is unavailable. Refresh your access or try again.</p> : events.length ? <ol>{events.map(event => <li key={event.id}><button onClick={() => choose("memory:" + event.resource_id)}>{event.action.replace("memory.", "Memory ")}</button><span>{identityName(event.principal_id)} · {date(event.created_at)}</span>{event.reason && <small>{event.reason.slice(0, 180)}</small>}</li>)}</ol> : <p className="ws-helper">No matching changes in the latest 40 activity events. This is a recent window, not the full history.</p>}
+      <section className="mm-activity" aria-label="Recorded memory activity"><h3>Work behind the map</h3><p>Recorded changes in the selected space, linked to memories in the current map. Earlier and newer pages load when you ask, one page of at most {MAP_ACTIVITY_PAGE_SIZE} events at a time. Identity IDs can represent a person or an agent.</p>
+        {activityView.kind === "closed" ? <p className="ws-helper">A reviewer can inspect the activity trail. Your permitted memories and their evidence remain available above.</p> : activityView.kind === "error" ? <><p role="status">Activity is unavailable. Refresh your access or try this page again.</p><button type="button" className="ws-button" onClick={() => { void activity.refetch(); }}>Try this page again</button></> : activityView.kind === "loading" ? <p role="status">Loading recorded events…</p> : <>
+          {(activityView.kind === "events" || (activityView.kind === "legacy" && activityView.events.length > 0)) && <ol>{activityView.events.map(event => {
+            const memory = result.memories.find(item => item.memory_id === event.resource_id);
+            return <li key={event.id}><button type="button" onClick={() => choose("memory:" + event.resource_id)}>{event.action.replace("memory.", "Memory ")}</button><span>{identityName(event.principal_id)} · {date(event.created_at)}</span>{event.reason && <small>{event.reason.slice(0, 180)}</small>}{memory && <><Link to={`/workspace/memory/${memory.memory_id}`}>Open memory & history ↗</Link><Link to={`/workspace/sources/${memory.evidence.source_revision_id}`}>Source: {memory.evidence.title} ↗</Link></>}</li>;
+          })}</ol>}
+          {activityView.kind === "empty-page" && <p className="ws-helper" role="status">No creation, revision, or review on this page matches a memory in the current map. Another older page is available.</p>}
+          {activityView.kind === "empty-end" && <p className="ws-helper" role="status">No creation, revision, or review on this page matches a memory in the current map. The server returned no older page.</p>}
+          {activityView.kind === "legacy" && <p className="ws-helper" role="status">{activityView.events.length ? "This workspace server did not return an earlier-activity cursor. The list is the latest window it sent." : "This workspace server did not return an earlier-activity cursor. No creation, revision, or review in that window matches a memory in the current map."}</p>}
+          {activityView.kind === "events" && activityView.end && <p className="ws-helper">The server returned no older page.</p>}
+          {activity.isFetching && !activity.isPending && <p role="status">Checking recorded events…</p>}
+        </>}
+        {activityView.truncated && <p className="ws-helper">This view keeps {MAP_ACTIVITY_RETAINED_PAGES} page positions, including this page. Latest events returns to the newest page.</p>}
+        {(activityView.canNewer || activityView.canLatest || activityView.canEarlier) && <div className="ws-actions">
+          {activityView.canNewer && <button type="button" className="ws-button" onClick={() => setStoredPlace(newerMapActivity(place))}><ChevronLeft size={15} /> Newer events</button>}
+          {activityView.canLatest && <button type="button" className="ws-button" onClick={() => setStoredPlace(latestMapActivity(place))}>Latest events</button>}
+          {activityView.canEarlier && <button type="button" className="ws-button" disabled={activity.isFetching} onClick={showEarlier}>Earlier events <ChevronRight size={15} /></button>}
+        </div>}
       </section>
     </div>
   </section>;

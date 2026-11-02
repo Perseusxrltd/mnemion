@@ -5,7 +5,7 @@ import { Download, RefreshCw } from "lucide-react";
 import { MnemionClient, type Knowledge, type KnowledgeNode } from "@mnemion/client";
 import MemoryMap, { compactMapDefault } from "./MemoryMap";
 
-export function KnowledgeView({ client, space, reviewer = false, administrator = false }: { client: MnemionClient; space: string; reviewer?: boolean; administrator?: boolean }) {
+export function KnowledgeView({ client, space, reviewer = false, administrator = false, sessionIdentity }: { client: MnemionClient; space: string; reviewer?: boolean; administrator?: boolean; sessionIdentity: string }) {
   const [tab, setTab] = useState("map");
   const [live, setLive] = useState(true);
   const [mapLimit, setMapLimit] = useState(() => compactMapDefault() ? 60 : 120);
@@ -41,7 +41,7 @@ export function KnowledgeView({ client, space, reviewer = false, administrator =
     {result && <>
       <div className="ws-actions" role="group" aria-label="Knowledge view">{[["map", "Live memory map"], ["wiki", "Wiki"], ["graph", "Evidence graph"], ["curation", "Curation"]].map(([id, label]) => <button className={`ws-button ${tab === id ? "ws-primary" : ""}`} key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}<span className="ws-helper">{result.memories.length} memories · {result.topics.length} topics</span></div>
       {result.truncated && <div className="ws-notice" role="status">This view includes the first {limit} matching memories. Narrow the subject or space to inspect a complete set.</div>}
-      {tab === "map" && <MemoryMap result={result} client={client} space={space} reviewer={reviewer} administrator={administrator} live={live} setLive={setLive} limit={mapLimit} setLimit={setMapLimit} checkedAt={query.dataUpdatedAt} refreshing={query.isFetching} />}
+      {tab === "map" && <MemoryMap result={result} client={client} space={space} reviewer={reviewer} administrator={administrator} sessionIdentity={sessionIdentity} live={live} setLive={setLive} limit={mapLimit} setLimit={setMapLimit} checkedAt={query.dataUpdatedAt} refreshing={query.isFetching} />}
       {tab === "wiki" && <>
         <div className="ws-section-title"><p className="ws-helper">Each passage retains its source and review status. Refresh after changing a memory.</p><button className="ws-button" onClick={download}><Download size={16} />Save Markdown</button></div>
         {result.topics.map(topic => <section className="ws-card" key={topic.id}><h2>{topic.title}</h2>{topic.memory_ids.map(id => {

@@ -58,10 +58,12 @@
 .mm-index button small { margin-left: auto; white-space: nowrap; color: var(--ws-muted); font-size: 10px; }
 .mm-activity h3 { margin: 0 0 9px; font-size: 15px; }
 .mm-activity p { color: var(--ws-muted); font-size: 12px; line-height: 1.7; }
-.mm-activity ol { padding: 0; list-style: none; }
+.mm-activity ol { max-height: 370px; overflow-y: auto; padding: 0; list-style: none; }
 .mm-activity li { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--ws-border); }
 .mm-activity li button { border: 0; background: none; color: var(--ws-accent); text-align: left; font: inherit; font-size: 12px; padding: 0; cursor: pointer; }
 .mm-activity li span, .mm-activity li small { color: var(--ws-muted); font-size: 11px; overflow-wrap: anywhere; }
+.mm-activity a { display: block; color: var(--ws-accent); font-size: 11px; line-height: 1.6; }
+.mm-activity .ws-actions { margin-top: 14px; }
 @media (max-width: 1150px) { .mm-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); } .mm-grid { grid-template-columns: minmax(0, 1fr) 250px; } .mm-canvas { height: 500px; } }
 @media (max-width: 800px) { .mm-grid { grid-template-columns: 1fr; } .mm-inspector { border-left: 0; border-top: 1px solid var(--ws-border); max-height: 400px; } .mm-canvas { height: 430px; } .mm-lower { grid-template-columns: 1fr; } }
 @media (max-width: 550px) { .mm-heading { align-items: flex-start; flex-direction: column; } .mm-controls { grid-template-columns: 1fr 1fr; } .mm-search { grid-column: 1 / -1; } .mm-scene-top, .mm-scene-bottom { padding-left: 12px; padding-right: 12px; font-size: 10px; } .mm-camera { padding: 0 12px; } .mm-camera p { max-width: 170px; line-height: 1.6; } .mm-canvas { height: 360px; } }

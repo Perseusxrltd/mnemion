@@ -18,10 +18,11 @@ available at that workspace's Studio address when its host is reachable.
 - **2D:** flatten the view. Reduced-motion preferences select this mode initially.
 - **Find a connection:** match words in node labels and include their direct
   recorded connections. **Show** selects a node type.
-- **Created by:** filter the original creator. Where organization administrator
-  access permits directory lookup, show the person/app name and kind; otherwise
-  show the creator's abbreviated identity ID. This does not claim that the
-  original creator made every subsequent edit.
+- **Created by:** filter the original creator. Where the current organization
+  administrator access permits directory lookup, show the person/app name and
+  kind; otherwise show the creator's abbreviated identity ID. A lost or
+  replaced access does not keep names loaded for the previous access. This
+  does not claim that the original creator made every subsequent edit.
 - **Changed:** filter the included memories by their recorded update time.
 - **Select a point:** inspect review status, revision, current evidence and
   links to memory history and original sources. **Focus connections** narrows
@@ -57,16 +58,29 @@ separate identities and subjects.
 
 Visible maps check for a new authorized snapshot every **20 seconds**. Hidden
 tabs do not poll in the background. **Pause live updates** stops periodic
-knowledge/activity checks; **Refresh** explicitly checks again. This first
-implementation uses bounded snapshots, not a sub-second event stream.
+knowledge checks and checks of the newest activity page. An earlier activity
+page waits until you ask for another page. **Refresh** checks the map again.
+This implementation uses bounded snapshots, not a sub-second event stream.
 
 **Work behind the map** shows real creation, revision and review events for
-visible memories in the currently selected space. It requires reviewer access
-and considers the latest 40 activity events, showing up to eight matching
-changes. No matching event in that window does not prove that no work happened.
-Use the memory history and Activity screen for further investigation. A person
-or application can perform a recorded action; the app does not infer model
-reasoning or fabricate an explanation for it.
+memories in the current map, from the selected space. It requires reviewer
+access. Each request reads one page of at most 40 recorded events and lists
+the matching rows on that page. **Earlier events** asks for the next older
+page. **Newer events** returns one retained page toward the newest page.
+**Latest events** returns to the newest page, including after older positions
+were dropped. The view keeps one page of event rows and at most 40 page
+positions, including the page now open. It does not walk the log by itself.
+A page with no matching row still offers **Earlier events** when the server
+returns another cursor, and says so when it does not. No older cursor does not
+prove that no work happened outside this space or the current map filters.
+A later snapshot of the same workspace, access, and map query does not clear
+that page or start polling it. Rows still have to match a memory in the
+current authorized view. Changing workspace, access, or the map query
+(search, type, creator, time, view size, or focus) clears the page and its
+cursors. A response from the previous scope is dropped. Use the memory history and
+Activity screen to inspect one record. The row names the recorded actor and
+links the memory's actual history and source. The app does not infer model
+reasoning or fabricate an explanation for the action.
 
 Deleted, quarantined or inaccessible memories cannot be reintroduced through a
 stale selected node. The graph is removed if refreshing its authorization fails.
@@ -91,6 +105,7 @@ unsaved drafts continue to block unattended restarts.
 Large-workspace clustering, incremental/delta subscriptions, time replay,
 multi-space activity aggregation, richer permission-filtered collaborator labels
 and provider-specific capture coverage remain on the
-[requirements checklist](../PRODUCT_REQUIREMENTS.md), V03–V05 and C08. This view
-does not make an offline workspace host reachable; use the
+[requirements checklist](../PRODUCT_REQUIREMENTS.md), V03–V05 and C08. Paging
+recorded events in the selected space does not close V05. This view does not
+make an offline workspace host reachable; use the
 [connection and recovery guide](connection-diagnostics.md) for that.

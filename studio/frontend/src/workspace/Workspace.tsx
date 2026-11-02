@@ -473,7 +473,7 @@ function Shell({
                 <Route path="memory/:id" element={<MemoryDetail />} />
                 <Route path="sources/:id" element={<SourceDetail />} />
                 <Route path="search" element={<SearchMemory />} />
-                <Route path="knowledge" element={<KnowledgeView key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} />} />
+                <Route path="knowledge" element={<KnowledgeView key={space.id} sessionIdentity={JSON.stringify([client.baseUrl, me.tenant_id, me.principal_id, me.administrator])} client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} />} />
                 <Route path="review" element={<Memories review />} />
                 <Route path="blocks" element={<CoreContext />} />
                 <Route path="operations" element={<Operations />} />
