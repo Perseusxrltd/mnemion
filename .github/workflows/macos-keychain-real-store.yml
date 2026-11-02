@@ -1,0 +1,346 @@
+name: Keychain real store
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact source commit, 40 lowercase hex characters
+        required: true
+        type: string
+      target:
+        description: arm64 selects macos-26; x64 selects macos-15-intel
+        type: choice
+        default: arm64
+        options:
+          - arm64
+          - x64
+      run_fixture:
+        description: false compiles only; true runs the supervised real-store stage once
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Manual and inactive until Astra dispatches it after review. Not push, pull
+# request, workflow_call, or schedule. Compile-only is the default and executes
+# none of the produced binaries. true runs only the real-store supervisor.
+# The supervisor recompiles its tools inside the private run. This file does
+# not call codesign, security, openssl, or the provisioner. It does not retry
+# and it has no release step. Compile logs and the public receipt are separate
+# uploads. KILL, elapsed time, and disposal of the runner are not kernel-reap
+# evidence. Injected runs 41366681263 and 41367070289 are not evidence here.
+# Failed run 41363656552 remains failed.
+
+jobs:
+  real-store:
+    name: real store / ${{ inputs.target }}
+    runs-on: ${{ inputs.target == 'x64' && 'macos-15-intel' || 'macos-26' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source }}
+          persist-credentials: false
+      - name: Verify source, compile, and maybe run the supervised real store
+        shell: bash
+        env:
+          REQUESTED_SOURCE: ${{ inputs.source }}
+          REQUESTED_TARGET: ${{ inputs.target }}
+          RUN_FIXTURE: ${{ inputs.run_fixture }}
+        run: |
+          set -eu
+          owner_parent_ok() {
+            path="$1"
+            cwd=$(pwd)
+            length=${#path}
+            if [ "${path#/}" = "$path" ] || [ "$length" -lt 2 ] || [ "$length" -gt 800 ]; then
+              return 1
+            fi
+            case "$path" in
+              */) return 1 ;;
+            esac
+            case "$path" in
+              *//*|*\\*|*\"*|*' '*) return 1 ;;
+            esac
+            case "$path" in
+              /tmp|/tmp/*|/var|/var/*|/private/tmp|/private/tmp/*|/private/var|/private/var/*) return 1 ;;
+            esac
+            case "$path" in
+              */Library/Keychains|*/Library/Keychains/*|*login.keychain*) return 1 ;;
+            esac
+            case "$path" in
+              "$cwd"|"$cwd"/*|"${GITHUB_WORKSPACE}"|"${GITHUB_WORKSPACE}"/*) return 1 ;;
+            esac
+            case "$cwd" in
+              "$path"|"$path"/*) return 1 ;;
+            esac
+            case "$GITHUB_WORKSPACE" in
+              "$path"|"$path"/*) return 1 ;;
+            esac
+            rest=${path#/}
+            acc=""
+            while [ -n "$rest" ]; do
+              part=${rest%%/*}
+              if [ "$part" = "$rest" ]; then
+                rest=""
+              else
+                rest=${rest#*/}
+              fi
+              if [ -z "$part" ] || [ "$part" = "." ] || [ "$part" = ".." ]; then
+                return 1
+              fi
+              acc="${acc}/${part}"
+              if [ -L "$acc" ] || [ ! -d "$acc" ]; then
+                return 1
+              fi
+            done
+            return 0
+          }
+
+          if [ -z "${RUNNER_TEMP:-}" ] || [ ! -d "$RUNNER_TEMP" ]; then
+            echo "RUNNER_TEMP is not a private directory" >&2
+            exit 2
+          fi
+          case "$RUNNER_TEMP" in
+            "$GITHUB_WORKSPACE"|"$GITHUB_WORKSPACE"/*) echo "RUNNER_TEMP is inside the source tree" >&2; exit 2 ;;
+          esac
+          if [ "$RUN_FIXTURE" != "true" ] && [ "$RUN_FIXTURE" != "false" ]; then
+            echo "run_fixture must be exactly true or false" >&2
+            exit 2
+          fi
+          if [ "${#REQUESTED_SOURCE}" -ne 40 ]; then
+            echo "source must be exactly 40 lowercase hex characters" >&2
+            exit 2
+          fi
+          hex="$REQUESTED_SOURCE"
+          while [ -n "$hex" ]; do
+            char=${hex%${hex#?}}
+            case "$char" in
+              [0-9]|[a-f]) ;;
+              *) echo "source must be exactly 40 lowercase hex characters" >&2; exit 2 ;;
+            esac
+            hex=${hex#?}
+          done
+          case "$REQUESTED_TARGET" in
+            arm64) arch=arm64; runner_name=macos-26 ;;
+            x64) arch=x86_64; runner_name=macos-15-intel ;;
+            *) echo "target must be arm64 or x64" >&2; exit 2 ;;
+          esac
+          head=$(git rev-parse HEAD)
+          base="${RUNNER_TEMP}/keychain-real-store"
+          rm -rf "$base"
+          umask 077
+          mkdir -p "$base/parent" "$base/owner-compile" "$base/wrapper-compile" "$base/run-evidence"
+          parent="$base/parent"
+          status="$base/owner-compile/status.txt"
+          {
+            echo "evidence_class=compile"
+            echo "lane=real_store"
+            echo "source=$head"
+            echo "requested_source=$REQUESTED_SOURCE"
+            echo "architecture=$arch"
+            echo "target=$REQUESTED_TARGET"
+            echo "runner=$runner_name"
+            echo "compiler=clang"
+            echo "compile_phase_binary_executed=no"
+            echo "binaries_executed=no"
+            echo "run_evidence=separate"
+            echo "run_fixture=$RUN_FIXTURE"
+            echo "stage=signed_artifact_and_empty_lookup"
+            echo "injected_runs=not_evidence_for_this_lane"
+          } > "$status"
+          if [ "$head" != "$REQUESTED_SOURCE" ]; then
+            echo "head_match=no" >> "$status"
+            echo "checked out HEAD does not equal the requested source" >&2
+            exit 2
+          fi
+          echo "head_match=yes" >> "$status"
+          machine=$(uname -m)
+          if [ "$machine" != "$arch" ]; then
+            echo "runner machine is $machine, wanted $arch on $runner_name" >&2
+            exit 2
+          fi
+          if ! owner_parent_ok "$parent"; then
+            echo "private parent does not meet the owner path rules" >&2
+            exit 2
+          fi
+          echo "parent_accepted=yes" >> "$status"
+          remove_bins() {
+            rm -f "$parent/real-store-owner" \
+              "$base/owner-compile/provision.o" \
+              "$base/owner-compile/measure.o" \
+              "$base/owner-compile/contract.o" \
+              "$base/owner-compile/syntax.o"
+          }
+          trap remove_bins EXIT
+
+          mkdir -p deploy/macos_keychain_proof/generated
+          cat > deploy/macos_keychain_proof/generated/caller_pin.h << 'EOF'
+          #ifndef MNEMION_CALLER_PIN_H
+          #define MNEMION_CALLER_PIN_H
+          /* compile_only: not a certificate, not a frozen helper, not native acceptance. */
+          #define MNEMION_PIN_CLASS "compile_only"
+          #define MNEMION_PIN_METADATA "compile_only: not a certificate, not a frozen helper, not native acceptance"
+          #define MNEMION_FIXTURE_LEAF_SHA1 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          #define MNEMION_FIXTURE_LEAF_SHA256 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+          #endif
+          EOF
+          cat > deploy/macos_keychain_proof/generated/parent_pin.h << 'EOF'
+          #ifndef MNEMION_PARENT_PIN_H
+          #define MNEMION_PARENT_PIN_H
+          /* compile_only placeholders. Not runtime helper pins. */
+          #define MNEMION_HELPER_CDHASH "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+          #define MNEMION_HELPER_MANIFEST_SHA256 "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          #define MNEMION_SEALED_HELPER_IDENTIFIER "com.perseusxr.mnemion-studio.credential-helper"
+          #define MNEMION_HELPER_DESIGNATED "identifier \"com.perseusxr.mnemion-studio.credential-helper\" and certificate leaf = H\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\""
+          #endif
+          EOF
+          cat > deploy/macos_keychain_proof/generated/fixture_store_config.h << 'EOF'
+          #ifndef MNEMION_FIXTURE_STORE_CONFIG_H
+          #define MNEMION_FIXTURE_STORE_CONFIG_H
+          /* compile_only: not an owned store, not native acceptance. */
+          #define MNEMION_FIXTURE_STORE_CLASS "compile_only"
+          #define MNEMION_FIXTURE_STORE_METADATA "compile_only: not an owned store, not native acceptance"
+          #define MNEMION_FIXTURE_SERVICE_PREFIX "mnemion-disposable-service-"
+          #define MNEMION_FIXTURE_ACCOUNT_PREFIX "mnemion-disposable-account-"
+          #define MNEMION_FIXTURE_STORE_BASENAME "throwaway.keychain"
+          #define MNEMION_FIXTURE_RECORD_BASENAME "fixture-run.txt"
+          #define MNEMION_FIXTURE_RUN_DIRECTORY "/compile-only/not-a-run"
+          #define MNEMION_FIXTURE_NONCE "00000000000000000000000000000000"
+          #define MNEMION_FIXTURE_EUID 0
+          #define MNEMION_FIXTURE_RUN_DEVICE 0
+          #define MNEMION_FIXTURE_RUN_INODE 0
+          #define MNEMION_FIXTURE_STORE_DEVICE 0
+          #define MNEMION_FIXTURE_STORE_INODE 0
+          #define MNEMION_FIXTURE_SERVICE "mnemion-disposable-service-00000000000000000000000000000000"
+          #define MNEMION_FIXTURE_ACCOUNT "mnemion-disposable-account-00000000000000000000000000000000"
+          #endif
+          EOF
+
+          cflags="-arch $arch -mmacosx-version-min=13.0 -std=gnu11 -fno-objc-arc -fblocks -DOS_OBJECT_USE_OBJC=0 -Werror -Wall -Wextra -Werror=implicit-function-declaration -I deploy/macos_keychain_proof"
+          owner_log="$base/owner-compile/owner.txt"
+          set +e
+          # shellcheck disable=SC2086
+          clang -arch "$arch" -mmacosx-version-min=13.0 -std=gnu11 -Werror -Wall -Wextra -Werror=implicit-function-declaration -I deploy/macos_keychain_proof -o "$parent/real-store-owner" deploy/macos_keychain_proof/real_store_owner.c >"$owner_log" 2>&1
+          owner_rc=$?
+          echo "compiler_exit=$owner_rc" >>"$owner_log"
+          # shellcheck disable=SC2086
+          clang $cflags -c deploy/macos_keychain_proof/real_store_provision.m -o "$base/owner-compile/provision.o" >"$base/owner-compile/provision.txt" 2>&1
+          provision_rc=$?
+          # shellcheck disable=SC2086
+          clang $cflags -c deploy/macos_keychain_proof/real_store_measure.m -o "$base/owner-compile/measure.o" >"$base/owner-compile/measure.txt" 2>&1
+          measure_rc=$?
+          # shellcheck disable=SC2086
+          clang $cflags -c deploy/macos_keychain_proof/real_store_contract.c -o "$base/owner-compile/contract.o" >"$base/owner-compile/contract.txt" 2>&1
+          contract_rc=$?
+          # shellcheck disable=SC2086
+          clang $cflags -c deploy/macos_keychain_proof/fixture_store_syntax.c -o "$base/owner-compile/syntax.o" >"$base/owner-compile/syntax.txt" 2>&1
+          syntax_rc=$?
+          bash deploy/macos_keychain_proof/compile_only.sh --compile-only "$arch" "$base/wrapper-compile"
+          wrapper_rc=$?
+          set -e
+          {
+            echo "owner_compiler_exit=$owner_rc"
+            echo "provision_compiler_exit=$provision_rc"
+            echo "measure_compiler_exit=$measure_rc"
+            echo "contract_compiler_exit=$contract_rc"
+            echo "syntax_compiler_exit=$syntax_rc"
+            echo "wrapper_compiler_exit=$wrapper_rc"
+            echo "objects_executed=no"
+          } >> "$status"
+          if [ "$owner_rc" -ne 0 ] || [ "$provision_rc" -ne 0 ] || [ "$measure_rc" -ne 0 ] || [ "$contract_rc" -ne 0 ] || [ "$syntax_rc" -ne 0 ] || [ "$wrapper_rc" -ne 0 ]; then
+            exit 1
+          fi
+          if [ "$RUN_FIXTURE" != "true" ]; then
+            echo "supervisor_executed=no" >> "$status"
+            exit 0
+          fi
+
+          rm -f "$base/owner-compile/provision.o" "$base/owner-compile/measure.o" "$base/owner-compile/contract.o" "$base/owner-compile/syntax.o"
+          run_status="$base/run-evidence/status.txt"
+          run_out="$base/run-evidence/stdout.txt"
+          set +e
+          "$parent/real-store-owner" "$arch" "$parent" >"$run_out" 2>"$base/run-evidence/stderr.txt"
+          owner_exit=$?
+          set -e
+          outer=""
+          while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+              "case=supervisor "*) outer=$line ;;
+            esac
+          done < "$run_out"
+          cleanup=missing
+          case "$outer" in
+            *cleanup=*)
+              rest=${outer#*cleanup=}
+              cleanup=${rest%% *}
+              ;;
+          esac
+          {
+            echo "evidence_class=real_store"
+            echo "source=$head"
+            echo "architecture=$arch"
+            echo "target=$REQUESTED_TARGET"
+            echo "runner=$runner_name"
+            echo "owner_exit=$owner_exit"
+            echo "cleanup=$cleanup"
+            echo "supervisor_executed=yes"
+            echo "binaries_executed=supervisor_only"
+            echo "kernel_stuck_reaped=not_claimed"
+            echo "injected_runs=not_evidence_for_this_lane"
+          } > "$run_status"
+          require_line() {
+            if ! grep -F -x -q -- "$1" "$run_out"; then
+              echo "missing required receipt line" >&2
+              exit 1
+            fi
+          }
+          if [ "$owner_exit" -ne 0 ] || [ "$cleanup" != "complete" ]; then
+            if [ "$owner_exit" -eq 0 ]; then
+              exit 2
+            fi
+            exit "$owner_exit"
+          fi
+          if grep -F -x -q -- "native_security_calls=0" "$run_out"; then
+            echo "real-store receipt must not claim zero native Security calls" >&2
+            exit 1
+          fi
+          require_line "lane=real_store"
+          require_line "native_operations=real"
+          require_line "direct_lookup_result=missing_key"
+          require_line "direct_lookup_calls=1"
+          require_line "direct_lookup_bracket=yes"
+          require_line "check_helper_result=ok"
+          require_line "xpc_exercised=no"
+          require_line "compile_only_pins_used=no"
+          require_line "error_category=none"
+          require_line "cleanup=complete"
+          require_line "spawn_count=23"
+          require_line "external_tool_security_calls=unavailable"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: keychain-real-store-compile-${{ inputs.target }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/keychain-real-store/owner-compile/status.txt
+            ${{ runner.temp }}/keychain-real-store/owner-compile/owner.txt
+            ${{ runner.temp }}/keychain-real-store/owner-compile/provision.txt
+            ${{ runner.temp }}/keychain-real-store/owner-compile/measure.txt
+            ${{ runner.temp }}/keychain-real-store/owner-compile/contract.txt
+            ${{ runner.temp }}/keychain-real-store/owner-compile/syntax.txt
+            ${{ runner.temp }}/keychain-real-store/wrapper-compile/helper.txt
+            ${{ runner.temp }}/keychain-real-store/wrapper-compile/parent.txt
+            ${{ runner.temp }}/keychain-real-store/wrapper-compile/identity.txt
+            ${{ runner.temp }}/keychain-real-store/wrapper-compile/receipt.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && inputs.run_fixture
+        with:
+          name: keychain-real-store-run-${{ inputs.target }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/keychain-real-store/run-evidence/stdout.txt
+            ${{ runner.temp }}/keychain-real-store/run-evidence/status.txt

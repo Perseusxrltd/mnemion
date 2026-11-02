@@ -1,11 +1,27 @@
 # Next staged build step
 
-The signer, freeze, and parent A/B assembly are not implemented here. The
-compile-only lane stays non-executing. `fixture_owner.c` is the external
-disposable owner for an injected API boundary and real private files. That
-owner has not been executed. The guard below is source only: sealed
-configuration, the file-Keychain interaction bracket, and the one-time
+The injected owner has executed twice on integrated source
+`f4c3bbaba4c2bccf539cfbd1cbd2bace2a8d7fed`. ARM64/macOS-26 run 41366681263
+succeeded. Intel/macOS-15-intel run 41367070289 succeeded. Both have 36 case
+records, owner exit 0, outer cleanup complete, and zero native Security calls.
+Those receipts prove the injected suite. They do not prove Keychain access.
+Failed original 41363656552 remains failed.
+
+`fixture_owner.c` stays the injected owner. Its Security symbol denylist stays.
+The compile-only lane stays non-executing. The guard below is source only:
+sealed configuration, the file-Keychain interaction bracket, and the one-time
 creation marker.
+
+The owned real-store creator, temporary fixture signer, certificate and
+artifact measurement, and frozen helper / parent A/B assembler now exist as
+source. `REAL_STORE.md` describes that stage. It has not been executed. It
+stays inactive until Astra reviews it and explicitly dispatches
+`.github/workflows/macos-keychain-real-store.yml`. A future run is
+signed-artifact validation plus one empty real-store direct lookup. It is not
+embedded-XPC activation, secret seeding, production migration, or an
+approval-retention claim. The runtime headers described below are written only
+inside that private run's `include` directory. `generated/` remains the
+compile-only placeholder directory.
 
 Do this later, in order, on a disposable Mac runner:
 
@@ -37,13 +53,13 @@ Do this later, in order, on a disposable Mac runner:
    different parent cdhashes. Check helper tree equality, manifest, designated
    requirement, cdhash, and certificate hashes in both bundles.
 
-`fixture_owner.c` is the controller source for one owned run directory, the
+`fixture_owner.c` is the controller source for one owned injected run, the
 throwaway store file, the external deadline, and the injected cases. Building
-or starting it is a separate manual step in `FIXTURE_OWNER.md`. It is inactive
-until Astra reviews that source. Compile-only placeholders still refuse
-process start. Real store creation, an ephemeral signing identity and its DER
-measurement, frozen-helper A/B builds, actual approval retention, and
-independent Chromium or Electron interoperability remain unproved.
+or starting it is a separate manual step in `FIXTURE_OWNER.md`. The two
+successes above are injected evidence. `real_store_owner` is the separate
+real-store controller. It is manual and inactive. Compile-only placeholders
+still refuse process start. The real-store stage has not executed, so approval
+retention and independent Chromium or Electron interoperability remain unproved.
 
 The guard already requires all of this:
 
