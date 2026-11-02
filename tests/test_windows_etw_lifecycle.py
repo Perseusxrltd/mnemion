@@ -23,11 +23,14 @@ from deploy.owned_launch_windows_etw import (
     session_request,
 )
 from deploy.windows_etw_lifecycle import (
+    CLOCK_DELTA_PUBLICATION_BOUND,
+    OBSERVER_DRAIN_SECONDS,
     PROVIDER_SHA256,
     PhaseLog,
     base_receipt,
     etw_lifecycle_receipt_qualifies,
     main,
+    project_sequence,
     read_phase,
     receipt_schema_ok,
     run_supervisor,
@@ -98,13 +101,24 @@ def _record(opcode: int, payload: bytes, timestamp: int, *, version: int = 2) ->
 
 
 def _life(
-    opcode: int, pid: int, parent: int, key: int, timestamp: int, *, exit_status: int = 0
+    opcode: int,
+    pid: int,
+    parent: int,
+    key: int,
+    timestamp: int,
+    *,
+    exit_status: int = 0,
+    version: int = 2,
 ) -> dict:
-    return _record(opcode, _lifecycle_payload(pid, parent, key, exit_status), timestamp)
+    return _record(
+        opcode, _lifecycle_payload(pid, parent, key, exit_status), timestamp, version=version
+    )
 
 
-def _counter(pid: int, peak: int, timestamp: int, *, opcode: int = OPCODE_PERFCTR) -> dict:
-    return _record(opcode, _counter_payload(pid, peak), timestamp)
+def _counter(
+    pid: int, peak: int, timestamp: int, *, opcode: int = OPCODE_PERFCTR, version: int = 2
+) -> dict:
+    return _record(opcode, _counter_payload(pid, peak), timestamp, version=version)
 
 
 def _generation(pid: int, parent: int, key: int, start: int, end: int, peak: int) -> list[dict]:
@@ -310,21 +324,29 @@ def _evidence() -> dict:
     for name in receipt["api"]:
         receipt["api"][name] = {"attempted": True, "ok": True, "code": "ok", "pending": None}
     receipt["api"]["close_trace"]["pending"] = False
-    receipt["sequence"] = {
-        "bound": True,
-        "binding": "exact_creation",
-        "start_end_gate": "passed",
-        "start_end_key_equal": True,
-        "opcodes": [1, 2, 32],
-        "pointer_width": 8,
-        "event_version": 2,
-        "start_matches_creation": True,
-        "end_present": True,
-        "timestamps_equal": False,
-        "opcode32_inside_paired_lifetime": True,
-        "opcode33_rundown_ignored": 0,
-        "process_start_key_used": False,
-    }
+    receipt["sequence"].update(
+        {
+            "bound": True,
+            "binding": "exact_creation",
+            "start_end_gate": "passed",
+            "start_end_key_equal": True,
+            "opcodes": [1, 2, 32],
+            "pointer_width": 8,
+            "version_opcode_1": 2,
+            "version_opcode_2": 2,
+            "version_opcode_32": 2,
+            "start_matches_creation": True,
+            "end_present": True,
+            "timestamps_equal": False,
+            "opcode32_inside_paired_lifetime": True,
+            "opcode33_rundown_ignored": 0,
+            "process_start_key_used": False,
+            "clock_delta_100ns": 0,
+            "clock_delta_bounded": True,
+            "candidate_generations": 1,
+            "candidate_relation": "exact_creation",
+        }
+    )
     receipt["counter_reconciliation"] = {
         "passed": True,
         "births": 1,
@@ -340,18 +362,20 @@ def _evidence() -> dict:
         "gaps": [],
     }
     receipt["loss"] = {"events_lost": 0, "log_buffers_lost": 0, "real_time_buffers_lost": 0}
-    receipt["measured_job"] = {
-        "census_total": 1,
-        "census_active": 0,
-        "census_expected_total": 1,
-        "census_expected_active": 0,
-        "census_matches_expected": True,
-        "observer_in_measured_job": False,
-        "drain_ok": True,
-        "close_ok": True,
-        "cleanup_ok": True,
-        "cleanup_failure": None,
-    }
+    receipt["measured_job"].update(
+        {
+            "census_total": 1,
+            "census_active": 0,
+            "census_expected_total": 1,
+            "census_expected_active": 0,
+            "census_matches_expected": True,
+            "observer_in_measured_job": False,
+            "drain_ok": True,
+            "close_ok": True,
+            "cleanup_ok": True,
+            "cleanup_failure": None,
+        }
+    )
     receipt["etw_cleanup"] = {
         "verified": True,
         "reason": None,
@@ -387,6 +411,22 @@ def _evidence() -> dict:
     assert receipt_schema_ok(receipt)
     assert etw_lifecycle_receipt_qualifies(receipt) is False
     return receipt
+
+
+def _adopted():
+    """Supervisor shell around schema evidence. The sequence can be replaced."""
+    adopted = _evidence()
+    adopted["phases"] = list(adopted["phases"]) + ["supervisor_finished"]
+    adopted["last_phase"] = "supervisor_finished"
+    adopted["worker"]["report_adopted"] = True
+    adopted["supervisor_job"] = {
+        "cleanup_ok": True,
+        "cleanup_failure": None,
+        "terminated": False,
+        "drain_ok": True,
+        "close_ok": True,
+    }
+    return adopted
 
 
 def _supervisor(result=None, **overrides):
@@ -524,9 +564,12 @@ def test_unbound_events_stay_unbound_without_the_kernel_key():
     assert receipt["sequence"]["binding"] == "unbound"
     assert receipt["sequence"]["start_end_gate"] == "unpassed"
     assert receipt["sequence"]["opcodes"] == [1, 2, 32]
-    assert receipt["sequence"]["event_version"] == 2
+    assert receipt["sequence"]["version_opcode_1"] == 2
+    assert receipt["sequence"]["version_opcode_2"] == 2
+    assert receipt["sequence"]["version_opcode_32"] == 2
     assert receipt["sequence"]["pointer_width"] == 8
     assert receipt["sequence"]["start_matches_creation"] is False
+    assert receipt["sequence"]["candidate_relation"] == "unproven"
     assert receipt["sequence"]["end_present"] is True
     assert receipt["sequence"]["timestamps_equal"] is False
     assert receipt["sequence"]["start_end_key_equal"] is True
@@ -557,8 +600,11 @@ def test_partial_candidate_sequence_stays_unbound():
     assert receipt["sequence"]["bound"] is False
     assert receipt["sequence"]["binding"] == "unbound"
     assert receipt["sequence"]["opcodes"] == [1]
-    assert receipt["sequence"]["event_version"] == 2
+    assert receipt["sequence"]["version_opcode_1"] == 2
+    assert receipt["sequence"]["version_opcode_2"] is None
+    assert receipt["sequence"]["version_opcode_32"] is None
     assert receipt["sequence"]["pointer_width"] == 8
+    assert receipt["sequence"]["candidate_relation"] == "unproven"
     assert receipt["sequence"]["start_matches_creation"] is False
     assert receipt["sequence"]["end_present"] is False
     assert receipt["sequence"]["timestamps_equal"] is None
@@ -591,8 +637,11 @@ def test_mismatched_start_end_keys_leave_the_paired_lifetime_unknown():
     _assert_schema(receipt)
     sequence = receipt["sequence"]
     assert sequence["opcodes"] == [1, 2, 32]
-    assert sequence["event_version"] == 2
+    assert sequence["version_opcode_1"] == 2
+    assert sequence["version_opcode_2"] == 2
+    assert sequence["version_opcode_32"] == 2
     assert sequence["pointer_width"] == 8
+    assert sequence["candidate_relation"] == "unproven"
     assert sequence["start_matches_creation"] is True
     assert sequence["end_present"] is True
     assert sequence["timestamps_equal"] is False
@@ -1074,3 +1123,223 @@ def test_import_does_not_load_a_native_tracer():
             check=False,
         )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_mixed_opcode_versions_qualify_without_a_common_version():
+    records = [
+        _life(OPCODE_START, 10, 1, KEY, 5000, version=3),
+        _life(OPCODE_END, 10, 1, KEY, 5600, version=4),
+        _counter(10, 80, 5050, version=2),
+        _counter(10, 70, 1000, opcode=OPCODE_PERFCTR_RUNDOWN, version=3),
+    ]
+    receipt, _api, _job, _phase, _calls = _run(records)
+    _assert_schema(receipt)
+    sequence = receipt["sequence"]
+    assert sequence["version_opcode_1"] == 3
+    assert sequence["version_opcode_2"] == 4
+    assert sequence["version_opcode_32"] == 2
+    assert sequence["bound"] is True
+    assert sequence["binding"] == "exact_creation"
+    assert sequence["start_matches_creation"] is True
+    assert sequence["candidate_relation"] == "exact_creation"
+    assert etw_lifecycle_receipt_qualifies(receipt) is False
+    adopted = _adopted()
+    adopted["sequence"] = sequence
+    assert receipt_schema_ok(adopted)
+    assert etw_lifecycle_receipt_qualifies(adopted) is True
+
+
+def test_missing_or_malformed_opcode_versions_refuse():
+    dropped, _api, _job, _phase, _calls = _run(
+        [
+            _life(OPCODE_START, 10, 1, KEY, 5000, version=1),
+            _life(OPCODE_END, 10, 1, KEY, 5600, version=2),
+            _counter(10, 80, 5050, version=2),
+        ]
+    )
+    _assert_schema(dropped)
+    assert dropped["sequence"]["version_opcode_1"] is None
+    assert dropped["sequence"]["version_opcode_2"] == 2
+    assert dropped["sequence"]["version_opcode_32"] == 2
+    assert etw_lifecycle_receipt_qualifies(dropped) is False
+    for bad in (None, 1, 0, 256, True, "2"):
+        projected = project_sequence(
+            {"coverage": {}, "owned": []},
+            10,
+            5000,
+            [
+                {
+                    "opcode": 1,
+                    "version": bad,
+                    "pid": 10,
+                    "timestamp": 5000,
+                    "pointer_width": 8,
+                    "process_start_key_used": False,
+                }
+            ],
+        )
+        assert projected["version_opcode_1"] is None
+        assert projected["candidate_relation"] == "unproven"
+    disagreed = project_sequence(
+        {"coverage": {}, "owned": []},
+        10,
+        5000,
+        [
+            {
+                "opcode": 32,
+                "version": 2,
+                "pid": 10,
+                "timestamp": 5100,
+                "pointer_width": 8,
+                "process_start_key_used": False,
+            },
+            {
+                "opcode": 32,
+                "version": 3,
+                "pid": 10,
+                "timestamp": 5200,
+                "pointer_width": 8,
+                "process_start_key_used": False,
+            },
+        ],
+    )
+    assert disagreed["version_opcode_32"] is None
+    assert disagreed["candidate_relation"] == "unproven"
+    missing = _adopted()
+    missing["sequence"]["version_opcode_2"] = None
+    assert receipt_schema_ok(missing)
+    assert etw_lifecycle_receipt_qualifies(missing) is False
+    malformed = _adopted()
+    malformed["sequence"]["version_opcode_1"] = 1
+    assert receipt_schema_ok(malformed) is False
+    assert etw_lifecycle_receipt_qualifies(malformed) is False
+
+
+def test_unexplained_census_two_stays_failed():
+    class Kernel:
+        def __init__(self):
+            self.calls = []
+            self.stage = "before"
+
+        def CreateProcessW(self, *args, **kwargs):
+            self.calls.append("create")
+            self.stage = "created"
+            return 1
+
+        def ResumeThread(self, *args, **kwargs):
+            self.calls.append("resume")
+            self.stage = "resumed"
+            return 1
+
+    class Api:
+        def __init__(self, kernel):
+            self.kernel = kernel
+
+        def accounting(self, _job):
+            stage = self.kernel.stage
+            if stage == "before":
+                return {"total_processes": 0, "active_processes": 0}
+            if stage == "created":
+                return {"total_processes": 1, "active_processes": 1}
+            return {"total_processes": 2, "active_processes": 0}
+
+    class Ledger:
+        def __init__(self):
+            self.rows = {"held": {}}
+
+    kernel = Kernel()
+    api = Api(kernel)
+    snap = _snapshot(total=2, active=0)
+    snap["identities_missing"] = 1
+
+    class Job(SyncJob):
+        def __init__(self):
+            super().__init__(snap, pid=10, creation=5000)
+            self._api = api
+            self.job = object()
+            self.ledger = Ledger()
+            self.drain_calls = []
+
+        def spawn(self):
+            self._api.kernel.CreateProcessW()
+            self._api.kernel.ResumeThread()
+            return SyncJob.spawn(self)
+
+        def wait_until_drained(self, seconds):
+            self.drain_calls.append(seconds)
+            return SyncJob.wait_until_drained(self, seconds)
+
+    receipt, _api, job, phase, _calls = _run(
+        _generation(10, 1, KEY, 1111, 3000, 80),
+        job=Job(),
+    )
+    _assert_schema(receipt)
+    measured = receipt["measured_job"]
+    assert kernel.calls == ["create", "resume"]
+    assert job.drain_calls == [OBSERVER_DRAIN_SECONDS]
+    assert phase.names.index("before_fixture_spawn") < phase.names.index("before_job_drain")
+    assert phase.names.index("before_job_drain") < phase.names.index("before_snapshot")
+    assert measured["census_before_creation"] == 0
+    assert measured["census_after_create_before_resume"] == 1
+    assert measured["census_after_drain"] == 2
+    assert measured["census_total"] == 2
+    assert measured["census_expected_total"] == 1
+    assert measured["census_expected_active"] == 0
+    assert measured["census_matches_expected"] is False
+    assert measured["ledger_count"] == 1
+    assert measured["identities_missing"] == 1
+    assert measured["candidate_children"] is None
+    assert receipt["sequence"]["candidate_relation"] == "unproven"
+    assert receipt["sequence"]["bound"] is False
+    assert etw_lifecycle_receipt_qualifies(receipt) is False
+    text = json.dumps(receipt)
+    assert str(KEY) not in text
+    assert '"pid"' not in text
+    for invented in ("venv", "helper", "second_process", "console"):
+        assert invented not in text
+
+
+def test_clock_delta_stays_bounded_and_omits_absolute_identifiers():
+    creation = 771122334455667788
+    start = creation + 4321
+    end = start + 600
+    receipt, _api, _job, _phase, _calls = _run(
+        _generation(10, 1, KEY, start, end, 80),
+        job=SyncJob(_snapshot(), pid=10, creation=creation),
+    )
+    _assert_schema(receipt)
+    sequence = receipt["sequence"]
+    assert sequence["clock_delta_100ns"] == 4321
+    assert sequence["clock_delta_bounded"] is True
+    assert abs(sequence["clock_delta_100ns"]) <= CLOCK_DELTA_PUBLICATION_BOUND
+    assert sequence["start_matches_creation"] is False
+    assert sequence["bound"] is False
+    assert sequence["candidate_relation"] == "unproven"
+    assert sequence["candidate_generations"] == 1
+    assert sequence["clock_client_context"] == session_request()["client_context"]
+    assert sequence["clock_raw_timestamp"] is session_request()["raw_timestamp"]
+    text = json.dumps(receipt)
+    assert str(creation) not in text
+    assert str(start) not in text
+    assert str(end) not in text
+    assert str(KEY) not in text
+    assert '"pid"' not in text
+    assert '"timestamp"' not in text
+    huge_creation = 10**18
+    huge_start = huge_creation + CLOCK_DELTA_PUBLICATION_BOUND + 17
+    huge_end = huge_start + 10
+    withheld, _api, _job, _phase, _calls = _run(
+        _generation(10, 1, KEY, huge_start, huge_end, 80),
+        job=SyncJob(_snapshot(), pid=10, creation=huge_creation),
+    )
+    _assert_schema(withheld)
+    assert withheld["sequence"]["clock_delta_100ns"] is None
+    assert withheld["sequence"]["clock_delta_bounded"] is False
+    assert withheld["sequence"]["start_matches_creation"] is False
+    assert withheld["sequence"]["candidate_relation"] == "unproven"
+    assert etw_lifecycle_receipt_qualifies(withheld) is False
+    withheld_text = json.dumps(withheld)
+    assert str(huge_creation) not in withheld_text
+    assert str(huge_start) not in withheld_text
+    assert str(huge_end) not in withheld_text
+    assert str(KEY) not in withheld_text

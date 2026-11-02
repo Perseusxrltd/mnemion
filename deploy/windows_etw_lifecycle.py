@@ -20,6 +20,14 @@ worker job. It does not prove the worker released the session, and it does
 not start another trace. Stopping the disposable runner is not a provider
 or job cleanup receipt.
 
+Start, End, and PerfCtr versions are checked separately. Opcode 33 rundown
+is not part of that check. A missing or parser-rejected version does not
+qualify. Root binding stays exact creation equality. A signed start-minus-
+creation delta is published only inside a fixed 100ns bound and is not an
+admission window. Candidate relations stay unproven until that equality
+holds. Census samples around the existing job calls do not name an extra
+process and do not change the expected total.
+
 The receipt is not public-safe. lifecycle_receipt_qualifies is not this gate.
 """
 
@@ -67,6 +75,13 @@ BASELINE_PYTHON = "3.13.17"
 PE_AMD64 = 34404
 EXPECTED_TOTAL = 1
 EXPECTED_ACTIVE = 0
+# Publication ceiling in 100ns units. A FILETIME-scale difference is withheld.
+# Root binding does not read this value.
+CLOCK_DELTA_PUBLICATION_BOUND = 2**32
+_CLOCK_REQUEST = session_request()
+CLOCK_CLIENT_CONTEXT = _CLOCK_REQUEST["client_context"]
+CLOCK_RAW_TIMESTAMP = _CLOCK_REQUEST["raw_timestamp"]
+_CANDIDATE_RELATIONS = frozenset({"unproven", "exact_creation"})
 _ROOT = Path(__file__).resolve().parents[1]
 _PROVIDER_PATH = _ROOT / "deploy" / "owned_launch_windows_etw.py"
 _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
@@ -647,6 +662,69 @@ def _count(value, limit: int = 1_000_000):
     return value
 
 
+def _parser_version(opcode: int, version) -> bool:
+    """Same version window as the lifecycle and counter decoders.
+
+    Both reject a version below 2 or above 255. Rundown and any other opcode
+    are not a Start, End, or PerfCtr version.
+    """
+    if type(opcode) is not int or type(version) is not int:
+        return False
+    if opcode not in (1, 2, 32):
+        return False
+    return 2 <= version <= 255
+
+
+def _optional_parser_version(value) -> bool:
+    return value is None or _parser_version(1, value)
+
+
+def _projected_version(opcode: int, values: list) -> int | None:
+    """One parser-supported version for one opcode, or refusal."""
+    if not values:
+        return None
+    chosen = None
+    for value in values:
+        if not _parser_version(opcode, value):
+            return None
+        if chosen is None:
+            chosen = value
+        elif value != chosen:
+            return None
+    return chosen
+
+
+def _clock_delta(start, creation):
+    """Signed start minus creation in 100ns units, withheld outside the publication bound."""
+    if type(start) is not int or type(creation) is not int:
+        return None, None
+    delta = start - creation
+    if delta < -CLOCK_DELTA_PUBLICATION_BOUND or delta > CLOCK_DELTA_PUBLICATION_BOUND:
+        return None, False
+    return delta, True
+
+
+def _ledger_count(job):
+    if job is None:
+        return None
+    ledger = getattr(job, "ledger", None)
+    rows = getattr(ledger, "rows", None)
+    if type(rows) is not dict:
+        return None
+    return len(rows)
+
+
+def _descendant_count(report):
+    rows = None if type(report) is not dict else report.get("owned")
+    if type(rows) is not list:
+        return None
+    found = 0
+    for row in rows:
+        if type(row) is dict and row.get("role") == "descendant":
+            found += 1
+    return found
+
+
 def _sha40(value) -> str | None:
     if type(value) is str and _HEX40.fullmatch(value):
         return value
@@ -725,16 +803,19 @@ def _owned_binding(row: dict, root_creation: int | None, gaps: set[str]) -> tupl
     )
     width = row.get("pointer_width")
     version = row.get("event_version")
+    delta, delta_bounded = _clock_delta(start if type(start) is int else None, root_creation)
     return bound, {
         "start_end_key_equal": True if bound else key_equal,
         "opcodes": [1, 2, 32] if bound else [],
         "pointer_width": width if width in (4, 8) else None,
-        "event_version": _count(version, 255),
+        "version_opcode_1": version if _parser_version(1, version) else None,
         "start_matches_creation": start_ok,
         "end_present": end_present,
         "timestamps_equal": timestamps_equal,
         "opcode32_inside_paired_lifetime": opcode32,
         "process_start_key_used": row.get("process_start_key_used") is True,
+        "clock_delta_100ns": delta,
+        "clock_delta_bounded": delta_bounded,
     }
 
 
@@ -745,24 +826,33 @@ def _candidate_fields(
     *,
     complete: bool,
 ) -> dict:
-    """Bounded observations for one retained PID. The PID and key stay out."""
+    """Bounded observations for one retained PID. The PID and key stay out.
+
+    Versions are kept per opcode. Rundown is not one of them. The clock delta
+    is not a second binding rule.
+    """
     blank = {
         "start_end_key_equal": None,
         "opcodes": [],
         "pointer_width": None,
-        "event_version": None,
+        "version_opcode_1": None,
+        "version_opcode_2": None,
+        "version_opcode_32": None,
         "start_matches_creation": None,
         "end_present": None,
         "timestamps_equal": None,
         "opcode32_inside_paired_lifetime": None,
         "process_start_key_used": False,
+        "clock_delta_100ns": None,
+        "clock_delta_bounded": None,
+        "candidate_generations": None,
     }
     if complete is not True or type(events) is not list or type(root_pid) is not int:
         return blank
     selected = [event for event in events if type(event) is dict and event.get("pid") == root_pid]
     opcodes = []
     widths = []
-    versions = []
+    version_events = {1: [], 2: [], 32: []}
     starts = []
     ends = []
     counters = []
@@ -776,9 +866,8 @@ def _candidate_fields(
         width = event.get("pointer_width")
         if width in (4, 8):
             widths.append(width)
-        version = event.get("version")
-        if type(version) is int and 0 <= version <= 255:
-            versions.append(version)
+        if opcode in version_events:
+            version_events[opcode].append(event.get("version"))
         if opcode == 1:
             starts.append(event)
         elif opcode == 2:
@@ -833,19 +922,25 @@ def _candidate_fields(
             elif counters:
                 opcode32 = False
     width_value = widths[0] if widths and all(item == widths[0] for item in widths) else None
-    same_version = bool(versions) and all(item == versions[0] for item in versions)
-    version_value = versions[0] if same_version else None
+    delta, delta_bounded = None, None
+    if len(starts) == 1:
+        delta, delta_bounded = _clock_delta(starts[0].get("timestamp"), root_creation)
     blank.update(
         {
             "start_end_key_equal": key_equal,
             "opcodes": [code for code in (1, 2, 32) if code in opcodes],
             "pointer_width": width_value,
-            "event_version": version_value,
+            "version_opcode_1": _projected_version(1, version_events[1]),
+            "version_opcode_2": _projected_version(2, version_events[2]),
+            "version_opcode_32": _projected_version(32, version_events[32]),
             "start_matches_creation": start_matches,
             "end_present": end_present,
             "timestamps_equal": timestamps_equal,
             "opcode32_inside_paired_lifetime": opcode32,
             "process_start_key_used": key_used,
+            "clock_delta_100ns": delta,
+            "clock_delta_bounded": delta_bounded,
+            "candidate_generations": _count(len(starts)),
         }
     )
     return blank
@@ -863,6 +958,7 @@ def project_sequence(
 
     Opcode 33 stays a rundown count. Arrival order is not a sequence.
     A matching PID does not bind the root and the kernel key is not copied.
+    Separate opcode versions do not prove that binding.
     """
     unknown = _sequence(bound=False, binding="unknown", gate="unknown")
     if type(report) is not dict:
@@ -882,6 +978,7 @@ def project_sequence(
         )
     row = _owned_root(report, root_pid)
     if row is None:
+        base["candidate_relation"] = "unproven"
         return base
     bound, fields = _owned_binding(row, root_creation, gaps)
     if events is None:
@@ -889,6 +986,7 @@ def project_sequence(
     base["bound"] = bound
     base["binding"] = "exact_creation" if bound else "unbound"
     base["start_end_gate"] = "passed" if bound else "unpassed"
+    base["candidate_relation"] = "exact_creation" if bound else "unproven"
     return base
 
 
@@ -900,13 +998,21 @@ def _sequence(*, bound: bool, binding: str, gate: str) -> dict:
         "start_end_key_equal": None,
         "opcodes": [],
         "pointer_width": None,
-        "event_version": None,
+        "version_opcode_1": None,
+        "version_opcode_2": None,
+        "version_opcode_32": None,
         "start_matches_creation": None,
         "end_present": None,
         "timestamps_equal": None,
         "opcode32_inside_paired_lifetime": None,
         "opcode33_rundown_ignored": None,
         "process_start_key_used": False,
+        "clock_delta_100ns": None,
+        "clock_delta_bounded": None,
+        "clock_client_context": CLOCK_CLIENT_CONTEXT,
+        "clock_raw_timestamp": CLOCK_RAW_TIMESTAMP,
+        "candidate_generations": None,
+        "candidate_relation": "unproven",
     }
 
 
@@ -1030,7 +1136,7 @@ def _etw_cleanup(report, *, deadline: bool) -> dict:
     }
 
 
-def _measured_job(report, snapshot, drain_ok, close_ok, cleanup_failure) -> dict:
+def _measured_job(report, snapshot, drain_ok, close_ok, cleanup_failure, observed=None) -> dict:
     coverage = {}
     if type(report) is dict and type(report.get("coverage")) is dict:
         coverage = report["coverage"]
@@ -1045,6 +1151,7 @@ def _measured_job(report, snapshot, drain_ok, close_ok, cleanup_failure) -> dict
         prior_failure=None,
         close_failure=cleanup_failure,
     )
+    extra = observed if type(observed) is dict else {}
     return {
         "census_total": total,
         "census_active": active,
@@ -1056,6 +1163,12 @@ def _measured_job(report, snapshot, drain_ok, close_ok, cleanup_failure) -> dict
         "close_ok": close_ok,
         "cleanup_ok": cleanup_ok,
         "cleanup_failure": failure,
+        "census_before_creation": _count(extra.get("census_before_creation")),
+        "census_after_create_before_resume": _count(extra.get("census_after_create_before_resume")),
+        "census_after_drain": _count(extra.get("census_after_drain")),
+        "candidate_children": _count(extra.get("candidate_children")),
+        "ledger_count": _count(extra.get("ledger_count")),
+        "identities_missing": _count(extra.get("identities_missing")),
     }
 
 
@@ -1356,12 +1469,42 @@ def _schema_sequence(value) -> bool:
         return False
     if value["pointer_width"] not in (None, 4, 8):
         return False
-    for key in (
-        "event_version",
-        "opcode33_rundown_ignored",
-    ):
-        if not _optional_count(value[key]):
+    for key in ("version_opcode_1", "version_opcode_2", "version_opcode_32"):
+        if not _optional_parser_version(value[key]):
             return False
+    if not _optional_count(value["opcode33_rundown_ignored"]):
+        return False
+    delta = value["clock_delta_100ns"]
+    published = value["clock_delta_bounded"]
+    if published is None:
+        if delta is not None:
+            return False
+    elif published is True:
+        if (
+            type(delta) is not int
+            or delta < -CLOCK_DELTA_PUBLICATION_BOUND
+            or delta > CLOCK_DELTA_PUBLICATION_BOUND
+        ):
+            return False
+    elif published is False:
+        if delta is not None:
+            return False
+    else:
+        return False
+    if (
+        type(value["clock_client_context"]) is not int
+        or value["clock_client_context"] != CLOCK_CLIENT_CONTEXT
+    ):
+        return False
+    if (
+        type(value["clock_raw_timestamp"]) is not bool
+        or value["clock_raw_timestamp"] is not CLOCK_RAW_TIMESTAMP
+    ):
+        return False
+    if not _optional_count(value["candidate_generations"]):
+        return False
+    if value["candidate_relation"] not in _CANDIDATE_RELATIONS:
+        return False
     for key in (
         "start_matches_creation",
         "end_present",
@@ -1422,6 +1565,12 @@ def _schema_measured(value) -> bool:
         "close_ok",
         "cleanup_ok",
         "cleanup_failure",
+        "census_before_creation",
+        "census_after_create_before_resume",
+        "census_after_drain",
+        "candidate_children",
+        "ledger_count",
+        "identities_missing",
     }
     if type(value) is not dict or set(value) != keys:
         return False
@@ -1434,6 +1583,16 @@ def _schema_measured(value) -> bool:
         return False
     if not _optional_count(value["census_total"]) or not _optional_count(value["census_active"]):
         return False
+    for key in (
+        "census_before_creation",
+        "census_after_create_before_resume",
+        "census_after_drain",
+        "candidate_children",
+        "ledger_count",
+        "identities_missing",
+    ):
+        if not _optional_count(value[key]):
+            return False
     if (
         value["observer_in_measured_job"] is not None
         and type(value["observer_in_measured_job"]) is not bool
@@ -1578,8 +1737,11 @@ def etw_lifecycle_receipt_qualifies(data: object) -> bool:
         return False
     if sequence["pointer_width"] != 8:
         return False
-    version = sequence["event_version"]
-    if type(version) is not int or not 2 <= version <= 255:
+    for name in ("version_opcode_1", "version_opcode_2", "version_opcode_32"):
+        version = sequence[name]
+        if type(version) is not int or not 2 <= version <= 255:
+            return False
+    if sequence["candidate_relation"] != "exact_creation":
         return False
     if counter["passed"] is not True or counter["status"] != "reconciled":
         return False
@@ -1721,6 +1883,8 @@ def _apply_report(
     measured_failure,
     failure: str | None,
     phases: list[str],
+    job=None,
+    census=None,
 ) -> dict:
     receipt["phases"] = _phases(phases)
     receipt["last_phase"] = receipt["phases"][-1]
@@ -1764,12 +1928,24 @@ def _apply_report(
         events_complete=complete,
     )
     receipt["counter_reconciliation"] = _counter_view(report)
+    samples = census if type(census) is dict else {}
+    bound = receipt["sequence"]["bound"] is True
     receipt["measured_job"] = _measured_job(
         report,
         snapshot,
         measured_drain,
         measured_close,
         measured_failure,
+        {
+            "census_before_creation": samples.get("before_creation"),
+            "census_after_create_before_resume": samples.get("after_create_before_resume"),
+            "census_after_drain": samples.get("after_drain"),
+            "candidate_children": _descendant_count(report) if bound else None,
+            "ledger_count": _ledger_count(job),
+            "identities_missing": None
+            if type(snapshot) is not dict
+            else snapshot.get("identities_missing"),
+        },
     )
     receipt["preserved"] = _preserved(report)
     receipt["etw_cleanup"] = _etw_cleanup(report, deadline=False)
@@ -1777,6 +1953,76 @@ def _apply_report(
     if failure == "access_denied":
         receipt["unsupported"] = "access_denied"
     return _seal(receipt)
+
+
+class _JobCensusAdapter:
+    """Read TotalProcesses around the job's existing calls.
+
+    The first sample is taken on entry to CreateProcess. The second is taken
+    on entry to the existing resume, which is after CreateProcess has returned.
+    The third is taken when the existing drain wait returns. This does not
+    add a wait, poll, or resume, and it does not name a process.
+    """
+
+    def __init__(self, job):
+        self._job = job
+        self.census = {
+            "before_creation": None,
+            "after_create_before_resume": None,
+            "after_drain": None,
+        }
+
+    def __getattr__(self, name):
+        return getattr(self._job, name)
+
+    def _total_processes(self):
+        api = getattr(self._job, "_api", None)
+        handle = getattr(self._job, "job", None)
+        accounting = getattr(api, "accounting", None)
+        if accounting is None or not handle:
+            return None
+        try:
+            info = accounting(handle)
+        except Exception:
+            return None
+        if type(info) is not dict:
+            return None
+        return info.get("total_processes")
+
+    def _install(self):
+        api = getattr(self._job, "_api", None)
+        kernel = getattr(api, "kernel", None) if api is not None else None
+        if kernel is None:
+            return None
+        create = getattr(kernel, "CreateProcessW", None)
+        resume = getattr(kernel, "ResumeThread", None)
+        if not callable(create) or not callable(resume):
+            return None
+
+        def create_process(*args, **kwargs):
+            self.census["before_creation"] = self._total_processes()
+            return create(*args, **kwargs)
+
+        def resume_thread(*args, **kwargs):
+            self.census["after_create_before_resume"] = self._total_processes()
+            return resume(*args, **kwargs)
+
+        kernel.CreateProcessW = create_process
+        kernel.ResumeThread = resume_thread
+        return kernel, create, resume
+
+    def spawn(self):
+        installed = self._install()
+        try:
+            return self._job.spawn()
+        finally:
+            if installed is not None:
+                kernel, create, resume = installed
+                kernel.CreateProcessW = create
+                kernel.ResumeThread = resume
+
+    def note_after_drain(self):
+        self.census["after_drain"] = self._total_processes()
 
 
 def run_worker(
@@ -1829,6 +2075,7 @@ def run_worker(
     observer = None
     recorder = None
     job = None
+    census = None
     report = None
     snapshot = None
     launched = False
@@ -1867,6 +2114,8 @@ def run_worker(
                     job = job_factory(
                         fixture_argv(executable, "" if marker is None else str(marker))
                     )
+                    job = _JobCensusAdapter(job)
+                    census = job.census
                     job.spawn()
                     launched = True
                 except OwnedLaunchUnsupported:
@@ -1894,6 +2143,8 @@ def run_worker(
                         measured_drain = job.wait_until_drained(OBSERVER_DRAIN_SECONDS) is True
                     except Exception:
                         measured_drain = None
+                    if measured_drain is not None:
+                        job.note_after_drain()
                     if measured_drain is False:
                         observer.note_gap("job_active_processes")
                     phase.mark("before_snapshot")
@@ -1959,6 +2210,8 @@ def run_worker(
         measured_failure=measured_failure,
         failure=failure,
         phases=phase.names,
+        job=job,
+        census=census,
     )
 
 
