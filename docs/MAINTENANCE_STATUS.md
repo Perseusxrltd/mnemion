@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-11-02T01:54:54+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-02T02:06:28+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.65](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.65). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,20 +22,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 41366507320](https://github.com/Perseusxrltd/mnemion/actions/runs/41366507320) |
-| public-updates\.yml | v4\.46\.65 | in\_progress | [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484) |
+| public-updates\.yml | v4\.46\.65 | failure | [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484) |
 | release\.yml | release/4\.46\.65 | success | [Run 41369730714](https://github.com/Perseusxrltd/mnemion/actions/runs/41369730714) |
 | verify-artifacts\.yml | main | success | [Run 41374503130](https://github.com/Perseusxrltd/mnemion/actions/runs/41374503130) |
 | website-release\.yml | main | success | [Run 41366507365](https://github.com/Perseusxrltd/mnemion/actions/runs/41366507365) |
-| website-release\.yml | v4\.46\.65 | queued | [Run 41374870627](https://github.com/Perseusxrltd/mnemion/actions/runs/41374870627) |
+| website-release\.yml | v4\.46\.65 | success | [Run 41374870627](https://github.com/Perseusxrltd/mnemion/actions/runs/41374870627) |
 
-## Active jobs
+## Unsuccessful jobs
 
-[Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484): 1/7 jobs completed; 1 succeeded.
-
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-
+- [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484): linux / arm64 public upgrade (failure). Steps: Install public release and observe its automatic update.
