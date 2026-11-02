@@ -149,3 +149,5 @@ Use this contract when reviewing the existing background scheduler and remaining
 F06/R04 acceptance, without starting parallel fragments of the roadmap.
 
 The [native memory diagnostic milestone](../validation/2026-10-31-native-memory-diagnostics.md) records the original and expanded Windows SDK layout passes, the first native Windows declaration match, and corrected macOS helper/Linux BPF build passes, preserving the initial compiler failures. No produced Mac or Linux binary ran; the Linux collector was skipped. The Windows comparison loaded reviewed declarations without starting ETW. Real signing, disposable-Keychain, upgrade and controlled runtime gates remain open, including issue 50; these developer prototypes do not qualify application resource budgets. All 66 requirement states are unchanged; V08 remains Building and collection OFF.
+
+The [2 November native ownership progress](../validation/2026-11-02-native-ownership-progress.md) records the first original Windows ETW, Mac injected-fixture, and Linux BPF admission outcomes after that milestone. It does not replace the 31 October evidence.

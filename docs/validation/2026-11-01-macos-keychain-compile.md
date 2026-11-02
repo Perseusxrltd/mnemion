@@ -36,3 +36,8 @@ establish cross-update Keychain trust or Chromium/Electron interoperability.
 The [receipt index](2026-11-01-macos-keychain-compile/receipt-index.json) binds the
 retained artifact hashes and verbatim diagnostic files to this run. No test
 replay or new execution was used to prepare this report.
+
+A later ARM64 compilation and the first injected-fixture run are recorded in
+the [2 November native ownership progress](2026-11-02-native-ownership-progress.md).
+They do not change this page: no fixture binary ran in run 41346487519, and
+issue 50 stays open.
