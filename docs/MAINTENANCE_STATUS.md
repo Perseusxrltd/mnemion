@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-11-02T00:07:02+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-02T06:47:43+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.46.64](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.64). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.46.65](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.65). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -21,9 +21,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 41362260421](https://github.com/Perseusxrltd/mnemion/actions/runs/41362260421) |
-| public-updates\.yml | v4\.46\.64 | success | [Run 41360943307](https://github.com/Perseusxrltd/mnemion/actions/runs/41360943307) |
-| release\.yml | release/4\.46\.64 | success | [Run 41355830658](https://github.com/Perseusxrltd/mnemion/actions/runs/41355830658) |
-| verify-artifacts\.yml | main | success | [Run 41360480273](https://github.com/Perseusxrltd/mnemion/actions/runs/41360480273) |
-| website-release\.yml | main | success | [Run 41353352666](https://github.com/Perseusxrltd/mnemion/actions/runs/41353352666) |
-| website-release\.yml | v4\.46\.64 | success | [Run 41360940801](https://github.com/Perseusxrltd/mnemion/actions/runs/41360940801) |
+| ci\.yml | main | success | [Run 41366507320](https://github.com/Perseusxrltd/mnemion/actions/runs/41366507320) |
+| public-updates\.yml | v4\.46\.65 | failure | [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484) |
+| release\.yml | release/4\.46\.65 | success | [Run 41369730714](https://github.com/Perseusxrltd/mnemion/actions/runs/41369730714) |
+| verify-artifacts\.yml | main | success | [Run 41374503130](https://github.com/Perseusxrltd/mnemion/actions/runs/41374503130) |
+| website-release\.yml | main | success | [Run 41402083832](https://github.com/Perseusxrltd/mnemion/actions/runs/41402083832) |
+| website-release\.yml | v4\.46\.65 | success | [Run 41374870627](https://github.com/Perseusxrltd/mnemion/actions/runs/41374870627) |
+
+## Unsuccessful jobs
+
+- [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484): linux / arm64 public upgrade (failure). Steps: Install public release and observe its automatic update.
