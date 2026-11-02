@@ -57,6 +57,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang llvm gcc libc6-dev make pkg-config libbpf-dev libelf-dev zlib1g-dev linux-libc-dev python3 python3-pytest
+          mkdir -p deploy/linux_bpf_lifetime/ci-receipts
+          lifetime_pkg() {
+            name="$1"
+            ver="$(dpkg-query -W -f '${Version}' "$name" 2>/dev/null || true)"
+            if printf '%s' "$ver" | grep -Eq '^[0-9A-Za-z.+:~-]{1,80}$'; then
+              printf '%s\n' "$ver"
+            else
+              printf '%s\n' unavailable
+            fi
+          }
+          {
+            printf '%s\n' 'record=package_provenance'
+            printf '%s\n' 'field=installed_package_not_runtime_linkage'
+            printf 'libbpf_dev=%s\n' "$(lifetime_pkg libbpf-dev)"
+            printf 'libbpf0=%s\n' "$(lifetime_pkg libbpf0)"
+          } > deploy/linux_bpf_lifetime/ci-receipts/libbpf-package.txt
       - name: Build the CO-RE objects, loader, guard check, and owner
         run: make -C deploy/linux_bpf_lifetime all
       - name: Run the offline parse and initialization checks
@@ -125,6 +141,58 @@ jobs:
               grep -Eq "^${key}=-?[0-9]+$" "$file" || return 1
             done
           }
+          retain_btf_parse_diag() {
+            local src="$1"
+            local verdict="$2"
+            local re='^stage=btf_parse pointer=(null|error_pointer|unknown) errno=[0-9]{1,6} libbpf_error=-?[0-9]{1,6} category=(null|access|absent|memory|size|invalid|unsupported|format|elf|endian|internal|unknown) worker_reason=[0-9]{1,3} build_header=(unavailable|[0-9]{1,3}\.[0-9]{1,3}) runtime_linkage=(unavailable|[0-9]{1,3}\.[0-9]{1,3})$'
+            local fallback='stage=btf_parse pointer=unknown errno=0 libbpf_error=0 category=unknown worker_reason=0 build_header=unavailable runtime_linkage=unavailable'
+            local blob=""
+            local bytes=""
+            local textbytes=""
+            local payload=""
+            local payload_bytes=""
+            local record=""
+            local accept=0
+            # A missing sidecar is not a rejected record. Do not invent a line.
+            [ -f "$verdict" ] || return 0
+            [ -f "$src" ] || return 0
+            blob="${src}.bounded"
+            rm -f -- "$blob" || true
+            # One whole-byte read. 241 is one past the closed 240-byte record.
+            # bash read drops NUL, so it cannot prove there is no extra byte.
+            if ! head -c 241 -- "$src" > "$blob"; then
+              printf '%s\n' "$fallback" >> "$verdict"
+              rm -f -- "$blob" || true
+              return 0
+            fi
+            bytes="$(wc -c < "$blob" | tr -d '[:space:]' || true)"
+            textbytes="$(tr -d '\000' < "$blob" | wc -c | tr -d '[:space:]' || true)"
+            if [ -n "$bytes" ] && [ -n "$textbytes" ] && [ "$bytes" -le 240 ] && [ "$bytes" = "$textbytes" ]; then
+              LC_ALL=C IFS= read -r -N 240 payload < "$blob" || true
+              payload_bytes="$(LC_ALL=C printf '%s' "$payload" | LC_ALL=C wc -c | tr -d '[:space:]' || true)"
+              case "$payload" in
+                *$'\n')
+                  record="${payload%$'\n'}"
+                  case "$record" in
+                    *$'\n'*) ;;
+                    *)
+                      if [ "$payload_bytes" = "$bytes" ] && printf '%s\n' "$record" | LC_ALL=C grep -Eq -- "$re"; then
+                        accept=1
+                      fi
+                      ;;
+                  esac
+                  ;;
+              esac
+            fi
+            if [ "$accept" -eq 1 ]; then
+              cat -- "$blob" >> "$verdict" || accept=0
+            fi
+            if [ "$accept" -ne 1 ]; then
+              printf '%s\n' "$fallback" >> "$verdict"
+            fi
+            rm -f -- "$blob" || true
+            return 0
+          }
           set +e
           ./deploy/linux_bpf_lifetime/admission_guard_owner \
             --run-ms 60000 --cleanup-ms 5000 \
@@ -192,10 +260,18 @@ jobs:
           else
             printf '%s\n' "receipt_export=0" "admission_verdict=fail" > "$invoke/admission-verdict.txt"
           fi
+          if sudo test -f "$custody/lifetime-admit.bin.btf-diag"; then
+            sudo cp -f -- "$custody/lifetime-admit.bin.btf-diag" "$invoke/lifetime-admit.bin.btf-diag" || true
+            if [ -f "$invoke/lifetime-admit.bin.btf-diag" ]; then
+              sudo chown -- "$(id -u):$(id -g)" "$invoke/lifetime-admit.bin.btf-diag" || true
+              sudo chmod -- 0444 "$invoke/lifetime-admit.bin.btf-diag" || true
+            fi
+          fi
           set -e
           if [ -f "$invoke/lifetime-admit.bin" ]; then
             cp -f "$invoke/lifetime-admit.bin" deploy/linux_bpf_lifetime/ci-receipts/lifetime-admit.bin
           fi
+          retain_btf_parse_diag "$invoke/lifetime-admit.bin.btf-diag" "$invoke/admission-verdict.txt"
           cp -f "$invoke/admission-verdict.txt" deploy/linux_bpf_lifetime/ci-receipts/admission-verdict.txt
           cat "$invoke/admission-verdict.txt"
           if [ "$admit_rc" -ne 0 ] || [ "$export_rc" -ne 0 ] || [ "$reader_rc" -ne 0 ]; then
@@ -213,6 +289,7 @@ jobs:
             deploy/linux_bpf_lifetime/lifetime_bitfield.bpf.o
             deploy/linux_bpf_lifetime/lifetime_diag
             deploy/linux_bpf_lifetime/sha256_selftest
+            deploy/linux_bpf_lifetime/ci-receipts/libbpf-package.txt
       - name: Retain the admission receipt and verdict
         if: ${{ always() && inputs.run_native == false && inputs.lane == 'admission-only' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -225,6 +302,7 @@ jobs:
             deploy/linux_bpf_lifetime/ci-receipts/guard-owner-status.txt
             deploy/linux_bpf_lifetime/ci-receipts/lifetime-admit.bin
             deploy/linux_bpf_lifetime/ci-receipts/admission-verdict.txt
+            deploy/linux_bpf_lifetime/ci-receipts/libbpf-package.txt
       - name: Retain the guard-only status and output
         if: ${{ always() && inputs.run_native == false && inputs.lane == 'guard-only' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

@@ -35,6 +35,16 @@
 #include <bpf/btf.h>
 #include <bpf/libbpf.h>
 
+/* libbpf.map puts libbpf_major_version and libbpf_minor_version in
+ * LIBBPF_0.6.0, which inherits LIBBPF_0.5.0. The 0.5 baseline does not
+ * export them. A weak reference still links. Header macros are the build
+ * header. A resolved symbol is the loaded library. Neither is the apt package.
+ */
+#ifndef LIBBPF_MAJOR_VERSION
+extern unsigned int libbpf_major_version(void) __attribute__((weak));
+extern unsigned int libbpf_minor_version(void) __attribute__((weak));
+#endif
+
 #include <linux/types.h>
 #define LIFETIME_HAVE_U_TYPES
 #include "lifetime_receipt.h"
@@ -1568,6 +1578,318 @@ static int release_links(struct bpf_link **links, int n, struct bpf_object **obj
 	return rc;
 }
 
+struct lifetime_btf_class {
+	int code;
+	const char *name;
+};
+
+/* Numbers only. A code that is not listed stays unknown, including 4002
+ * (LIBBPF_ERRNO__KVERSION). The name classifies the captured number.
+ */
+static const struct lifetime_btf_class lifetime_btf_classes[] = {
+	{1, "access"},
+	{2, "absent"},
+	{7, "size"},
+	{12, "memory"},
+	{13, "access"},
+	{22, "invalid"},
+	{27, "size"},
+	{38, "unsupported"},
+	{61, "format"},
+	{71, "format"},
+	{75, "size"},
+	{95, "unsupported"},
+	{4000, "elf"},
+	{4001, "format"},
+	{4003, "endian"},
+	{4004, "internal"},
+};
+
+_Static_assert(EPERM == 1, "eperm");
+_Static_assert(ENOENT == 2, "enoent");
+_Static_assert(E2BIG == 7, "e2big");
+_Static_assert(ENOMEM == 12, "enomem");
+_Static_assert(EACCES == 13, "eacces");
+_Static_assert(EINVAL == 22, "einval");
+_Static_assert(EFBIG == 27, "efbig");
+_Static_assert(ENOSYS == 38, "enosys");
+_Static_assert(ENODATA == 61, "enodata");
+_Static_assert(EPROTO == 71, "eproto");
+_Static_assert(EOVERFLOW == 75, "eoverflow");
+_Static_assert(EOPNOTSUPP == 95, "eopnotsupp");
+_Static_assert(LIBBPF_ERRNO__LIBELF == 4000, "libbpf elf");
+_Static_assert(LIBBPF_ERRNO__FORMAT == 4001, "libbpf format");
+_Static_assert(LIBBPF_ERRNO__ENDIAN == 4003, "libbpf endian");
+_Static_assert(LIBBPF_ERRNO__INTERNAL == 4004, "libbpf internal");
+
+struct lifetime_libbpf_version {
+	int known;
+	unsigned major;
+	unsigned minor;
+};
+
+static const char *lifetime_btf_class_name(int code)
+{
+	size_t i;
+
+	if (code == 0)
+		return "null";
+	for (i = 0; i < sizeof lifetime_btf_classes / sizeof lifetime_btf_classes[0]; i++) {
+		if (lifetime_btf_classes[i].code == code)
+			return lifetime_btf_classes[i].name;
+	}
+	return "unknown";
+}
+
+static int lifetime_btf_text_ok(const char *value)
+{
+	size_t n = 0;
+
+	if (!value || !value[0])
+		return 0;
+	for (; value[n]; n++) {
+		unsigned char c = (unsigned char)value[n];
+
+		if (n >= 31)
+			return 0;
+		if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '.' || c == '-'))
+			return 0;
+	}
+	return 1;
+}
+
+static int lifetime_btf_category_ok(const char *value)
+{
+	size_t i;
+
+	if (strcmp(value, "null") == 0 || strcmp(value, "unknown") == 0)
+		return 1;
+	for (i = 0; i < sizeof lifetime_btf_classes / sizeof lifetime_btf_classes[0]; i++) {
+		if (strcmp(value, lifetime_btf_classes[i].name) == 0)
+			return 1;
+	}
+	return 0;
+}
+
+static int lifetime_btf_version_text(char *out, size_t cap, int known, unsigned major, unsigned minor)
+{
+	int n;
+
+	if (!known || major > 999u || minor > 999u)
+		n = snprintf(out, cap, "unavailable");
+	else
+		n = snprintf(out, cap, "%u.%u", major, minor);
+	if (n < 0 || (size_t)n >= cap || !lifetime_btf_text_ok(out))
+		return -1;
+	return 0;
+}
+
+static int lifetime_btf_line_ok(const char *line)
+{
+	char pointer[32];
+	char category[32];
+	char build[32];
+	char runtime[32];
+	char again[256];
+	int saved_errno = 0;
+	long libbpf_error = 0;
+	unsigned worker_reason = 0;
+	int consumed = -1;
+	int n;
+	size_t i;
+	size_t len;
+
+	if (!line)
+		return 0;
+	len = strlen(line);
+	if (len < 2 || len > 240 || line[len - 1] != '\n')
+		return 0;
+	for (i = 0; i + 1 < len; i++) {
+		unsigned char c = (unsigned char)line[i];
+
+		if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '=' || c == '_' || c == '.' ||
+		      c == '-' || c == ' '))
+			return 0;
+	}
+	n = sscanf(line,
+		   "stage=btf_parse pointer=%31s errno=%d libbpf_error=%ld category=%31s worker_reason=%u build_header=%31s runtime_linkage=%31s%n",
+		   pointer, &saved_errno, &libbpf_error, category, &worker_reason, build, runtime, &consumed);
+	if (n != 7 || consumed < 0 || (size_t)consumed + 1 != len || line[consumed] != '\n')
+		return 0;
+	if (!lifetime_btf_text_ok(pointer) || !lifetime_btf_text_ok(category) || !lifetime_btf_text_ok(build) ||
+	    !lifetime_btf_text_ok(runtime))
+		return 0;
+	if (strcmp(pointer, "null") != 0 && strcmp(pointer, "error_pointer") != 0 &&
+	    strcmp(pointer, "unknown") != 0)
+		return 0;
+	if (!lifetime_btf_category_ok(category))
+		return 0;
+	if (saved_errno < 0 || saved_errno > 999999 || libbpf_error < -999999L || libbpf_error > 999999L ||
+	    worker_reason > 999u)
+		return 0;
+	if ((strcmp(build, "unavailable") != 0 && strchr(build, '.') == NULL) ||
+	    (strcmp(runtime, "unavailable") != 0 && strchr(runtime, '.') == NULL))
+		return 0;
+	n = snprintf(again, sizeof again,
+		     "stage=btf_parse pointer=%s errno=%d libbpf_error=%ld category=%s worker_reason=%u build_header=%s runtime_linkage=%s\n",
+		     pointer, saved_errno, libbpf_error, category, worker_reason, build, runtime);
+	if (n < 0 || (size_t)n >= sizeof again || strcmp(again, line) != 0)
+		return 0;
+	return 1;
+}
+
+static void lifetime_libbpf_versions(struct lifetime_libbpf_version *build,
+				    struct lifetime_libbpf_version *runtime)
+{
+	memset(build, 0, sizeof *build);
+	memset(runtime, 0, sizeof *runtime);
+#ifdef LIBBPF_MAJOR_VERSION
+	build->major = LIBBPF_MAJOR_VERSION;
+#ifdef LIBBPF_MINOR_VERSION
+	build->minor = LIBBPF_MINOR_VERSION;
+	build->known = build->major <= 999u && build->minor <= 999u;
+#endif
+	{
+		unsigned int major = libbpf_major_version();
+		unsigned int minor = libbpf_minor_version();
+
+		if (major <= 999u && minor <= 999u) {
+			runtime->known = 1;
+			runtime->major = major;
+			runtime->minor = minor;
+		}
+	}
+#else
+	{
+		unsigned int (*major_fn)(void) = libbpf_major_version;
+		unsigned int (*minor_fn)(void) = libbpf_minor_version;
+
+		if (major_fn && minor_fn) {
+			unsigned int major = major_fn();
+			unsigned int minor = minor_fn();
+
+			if (major <= 999u && minor <= 999u) {
+				runtime->known = 1;
+				runtime->major = major;
+				runtime->minor = minor;
+			}
+		}
+	}
+#endif
+}
+
+static int lifetime_btf_format_line(char *out, size_t cap, const char *pointer, int saved_errno,
+				   long libbpf_error, const char *category, uint32_t worker_reason,
+				   const struct lifetime_libbpf_version *build,
+				   const struct lifetime_libbpf_version *runtime)
+{
+	char build_text[16];
+	char runtime_text[16];
+	int n;
+
+	if (lifetime_btf_version_text(build_text, sizeof build_text, build->known, build->major, build->minor) !=
+		    0 ||
+	    lifetime_btf_version_text(runtime_text, sizeof runtime_text, runtime->known, runtime->major,
+				      runtime->minor) != 0)
+		return -1;
+	if (saved_errno < 0 || saved_errno > 999999 || libbpf_error < -999999L || libbpf_error > 999999L ||
+	    worker_reason > 999u || !lifetime_btf_text_ok(pointer) || !lifetime_btf_category_ok(category))
+		return -1;
+	n = snprintf(out, cap,
+		     "stage=btf_parse pointer=%s errno=%d libbpf_error=%ld category=%s worker_reason=%u build_header=%s runtime_linkage=%s\n",
+		     pointer, saved_errno, libbpf_error, category, worker_reason, build_text, runtime_text);
+	if (n < 0 || (size_t)n >= cap || !lifetime_btf_line_ok(out))
+		return -1;
+	return 0;
+}
+
+static int lifetime_btf_fallback_line(char *out, size_t cap, uint32_t worker_reason)
+{
+	uint32_t reason = worker_reason >= 1u && worker_reason <= LIFETIME_REASON_DIGEST ? worker_reason : 0u;
+	int n = snprintf(out, cap,
+			 "stage=btf_parse pointer=unknown errno=0 libbpf_error=0 category=unknown worker_reason=%u build_header=unavailable runtime_linkage=unavailable\n",
+			 reason);
+
+	if (n < 0 || (size_t)n >= cap || !lifetime_btf_line_ok(out))
+		return -1;
+	return 0;
+}
+
+static void lifetime_btf_store_line(const char *line)
+{
+	char path[PATH_MAX];
+	size_t base;
+	size_t len;
+	int fd;
+
+	if (!lifetime_btf_line_ok(line)) {
+		note("btf parse diagnostic was not retained");
+		return;
+	}
+	base = strlen(g_receipt_path);
+	if (base == 0 || base + sizeof ".btf-diag" > sizeof path) {
+		note("btf parse diagnostic was not retained");
+		return;
+	}
+	memcpy(path, g_receipt_path, base);
+	memcpy(path + base, ".btf-diag", sizeof ".btf-diag");
+	fd = open(path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600);
+	if (fd < 0) {
+		note("btf parse diagnostic was not retained");
+		return;
+	}
+	len = strlen(line);
+	if (write_full(fd, line, len) != 0) {
+		close(fd);
+		unlink(path);
+		note("btf parse diagnostic was not retained");
+		return;
+	}
+	if (close(fd) != 0)
+		note("btf parse diagnostic was not retained");
+}
+
+static void lifetime_btf_retain_parse_failure(int saved_errno, long libbpf_error, int pointer_is_null,
+					     uint32_t worker_reason)
+{
+	char line[256];
+	const char *pointer = NULL;
+	struct lifetime_libbpf_version build;
+	struct lifetime_libbpf_version runtime;
+	int formatted = -1;
+
+	memset(line, 0, sizeof line);
+	if (pointer_is_null)
+		pointer = "null";
+	else if (libbpf_error != 0)
+		pointer = "error_pointer";
+	if (pointer && saved_errno >= 0 && saved_errno <= 999999 && libbpf_error >= -999999L &&
+	    libbpf_error <= 999999L && worker_reason <= 999u) {
+		int magnitude = saved_errno;
+
+		if (libbpf_error != 0)
+			magnitude = (int)(libbpf_error < 0 ? -libbpf_error : libbpf_error);
+		lifetime_libbpf_versions(&build, &runtime);
+		formatted = lifetime_btf_format_line(line, sizeof line, pointer, saved_errno, libbpf_error,
+						    lifetime_btf_class_name(magnitude), worker_reason, &build,
+						    &runtime);
+	}
+	if (formatted != 0 && lifetime_btf_fallback_line(line, sizeof line, worker_reason) != 0) {
+		note("btf parse diagnostic was not retained");
+		return;
+	}
+	lifetime_btf_store_line(line);
+}
+
+static void lifetime_keep_worker_reason(struct lifetime_receipt *receipt, uint32_t worker_reason)
+{
+	if (!receipt)
+		return;
+	if (worker_reason < 1u || worker_reason > LIFETIME_REASON_DIGEST)
+		return;
+	receipt->reason = worker_reason;
+}
+
 static void collector_finish(int sock, struct bpf_link **links, int n, struct bpf_object **obj,
 			     struct btf **btf, uint32_t code, uint32_t reason, int status)
 {
@@ -1628,6 +1950,8 @@ static void collector(int sock)
 	int groups_fd = -1;
 	int completed_fd = -1;
 	int i;
+	int saved_errno = 0;
+	long saved_libbpf = 0;
 	__u64 baseline[4] = {0};
 	struct cpu_view cpu_start;
 	uint64_t work_deadline;
@@ -1650,10 +1974,21 @@ static void collector(int sock)
 	msg.mode = g_mode;
 	msg.page_size = g_receipt.page_size;
 	msg.cgroup_id = g_cgroup_id;
+	/* Save errno before libbpf_get_error. A NULL return keeps the code in
+	 * errno; an error pointer keeps it in the pointer. Both are recorded.
+	 * The refusal does not become success when the record cannot be stored.
+	 */
+	errno = 0;
 	btf = btf__parse("/sys/kernel/btf/vmlinux", NULL);
-	if (!btf || libbpf_get_error(btf)) {
+	saved_errno = errno;
+	saved_libbpf = libbpf_get_error(btf);
+	if (!btf || saved_libbpf) {
+		int pointer_is_null = btf == NULL;
+
 		g_receipt.btf_ok = 0;
 		g_receipt.prototype_ok = 0;
+		lifetime_btf_retain_parse_failure(saved_errno, saved_libbpf, pointer_is_null,
+						  LIFETIME_REASON_BTF);
 		btf = NULL;
 		collector_finish(sock, links, 0, &obj, &btf, LIFE_MSG_REFUSED, LIFETIME_REASON_BTF, 1);
 	}
@@ -2124,6 +2459,7 @@ static int run_validate_worker(int ctrl)
 		memset(&child_receipt, 0, sizeof child_receipt);
 		if (recv_exact_until(sv[0], &child_receipt, sizeof child_receipt, &g_admission_deadline) == 0)
 			g_receipt = child_receipt;
+		lifetime_keep_worker_reason(&g_receipt, msg.reason);
 		g_receipt.observation_failed = 1;
 		close(sv[0]);
 		observe_validate_child(child, &status);
@@ -2155,6 +2491,8 @@ static int run_validate_worker(int ctrl)
 	if (msg.code == LIFE_MSG_REFUSED || !message_matches_invocation(&msg, LIFE_MSG_VALIDATE)) {
 		if (recv_exact_until(sv[0], &child_receipt, sizeof child_receipt, &g_admission_deadline) == 0)
 			g_receipt = child_receipt;
+		if (msg.code == LIFE_MSG_REFUSED)
+			lifetime_keep_worker_reason(&g_receipt, msg.reason);
 		g_receipt.observation_failed = 1;
 		close(sv[0]);
 		observe_validate_child(child, &status);

@@ -84,8 +84,22 @@ Aggregate CPU is `usage_usec`, `user_usec`, and `system_usec` from the owned cgr
 
 `clear_refs_write` sets a sticky reset on any call during the enabled window, including calls for other cgroups. That is the conservative guard. If `/proc/self/clear_refs` exists and the guard cannot attach, the loader refuses before the fixture. If the proc interface and the BTF function are both absent, that configuration is recorded and measurement may continue.
 
+## First BTF parse refusal
+
+Run 41361356839 refused on both architectures at `btf__parse` of kernel BTF, before prototype inspection, load, attach, or the fixture. The controller had already hashed BTF. The worker cleared `btf_ok` and sent refusal reason 3, then the parent kept the receipt and dropped that message. The published reason was filled later because the receipt reason was still 0. The parser's errno and libbpf error were not kept. That happened about 60–66 ms after custody was announced. The longer step also contains the guard. It is not an admission-deadline expiry.
+
+The loader still refuses that parse. It does not change the kernel, the package list, privileges, or which BTF it accepts. On failure it writes one bounded line beside the receipt, named `<receipt>.btf-diag`. The admission lane reads at most 241 bytes of that file. It appends those bytes to the existing `admission-verdict.txt` only when they are exactly one record of the fixed pattern, one final newline, and no other byte. A path, a library sentence, an address, a second record, or a trailing fragment is not copied. A rejected file is replaced by one fixed `pointer=unknown` / `category=unknown` line. A missing file is left untouched. Neither case turns the refusal into success.
+
+The line's stage is `btf_parse`. `errno` and `libbpf_error` are the numbers captured immediately after the call. `category` is a fixed name for that number, or `null` when the pointer is NULL and both numbers are 0, or `unknown` when the number is not in the list. `worker_reason` is the refusal code passed with the message. The parent stores that code on the existing receipt reason field when it is one of the defined reason codes, so publication does not replace it with a broader code derived from `btf_ok=0`.
+
+`build_header` is the libbpf header macro when that header defines one. `runtime_linkage` is `libbpf_major_version` / `libbpf_minor_version` only when the loaded library exports them. libbpf.map places those symbols in `LIBBPF_0.6.0`, which inherits `LIBBPF_0.5.0`, so the 0.5 baseline leaves both calls weak and reports `unavailable`. That is not the apt package. The workflow writes `ci-receipts/libbpf-package.txt` with `record=package_provenance` from `dpkg-query` and does not pin `libbpf-dev`. The original run's apt log showed `1:0.5.0-1ubuntu22.04.1`. That package version is not established as the cause of the refusal.
+
+The binary receipt stays 29160 bytes. Collection, fixture launch, coverage, and resource acceptance stay off on this refusal.
+
 ## Offline test
 
 ```sh
 python3 -m pytest tests/test_linux_bpf_lifetime_parse.py -q --noconftest
 ```
+
+That command runs the workflow export check and the existing source locks. It needs `bash`, because the export check is the shell function in the workflow. It does not compile the loader, and it is not a fault injection of the C capture path. That C behavior is source-reviewed and still uncompiled. A later `make -C deploy/linux_bpf_lifetime lifetime_diag` on distro libbpf is the compile check. It is not this test.
