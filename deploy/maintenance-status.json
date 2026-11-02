@@ -131,15 +131,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41374503130"
     },
     {
-      "id": 41402083832,
+      "id": 41532695913,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "e7919c3c26e9197a07885c79b70ba9d92282652a",
+      "source_commit": "e69044f72d3160f3d1d0784ad1571130b430d2ae",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-11-02T06:47:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41402083832"
+      "updated_at": "2026-11-02T21:56:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41532695913"
     },
     {
       "id": 41374870627,
@@ -153,5 +153,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/41374870627"
     }
   ],
-  "observed_at": "2026-11-02T12:29:39+00:00"
+  "observed_at": "2026-11-02T21:56:47+00:00"
 }
