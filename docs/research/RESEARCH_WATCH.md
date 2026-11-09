@@ -1,6 +1,6 @@
 # Scientific papers and memory-tool watch
 
-Automatically checked **2026-11-02T17:02:21+00:00**. These are public metadata
+Automatically checked **2026-11-09T17:27:10+00:00**. These are public metadata
 candidates, not reviewed recommendations, benchmark results or Mnemion features.
 No model calls, purchases, account creation or dependency upgrades occur.
 
@@ -13,14 +13,14 @@ research interpretation, Jev assessment and required adoption measurements.
 
 | Source | Latest fetch | Last successful fetch | Retained candidates |
 | --- | --- | --- | --- |
-| arXiv agent-memory papers | OK | 2026-11-02T17:02:21+00:00 | 43 |
-| Crossref recent memory research | OK | 2026-11-02T17:02:21+00:00 | 2 |
-| MemPalace/mempalace | OK | 2026-11-02T17:02:21+00:00 | 5 |
-| mem0ai/mem0 | OK | 2026-11-02T17:02:21+00:00 | 5 |
-| vectorize-io/hindsight | OK | 2026-11-02T17:02:21+00:00 | 6 |
-| getzep/graphiti | OK | 2026-11-02T17:02:21+00:00 | 6 |
-| letta-ai/letta-code | OK | 2026-11-02T17:02:21+00:00 | 13 |
-| TypeSafe AI Jev model documentation | OK | 2026-11-02T17:02:21+00:00 | 2 |
+| arXiv agent-memory papers | Network unavailable or timed out | 2026-11-02T17:02:21+00:00 | 43 |
+| Crossref recent memory research | OK | 2026-11-09T17:27:10+00:00 | 2 |
+| MemPalace/mempalace | OK | 2026-11-09T17:27:10+00:00 | 5 |
+| mem0ai/mem0 | OK | 2026-11-09T17:27:10+00:00 | 5 |
+| vectorize-io/hindsight | OK | 2026-11-09T17:27:10+00:00 | 7 |
+| getzep/graphiti | OK | 2026-11-09T17:27:10+00:00 | 6 |
+| letta-ai/letta-code | OK | 2026-11-09T17:27:10+00:00 | 18 |
+| TypeSafe AI Jev model documentation | OK | 2026-11-09T17:27:10+00:00 | 2 |
 
 ## arXiv agent-memory papers
 
@@ -91,6 +91,7 @@ research interpretation, Jev assessment and required adoption measurements.
 
 ## vectorize-io/hindsight
 
+- [v1\.2\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.0) — 2026-11-03; release; unreviewed.
 - [v1\.1\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.1.0) — 2026-10-21; release; unreviewed.
 - [v1\.0\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.0.0) — 2026-10-13; release; unreviewed.
 - [v0\.10\.3](https://github.com/vectorize-io/hindsight/releases/tag/v0.10.3) — 2026-10-08; release; unreviewed.
@@ -109,6 +110,11 @@ research interpretation, Jev assessment and required adoption measurements.
 
 ## letta-ai/letta-code
 
+- [Release v0\.34\.48](https://github.com/letta-ai/letta-code/releases/tag/v0.34.48) — 2026-11-09; release; unreviewed.
+- [Release v0\.34\.47](https://github.com/letta-ai/letta-code/releases/tag/v0.34.47) — 2026-11-09; release; unreviewed.
+- [Release v0\.34\.46](https://github.com/letta-ai/letta-code/releases/tag/v0.34.46) — 2026-11-09; release; unreviewed.
+- [Release v0\.34\.45](https://github.com/letta-ai/letta-code/releases/tag/v0.34.45) — 2026-11-08; release; unreviewed.
+- [Release v0\.34\.44](https://github.com/letta-ai/letta-code/releases/tag/v0.34.44) — 2026-11-07; release; unreviewed.
 - [Release v0\.34\.38](https://github.com/letta-ai/letta-code/releases/tag/v0.34.38) — 2026-11-02; release; unreviewed.
 - [Release v0\.34\.37](https://github.com/letta-ai/letta-code/releases/tag/v0.34.37) — 2026-11-02; release; unreviewed.
 - [Release v0\.34\.36](https://github.com/letta-ai/letta-code/releases/tag/v0.34.36) — 2026-10-31; release; unreviewed.

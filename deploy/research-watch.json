@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-11-02T17:02:21+00:00",
+  "checked_at": "2026-11-09T17:27:10+00:00",
   "model_calls": 0,
   "dependency_changes": 0,
   "maximum_retained_per_source": 50,
@@ -10,8 +10,8 @@
       "name": "arXiv agent-memory papers",
       "kind": "arxiv",
       "url": "https://export.arxiv.org/api/query?search_query=%28ti%3A%22agent+memory%22+OR+ti%3A%22long-term+memory%22+OR+ti%3A%22memory+consolidation%22%29+AND+%28cat%3Acs.AI+OR+cat%3Acs.CL+OR+cat%3Acs.LG%29&start=0&max_results=25&sortBy=submittedDate&sortOrder=descending",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
-      "status": "ok",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
+      "status": "unavailable",
       "last_success_at": "2026-11-02T17:02:21+00:00",
       "content_sha256": "0d1985b2d697583fad1961d818412db2464010a1acc46523c9a4c4f6418f3bcf",
       "items": [
@@ -531,17 +531,18 @@
           "discovered_at": "2026-10-20T12:10:17+00:00",
           "last_seen_at": "2026-10-20T12:10:17+00:00"
         }
-      ]
+      ],
+      "error": "Network unavailable or timed out"
     },
     {
       "id": "crossref",
       "name": "Crossref recent memory research",
       "kind": "crossref",
-      "url": "https://api.crossref.org/works?query=large+language+model+agent+memory&filter=from-pub-date%3A2026-09-03%2Cuntil-pub-date%3A2026-11-02&rows=25&sort=relevance&order=desc",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "url": "https://api.crossref.org/works?query=large+language+model+agent+memory&filter=from-pub-date%3A2026-09-10%2Cuntil-pub-date%3A2026-11-09&rows=25&sort=relevance&order=desc",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
-      "content_sha256": "ce9b762c0c70f2d8958fef2ff3cfb0f304272c67b66047de9f29e1aab219c7c3",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
+      "content_sha256": "90e6ce4accaabd54a49785d73ef9f02a2af8455ba8f7050d3c2a2164732e2970",
       "items": [
         {
           "id": "doi:10.20944/preprints202609.2725.v1",
@@ -553,7 +554,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:55:48+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "doi:10.24321/3051.424x.202607",
@@ -565,7 +566,7 @@
           "kind": "paper",
           "reviewed": false,
           "discovered_at": "2026-11-02T17:02:21+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         }
       ]
     },
@@ -575,10 +576,10 @@
       "kind": "github",
       "repository": "MemPalace/mempalace",
       "url": "https://api.github.com/repos/MemPalace/mempalace/releases?per_page=5",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
-      "content_sha256": "953add41032b43e690299e67f99479c3aa52541bd905c15487b85c9e77539e7a",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
+      "content_sha256": "1bdc6fe9e4957cedec4b513ed6a656d572414a32d21d864437e68e211d321f3a",
       "items": [
         {
           "id": "github:MemPalace/mempalace:412364916",
@@ -590,7 +591,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:389558132",
@@ -602,7 +603,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:379667687",
@@ -614,7 +615,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:375326073",
@@ -626,7 +627,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:MemPalace/mempalace:370734887",
@@ -638,7 +639,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         }
       ]
     },
@@ -648,9 +649,9 @@
       "kind": "github",
       "repository": "mem0ai/mem0",
       "url": "https://api.github.com/repos/mem0ai/mem0/releases?per_page=5",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
       "content_sha256": "f0e0fd3db034c2d409be437e2af6ed7e34a809e84104aeb40a04a0e1d14d1677",
       "items": [
         {
@@ -663,7 +664,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:mem0ai/mem0:396803659",
@@ -675,7 +676,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:mem0ai/mem0:394978108",
@@ -687,7 +688,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:mem0ai/mem0:394973234",
@@ -699,7 +700,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:mem0ai/mem0:394971771",
@@ -711,7 +712,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         }
       ]
     },
@@ -721,11 +722,23 @@
       "kind": "github",
       "repository": "vectorize-io/hindsight",
       "url": "https://api.github.com/repos/vectorize-io/hindsight/releases?per_page=5",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
-      "content_sha256": "ee58fa840fddced65e26c4f516aec3afc4b248521db07cc473ad1055fe2ab539",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
+      "content_sha256": "13170637dd510c2cfce7af64025b9e998baaca351743ee36139c936256d3d73a",
       "items": [
+        {
+          "id": "github:vectorize-io/hindsight:432617056",
+          "title": "v1.2.0",
+          "url": "https://github.com/vectorize-io/hindsight/releases/tag/v1.2.0",
+          "published": "2026-11-03T11:38:19+00:00",
+          "updated": "2026-11-03T11:38:19+00:00",
+          "revision": "v1.2.0",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-11-09T17:27:10+00:00",
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
+        },
         {
           "id": "github:vectorize-io/hindsight:419804036",
           "title": "v1.1.0",
@@ -736,7 +749,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-26T14:15:12+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:411746691",
@@ -748,7 +761,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:407003318",
@@ -760,7 +773,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:399022223",
@@ -772,7 +785,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:vectorize-io/hindsight:393073047",
@@ -806,9 +819,9 @@
       "kind": "github",
       "repository": "getzep/graphiti",
       "url": "https://api.github.com/repos/getzep/graphiti/releases?per_page=5",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
       "content_sha256": "b37c7760eabe8ac849e4ab7305bddb0adfccb2fa18ca3a0a1fd710719d4d7c6c",
       "items": [
         {
@@ -821,7 +834,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-26T14:15:12+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:getzep/graphiti:413946034",
@@ -833,7 +846,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:getzep/graphiti:413284809",
@@ -845,7 +858,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:getzep/graphiti:385047630",
@@ -857,7 +870,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "github:getzep/graphiti:380880393",
@@ -881,7 +894,7 @@
           "kind": "release",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         }
       ]
     },
@@ -891,11 +904,71 @@
       "kind": "github",
       "repository": "letta-ai/letta-code",
       "url": "https://api.github.com/repos/letta-ai/letta-code/releases?per_page=5",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
-      "content_sha256": "a3ced8a54ae7d49276ff880656940c59ac04e4ed542f5ebd9e6eac169e36dc38",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
+      "content_sha256": "907bc5113ea559ca305ccf58574b34f14a4b8114264e19316d371aa8ef5a43e6",
       "items": [
+        {
+          "id": "github:letta-ai/letta-code:438849218",
+          "title": "Release v0.34.48",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.48",
+          "published": "2026-11-09T07:37:58+00:00",
+          "updated": "2026-11-09T07:37:58+00:00",
+          "revision": "v0.34.48",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-11-09T17:27:10+00:00",
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
+        },
+        {
+          "id": "github:letta-ai/letta-code:438800036",
+          "title": "Release v0.34.47",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.47",
+          "published": "2026-11-09T06:25:40+00:00",
+          "updated": "2026-11-09T06:25:40+00:00",
+          "revision": "v0.34.47",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-11-09T17:27:10+00:00",
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
+        },
+        {
+          "id": "github:letta-ai/letta-code:438689593",
+          "title": "Release v0.34.46",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.46",
+          "published": "2026-11-09T02:43:10+00:00",
+          "updated": "2026-11-09T02:43:10+00:00",
+          "revision": "v0.34.46",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-11-09T17:27:10+00:00",
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
+        },
+        {
+          "id": "github:letta-ai/letta-code:438106123",
+          "title": "Release v0.34.45",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.45",
+          "published": "2026-11-08T07:49:26+00:00",
+          "updated": "2026-11-08T07:49:26+00:00",
+          "revision": "v0.34.45",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-11-09T17:27:10+00:00",
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
+        },
+        {
+          "id": "github:letta-ai/letta-code:437245484",
+          "title": "Release v0.34.44",
+          "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.44",
+          "published": "2026-11-07T01:41:09+00:00",
+          "updated": "2026-11-07T01:41:09+00:00",
+          "revision": "v0.34.44",
+          "kind": "release",
+          "reviewed": false,
+          "discovered_at": "2026-11-09T17:27:10+00:00",
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
+        },
         {
           "id": "github:letta-ai/letta-code:431159739",
           "title": "Release v0.34.38",
@@ -1059,10 +1132,10 @@
       "name": "TypeSafe AI Jev model documentation",
       "kind": "jev",
       "url": "https://docs.typesafe.ai/models.md",
-      "attempted_at": "2026-11-02T17:02:21+00:00",
+      "attempted_at": "2026-11-09T17:27:10+00:00",
       "status": "ok",
-      "last_success_at": "2026-11-02T17:02:21+00:00",
-      "content_sha256": "1c56aeadeec0225beccef214dd2f0b4b47d6a0e0d53c356aac46290f9053146c",
+      "last_success_at": "2026-11-09T17:27:10+00:00",
+      "content_sha256": "09ff62cff4c56b2d4d1827541e2af06f1d15c21f0ef8879dd488e72a373b34ca",
       "items": [
         {
           "id": "typesafe:jev-1.13.0",
@@ -1074,7 +1147,7 @@
           "kind": "model documentation",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         },
         {
           "id": "typesafe:jev-1.14.0",
@@ -1086,7 +1159,7 @@
           "kind": "model documentation",
           "reviewed": false,
           "discovered_at": "2026-10-20T11:52:00+00:00",
-          "last_seen_at": "2026-11-02T17:02:21+00:00"
+          "last_seen_at": "2026-11-09T17:27:10+00:00"
         }
       ]
     }
