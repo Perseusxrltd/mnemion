@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-11-12T07:48:26+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-12T12:50:08+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.65](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.65). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,11 +22,5 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 41406607799](https://github.com/Perseusxrltd/mnemion/actions/runs/41406607799) |
-| database-cache\.yml | main | success | [Run 43015512015](https://github.com/Perseusxrltd/mnemion/actions/runs/43015512015) |
-| public-updates\.yml | v4\.46\.65 | failure | [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484) |
+| database-cache\.yml | main | success | [Run 43220357036](https://github.com/Perseusxrltd/mnemion/actions/runs/43220357036) |
 | website-release\.yml | main | success | [Run 43177143187](https://github.com/Perseusxrltd/mnemion/actions/runs/43177143187) |
-| website-release\.yml | v4\.46\.65 | success | [Run 41374870627](https://github.com/Perseusxrltd/mnemion/actions/runs/41374870627) |
-
-## Unsuccessful jobs
-
-- [Run 41374873484](https://github.com/Perseusxrltd/mnemion/actions/runs/41374873484): linux / arm64 public upgrade (failure). Steps: Install public release and observe its automatic update.
