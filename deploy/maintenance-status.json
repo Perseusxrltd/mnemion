@@ -53,6 +53,13 @@
       "updated_at": "2026-10-29T15:46:04Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/51",
       "labels": []
+    },
+    {
+      "number": 52,
+      "title": "Field report: self-hosted MCP endpoint returns reverse-proxy 502 on every route (no health/version reachable)",
+      "updated_at": "2026-11-12T22:48:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/52",
+      "labels": []
     }
   ],
   "runs": [
@@ -90,5 +97,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/43300073401"
     }
   ],
-  "observed_at": "2026-11-12T20:25:49+00:00"
+  "observed_at": "2026-11-12T22:49:15+00:00"
 }
