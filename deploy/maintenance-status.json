@@ -57,8 +57,15 @@
     {
       "number": 52,
       "title": "Field report: self-hosted MCP endpoint returns reverse-proxy 502 on every route (no health/version reachable)",
-      "updated_at": "2026-11-12T22:48:39Z",
+      "updated_at": "2026-11-13T13:14:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/52",
+      "labels": []
+    },
+    {
+      "number": 53,
+      "title": "Field report (4.46.52): 7-day outage from a stale watchdog repair intent; off-site backups blocked by fixed size limit",
+      "updated_at": "2026-11-13T13:14:32Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/53",
       "labels": []
     }
   ],
@@ -86,5 +93,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/43384264368"
     }
   ],
-  "observed_at": "2026-11-13T12:19:46+00:00"
+  "observed_at": "2026-11-13T13:15:02+00:00"
 }
