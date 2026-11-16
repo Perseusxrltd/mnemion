@@ -1,6 +1,6 @@
 # Scientific papers and memory-tool watch
 
-Automatically checked **2026-11-09T17:27:10+00:00**. These are public metadata
+Automatically checked **2026-11-16T16:58:41+00:00**. These are public metadata
 candidates, not reviewed recommendations, benchmark results or Mnemion features.
 No model calls, purchases, account creation or dependency upgrades occur.
 
@@ -13,17 +13,36 @@ research interpretation, Jev assessment and required adoption measurements.
 
 | Source | Latest fetch | Last successful fetch | Retained candidates |
 | --- | --- | --- | --- |
-| arXiv agent-memory papers | Network unavailable or timed out | 2026-11-02T17:02:21+00:00 | 43 |
-| Crossref recent memory research | OK | 2026-11-09T17:27:10+00:00 | 2 |
-| MemPalace/mempalace | OK | 2026-11-09T17:27:10+00:00 | 5 |
-| mem0ai/mem0 | OK | 2026-11-09T17:27:10+00:00 | 5 |
-| vectorize-io/hindsight | OK | 2026-11-09T17:27:10+00:00 | 7 |
-| getzep/graphiti | OK | 2026-11-09T17:27:10+00:00 | 6 |
-| letta-ai/letta-code | OK | 2026-11-09T17:27:10+00:00 | 18 |
-| TypeSafe AI Jev model documentation | OK | 2026-11-09T17:27:10+00:00 | 2 |
+| arXiv agent-memory papers | OK | 2026-11-16T16:58:41+00:00 | 50 |
+| Crossref recent memory research | OK | 2026-11-16T16:58:41+00:00 | 3 |
+| MemPalace/mempalace | OK | 2026-11-16T16:58:41+00:00 | 6 |
+| mem0ai/mem0 | OK | 2026-11-16T16:58:41+00:00 | 5 |
+| vectorize-io/hindsight | OK | 2026-11-16T16:58:41+00:00 | 8 |
+| getzep/graphiti | OK | 2026-11-16T16:58:41+00:00 | 6 |
+| letta-ai/letta-code | OK | 2026-11-16T16:58:41+00:00 | 23 |
+| TypeSafe AI Jev model documentation | OK | 2026-11-16T16:58:41+00:00 | 2 |
 
 ## arXiv agent-memory papers
 
+- [MIGRO: A Decoupled and Portable Long-Term Memory System for Language Models](https://arxiv.org/abs/2611.15315) — 2026-11-11; paper; unreviewed.
+- [Discovering Effective Agent Memory Designs through Program Evolution](https://arxiv.org/abs/2611.17068) — 2026-11-12; paper; unreviewed.
+- [Coding Agent Memory Post-Training II: Unlocking the Memory Potential of Pre-trained File Operations for Long-Horizon Tasks via On-Policy Distillation](https://arxiv.org/abs/2611.14009) — 2026-11-10; paper; unreviewed.
+- [DISCERN: Preserve at Write, Resolve at Read for Persistent LLM-Agent Memory](https://arxiv.org/abs/2611.15729) — 2026-11-11; paper; unreviewed.
+- [BioMem: Agentic Memory for Biomedical LLM Agents](https://arxiv.org/abs/2611.13426) — 2026-11-10; paper; unreviewed.
+- [MIRIX-2\.0: Multi-Agent Memory System](https://arxiv.org/abs/2611.12068) — 2026-11-09; paper; unreviewed.
+- [Correct Answers from Insufficient Histories: A Controlled Study of Agent Memory Evaluation](https://arxiv.org/abs/2611.11840) — 2026-11-09; paper; unreviewed.
+- [MemoryDojo: Benchmarking Poisoning Through LLM Agent Memory](https://arxiv.org/abs/2611.09721) — 2026-11-06; paper; unreviewed.
+- [TimeOmni-Live: Continuous & Live Time Series Understanding with Long-Term Memory](https://arxiv.org/abs/2611.09502) — 2026-11-06; paper; unreviewed.
+- [HiMEM: Hippocampus-Inspired Memory Consolidation, Pruning, and Composition for Vision-Language-Action Models in 3D Scenes](https://arxiv.org/abs/2611.09355) — 2026-11-06; paper; unreviewed.
+- [Enhancing Local and Global Structure in Compressed AI Agent Memory](https://arxiv.org/abs/2611.08341) — 2026-11-05; paper; unreviewed.
+- [SUMONE: A Simple and Efficient Summarizer for Plug-and-Play Agent Memory](https://arxiv.org/abs/2611.06445) — 2026-11-04; paper; unreviewed.
+- [Twists and Turns: A Graph-Based Benchmark and Framework for Long-Term Memory in Exploration Tasks](https://arxiv.org/abs/2611.06414) — 2026-11-04; paper; unreviewed.
+- [FlyHash for LLM Agent Memory: An Empirical Validation and a New Application](https://arxiv.org/abs/2611.05791) — 2026-11-04; paper; unreviewed.
+- [What Is This Memory Useful For? Measuring Task-Conditioned Utility in Long-Term Agent Memory](https://arxiv.org/abs/2611.03930) — 2026-11-02; paper; unreviewed.
+- [A State Change Is Local, Its Consequences Are Not: Dependency-Aware State Revision for Long-Term Agent Memory](https://arxiv.org/abs/2611.02912) — 2026-11-02; paper; unreviewed.
+- [Agent Memory as Rate-Limited Filtering: Explicit State Outlasts Long Context Beyond a Reader-Dependent Horizon](https://arxiv.org/abs/2611.02361) — 2026-11-02; paper; unreviewed.
+- [Delivered, Not Used: Evaluating Agent Memory at Its Point of Use](https://arxiv.org/abs/2611.01718) — 2026-11-01; paper; unreviewed.
+- [Who Schedules Agent Memory? A Sidecar Approach to Long-Horizon Tasks](https://arxiv.org/abs/2611.00779) — 2026-10-31; paper; unreviewed.
 - [Long-Term Agent Memory through Complementary Curation and Consolidation](https://arxiv.org/abs/2610.39790) — 2026-10-29; paper; unreviewed.
 - [MemSteer: Turning User Histories into Supervision for Agent Memory Optimization](https://arxiv.org/abs/2610.39276) — 2026-10-29; paper; unreviewed.
 - [Is it my preference? Role Grounding Attack against Agent's Memory via Social Interaction](https://arxiv.org/abs/2610.38209) — 2026-10-28; paper; unreviewed.
@@ -55,26 +74,16 @@ research interpretation, Jev assessment and required adoption measurements.
 - [Beyond Downstream QA: Rethinking How We Evaluate Agent Memory](https://arxiv.org/abs/2610.22209) — 2026-10-15; paper; unreviewed.
 - [Hy-Memory-30B-A3B: Attributed Reinforcement Learning for Long-Term Memory Writing](https://arxiv.org/abs/2610.22196) — 2026-10-15; paper; unreviewed.
 - [MemCut: Every Secret Leaves a Trail in the Long-Term Memory of LLM Agents](https://arxiv.org/abs/2610.21405) — 2026-10-15; paper; unreviewed.
-- [MemScope: Evolving Agent Memory Architectures through Localized Code Repair](https://arxiv.org/abs/2610.21170) — 2026-10-15; paper; unreviewed.
-- [EGCForest: Structured Agent Memory Organization for Enterprise Group Chats](https://arxiv.org/abs/2610.19836) — 2026-10-14; paper; unreviewed.
-- [MemCode: Discrete Semantic Representations for Long-Term Agent Memory](https://arxiv.org/abs/2610.19472) — 2026-10-14; paper; unreviewed.
-- [Seeing, Maintaining, and Learning: The Evolution of Multimodal Agent Memory](https://arxiv.org/abs/2610.19366) — 2026-10-14; paper; unreviewed.
-- [Memory Echo in Single-Agent Long-Term Memory: Lifecycle Evaluation and Provenance-Guided Mitigation](https://arxiv.org/abs/2610.17763) — 2026-10-13; paper; unreviewed.
-- [Recall What Is Missing: Composing Evidence from Long-Term Agent Memory](https://arxiv.org/abs/2610.15642) — 2026-10-11; paper; unreviewed.
-- [The RNN Homunculus: Learning to Gate Long-Term Memory](https://arxiv.org/abs/2610.14279) — 2026-10-09; paper; unreviewed.
-- [Memory Type Varies: Empowering LLM Agents for Long-Term Memory with Diverse Strategies](https://arxiv.org/abs/2610.11573) — 2026-10-08; paper; unreviewed.
-- [Real Long-Term Memory for AI: A 50-Million-Token Window That Is Faster and Cheaper Than Recompute](https://arxiv.org/abs/2610.10845) — 2026-10-07; paper; unreviewed.
-- [HGP:An on-device personalized agent memory via hybrid graph storage](https://arxiv.org/abs/2610.10071) — 2026-10-07; paper; unreviewed.
-- [Relevance Is Not Sufficiency: What Actually Closes the Evidence Gap in Long-Term Memory QA](https://arxiv.org/abs/2610.09348) — 2026-10-07; paper; unreviewed.
-- [MINDSET: Energy-based Schema Evolution for Long Conversational Agent Memory](https://arxiv.org/abs/2610.08586) — 2026-10-06; paper; unreviewed.
 
 ## Crossref recent memory research
 
+- [Jacobian-Causal Memory Control for Persistent Memory in Language Model Systems](https://doi.org/10.66977/xsci.2611.001b) — 2026-11-10; paper; unreviewed.
 - [Characterizing KV-Cache Performance in Large Language Model Inference: Context Length, Attention Architecture, and GPU Memory Residency](https://doi.org/10.20944/preprints202609.2725.v1) — 2026-09-30; paper; unreviewed.
 - [Self-Evolving Large Language Model Agent with Adaptive Long-Term Memory and Autonomous Knowledge Updating](https://doi.org/10.24321/3051.424x.202607) — 2026-09-29; paper; unreviewed.
 
 ## MemPalace/mempalace
 
+- [v3\.12\.0 — verbatim mining, recoverable writes](https://github.com/MemPalace/mempalace/releases/tag/v3.12.0) — 2026-11-12; release; unreviewed.
 - [v3\.11\.0 — audit, repair and opt-in EmbeddingGemma 2](https://github.com/MemPalace/mempalace/releases/tag/v3.11.0) — 2026-10-14; release; unreviewed.
 - [v3\.10\.0 — lighter ways in for agents](https://github.com/MemPalace/mempalace/releases/tag/v3.10.0) — 2026-09-16; release; unreviewed.
 - [v3\.9\.0 — one hub for every agent](https://github.com/MemPalace/mempalace/releases/tag/v3.9.0) — 2026-08-31; release; unreviewed.
@@ -91,6 +100,7 @@ research interpretation, Jev assessment and required adoption measurements.
 
 ## vectorize-io/hindsight
 
+- [v1\.2\.1](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.1) — 2026-11-10; release; unreviewed.
 - [v1\.2\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.0) — 2026-11-03; release; unreviewed.
 - [v1\.1\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.1.0) — 2026-10-21; release; unreviewed.
 - [v1\.0\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.0.0) — 2026-10-13; release; unreviewed.
@@ -110,6 +120,11 @@ research interpretation, Jev assessment and required adoption measurements.
 
 ## letta-ai/letta-code
 
+- [Release v0\.34\.63](https://github.com/letta-ai/letta-code/releases/tag/v0.34.63) — 2026-11-15; release; unreviewed.
+- [Release v0\.34\.62](https://github.com/letta-ai/letta-code/releases/tag/v0.34.62) — 2026-11-15; release; unreviewed.
+- [Release v0\.34\.61](https://github.com/letta-ai/letta-code/releases/tag/v0.34.61) — 2026-11-14; release; unreviewed.
+- [Release v0\.34\.60](https://github.com/letta-ai/letta-code/releases/tag/v0.34.60) — 2026-11-13; release; unreviewed.
+- [Release v0\.34\.59](https://github.com/letta-ai/letta-code/releases/tag/v0.34.59) — 2026-11-13; release; unreviewed.
 - [Release v0\.34\.48](https://github.com/letta-ai/letta-code/releases/tag/v0.34.48) — 2026-11-09; release; unreviewed.
 - [Release v0\.34\.47](https://github.com/letta-ai/letta-code/releases/tag/v0.34.47) — 2026-11-09; release; unreviewed.
 - [Release v0\.34\.46](https://github.com/letta-ai/letta-code/releases/tag/v0.34.46) — 2026-11-09; release; unreviewed.
