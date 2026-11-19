@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-11-18T20:53:15+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-19T07:54:20+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.65](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.65). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -24,7 +24,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | database-cache\.yml | main | failure | [Run 44309571613](https://github.com/Perseusxrltd/mnemion/actions/runs/44309571613) |
-| website-release\.yml | main | success | [Run 44395530289](https://github.com/Perseusxrltd/mnemion/actions/runs/44395530289) |
+| website-release\.yml | main | success | [Run 44483081479](https://github.com/Perseusxrltd/mnemion/actions/runs/44483081479) |
 
 ## Unsuccessful jobs
 
