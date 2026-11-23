@@ -1,6 +1,6 @@
 # Scientific papers and memory-tool watch
 
-Automatically checked **2026-11-16T16:58:41+00:00**. These are public metadata
+Automatically checked **2026-11-23T19:13:01+00:00**. These are public metadata
 candidates, not reviewed recommendations, benchmark results or Mnemion features.
 No model calls, purchases, account creation or dependency upgrades occur.
 
@@ -13,17 +13,28 @@ research interpretation, Jev assessment and required adoption measurements.
 
 | Source | Latest fetch | Last successful fetch | Retained candidates |
 | --- | --- | --- | --- |
-| arXiv agent-memory papers | OK | 2026-11-16T16:58:41+00:00 | 50 |
-| Crossref recent memory research | OK | 2026-11-16T16:58:41+00:00 | 3 |
-| MemPalace/mempalace | OK | 2026-11-16T16:58:41+00:00 | 6 |
-| mem0ai/mem0 | OK | 2026-11-16T16:58:41+00:00 | 5 |
-| vectorize-io/hindsight | OK | 2026-11-16T16:58:41+00:00 | 8 |
-| getzep/graphiti | OK | 2026-11-16T16:58:41+00:00 | 6 |
-| letta-ai/letta-code | OK | 2026-11-16T16:58:41+00:00 | 23 |
-| TypeSafe AI Jev model documentation | OK | 2026-11-16T16:58:41+00:00 | 2 |
+| arXiv agent-memory papers | OK | 2026-11-23T19:13:01+00:00 | 50 |
+| Crossref recent memory research | OK | 2026-11-23T19:13:01+00:00 | 3 |
+| MemPalace/mempalace | OK | 2026-11-23T19:13:01+00:00 | 6 |
+| mem0ai/mem0 | OK | 2026-11-23T19:13:01+00:00 | 5 |
+| vectorize-io/hindsight | OK | 2026-11-23T19:13:01+00:00 | 10 |
+| getzep/graphiti | OK | 2026-11-23T19:13:01+00:00 | 6 |
+| letta-ai/letta-code | OK | 2026-11-23T19:13:01+00:00 | 28 |
+| TypeSafe AI Jev model documentation | OK | 2026-11-23T19:13:01+00:00 | 2 |
 
 ## arXiv agent-memory papers
 
+- [MemFolder: Structure-Guided Memory Folding for Efficient Agent Memory Management](https://arxiv.org/abs/2611.26427) — 2026-11-19; paper; unreviewed.
+- [Resolution as Attention for Efficient Agent Memory Perception](https://arxiv.org/abs/2611.24422) — 2026-11-18; paper; unreviewed.
+- [Twists and Turns: A Graph-Based Benchmark and Framework for Long-Term Memory in Exploration Tasks](https://arxiv.org/abs/2611.06414) — 2026-11-04; paper; unreviewed.
+- [Multi-Agent Memory Inconsistency: Where Factual Conflicts Disappear in LLM Agents](https://arxiv.org/abs/2611.22245) — 2026-11-17; paper; unreviewed.
+- [Jetriever: Shifting Agent Memory Retrieval from Similarity to Utility](https://arxiv.org/abs/2611.21478) — 2026-11-16; paper; unreviewed.
+- [EvoDisco: Strategy Discovery for Evolving Agent Memory](https://arxiv.org/abs/2611.22102) — 2026-11-17; paper; unreviewed.
+- [KV-LTM: Persistent Per-Session KV Caches as Long-Term Memory for Personal Assistants](https://arxiv.org/abs/2611.21998) — 2026-11-16; paper; unreviewed.
+- [MemDoctor: Stage-wise Error Attribution and Repair for MLLM Agent Memory](https://arxiv.org/abs/2611.21019) — 2026-11-16; paper; unreviewed.
+- [Instant Weight-Space Consolidation for Long-Term Memory in LLMs](https://arxiv.org/abs/2611.20759) — 2026-11-16; paper; unreviewed.
+- [HEAMS: Holistic Evaluation of Agent Memory Systems](https://arxiv.org/abs/2611.20144) — 2026-11-15; paper; unreviewed.
+- [StaleBench: Isolating Stale Retrieval in Agent Memory, and Pricing the Fix](https://arxiv.org/abs/2611.19752) — 2026-11-15; paper; unreviewed.
 - [MIGRO: A Decoupled and Portable Long-Term Memory System for Language Models](https://arxiv.org/abs/2611.15315) — 2026-11-11; paper; unreviewed.
 - [Discovering Effective Agent Memory Designs through Program Evolution](https://arxiv.org/abs/2611.17068) — 2026-11-12; paper; unreviewed.
 - [Coding Agent Memory Post-Training II: Unlocking the Memory Potential of Pre-trained File Operations for Long-Horizon Tasks via On-Policy Distillation](https://arxiv.org/abs/2611.14009) — 2026-11-10; paper; unreviewed.
@@ -36,7 +47,6 @@ research interpretation, Jev assessment and required adoption measurements.
 - [HiMEM: Hippocampus-Inspired Memory Consolidation, Pruning, and Composition for Vision-Language-Action Models in 3D Scenes](https://arxiv.org/abs/2611.09355) — 2026-11-06; paper; unreviewed.
 - [Enhancing Local and Global Structure in Compressed AI Agent Memory](https://arxiv.org/abs/2611.08341) — 2026-11-05; paper; unreviewed.
 - [SUMONE: A Simple and Efficient Summarizer for Plug-and-Play Agent Memory](https://arxiv.org/abs/2611.06445) — 2026-11-04; paper; unreviewed.
-- [Twists and Turns: A Graph-Based Benchmark and Framework for Long-Term Memory in Exploration Tasks](https://arxiv.org/abs/2611.06414) — 2026-11-04; paper; unreviewed.
 - [FlyHash for LLM Agent Memory: An Empirical Validation and a New Application](https://arxiv.org/abs/2611.05791) — 2026-11-04; paper; unreviewed.
 - [What Is This Memory Useful For? Measuring Task-Conditioned Utility in Long-Term Agent Memory](https://arxiv.org/abs/2611.03930) — 2026-11-02; paper; unreviewed.
 - [A State Change Is Local, Its Consequences Are Not: Dependency-Aware State Revision for Long-Term Agent Memory](https://arxiv.org/abs/2611.02912) — 2026-11-02; paper; unreviewed.
@@ -64,16 +74,6 @@ research interpretation, Jev assessment and required adoption measurements.
 - [SAFE-Mem: Secure Agentic Memory with Fine-Grained Authority and Governance-Aware Retrieval](https://arxiv.org/abs/2610.22959) — 2026-10-16; paper; unreviewed.
 - [Memory as Code: Declarative Retrieval over Codified Long-Term Memory](https://arxiv.org/abs/2610.27700) — 2026-10-20; paper; unreviewed.
 - [HABIT-Bench: Evaluating Habit Induction from Longitudinal Weak Evidence in Agent Memory](https://arxiv.org/abs/2610.24520) — 2026-10-17; paper; unreviewed.
-- [MemDerive: A Diagnostic Benchmark for Agent Memory over Evolving Data](https://arxiv.org/abs/2610.25373) — 2026-10-18; paper; unreviewed.
-- [MemBubble: Benchmarking How Agent Memory Shapes LLM Response Diversity](https://arxiv.org/abs/2610.25127) — 2026-10-18; paper; unreviewed.
-- [When Agent Memory Needs to Compute: Evidence Access and Executable Aggregation](https://arxiv.org/abs/2610.19474) — 2026-10-14; paper; unreviewed.
-- [GLOBE: Evolving Structured Agentic Memory for E-commerce Product Optimization in Generative Search](https://arxiv.org/abs/2610.23709) — 2026-10-16; paper; unreviewed.
-- [RL-Guided Temporal Localization for Dual-Channel Retrieval in Long-Horizon Agent Memory](https://arxiv.org/abs/2610.23598) — 2026-10-16; paper; unreviewed.
-- [From Memory Hits to Answerable Evidence: Query-Conditioned Memory Compilation for Long-Term Agent Memory](https://arxiv.org/abs/2610.23313) — 2026-10-16; paper; unreviewed.
-- [HEM-Med: A Hierarchical Agentic Memory Framework for Safe Multi-Center Medication Recommendation](https://arxiv.org/abs/2610.20191) — 2026-10-14; paper; unreviewed.
-- [Beyond Downstream QA: Rethinking How We Evaluate Agent Memory](https://arxiv.org/abs/2610.22209) — 2026-10-15; paper; unreviewed.
-- [Hy-Memory-30B-A3B: Attributed Reinforcement Learning for Long-Term Memory Writing](https://arxiv.org/abs/2610.22196) — 2026-10-15; paper; unreviewed.
-- [MemCut: Every Secret Leaves a Trail in the Long-Term Memory of LLM Agents](https://arxiv.org/abs/2610.21405) — 2026-10-15; paper; unreviewed.
 
 ## Crossref recent memory research
 
@@ -100,6 +100,8 @@ research interpretation, Jev assessment and required adoption measurements.
 
 ## vectorize-io/hindsight
 
+- [v1\.2\.3](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.3) — 2026-11-19; release; unreviewed.
+- [v1\.2\.2](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.2) — 2026-11-19; release; unreviewed.
 - [v1\.2\.1](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.1) — 2026-11-10; release; unreviewed.
 - [v1\.2\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.2.0) — 2026-11-03; release; unreviewed.
 - [v1\.1\.0](https://github.com/vectorize-io/hindsight/releases/tag/v1.1.0) — 2026-10-21; release; unreviewed.
@@ -120,6 +122,11 @@ research interpretation, Jev assessment and required adoption measurements.
 
 ## letta-ai/letta-code
 
+- [Release v0\.34\.70](https://github.com/letta-ai/letta-code/releases/tag/v0.34.70) — 2026-11-23; release; unreviewed.
+- [Release v0\.34\.69](https://github.com/letta-ai/letta-code/releases/tag/v0.34.69) — 2026-11-22; release; unreviewed.
+- [Release v0\.34\.68](https://github.com/letta-ai/letta-code/releases/tag/v0.34.68) — 2026-11-21; release; unreviewed.
+- [Release v0\.34\.67](https://github.com/letta-ai/letta-code/releases/tag/v0.34.67) — 2026-11-20; release; unreviewed.
+- [Release v0\.34\.66](https://github.com/letta-ai/letta-code/releases/tag/v0.34.66) — 2026-11-19; release; unreviewed.
 - [Release v0\.34\.63](https://github.com/letta-ai/letta-code/releases/tag/v0.34.63) — 2026-11-15; release; unreviewed.
 - [Release v0\.34\.62](https://github.com/letta-ai/letta-code/releases/tag/v0.34.62) — 2026-11-15; release; unreviewed.
 - [Release v0\.34\.61](https://github.com/letta-ai/letta-code/releases/tag/v0.34.61) — 2026-11-14; release; unreviewed.
