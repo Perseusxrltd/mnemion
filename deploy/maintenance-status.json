@@ -71,15 +71,32 @@
   ],
   "runs": [
     {
-      "id": 45023011268,
+      "id": 45196199161,
       "attempt": 1,
       "workflow": "database-cache.yml",
       "branch": "main",
-      "source_commit": "ff7fb3b6c21430d49d5d80998e80ed15405fb8b5",
+      "source_commit": "a588adf00b4db8a0e783d29b3ef0441d61183c52",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-11-22T12:37:28Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/45023011268"
+      "conclusion": "failure",
+      "updated_at": "2026-11-23T14:53:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/45196199161",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 8,
+        "succeeded": 6,
+        "active": []
+      },
+      "failed_jobs": [
+        {
+          "name": "database / Database / macos / arm64",
+          "id": 137767659601,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 45136462051,
@@ -93,5 +110,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/45136462051"
     }
   ],
-  "observed_at": "2026-11-23T08:11:30+00:00"
+  "observed_at": "2026-11-23T14:54:05+00:00"
 }
