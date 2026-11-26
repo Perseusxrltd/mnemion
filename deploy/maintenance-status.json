@@ -81,12 +81,6 @@
       "updated_at": "2026-11-26T14:09:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/45833477712",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 8,
-        "succeeded": 6,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "database / Database / macos / arm64",
@@ -96,19 +90,25 @@
           "steps_reported": 0,
           "steps": []
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 8,
+        "completed": 8,
+        "succeeded": 6,
+        "active": []
+      }
     },
     {
-      "id": 45786796467,
+      "id": 45901234747,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "f63b1318094f37541c89fd32eb2c31af74b45912",
+      "source_commit": "7e6c7c4f3cea837bd81ad984ff00946284a8219e",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-11-26T08:52:16Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/45786796467"
+      "updated_at": "2026-11-26T21:54:22Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/45901234747"
     }
   ],
-  "observed_at": "2026-11-26T14:09:56+00:00"
+  "observed_at": "2026-11-26T21:54:55+00:00"
 }
