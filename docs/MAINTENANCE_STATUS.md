@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-11-26T08:52:47+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-11-26T14:09:56+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.65](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.65). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,9 +23,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| database-cache\.yml | main | failure | [Run 45633051944](https://github.com/Perseusxrltd/mnemion/actions/runs/45633051944) |
+| database-cache\.yml | main | failure | [Run 45833477712](https://github.com/Perseusxrltd/mnemion/actions/runs/45833477712) |
 | website-release\.yml | main | success | [Run 45786796467](https://github.com/Perseusxrltd/mnemion/actions/runs/45786796467) |
 
 ## Unsuccessful jobs
 
-- [Run 45633051944](https://github.com/Perseusxrltd/mnemion/actions/runs/45633051944): database / Database / macos / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
+- [Run 45833477712](https://github.com/Perseusxrltd/mnemion/actions/runs/45833477712): database / Database / macos / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
